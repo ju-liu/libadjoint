@@ -6,7 +6,7 @@ endif
 # Identify if PETSc is installed
 PETSC_CPPFLAGS = $(shell make -f cfg/petsc_makefile getincludedirs 2>/dev/null)
 PETSC_LDFLAGS  = $(shell make -f cfg/petsc_makefile getlinklibs 2>/dev/null)
-ifeq (,$(PETSC_CPPFLAGS)
+ifeq (,$(PETSC_CPPFLAGS))
 	PETSC_CPPFLAGS := -UHAVE_PETSC
 else
 	PETSC_CPPFLAGS := $(PETSC_CPPFLAGS) -DHAVE_PETSC
