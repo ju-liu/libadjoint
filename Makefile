@@ -12,7 +12,7 @@ else
 	PETSC_CPPFLAGS := $(PETSC_CPPFLAGS) -DHAVE_PETSC
 endif
 
-DBGFLAGS = -g -O0
+DBGFLAGS = -g -O0 -Wall
 CFLAGS = $(DBGFLAGS) $(PETSC_CPPFLAGS) -Iinclude/
 
 # Identify Fortran compiler
