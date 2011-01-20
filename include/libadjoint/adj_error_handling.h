@@ -3,13 +3,16 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
-char adj_error_msg[1024];
+#define ADJ_ERROR_MSG_BUF 1024
+
+char adj_error_msg[ADJ_ERROR_MSG_BUF];
 
 #define ADJ_ERR_OK 0
 #define ADJ_ERR_INVALID_INPUTS 1
 
-char adj_error_codes[2][1024];
+char adj_error_codes[2][ADJ_ERROR_MSG_BUF];
 
 #define adj_chkierr(ierr) adj_chkierr_private(ierr, __FILE__, __LINE__)
 

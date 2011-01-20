@@ -102,7 +102,7 @@ doc/design.pdf: doc/design.tex doc/literature.bib
 
 ifneq (,$(CTAGS))
 lib/libadjoint.a: tags
-tags: $(FSRC)
-	@echo "  CTAGS src/*.F90"
-	@$(CTAGS) src/*.F90
+tags: $(FSRC) $(CSRC)
+	@echo "  CTAGS src/*.c"
+	@$(CTAGS) src/*.c
 endif

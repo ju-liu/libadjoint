@@ -13,6 +13,6 @@ void adj_chkierr_private(int ierr, char* file, int line)
 
 void adj_init_error_codes(void)
 {
-  adj_error_codes[ADJ_ERR_OK] = "ADJ_ERR_OK";
-  adj_error_codes[ADJ_ERR_INVALID_INPUTS] = "ADJ_ERR_INVALID_INPUTS";
+  strncpy(adj_error_codes[ADJ_ERR_OK], "ADJ_ERR_OK", ADJ_ERROR_MSG_BUF);
+  strncpy(adj_error_codes[ADJ_ERR_INVALID_INPUTS], "ADJ_ERR_INVALID_INPUTS", ADJ_ERROR_MSG_BUF);
 }

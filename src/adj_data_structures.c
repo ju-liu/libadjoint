@@ -8,7 +8,7 @@ int adj_create_variable(char* name, int timestep, int iteration, int auxiliary, 
   slen = strlen(name);
   if (slen > ADJ_NAMELEN)
   {
-    adj_error_msg = "Name variable too long; recompile with bigger ADJ_NAMELEN";
+    strncpy(adj_error_msg, "Name variable too long; recompile with bigger ADJ_NAMELEN", ADJ_ERROR_MSG_BUF);
     return ADJ_ERR_INVALID_INPUTS;
   }
 

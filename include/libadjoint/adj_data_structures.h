@@ -26,6 +26,6 @@ typedef struct
   int klass; /* a field to be set by the user in case adj_matrix masks multiple separate types (scalar, vector, etc.) */
 } adj_matrix;
 
-int adj_create_variable(char* name, int timestep, int iteration, int auxiliary, adj_variable* var)
+int adj_create_variable(char* name, int timestep, int iteration, int auxiliary, adj_variable* var);
 
 #endif
