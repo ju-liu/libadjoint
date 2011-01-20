@@ -1,0 +1,1284 @@
+\documentclass[10pt,authoryear]{elsarticle}
+
+\usepackage[a4paper]{geometry}
+\usepackage{amsfonts,amsmath,amssymb}
+\makeatletter
+\newif\if@restonecol
+\makeatother
+\usepackage{natbib}
+\usepackage{graphicx}
+\usepackage[pdftex,pagebackref=true,draft=false]{hyperref}
+%\usepackage[utf8]{inputenc}
+
+\usepackage{color}
+\usepackage{listings}
+\usepackage{minted}
+\usepackage{lmodern}
+\usepackage{doi}
+\usepackage{autorefcap}
+
+\newcommand{\m}[0]{{\vec{m}}}
+\newcommand{\libadjoint}[0]{{\texttt{libadjoint}}}
+
+\definecolor{DarkBlue}{rgb}{0.00,0.00,0.55}
+\definecolor{Black}{rgb}{0.00,0.00,0.00}
+\hypersetup{
+    linkcolor = DarkBlue,
+    anchorcolor = DarkBlue,
+    citecolor = DarkBlue,
+    filecolor = DarkBlue,
+    pagecolor = DarkBlue,
+    urlcolor = DarkBlue,
+%    linkcolor = Black,
+%    anchorcolor = Black,
+%    citecolor = Black,
+%    filecolor = Black,
+%    pagecolor = Black,
+%    urlcolor = Black,
+    colorlinks  = true,
+    pdfauthor   = {Patrick Farrell <patrick.farrell06@imperial.ac.uk>},
+    pdftitle    = {The design of \libadjoint}
+}
+
+\journal{}
+
+\begin{document}
+  \begin{frontmatter}
+    \title{The design of \libadjoint}
+
+    \author[ad1]{P.E.\ Farrell}
+    \ead{patrick.farrell06@imperial.ac.uk}
+    \address[ad1]{Applied Modelling and Computation Group,\\
+      Department of Earth Science and Engineering,\\
+      Royal School of Mines,\\
+      Imperial College London, London, SW7 2AZ, UK\\
+      \texttt{\emph{http://amcg.ese.ic.ac.uk}}}
+    \begin{abstract}
+This document discusses the proposed design for \libadjoint, a library to make
+writing discrete adjoint models as easy as possible. The library will greatly assist
+adjoint calculations (both steady and time-dependent), be orthogonal to the discretisation employed,
+and will be easily bolted-on to an existing discrete model.
+    \end{abstract}
+    \begin{keyword}
+      adjoint \sep discrete adjoint 
+    \end{keyword}
+
+  \end{frontmatter}
+
+  \setcounter{section}{0}
+  \setcounter{equation}{0}
+
+\tableofcontents
+
+\section{Theory}
+\subsection{Introduction}
+
+A forward model takes the system state at some initial condition and propagates it forward in time
+to compute the system state at some later time; the forward model propagates cause to effect.
+Associated with every forward model is an adjoint model that does the opposite: the adjoint propagates effect back to cause,
+modelling the flow of information in the forward problem. For time-dependent forward problems, this means that
+the adjoint runs backwards in time.
+
+Adjoints can be used for a great many applications in computational science. Before discussing these, let us introduce some notation:
+\begin{itemize}
+\item $\m$, a vector of control variables
+\item $u$, a solution
+\item $A(u, \m)$, an operator
+\item $b(\m)$, a source term
+\item $F(u, \m) = A(u, \m)\cdot u - b(\m) = 0$, an equation
+\item $J(u, \m) \rightarrow \mathbb{R}$, a functional
+\end{itemize}
+
+Suppose we have a set of equations $F(u, \m) = 0$, parameterised by a set of parameters $\m$. For example,
+$\m$ might be the initial conditions, the boundary conditions, a diffusivity parameter, etc.; $u$ might be the
+vector of velocity and pressure, and $F(u, \m)$ could be the Navier-Stokes equations. Suppose further that
+we are not interested in the overall character of the solution $u$, but rather are interested in a specific
+question of this physical state: this question we are interested in is represented by a functional $J(u, \m)$.
+For example, $J(u, \m)$ could be the drag of flow past an airfoil, or the amount of oil extracted in a reservoir simulation,
+or the height of a tsunami at a certain point, etc. To talk sensibly about adjoints, one needs to choose a functional
+$J$, but it is entirely possible to talk about adjoints without any free parameters $\m$.
+
+The derivation of the adjoint equation for this abstract example is beyond the scope of this introduction;
+for an excellent introduction, see \citet{gunzburger2003}. The adjoint equation is given by
+\begin{equation} \label{eqn:abstract_adjoint}
+\left(\left.\frac{\partial F}{\partial u}\right|_{(u,\m)}\right)^{*} \lambda = \left.\frac{\partial J}{\partial u}\right|_{(u,\m)},
+\end{equation}
+where $\lambda$ is the adjoint solution and the derivatives are G\^ateaux derivatives.
+
+Before moving on, let us motivate this entire business with some applications of the adjoint. Adjoints can be used for a great
+range of extremely useful applications across the quantitative sciences. Here are a few:
+\begin{itemize}
+\item Design optimisation: suppose you wish to minimise or maximise $J(u,\m)$, and can vary the parameters $\m$.
+In order to solve this optimisation problem, it is necessary to compute
+\begin{equation}
+\left.\frac{dJ}{d\m}\right|_{(u, \m)}
+\end{equation}
+at every optimisation iteration to decide where next to move in parameter space. The adjoint greatly facilitates this
+computation.
+\item Error estimation: physical experiments come with error bars, but most computational experiments do not. With the
+adjoint, it is possible to estimate the error in a quantity of interest $J(u,\m)$.
+\item Data assimilation: it is frequently desirable to incorporate physical data (such as atmospheric observations)
+into computational simulations, to constrain the simulation towards a physically realistic trajectory. Adjoints are
+essential in variational data assimilation.
+\item Parameter estimation: suppose the equation governing some physical process is known, but the parameters
+(such as diffusivity or viscosity coefficients) are unknown. With the adjoint, it is possible to estimate these parameters
+from physical data.
+\end{itemize}
+
+When computing the adjoint of a model, there are two possible approaches. The first approach is to derive the adjoint
+system of partial differential equations from the forward system of partial differential equations, and then discretise
+the adjoint PDEs separately. This approach is referred to as the continuous adjoint approach. The second approach is to discretise
+the forward model, and then adjoint this discrete model. This approach is referred to as the discrete adjoint approach.
+Both approaches have symmetric advantages and disadvantages; for details, see \citet{gunzburger2003}. \libadjoint\ focusses exclusively
+on the discrete adjoint approach.
+
+\subsection{The discrete adjoint}
+Let us write equation (\ref{eqn:abstract_adjoint}) for the case of a nonlinear discretised model.
+The forward model can be written as
+\begin{equation}
+A(u,\m)\cdot u = b(\m),
+\end{equation}
+where $A(u,\m)$ is a matrix depending on the solution variables $u$ and the control variables $\m$. Note that for time-dependent problems,
+this matrix $A$ encodes all of the equations for all of the timesteps, and has a block structure that is
+lower triangular. 
+
+By applying equation (\ref{eqn:abstract_adjoint}), the corresponding discrete adjoint model is given by
+\begin{equation} \label{eqn:discrete_adjoint}
+\left(A + G\right)^{*}\lambda = \left.\frac{\partial J}{\partial u}\right|_{(u,\m)},
+\end{equation}
+where $G$ is given by
+\begin{equation}
+G = \left.\frac{\partial A(u,\m)}{\partial u}\right|_{(u,\m)} u.
+\end{equation}
+
+Let us now make some observations:
+\begin{itemize}
+\item The adjoint equation is linear in the adjoint variable $\lambda$.
+\item If the forward equation is linear, then $A$ is not a function of $u$, and $G = 0$.
+\item Since $A$ is lower triangular, it can be solved by forward substitution; that is, it can be
+solved forward in time. If $A$ is lower triangular, then $(A+G)^{*}$ is upper triangular, and can be solved
+by backward substitution; that is, it must be solved backward in time.
+\end{itemize}
+
+Two major difficulties present themselves:
+\begin{itemize}
+\item The assembly of the operator $A$ must be differentiated to compute $G$.
+\item For time-dependent problems, the entire forward state must be available throughout the adjoint computation,
+so that the adjoint matrix for a given timestep may be assembled.
+\end{itemize}
+
+These two problems are referred to as the differentiation problem and the storage problem, respectively.
+\libadjoint\ comprehensively deals with both.
+
+\subsection{Example} \label{sec:example}
+To understand the material presented thus far,
+let us take a concrete example. Suppose we are solving the time-dependent one-dimensional Burgers equation
+\begin{equation}
+\frac{\partial u}{\partial t} + u \frac{\partial u}{\partial x} - \frac{\partial^2 u}{\partial x^2} = f
+\end{equation}
+with linear Lagrange finite elements on the domain $(a, b)$. The Crank-Nicolson scheme is employed for
+the temporal discretisation. To keep the example short, we shall perform only one timestep,
+and within that timestep two Picard iterations shall be employed to deal with the nonlinear advective
+term. The resulting linear system is given by
+\begin{equation}
+A(u)\cdot u = f,
+\end{equation}
+where
+\begin{equation}
+u = \begin{pmatrix}
+u_0 \\
+u_1^{(1)} \\
+u_1^{(2)} \end{pmatrix},
+\end{equation}
+and
+\begin{equation}
+A(u) = \begin{pmatrix}
+I & 0 & 0 \\
+T(u_0) & L(u_0) & 0 \\
+T(u_0, u_1^{(1)}) & 0 & L(u_0, u_1^{(1)}) \end{pmatrix},
+\end{equation}
+with the timestepping operator $T$ given by
+\begin{equation}
+T(\cdot) = -\frac{M}{\Delta t} + \frac{1}{2}V(\cdot) + \frac{1}{2}D,
+\end{equation}
+and the Burgers operator $L$ given by
+\begin{equation}
+L(\cdot) = \frac{M}{\Delta t} + \frac{1}{2}V(\cdot) + \frac{1}{2}D,
+\end{equation}
+with $M, V,$ and $D$ being the mass, advection, and diffusion matrices respectively, and $\Delta t$ is the timestep.
+Only the advection operator $V$ is nonlinear.
+
+Observe that the matrix $G$ can be written column by column as
+\begin{equation}
+G = \begin{bmatrix} g_1 & g_2 & g_3 \end{bmatrix},
+\end{equation}
+where
+\begin{align}
+g_1 &= \frac{\partial A}{\partial u_0} u \\
+g_2 &= \frac{\partial A}{\partial u_1^{(1)}} u \\
+g_3 &= \frac{\partial A}{\partial u_1^{(2)}} u.
+\end{align}
+Each column vector $g_j$ has a block structure; in this case, each has three blocks, corresponding to
+the three equations solved. For a given $g_j$, whether each block $i$ is zero or not is determined by whether
+the corresponding equation $i$ depends on variable $j$. That is,
+\begin{equation}
+G_{ij} \ne 0 \iff \text{Equation $i$ depends on variable $j$}.
+\end{equation}
+
+With this understanding, we can now calculate the sparsity of $G$:
+\begin{equation}
+G = \begin{pmatrix}
+0 & 0 & 0 \\
+K_{21} & 0 & 0 \\
+K_{31} & K_{32} & 0 \end{pmatrix},
+\end{equation}
+where each $K$ represents a nonzero block we have yet to calculate.
+
+We shall calculate $K_{21}$ as a worked example, and leave the others as exercises.
+$K_{21}$ represents the dependence of equation 2 on variable 1. Since we only need to differentiate
+the nonlinear part of equation 2, let us write its nonlinear part:
+\begin{equation}
+\begin{pmatrix} \frac{1}{2}V(u_0) & \frac{1}{2}V(u_0) & 0 \end{pmatrix} 
+\begin{pmatrix} u_0 \\ u_1^{(1)} \\ u_1^{(2)} \end{pmatrix}.
+\end{equation}
+Differentiating this operator with respect to $u_0$ (variable 1) and multiplying out yields
+\begin{equation}
+K_{21} = \frac{\partial V(u_0)}{\partial u_0} \cdot \left[\frac{1}{2}u_0 + \frac{1}{2}u_1^{(1)}\right],
+\end{equation}
+and the other $K$-blocks may be computed similarly.
+
+Once the $K$-blocks are computed, $(A + G)^{*}$ may be assembled and the adjoint equation solved.
+
+\subsection{Observations on the worked example}
+Suppose we have a pre-existing code that solves the example above. Of course, it will not assemble
+the whole of $A$ at once, pass it over to the linear solver, and finish. 
+Instead, such a solver will solve one equation, forget as much as possible, solve the next equation,
+and so on. Suppose that we wish to augment this solver to also solve the corresponding discrete adjoint problem;
+ideally, any changes to be made should be minimally invasive, easy to code, and robust to changes in the forward
+discretisation.
+
+Observe that in order to compute the structure of $G$, one needs to know
+\begin{itemize}
+\item The block sparsity of $A$, and
+\item The nonlinear dependencies of each block of $A$.
+\end{itemize}
+By ``compute the structure of $G$'', we mean a calculation similar to that deriving the structure of $K_{21}$ above.
+At each linear solve of the forward model, a handful of \libadjoint\ library calls are added to inform \libadjoint\ 
+of the block sparsity of this equation of $A$, and any nonlinear dependencies of these blocks. This information is
+very simple to communicate, and the addition of these library calls is not particularly invasive.
+
+In order to actually compute each block of $G$, we also need the following:
+\begin{itemize}
+\item The value of each variable must be accessible when necessary.
+\item It must be possible to compute the derivatives of the assembled blocks with respect to their nonlinear dependencies.
+\end{itemize}
+The first requirement is of course the storage problem, and the second problem is the differentiation problem.
+
+The first requirement may be satisfied by calling a library function to record the value of each variable
+as it is solved for. \libadjoint\ will offer various data management strategies: to store all of the variables
+in memory, to store them to disk and pre-fetch them when necessary, to checkpoint and call the forward model when necessary,
+etc. Note that all of these strategies are orthogonal to the coding of the forward model, except for the checkpointing
+strategy, which requires additional cooperation.
+
+The second requirement may be dealt with in two ways. If automatic differentiation is applicable to the
+assembly operators of the forward model, then it may be applied to generate the code to assemble the derivatives
+of the forward blocks with respect to the desired parameters. An alternative approach is the independent set
+perturbation method of Fang and Pain \citep{fang2009a}, which employs matrix colouring to greatly accelerate derivative
+computations by means of difference formulae. The two approaches have different advantages and disadvantages.
+The advantages and disadvantages of automatic differentiation are:
+\begin{itemize}
+\item The generated code does not suffer from the truncation error involved in neglecting high-order terms in the Taylor series,
+and so the derivatives computed are of better quality.
+\item Automatic differentiation is not yet applicable to all codes.
+\item The capabilities of the automatic differentiation tool constrain the language features used in the development of the forward model.
+\item Often, the generated code must be modified and improved by hand.
+\item As the forward model changes, the automatic differentiation tool must be reapplied each time, and any changes made by hand
+must be made again.
+\end{itemize}
+The advantages and disadvantages of the independent set perturbation method are:
+\begin{itemize}
+\item ISP merely requires the ability to assemble the nonlinear operators for arbitrary inputs, which
+already exists somewhere in the forward model.
+\item The derivatives computed with ISP suffer the exact same disadvantages as those computed with any difference formula. In particular,
+the derivatives are only as accurate as the order of the difference formula employed, and the choice of perturbation size
+is non-obvious.
+\end{itemize}
+Automatic differentiation yields better results than the independent set perturbation method, but at a higher (programming) cost.
+
+Suppose for now that the ISP approach is adopted. Thus, in order to compute $G$, it is necessary to have a library call to record
+the value of a variable, and for the code to supply two callbacks: one to compute the sparsity of any nonlinear operator, and one to
+compute the action of any nonlinear operator at arbitrary inputs on a given
+vector.
+
+Finally, suppose we wish the library to assemble the entire adjoint system, i.e. $(A+G)^{*}$. Then it is additionally necessary for the library
+to be able to assemble every diagonal block in the forward operator, and compute the action of the off-diagonal blocks.
+
+In conclusion, the library must offer calls to enable the model developer:
+\begin{itemize}
+\item to express the block structure of an equation in the forward model,
+\item to express any nonlinear dependencies of each block,
+\item to record the value of each variable as it is computed.
+\end{itemize}
+The model developer must also supply callbacks:
+\begin{itemize}
+\item to colour the matrix
+\item to compute the action of the nonlinear part of each block for arbitrary inputs on a given vector,
+\item to assemble each block in the forward model.
+\end{itemize}
+Once these requirements are satisfied, then the library may assemble the adjoint system and return
+it to the model developer to be solved.
+
+\subsection{Philosophy}
+\libadjoint\ takes the view that \emph{the forward model is a sequence of linear solves}. Each linear solve
+is to be instrumented with a few simple library calls that express the structure of the equation being solved
+and any nonlinear dependencies. After each linear solve, the freshly-computed variable is recorded by the
+library, and thereafter may be forgotten by the forward model. 
+
+Additionally, the programmer must supply two callbacks to the library. The first callback assembles the nonlinear part of
+a given block at a given set of inputs. The second assembles the full block at a given set of inputs. Both
+of these capabilities must exist in the forward model already, and so in principle it is merely a matter of
+hooking up the correct interfaces. 
+
+Once the above information is passed, the library may then compute the adjoint system and return it to the model developer
+to be solved.
+
+If automatic differentiation is to be used, then the programmer must also supply a callback which computes the derivatives
+of the nonlinear part of a given block. If a checkpointing strategy is to be used for the storage problem, then
+checkpointing callbacks must also be supplied. However, these are optimisations (in accuracy and memory requirements)
+over the basic functionality of the library, and their development will be deferred until the rest of the library
+is written.
+
+\section{Code design}
+\subsection{Forward model}
+
+Here we sketch Fortran code to adjoint the example presented in section \ref{sec:example} above.
+\begin{minted}{fortran}
+type(adj_adjointer) :: adjointer
+type(adj_block) :: I, T, L
+type(adj_nonlinear_block) :: V
+type(adj_variable) :: u0, u1_0, u1_1
+AdjointVector :: u0_val, u1_0_val, u1_1_val, rhs ! PETSc vector type
+AdjointMatrix :: lhs                             ! PETSc matrix type
+integer :: ierr
+
+!------------------------------------------------------------------------
+! Initialisation                                                        |
+!------------------------------------------------------------------------
+call mpi_init(ierr)
+call PetscInitialize(ierr)
+call adj_init(ierr)
+adjointer = adj_create_adjointer(ierr)
+
+!------------------------------------------------------------------------
+! Set adjoint options                                                  |
+!------------------------------------------------------------------------
+call adj_set_option(adjointer, ADJ_STORAGE, ADJ_STORAGE_MEMORY, ierr)
+call adj_set_option(adjointer, ADJ_DIFFERENTIATION, ADJ_DIFFERENTIATION_ISP, ierr)
+
+!------------------------------------------------------------------------
+! Register callbacks                                                    |
+!------------------------------------------------------------------------
+! See below for the interfaces
+call adj_register_operator_callback(adjointer, ADJ_NONLINEAR_COLOURING_CALLBACK, &
+                           & "AdvectionOperator", &
+                           & advection_colouring_callback, ierr)
+call adj_register_operator_callback(adjointer, ADJ_NONLINEAR_ACTION_CALLBACK, &
+                           & "AdvectionOperator", &
+                           & advection_action_callback, ierr)
+call adj_register_operator_callback(adjointer, ADJ_BLOCK_ACTION_CALLBACK, &
+                           & "TimesteppingOperator", &
+                           & timestepping_action_callback, ierr)
+call adj_register_operator_callback(adjointer, ADJ_BLOCK_ASSEMBLY_CALLBACK, &
+                           & "BurgersOperator", &
+                           & burgers_assembly_callback, ierr)
+
+!------------------------------------------------------------------------
+! Initial condition                                                     |
+!------------------------------------------------------------------------
+I = adj_create_block(name="IdentityOperator", ierr=ierr)
+u0 = adj_create_variable(name="Velocity", timestep=0, iteration=0, ierr=ierr)
+call adj_register_equation(adjointer, u0, &
+                           & (/I/), (/u0/), ierr) ! The equation is for u0,
+                                                  ! and features one block (I)
+                                                  ! which targets variable u0
+
+! Get the initial condition from the user input
+! ...
+
+! Now that we have ``solved'' this equation, record it
+call adj_record_variable(adjointer, u0, u0_val, ierr)
+
+!------------------------------------------------------------------------
+! Computation of u_1_0                                                  |
+!------------------------------------------------------------------------
+V = adj_create_nonlinear_block(name="AdvectionOperator", coefficient=0.5, &
+                               & depends=(/u0/), ierr=ierr) 
+
+T = adj_create_block(name="TimesteppingOperator", nonlinear_block=V, ierr=ierr)
+L = adj_create_block(name="BurgersOperator", nonlinear_block=V, ierr=ierr)
+
+u_1_0 = adj_create_variable(name="Velocity", timestep=1, iteration=0, ierr=ierr)
+
+call adj_register_equation(adjointer, u_1_0, (/T, L/), (/u0, u_1_0/), ierr)
+! Now solve for u_1_0_val
+! ...
+! and record its value
+call adj_record_variable(adjointer, u_1_0, u_1_0_val, ierr)
+
+!------------------------------------------------------------------------
+! Computation of u_1_1                                                  |
+!------------------------------------------------------------------------
+! Now V is different, because we are assembling it with a nonlinear velocity
+! computed using both u0 and u_1_0
+V = adj_create_nonlinear_block(name="AdvectionOperator", coefficient=0.5, &
+                               & depends=(/u0, u_1_0/), ierr=ierr) 
+
+! Since V has changed, we must recreate T and L
+T = adj_create_block(name="TimesteppingOperator", nonlinear_block=V, ierr=ierr)
+L = adj_create_block(name="BurgersOperator", nonlinear_block=V, ierr=ierr)
+
+u_1_1 = adj_create_variable(name="Velocity", timestep=1, iteration=1, ierr=ierr)
+
+call adj_register_equation(adjointer, u_1_1, (/T, L/), (/u0, u_1_1/), ierr)
+! Now solve for u_1_1_val
+! ...
+! and record its value
+call adj_record_variable(adjointer, u_1_1, u_1_1_val, ierr)
+
+!------------------------------------------------------------------------
+! Adjoint calculation                                                   |
+!------------------------------------------------------------------------
+! See below
+
+
+!------------------------------------------------------------------------
+! Finalisation                                                          |
+!------------------------------------------------------------------------
+
+! adj_create_block and adj_create_variable do not allocate any memory,
+! and so there are no corresponding deallocate calls
+
+call adj_destroy_adjointer(adjointer, ierr)
+call adj_finalise(ierr)
+call PetscFinalize(ierr)
+call mpi_finalize(ierr)
+\end{minted}
+
+\subsection{Operator callbacks}
+As can be seen from this example, each equation solved needs only a handful of library calls.
+With this information, the structure of $G$ can be determined. In order to actually compute
+$(A + G)^{*}$, it is necessary to provide the additional callbacks referenced above:
+
+\begin{minted}[mathescape]{fortran}
+subroutine advection_colouring_callback(variables, dependencies, derivative, colouring)
+  type(adj_variable), dimension(:), intent(in) :: variables
+  AdjointVector, dimension(:), intent(in) :: dependencies
+  type(adj_variable), intent(in) :: derivative
+  integer, dimension(:), allocatable, intent(out) :: colouring
+
+end subroutine advection_colouring_callback
+
+subroutine advection_action_callback(variables, dependencies, input, context, output)
+  type(adj_variable), dimension(:), intent(in) :: variables
+  AdjointVector, dimension(:), intent(in) :: dependencies
+  AdjointVector, intent(in) :: input
+  type(c_ptr), intent(in) :: context
+  AdjointVector, intent(out) :: output
+
+  ! Assemble the advection operator at dependencies, using the variables array to 
+  ! determine which AdjointVector corresponds to which nonlinear dependency
+
+  ! We only need to compute the action of this advection operator on the vector 
+  ! input and return its action in the vector output,
+  ! so this routine should only use a small amount of memory.
+end subroutine advection_action_callback
+
+! Since the TimesteppingOperator never appears on the diagonal, we only need its
+! action, and never need to assemble the whole matrix
+subroutine timestepping_action_callback(variables, dependencies, input, &
+                                      & hermitian, context, output)
+  type(adj_variable), dimension(:), intent(in) :: variables
+  AdjointVector, dimension(:), intent(in) :: dependencies
+  AdjointVector, intent(in) :: input
+  ! If hermitian is .true., compute the action of $T^{*}$ instead of $T$
+  logical, intent(in) :: hermitian
+  type(c_ptr), intent(in) :: context
+  AdjointVector, intent(out) :: output
+end subroutine timestepping_action_callback
+
+! Since the BurgersOperator does appear on the diagonal, we need to assemble the matrix
+! itself. Since it does not appear off the diagonal, we do not need its action.
+subroutine burgers_assembly_callback(variables, dependencies, hermitian, context, matrix)
+  type(adj_variable), dimension(:), intent(in) :: variables
+  AdjointVector, dimension(:), intent(in) :: dependencies
+  logical, intent(in) :: hermitian
+  type(c_ptr), intent(in) :: context
+  AdjointMatrix, intent(out) :: matrix
+end subroutine burgers_assembly_callback
+\end{minted}
+
+\subsection{Adjoint model}
+With the necessary information supplied, the adjointer object may be used to
+assemble the adjoint system $(A+G)^{*}$ as follows:
+
+\begin{minted}[mathescape]{fortran}
+AdjointMatrix :: lhs
+AdjointVector :: rhs, djdu, adjoint
+type(adj_variable) :: adj_var
+
+!------------------------------------------------------------------------
+! Adjoint associated with $u_1^{(2)}$                                           !
+!------------------------------------------------------------------------
+
+! Compute $\partial{}J/\partial{}u$
+! djdu = ... 
+! at the final time
+
+call adj_get_adjoint_equation(adjointer, equation=3, lhs=lhs, rhs=rhs, variable=adj_var)
+
+! rhs contains a vector of entries that should be put on the right-hand side,
+! while lhs contains the matrix to be inverted
+
+! You can also loop
+! do eqn=adj_equation_count(adjointer),1,-1
+!   call adj_get_adjoint_equation(...)
+!   call solve(...)
+!   call adj_forget_adjoint_equation(...)
+! end do
+
+call VecAXPY(rhs, 1.0, djdu)
+
+! Now the linear system
+! lhs * adjoint = rhs
+! can be solved
+call KSPSolve(...)
+call MatDestroy(lhs, ierr)
+call VecDestroy(rhs, ierr)
+
+call adj_record_variable(adjointer, adj_var, adjoint)
+call adj_forget_adjoint_equation(adjointer, equation=3)
+
+!------------------------------------------------------------------------
+! Adjoint associated with $u_1^{(1)}$                                           !
+!------------------------------------------------------------------------
+
+call adj_get_adjoint_equation(adjointer, equation=2, lhs=lhs, rhs=rhs, variable=adj_var)
+
+! Since the functional evaluation cannot ``see'' intermediate nonlinear iterations,
+! djdu is zero for this solve, and so we don't add it on to the rhs vector.
+
+! Solve lhs * adjoint = rhs
+call KSPSolve(...)
+call MatDestroy(lhs, ierr)
+call VecDestroy(rhs, ierr)
+
+call adj_record_variable(adjointer, adj_var, adjoint, ierr)
+call adj_forget_adjoint_equation(adjointer, equation=2)
+
+!------------------------------------------------------------------------
+! Adjoint associated with $u_0$                                            !
+!------------------------------------------------------------------------
+
+! Compute $\partial{}J/\partial{}u$
+! djdu = ... 
+! at the initial time
+
+call adj_get_adjoint_equation(adjointer, equation=1, lhs=lhs, rhs=rhs, variable=adj_var)
+
+call VecAXPY(rhs, 1.0, djdu)
+
+! Now the linear system
+! lhs * adjoint = rhs
+! can be solved
+call KSPSolve(...)
+call MatDestroy(lhs, ierr)
+call VecDestroy(rhs, ierr)
+
+call adj_record_variable(adjointer, adj_var, adjoint, ierr)
+call adj_forget_adjoint_equation(adjointer, equation=1)
+\end{minted}
+
+\subsection{API design}
+\subsubsection{\texttt{{adj\_init}}}
+\texttt{adj\_init} performs any tasks associated with the initialisation of the library.
+It must be called before any other call to \libadjoint.
+
+\texttt{adj\_init} calls \texttt{PetscInitialize} and \texttt{mpi\_init}, if these have
+not yet been initialised at the time of the call to \texttt{adj\_init}. If \texttt{adj\_init}
+initialises PETSc and MPI, then \texttt{adj\_finalise} uninitialises them; if these libraries
+have been initialised prior to the call to \texttt{adj\_init}, it is the responsibility of the application 
+code to uninitialise them.
+
+\begin{itemize}
+\item Call \texttt{mpi\_init} if MPI is not initialised
+\item Call \texttt{PetscInitialize} if PETSc is not initialised
+\end{itemize}
+
+\subsubsection{\texttt{{adj\_finalise}}}
+\texttt{adj\_finalise} performs any tasks associated with the finalisation of the library.
+After calling \texttt{adj\_finalise}, no other calls to \libadjoint\ may be made.
+
+\texttt{adj\_init} calls \texttt{PetscInitialize} and \texttt{mpi\_init}, if these have
+not yet been initialised at the time of the call to \texttt{adj\_init}. If \texttt{adj\_init}
+initialises PETSc and MPI, then \texttt{adj\_finalise} uninitialises them; if these libraries
+have been initialised prior to the call to \texttt{adj\_init}, it is the responsibility of the program
+code to uninitialise them.
+
+\begin{itemize}
+\item Call \texttt{mpi\_finalize} if MPI was initialised by \texttt{adj\_init}
+\item Call \texttt{PetscFinalize} if PETSc is initialised by \texttt{adj\_init}
+\end{itemize}
+
+\subsubsection{\texttt{{adj\_create\_adjointer}}}
+\texttt{adj\_create\_adjointer} creates an \texttt{adj\_adjointer} object, which stores
+all of the information necessary for \libadjoint. The object created is then passed to most other libadjoint\ 
+routines. An application may create multiple \texttt{adj\_adjointer} objects with \texttt{adj\_create\_adjointer},
+if it desirable to do so. Any \texttt{adj\_adjointer} object created must be deallocated by \texttt{adj\_destroy\_adjointer}.
+
+\begin{itemize}
+\item Allocate initial storage for registered equations and recorded variables
+\item Initialise hash tables mapping:
+  \begin{itemize}
+  \item \texttt{adj\_variable} $\rightarrow$ variable index
+  \item \texttt{adj\_variable} $\rightarrow$ equations targeting this variable
+  \item \texttt{adj\_variable} $\rightarrow$ equations depending on this variable
+  \end{itemize}
+\item Set default options for data storage, differentiation
+\end{itemize}
+
+\subsubsection{\texttt{{adj\_destroy\_adjointer}}}
+Since an \texttt{adj\_adjointer} object has allocated memory, it must be deallocated when the application code has finished
+with it. The \texttt{adj\_destroy\_adjointer} routine deallocates an \texttt{adj\_adjointer} object created by 
+\texttt{adj\_allocate\_adjointer}.
+
+\begin{itemize}
+\item Deallocate each registered equation and recorded variable
+\item Deallocate storage for equations and variables
+\item Deallocate hash tables
+\end{itemize}
+
+\subsubsection{\texttt{{adj\_set\_option}}}
+\texttt{adj\_set\_option} sets various options on how \libadjoint\ should work. At present, there
+are three option decisions to be made:
+\begin{itemize}
+\item Data storage (\texttt{ADJ\_STORAGE}). The available options are:
+  \begin{itemize}
+  \item \texttt{ADJ\_STORAGE\_MEMORY}: store all recorded variables in memory. Obviously, this option does not work
+  terribly well for large or long-running simulations, but it is the fastest and the simplest. This option is the default.
+  \item \texttt{ADJ\_STORAGE\_DISK}: store the recorded variables on disk. 
+  \libadjoint\ is intelligent enough to anticipate when recorded variables will be necessary and to pre-fetch
+  them into memory before they are needed. This option works well so long as sufficient disk space is available. If sufficient
+  disk space is available, this option is the second-fastest, and the second-simplest.
+  \item \texttt{ADJ\_STORAGE\_CHECKPOINT} The program checkpoints occasionally. When a variable is needed, the most recent checkpoint
+  to that variable is determined, and the checkpoint callback is called so that the application code can register all variables between
+  that checkpoint and the next. Some more thought is required on the API for how one would implement something like Griewank's revolve
+  algorithm \citep{griewank2000}.
+  \end{itemize}
+
+\item Differentiation (\texttt{ADJ\_DIFFERENTIATION}). The available options are:
+  \begin{itemize}
+  \item \texttt{ADJ\_DIFFERENTIATION\_ISP}: use the independent set perturbation option of Fang and Pain \citep{fang2009a}. This employs
+  graph colouring methods to greatly accelerate derivative computations by means of difference formulae. The resulting derivatives suffer
+  from truncation error and roundoff associated with the choice of perturbation size, and in general suffer and enjoy all of the disadvantages
+  and advantages of difference formulae. This option is the simplest, in the sense that it usually requires the least work to provide
+  the necessary callbacks. This option requires two callbacks: one to colour the columns of the nonlinear block, and one to
+  compute the action of a nonlinear block computed at given inputs on a given input vector. For more details on the necessary callbacks, see section \ref{sec:operator_callbacks}.
+  \item \texttt{ADJ\_DIFFERENTIATION\_SUPPLIED}: use a supplied callback function to compute the necessary derivatives of the assembly
+  operators. Often, this routine will have been generated by means of automatic differentiation \citep{griewank2008,griewank2003}. If automatic differentiation
+  can be easily applied to your application, this approach is recommended; it will give better results. For more details on the necessary callbacks, see section \ref{sec:operator_callbacks}.
+  \end{itemize}
+
+\item Activity (\texttt{ADJ\_ACTIVITY}). The available options are:
+  \begin{itemize}
+  \item \texttt{ADJ\_ACTIVITY\_NOTHING}: often, a forward model is only to be run on its own, not to support an adjoint calculation.
+  In this case, it is desirable that the instrumentation of the forward model by \libadjoint\ should have a negligible performance impact.
+  If this option is set, then all \libadjoint\ calls do nothing whatsoever, and attempting to use the \texttt{adj\_adjointer} object to compute
+  the adjoint equation results in an error.
+  \item \texttt{ADJ\_ACTIVITY\_ADJOINT}: this is the default state, where calls to \libadjoint\ do what they are supposed to, and the
+  \texttt{adj\_adjointer} object can be used to compute the adjoint equation.
+%  \item \texttt{ADJ\_ACTIVITY\_TLM}: this indicates to \libadjoint that only the tangent linear model is desired. This allows libadjoint to
+%  forget recorded variables much sooner than if an adjoint model was to be computed. Attempting to use the \texttt{adj\_adjointer} object to
+%  compute the adjoint equation results in an error.
+  \end{itemize}
+
+\end{itemize}
+
+For differentiation with the independent set perturbation method, there are some other options to be set.
+\begin{itemize}
+\item Difference formula (\texttt{ADJ\_ISP\_DIFFERENCE\_FORMULA}). The available choices are:
+  \begin{itemize}
+  \item \texttt{ADJ\_ISP\_FIRST\_ORDER}: use a first-order forward difference formula. This is the default, and requires one evaluation of the perturbed operator.
+  \item \texttt{ADJ\_ISP\_SECOND\_ORDER}: use a second-order central difference formula. This requires two evaluations of the perturbed operator.
+  \end{itemize}
+
+  \begin{itemize}
+  \item Check that the option is a valid option
+  \item Set the options array of the \texttt{adj\_adjointer} object to the new option
+  \end{itemize}
+\end{itemize}
+
+\subsubsection{\texttt{{adj\_register\_operator\_callback}}}
+\texttt{adj\_register\_operator\_callback} registers a callback function so that \libadjoint\ can acquire
+certain information about the operators in your forward model when it needs it. The information to be acquired is not known \emph{a priori}, and
+so it must be supplied by callback functions. Which callback functions are necessary depends on which 
+options are employed. If \libadjoint\ requires a callback function and it has not been supplied, it will
+return an error through \texttt{ierr}, which may be examined by \texttt{adj\_check\_ierr}. For more details on possible operator callbacks,
+their interfaces, and when a given callback must
+be registered, see section \ref{sec:operator_callbacks}.
+
+\subsubsection{\texttt{{adj\_register\_data\_callback}}}
+\texttt{adj\_register\_data\_callback} registers a callback function so that \libadjoint\ can perform
+certain operations on the data you have supplied, such as allocating a vector,
+adding one vector to another, etc. Almost all of these callbacks are necessary for the functioning of
+the library. If \libadjoint\ requires a callback function and it has not been supplied, it will
+return an error through \texttt{ierr}, which may be examined by \texttt{adj\_check\_ierr}. For more details on possible data callbacks,
+their interfaces, and when a given callback must
+be registered, see section \ref{sec:data_callbacks}.
+
+\subsubsection{\texttt{{adj\_create\_variable}}}
+\texttt{adj\_create\_variable} is the constructor for an \texttt{adj\_variable} object. 
+
+Each variable to be solved for is represented by a tuple of three fields: a name (e.g., ``Velocity''), a timestep, and an iteration
+within that timestep.
+\subsubsection{\texttt{{adj\_variable\_get\_name}}}
+\texttt{adj\_variable\_get\_name} extracts the name from a supplied \texttt{adj\_variable} object.
+
+\subsubsection{\texttt{{adj\_variable\_get\_timestep}}}
+\texttt{adj\_variable\_get\_timestep} extracts the timestep from a supplied \texttt{adj\_variable} object.
+
+\subsubsection{\texttt{{adj\_variable\_get\_iteration}}}
+\texttt{adj\_variable\_get\_iteration} extracts the iteration from a supplied \texttt{adj\_variable} object.
+
+\subsubsection{\texttt{{adj\_create\_nonlinear\_block}}}
+\texttt{adj\_create\_nonlinear\_block} is the constructor for an \texttt{adj\_nonlinear\_block} object. 
+
+An \texttt{adj\_nonlinear\_block} object encodes information about the nonlinear dependence of a block in the forward system. 
+For example, consider the timestepping operator of example \ref{sec:example} above:
+\begin{equation}
+T(\cdot) = -\frac{M}{\Delta t} + \frac{1}{2}V(\cdot) + \frac{1}{2}D.
+\end{equation}
+The timestepping operator contains a nonlinear term $V$. So the \texttt{adj\_block} object representing $T$ is passed
+an \texttt{adj\_nonlinear\_block} object representing $V$. This encodes the name of the nonlinear block (used to call its
+colouring routine, compute its action, and/or its derivatives), its dependencies, and any coefficient multiplying the nonlinear block
+inside the block containing it.
+
+\subsubsection{\texttt{{adj\_create\_block}}}
+\texttt{adj\_create\_block} is the constructor for an \texttt{adj\_block} object. 
+
+An \texttt{adj\_block} object encodes information about a block in the forward system. In particular, it encodes its name
+(used to assemble it or compute its action, as necessary), and an \texttt{adj\_nonlinear\_block} object to encode 
+information about any possible nonlinearity.
+
+\subsubsection{\texttt{{adj\_register\_equation}}}
+\texttt{adj\_register\_equation} registers an equation solved during the forward model with an \texttt{adj\_adjointer} object. 
+The information supplied allows the \texttt{adj\_adjointer} object to compute the structure of $(A+G)^{*}$, and so assemble the adjoint
+system. In particular, the information supplied consists of the variable being solved for, an array of \texttt{adj\_block} objects describing
+what blocks take part in this equation, and an array of \texttt{adj\_variable} objects describing which variable each \texttt{adj\_block}
+object multiplies.
+
+\begin{itemize}
+\item Check that the \texttt{adj\_adjointer} object has enough space allocated for this equation. If not, reallocate
+the array of equations and recorded variables.
+\item Check that we have not already registered an equation for this variable. 
+\item Create an \texttt{adj\_equation} type and store the data supplied. This requires memory allocation.
+\item Update the hash tables recording information about what targets and depends on each variable.
+\end{itemize}
+\subsubsection{\texttt{{adj\_record\_variable}}}
+\texttt{adj\_record\_variable} records the value of a variable computed during the forward model. The value is
+supplied as a PETSc vector. This is necessary to let \libadjoint\ store and manipulate the data computed.
+
+\begin{itemize}
+\item Check that we have registered an equation for this variable. 
+\item If so, it will already have data stored in the hash table.
+\item Store the value passed in in the value entry of the hash table.
+\end{itemize}
+
+\subsubsection{\texttt{{adj\_equation\_count}}}
+Once the forward run is completed, the application code loops backwards through the equations solved,
+fetches the corresponding adjoint equation from \libadjoint, solves it, and records the solution.
+This function queries an \texttt{adj\_adjointer} object to determine how many equations have been registered
+with it, so that the application code can loop backwards from this number.
+
+\begin{itemize}
+\item Return the number of equations we have stored.
+\end{itemize}
+ 
+\subsubsection{\texttt{{adj\_get\_adjoint\_equation}}}
+Once the forward run is completed, the application code loops backwards through the equations solved,
+fetches the corresponding adjoint equation from \libadjoint, solves it, and records the solution.
+This subroutine fetches the left-hand matrix and right-hand side vector for a given adjoint equation,
+starting at the last forward equation solved and running backwards to the initial forward equation.
+
+Note that this routine does not compute $\frac{\partial J}{\partial u}$; this vector must be computed
+by the application code separately and added to the right-hand side supplied by \texttt{adj\_get\_adjoint\_equation}.
+
+Computing $A^{*}$:
+\begin{itemize}
+\item Loop through every equation that targets this variable.
+\item For each such equation not having the same index as this variable's index:
+\item call the callback that computes the action on the relevant variable of adjoint of the block of this equation
+that targets this variable.
+\item Add all of these to the right-hand side with scale -1.
+\item If the equation has the same index as this variable's index, assemble the block, adjoint it, and add it to the
+left-hand side.
+\end{itemize}
+
+Computing $G^{*}$:
+\begin{itemize}
+\item Loop through every equation that depends on this variable.
+\item For every such equation not having the same index as this variable's index:
+\item Record the derivative to be computed in \texttt{adj\_nonlinear\_block\_derivative} objects.
+\item If any simplifications can be performed, perform them.
+\item Call the callback that computes the action of the derivative of the relevant nonlinear blocks on the
+relevant variables.
+\item Add all of these to the right-hand side with scale -1.
+\item If the equation has the same index as this variable's index, assemble the derivative of the block
+contracted at the relevant contraction, and add it to the left-hand side.
+\end{itemize}
+
+\begin{itemize}
+\item Prefetch any dependencies of the next adjoint equation.
+\item Forget anything we can now forget.
+\end{itemize}
+
+%\subsubsection{\texttt{{adj\_get\_tlm\_equation}}}
+%Once all information necessary for assembling $(A+G)^{*}$ has been supplied, it is also possible to assemble
+%$(A+G)$. This matrix is the left-hand side of the tangent linear model. Thus, \libadjoint can also be used to
+%easily construct the tangent linear model for a given forward model. As each forward equation is solved, the associated 
+%equation of the tangent linear model can also be constructed and solved.
+%
+%Note that this routine does not compute $\frac{\partial F}{\partial m}$; this vector must be computed
+%by the application code separately and subtracted from the right-hand side supplied by \texttt{adj\_get\_tlm\_equation}.
+%
+%Computing $A^{*}$:
+%\begin{itemize}
+%\item Fetch the \texttt{adj\_equation} associated with the desired equation.
+%\item For each off-diagonal block, call the callback to compute its action on the relevant sensitivity variable
+%associated with its target.
+%\item Add all of these to the right-hand side with scale -1.
+%\item For the diagonal block, call the callback to assemble the matrix, and add it to the left-hand side.
+%\end{itemize}
+%
+%Computing $G^{*}$:
+%\begin{itemize}
+%\item Loop through the variables this equation depends on.
+%\item For each variable that is not the variable being solved for in this equation:
+%\item Compute the action on the associated sensitivity variable of the derivative contracted with the relevant forward variables.
+%\item Add all of these to the right-hand side with scale -1.
+%\item If the equation also depends on the variable being solved for:
+%\item Compute the derivative with respect to this variable, contract it with the relevant forward variables, and add it to the left-hand side.
+%\end{itemize}
+%
+%\begin{itemize}
+%\item Forget anything we can now forget.
+%\end{itemize}
+%
+\subsubsection{\texttt{{adj\_get\_forward\_equation}}}
+Once all information necessary for assembling $(A+G)^{*}$ has been supplied, it is also possible to assemble
+$A$, the forward model itself. If the forward model already exists and has been verified, then this is very useful
+as a debugging check, to make sure that the information being passed to \libadjoint\ is correct and that \libadjoint\ 
+is processing it correctly.
+
+Note that this routine does not compute the right-hand side of the forward equation; this vector must be computed
+by the application code separately and added to the right-hand side supplied by \texttt{adj\_get\_forward\_equation}.
+
+\begin{itemize}
+\item Fetch the \texttt{adj\_equation} associated with the desired equation.
+\item For each off-diagonal block, call the callback to compute its action on the variables it targets.
+\item Sum these, multiply by -1, and store as the right-hand side.
+\item For the diagonal block, call the callback to assemble the matrix.
+\item Store as the left-hand side.
+\end{itemize}
+
+\subsubsection{\texttt{adj\_get\_adjoint\_dependencies}}
+It may be the case that the user code wishes to compute the adjoint equation itself
+(for example, if the user code wishes to discretise the corresponding continuous adjoint problem).
+In that case, \libadjoint\ should not assemble $(A+G)^*$, as the user code is assembling its own
+adjoint system. However, \libadjoint\ can still be used to register the forward equations solved,
+and to record the forward variables that the adjoint assembly will later require.
+
+This routine is used to acquire all of the information \libadjoint\ has about a given
+adjoint equation. In particular, it returns what adjoint variable is to be solved for,
+and the values of its nonlinear dependencies. If the user code has elected to supply the adjoint
+variables it has solved for back to \libadjoint\ with \texttt{adj\_record\_variable}, then these
+are also supplied.
+
+\subsubsection{\texttt{adj\_forget\_adjoint\_equation}}
+For each variable, \libadjoint\ computes and records for which adjoint equations it is necessary.
+When this routine is called, \libadjoint\ sweeps through the recorded variables,
+and forgets any it no longer needs to store.
+
+\subsubsection{\texttt{{adj\_check\_ierr}}}
+All \libadjoint\ routines return an optional error argument \texttt{ierr}. If this is not passed to a \libadjoint\ routine,
+then it will fail upon encountering an error condition. If \texttt{ierr} is passed to a \libadjoint\ routine, then
+upon encountering an error condition it will set \texttt{ierr} appropriately. In that event, the routine \texttt{adj\_check\_ierr}
+can be used to print out relevant debugging information.
+
+\subsubsection{\texttt{{adj\_abort}}}
+This is a convenience routine that prints out the error message associated with an error code, and stops execution of
+the program.
+
+\subsection{Operator callbacks} \label{sec:operator_callbacks}
+In this section we list the different kinds of callbacks used by \libadjoint for dealing with
+operators in the forward model, the interface
+the callback function should use, and when each callback is necessary.
+
+These callbacks are registered with \texttt{adj\_register\_operator\_callback}.
+
+\subsubsection{\texttt{ADJ\_NONLINEAR\_COLOURING\_CALLBACK}}
+\begin{itemize}
+\item \texttt{ADJ\_NONLINEAR\_COLOURING\_CALLBACK}:
+ \begin{itemize} 
+ \item Purpose: to compute the colouring of a dependency of an operator, so that it can be perturbed with the ISP approach.
+ \item Interface:
+\begin{minted}{fortran}
+    subroutine nonlinear_colouring_callback(variables, dependencies, &
+                                          & derivative, colouring)
+      type(adj_variable), dimension(:), intent(in) :: variables
+      AdjointVector, dimension(:), intent(in) :: dependencies
+      type(adj_variable), intent(in) :: derivative
+      integer, dimension(:), allocatable, intent(out) :: colouring
+    end subroutine nonlinear_colouring_callback
+\end{minted}
+ \item Explanation: for a nonlinear operator, the entries in the matrix are functions of the values of the dependency vector.
+ Let the set of vertices be the degrees of freedom of the dependency with which we are differentiating. Two vertices are
+ connected by an edge if there exists some row of the matrix which is a function of both of the associated degrees of freedom.
+ Colouring this graph defines the independent sets that may be perturbed together to efficiently compute a finite-difference
+ approximation of the derivative of the operator.
+
+ Typically, for most nonlinear operators, this will be computed as a distance-2 colouring of the graph of the sparsity of the operator.
+ For an excellent introductory article, see \citet{gebremedhin2005}. If you do not
+ already have a parallel graph colouring algorithm implemented, we suggest the work of \citet{bozdag2005}, as implemented in the Zoltan
+ library \citep{devine2002}.
+ \item When required: required for each nonlinear block registered when the \texttt{ADJ\_DIFFERENTIATION} option is set to \texttt{ADJ\_DIFFERENTIATION\_ISP}.
+
+ \end{itemize}
+
+\subsubsection{\texttt{ADJ\_NONLINEAR\_ACTION\_CALLBACK}}
+\item \texttt{ADJ\_NONLINEAR\_ACTION\_CALLBACK}:
+ \begin{itemize} 
+ \item Purpose: to compute the action of a nonlinear operator, so that it can be differentiated with the ISP approach.
+ \item Interface:
+\begin{minted}{fortran}
+subroutine nonlinear_action_callback(variables, dependencies, input, context, output)
+  type(adj_variable), dimension(:), intent(in) :: variables
+  AdjointVector, dimension(:), intent(in) :: dependencies
+  AdjointVector, intent(in) :: input
+  type(c_ptr), intent(in) :: context
+  AdjointVector, intent(out) :: output
+end subroutine nonlinear_action_callback
+\end{minted}
+ \item When required: required for each nonlinear block registered when the \texttt{ADJ\_DIFFERENTIATION} option is set to \texttt{ADJ\_DIFFERENTIATION\_ISP}.
+ \end{itemize}
+
+\subsubsection{\texttt{ADJ\_NONLINEAR\_DERIVATIVE\_ACTION\_CALLBACK}}
+\item \texttt{ADJ\_NONLINEAR\_DERIVATIVE\_ACTION\_CALLBACK}:
+ \begin{itemize} 
+ \item Purpose: to compute the action of the derivative of a nonlinear operator.
+ \item Interface:
+\begin{minted}{fortran}
+subroutine nonlinear_derivative_action_callback(variables, dependencies, &
+                                              & derivative, &
+                                              & contraction, hermitian, &
+                                              & input, context, output)
+  type(adj_variable), dimension(:), intent(in) :: variables
+  AdjointVector, dimension(:), intent(in) :: dependencies
+  type(adj_variable), intent(in) :: derivative
+  AdjointVector, intent(in) :: contraction
+  logical, intent(in) :: hermitian
+  AdjointVector, intent(in) :: input
+  type(c_ptr), intent(in) :: context
+  AdjointVector, intent(out) :: output
+end subroutine nonlinear_derivative_action_callback
+\end{minted}
+ \item Explanation: Let $V$ be the nonlinear operator to be differentiated. Suppose $V$ depends on $\left\{x_0, x_1, \dots, x_N\right\}$. The values of these
+dependencies are given by the \texttt{dependencies} array, with each corresponding entry in the \texttt{variables} array describing what each variable is. The \texttt{derivative} variable
+is the variable with which the derivative is to be computed. Let $x_i$ denote this variable, let $c$ denote \texttt{contraction}, and $j$ denote \texttt{input}. Then, if \texttt{hermitian .eqv. $\!\!\!\!\!\!\!$ .false.},
+output is to be computed as
+\begin{equation}
+\texttt{output} = \left(\left.\frac{\partial V}{\partial x_i}\right|_{(x_0, \dots, x_N)}c\right)j, 
+\end{equation}
+and if \texttt{hermitian .eqv. $\!\!\!\!\!\!\!$ .true.}, then output is to be computed as
+\begin{equation}
+\texttt{output} = \left(\left.\frac{\partial V}{\partial x_i}\right|_{(x_0, \dots, x_N)}c\right)^{*}j. 
+\end{equation}
+ \item When required: usually required for each nonlinear block registered when the \newline\texttt{ADJ\_DIFFERENTIATION} option is set to \texttt{ADJ\_DIFFERENTIATION\_SUPPLIED}.
+If a nonlinear block depends on variables computed earlier in the simulation, then only the action is required; if a nonlinear block depends on the variable being solved for in that equation,
+then the assembly is required.
+ \end{itemize}
+
+\subsubsection{\texttt{ADJ\_NONLINEAR\_DERIVATIVE\_ASSEMBLY\_CALLBACK}}
+\item \texttt{ADJ\_NONLINEAR\_DERIVATIVE\_ASSEMBLY\_CALLBACK}:
+ \begin{itemize} 
+ \item Purpose: to assemble the derivative of a nonlinear operator.
+ \item Interface:
+\begin{minted}{fortran}
+subroutine nonlinear_derivative_assembly_callback(variables, dependencies, &
+                                                & derivative, contraction, & 
+                                                & hermitian, context, output)
+  type(adj_variable), dimension(:), intent(in) :: variables
+  AdjointVector, dimension(:), intent(in) :: dependencies
+  type(adj_variable), intent(in) :: derivative
+  AdjointVector, intent(in) :: contraction
+  logical, intent(in) :: hermitian
+  type(c_ptr), intent(in) :: context
+  AdjointMatrix, intent(out) :: output
+end subroutine nonlinear_derivative_assembly_callback
+\end{minted}
+ \item Explanation: Let $V$ be the nonlinear operator to be differentiated. Suppose $V$ depends on $\left\{x_0, x_1, \dots, x_N\right\}$. The values of these
+dependencies are given by the \texttt{dependencies} array, with each corresponding entry in the \texttt{variables} array describing what each variable is. The \texttt{derivative} variable
+is the variable with which the derivative is to be computed. Let $x_i$ denote this variable, and let $c$ denote \texttt{contraction}. Then, output is to be computed as
+\begin{equation}
+\texttt{output} = \left.\frac{\partial V}{\partial x_i}\right|_{(x_0, \dots, x_N)}c.
+\end{equation}
+if \texttt{hermitian .eqv. $\!\!\!\!\!\!\!$ .false.}, and as
+\begin{equation}
+\texttt{output} = \left(\left.\frac{\partial V}{\partial x_i}\right|_{(x_0, \dots, x_N)}c\right)^*.
+\end{equation}
+if \texttt{hermitian .eqv. $\!\!\!\!\!\!\!$ .true.}.
+ \item When required: sometimes required for a nonlinear block registered when the \newline\texttt{ADJ\_DIFFERENTIATION} option is set to \texttt{ADJ\_DIFFERENTIATION\_SUPPLIED}.
+If a nonlinear block depends on variables computed earlier in the simulation, then only the action is required; if a nonlinear block depends on the variable being solved for in that equation,
+then the assembly is required.
+ \end{itemize}
+
+\subsubsection{\texttt{ADJ\_BLOCK\_ACTION\_CALLBACK}}
+\item \texttt{ADJ\_BLOCK\_ACTION\_CALLBACK}
+ \begin{itemize}
+ \item Purpose: to compute the action of a block in the forward equation.
+ \item Interface:
+\begin{minted}{fortran}
+subroutine block_action_callback(variables, dependencies, &
+                               & hermitian, input, &
+                               & context, output)
+  type(adj_variable), dimension(:), intent(in) :: variables
+  AdjointVector, dimension(:), intent(in) :: dependencies
+  logical, intent(in) :: hermitian
+  AdjointVector, intent(in) :: input
+  type(c_ptr), intent(in) :: context
+  AdjointVector, intent(out) :: output
+end subroutine block_action_callback
+\end{minted}
+ \item Explanation: Suppose $T$ is the block in question, and that $T$ depends on $\left\{x_0, x_1, \dots, x_N\right\}$. The values of these
+dependencies are given by the \texttt{dependencies} array, with each corresponding entry in the \texttt{variables} array describing what each variable is. Let $j$ denote \texttt{input}. Then,
+if \texttt{hermitian .eqv. $\!\!\!\!\!\!\!$ .false.}, output is to be computed as
+\begin{equation}
+\texttt{output} = T(x_0, \dots, x_N) \cdot j,
+\end{equation} 
+and if \texttt{hermitian .eqv. $\!\!\!\!\!\!\!$ .true.},
+\begin{equation}
+\texttt{output} = T(x_1, \dots, x_N)^* \cdot j.
+\end{equation} 
+ \item When required: required for all off-diagonal blocks.
+ \end{itemize}
+
+\subsubsection{\texttt{ADJ\_BLOCK\_ASSEMBLY\_CALLBACK}}
+\item \texttt{ADJ\_BLOCK\_ASSEMBLY\_CALLBACK}
+ \begin{itemize}
+ \item Purpose: to assemble a block in the forward equation.
+ \item Interface:
+\begin{minted}{fortran}
+subroutine block_assembly_callback(variables, dependencies, &
+                                 & hermitian, context, output)
+  type(adj_variable), dimension(:), intent(in) :: variables
+  AdjointVector, dimension(:), intent(in) :: dependencies
+  logical, intent(in) :: hermitian
+  type(c_ptr), intent(in) :: context
+  AdjointMatrix, intent(out) :: output
+end subroutine block_assembly_callback
+\end{minted}
+ \item When required: required for all on-diagonal blocks.
+ \end{itemize}
+
+\subsection{Data callbacks}
+In this section we list the different kinds of callbacks used by \libadjoint for dealing with
+vectors and matrices in the forward model, the interface
+the callback function should use, and when each callback is necessary.
+
+These callbacks are registered with \texttt{adj\_register\_data\_callback}.
+
+\subsubsection{\texttt{ADJ\_VEC\_DUPLICATE\_CALLBACK}}
+\item \texttt{ADJ\_VEC\_DUPLICATE\_CALLBACK}
+ \begin{itemize}
+ \item Purpose: creates a new vector of the same type as an existing vector and set its entries to zero.
+ \item Interface:
+\begin{minted}{fortran}
+subroutine adj_vec_duplicate_callback(x, newx, ierr)
+      AdjointVector, intent(in) :: x
+      AdjointVector, intent(out) :: newx
+      integer, intent(out) :: ierr
+end subroutine adj_vec_duplicate_callback
+\end{minted}
+ \item When required: always
+ \end{itemize}
+
+\subsubsection{\texttt{ADJ\_VEC\_AXPY\_CALLBACK}}
+\item \texttt{ADJ\_VEC\_AXPY\_CALLBACK}
+ \begin{itemize}
+ \item Purpose: Computes y = alpha x + y.
+ \item Interface:
+\begin{minted}{fortran}
+   subroutine adj_vec_axpy_proc(y, alpha, x, ierr)
+      AdjointVector, intent(inout) :: y
+      AdjointScalar, intent(in) :: alpha
+      AdjointVector, intent(in) :: x
+      integer, intent(out) :: ierr
+    end subroutine adj_vec_axpy_proc
+\end{minted}
+ \item When required: always
+ \end{itemize}
+
+\subsubsection{\texttt{ADJ\_VEC\_DESTROY\_CALLBACK}}
+\item \texttt{ADJ\_VEC\_DESTROY\_CALLBACK}
+ \begin{itemize}
+ \item Purpose: Destroys a vector.
+ \item Interface:
+\begin{minted}{fortran}
+subroutine adj_vec_destroy_proc(x, ierr)
+      AdjointVector, intent(inout) :: x
+      integer, intent(out) :: ierr
+end subroutine adj_vec_destroy_proc
+\end{minted}
+ \item When required: always
+ \end{itemize}
+
+\subsubsection{\texttt{ADJ\_MAT\_GETVECS\_CALLBACK}}
+\item \texttt{ADJ\_MAT\_GETVECS\_CALLBACK}
+ \begin{itemize}
+ \item Purpose: Get vector(s) compatible with the matrix, i.e. with the same parallel layout
+ \item Interface:
+\begin{minted}{fortran}
+   subroutine adj_mat_getvecs_proc(mat, right, left, ierr)
+      AdjointMatrix, intent(in) :: mat
+      AdjointVector, intent(out), optional :: right
+      AdjointVector, intent(out), optional :: left
+      integer, intent(out) :: ierr
+    end subroutine adj_mat_getvecs_proc
+\end{minted}
+ \item When required: ...
+ \end{itemize}
+
+\subsubsection{\texttt{ADJ\_MAT\_AXPY\_CALLBACK}}
+\item \texttt{ADJ\_MAT\_AXPY\_CALLBACK}
+ \begin{itemize}
+ \item Purpose: Computes Y = alpha*X + Y.
+ \item Interface:
+\begin{minted}{fortran}
+    subroutine adj_mat_axpy_proc(Y, alpha, X, ierr)
+      ! Computes Y = alpha*X + Y.
+      use iso_c_binding
+      AdjointMatrix, intent(inout) :: Y
+      AdjointScalar, intent(in) :: alpha
+      AdjointMatrix, intent(in) :: X
+      integer, intent(out) :: ierr
+    end subroutine adj_mat_axpy_proc
+\end{minted}
+ \item When required: ...
+ \end{itemize}
+
+\subsubsection{\texttt{ADJ\_MAT\_DESTROY\_CALLBACK}}
+\item \texttt{ADJ\_MAT\_DESTROY\_CALLBACK}
+ \begin{itemize}
+ \item Purpose: Destroys a matrix.
+ \item Interface:
+\begin{minted}{fortran}
+subroutine adj_mat_destroy_proc(mat, ierr)
+      AdjointVector, intent(inout) :: mat
+      integer, intent(out) :: ierr
+end subroutine adj_mat_destroy_proc
+\end{minted}
+ \item When required: ...
+ \end{itemize}
+
+\end{itemize}
+
+
+\subsection{Data structures}
+\subsubsection{\texttt{{adj\_variable}}}
+The \texttt{adj\_variable} data structure references a variable to be solved for or recorded.
+
+Public fields:
+\begin{itemize}
+\item name
+\item timestep
+\item iteration
+\end{itemize}
+
+Private fields:
+\begin{itemize}
+\item field indicating forward variable, or adjoint variable
+\end{itemize}
+
+\subsubsection{\texttt{{adj\_nonlinear\_block}}}
+The \texttt{adj\_nonlinear\_block} data structure represents the information about the nonlinear part
+of a block.
+
+Public fields:
+\begin{itemize}
+\item name
+\item coefficient multiplying the nonlinear block
+\item nonlinear dependencies
+\end{itemize}
+
+\subsubsection{\texttt{{adj\_block}}}
+The \texttt{adj\_block} data structure represents the information about a block in the forward equation.
+
+Public fields:
+\begin{itemize}
+\item name
+\item its \texttt{adj\_nonlinear\_block}, if any
+\end{itemize}
+
+Private fields:
+\begin{itemize}
+\item whether the block should be adjointed or not when evaluated
+\end{itemize}
+
+\subsubsection{\texttt{{adj\_adjointer}}}
+The \texttt{adj\_adjointer} data structure is the core data structure of \libadjoint. It registers
+equations solved and records variables, so that the adjoint and TLM equations may be assembled.
+
+Private fields:
+\begin{itemize}
+\item an array of \texttt{adj\_equation} data structures
+\item an array of \texttt{adj\_variable} data structures seen
+\item an array of \texttt{AdjointVector}s for recording the value of each variable in the forward problem
+\item an array of \texttt{AdjointVector}s for recording the value of each variable in the adjoint problem
+\item an array of \texttt{AdjointVector}s for recording the value of each variable in the TLM problem
+\item an array of integers for storing the relevant options
+\item hash tables mapping
+ \begin{itemize}
+ \item \texttt{adj\_variable} $\rightarrow$ variable index
+ \item \texttt{adj\_variable} $\rightarrow$ equations targeting this variable
+ \item \texttt{adj\_variable} $\rightarrow$ equations depending on this variable
+ \end{itemize}
+\end{itemize}
+
+\subsubsection{\texttt{{adj\_equation}}}
+The \texttt{adj\_equation} data structure stores the information passed to the \texttt{adj\_adjointer} object
+in a call to \texttt{adj\_register\_equation}.
+
+Private fields:
+\begin{itemize}
+\item the \texttt{adj\_variable} this equation is solving for
+\item an array of \texttt{adj\_block} data structures representing the blocks of this equation
+\item an array of \texttt{adj\_variable} data structures, storing the target of each block
+\item an array of integers storing the column of each block in $A$; this is filled in by
+looking up each target in the \texttt{adj\_variable} $\rightarrow$ index hash table
+\end{itemize}
+
+\subsubsection{\texttt{{adj\_nonlinear\_block\_derivative}}}
+The \texttt{adj\_block\_derivative} data structure represents the derivative of a nonlinear block
+to be computed.
+
+Private fields:
+\begin{itemize}
+\item nonlinear block
+\item variable to take the derivative with respect to
+\item the target to contract the derivative with
+\item whether to apply the Hermitian operator to the block or not
+\end{itemize}
+
+\section*{Bibliography}
+\bibliographystyle{elsarticle-harv}
+\bibliography{literature}
+\end{document}

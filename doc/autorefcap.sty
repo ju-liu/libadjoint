@@ -1,0 +1,102 @@
+\ProvidesPackage{autorefcap}
+
+% In the future, it would be nice to use the package
+%
+%    cleveref
+%
+% Right now, it breaks svjour3 and svjour2, so we just have to use
+% autoref and labelformat :(.
+
+% Make sure \autoref puts parentheses around 
+% equations and enumeration items (similar to \eqref)
+% NOTE: This allows us to use \ref instead of \eqref
+%\labelformat{equation}{\textup{(#1)}}
+%\labelformat{enumi}{\textup{(#1)}}
+
+% Make sure equations are numbered by section
+%\numberwithin{equation}{section}
+
+%% We need to redefine \autoref. We should use 
+%% abbreviations inside the sentence and full names 
+%% at the beginning of sentences. Additionally,
+%% need to handle the plural cases.
+
+\def\HyRef@testreftype#1.#2\\{%
+  \@ifundefined{#1autorefname}{%
+    \@ifundefined{#1name}{%
+      \def\HyRef@currentHtag{}%
+      \@latex@warning{no tag name for #1 at \the\inputlineno}%
+    }{%
+      \edef\HyRef@currentHtag{%
+        \expandafter\noexpand\csname#1name\endcsname%
+        \noexpand%~%
+      }%
+    }%
+  }{%
+    \edef\HyRef@currentHtag{%
+      \expandafter\noexpand\csname#1autorefname\endcsname%
+      \noexpand%~%
+    }%
+  }%
+}
+
+
+% \Autoref is for the beginning of the sentence
+\let\orgautoref\autoref
+\providecommand{\Autoref}
+        {\def\equationautorefname{}%
+         \def\figureautorefname{Figure~}%
+         \def\subfigureautorefname{Figure~}%
+         \def\chapterautorefname{\textsection}%
+         \def\sectionautorefname{\textsection}%
+         \def\subsectionautorefname{\textsection}%
+         \def\subsubsectionautorefname{\textsection}%
+         \def\Itemautorefname{Item~}%
+         \def\tableautorefname{Table~}%
+         \orgautoref}
+
+% \Autorefs is plural for the beginning of the sentence
+\providecommand{\Autorefs}
+        {\def\equationautorefname{}%
+         \def\figureautorefname{Figures~}%
+         \def\subfigureautorefname{Figures~}%
+         \def\chapterautorefname{\textsection\textsection}%
+         \def\sectionautorefname{\textsection\textsection}%
+         \def\subsectionautorefname{\textsection\textsection}%
+         \def\subsubsectionautorefname{\textsection\textsection}%
+         \def\Itemautorefname{Items~}%
+         \def\tableautorefname{Tables~}%
+         \orgautoref}
+
+% \autoref is used inside a sentence 
+% (this is a renew of the standard)
+\renewcommand{\autoref}%
+        {\def\equationautorefname{}%
+         \def\figureautorefname{figure~}%
+         \def\subfigureautorefname{figure~}%
+         \def\chapterautorefname{\textsection}%
+         \def\sectionautorefname{\textsection}%
+         \def\subsectionautorefname{\textsection}%
+         \def\subsubsectionautorefname{\textsection}%
+         \def\Itemautorefname{item~}%
+         \def\tableautorefname{table~}%
+         \orgautoref}
+
+% \autorefs is plural for inside a sentence
+\providecommand{\autorefs}%
+        {\def\equationautorefname{}%
+         \def\figureautorefname{figures~}%
+         \def\subfigureautorefname{figures~}%
+         \def\chapterautorefname{\textsection\textsection}%
+         \def\sectionautorefname{\textsection\textsection}%
+         \def\subsectionautorefname{\textsection\textsection}%
+         \def\subsubsectionautorefname{\textsection\textsection}%
+         \def\Itemautorefname{items~}%
+         \def\tableautorefname{tables~}%
+         \orgautoref}
+
+
+
+
+
+
