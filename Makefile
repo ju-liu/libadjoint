@@ -106,3 +106,7 @@ tags: $(FSRC) $(CSRC)
 	@echo "  CTAGS src/*.c"
 	@$(CTAGS) src/*.c
 endif
+
+obj/adj_data_structures.o: include/libadjoint/adj_data_structures.h include/libadjoint/adj_constants.h include/libadjoint/adj_error_handling.h
+obj/adj_error_handling.o: include/libadjoint/adj_error_handling.h
+

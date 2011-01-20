@@ -3,6 +3,8 @@
 
 #define ADJ_NAMELEN (size_t)255
 
+#define adj_scalar double
+
 /* values for the .type field of an adj_variable */
 #define ADJ_FORWARD 1
 #define ADJ_ADJOINT 2

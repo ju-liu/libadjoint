@@ -26,6 +26,32 @@ typedef struct
   int klass; /* a field to be set by the user in case adj_matrix masks multiple separate types (scalar, vector, etc.) */
 } adj_matrix;
 
+typedef struct
+{
+  char name[ADJ_NAMELEN];
+  adj_scalar coefficient;
+  int ndepends;
+  adj_variable* depends;
+  void* context;
+} adj_nonlinear_block;
+
+typedef struct
+{
+  char name[ADJ_NAMELEN];
+  int has_nonlinear_block;
+  adj_nonlinear_block nonlinear_block;
+  void* context;
+  int hermitian;
+} adj_block;
+
+typedef struct
+{
+  adj_variable variable;
+  int ntargets;
+  adj_block* blocks;
+  adj_variable* targets;
+} adj_equation;
+
 int adj_create_variable(char* name, int timestep, int iteration, int auxiliary, adj_variable* var);
 
 #endif
