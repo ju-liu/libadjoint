@@ -86,6 +86,47 @@ typedef struct
   void (*mat_getvecs)(void);
 } adj_data_callbacks;
 
+typedef struct adj_op_callback
+{
+  char name[ADJ_NAMELEN];
+  void (*callback)(void);
+  struct adj_op_callback* next;
+} adj_op_callback;
+
+typedef struct
+{
+  adj_op_callback* firstnode;
+  adj_op_callback* lastnode;
+} adj_op_callback_list;
+
+typedef struct
+{
+  adj_nonlinear_block nonlinear_block;
+  adj_variable variable;
+  adj_vector contraction;
+  int hermitian;
+} adj_nonlinear_block_derivative;
+
+typedef struct
+{
+  int nequations;
+  adj_equation* equations;
+
+  adj_variable_data_list vardata;
+  void* varhash;
+
+  int options[ADJ_NO_OPTIONS];
+
+  adj_data_callbacks callbacks;
+  adj_op_callback_list nonlinear_colouring_sz_list;
+  adj_op_callback_list nonlinear_colouring_list;
+  adj_op_callback_list nonlinear_action_list;
+  adj_op_callback_list nonlinear_derivative_action_list;
+  adj_op_callback_list nonlinear_derivative_assembly_list;
+  adj_op_callback_list block_action_list;
+  adj_op_callback_list block_assembly_list;
+} adj_adjointer;
+
 int adj_create_variable(char* name, int timestep, int iteration, int auxiliary, adj_variable* var);
 
 #endif

@@ -15,6 +15,7 @@
 #define ADJ_AUXILIARY_VARIABLE 1
 
 /* options for the adjointer */
+#define ADJ_NO_OPTIONS 2
 #define ADJ_ACTIVITY 0
 #define ADJ_ISP_ORDER 1
 
