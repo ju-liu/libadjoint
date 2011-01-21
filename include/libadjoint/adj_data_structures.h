@@ -66,6 +66,26 @@ typedef struct adj_variable_data
   struct adj_variable_data* next;
 } adj_variable_data;
 
+typedef struct
+{
+  adj_variable_data* firstnode;
+  adj_variable_data* lastnode;
+} adj_variable_data_list;
+
+typedef struct
+{
+  void (*vec_duplicate)(void);
+  void (*vec_axpy)(void);
+  void (*vec_destroy)(void);
+  void (*vec_setvalues)(void);
+  void (*vec_divide)(void);
+
+  void (*mat_duplicate)(void);
+  void (*mat_axpy)(void);
+  void (*mat_destroy)(void);
+  void (*mat_getvecs)(void);
+} adj_data_callbacks;
+
 int adj_create_variable(char* name, int timestep, int iteration, int auxiliary, adj_variable* var);
 
 #endif
