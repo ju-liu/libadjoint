@@ -15,4 +15,5 @@ void adj_init_error_codes(void)
 {
   strncpy(adj_error_codes[ADJ_ERR_OK], "ADJ_ERR_OK", ADJ_ERROR_MSG_BUF);
   strncpy(adj_error_codes[ADJ_ERR_INVALID_INPUTS], "ADJ_ERR_INVALID_INPUTS", ADJ_ERROR_MSG_BUF);
+  strncpy(adj_error_codes[ADJ_ERR_HASH_FAILED], "ADJ_ERR_HASH_FAILED", ADJ_ERROR_MSG_BUF);
 }

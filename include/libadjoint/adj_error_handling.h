@@ -11,8 +11,9 @@ char adj_error_msg[ADJ_ERROR_MSG_BUF];
 
 #define ADJ_ERR_OK 0
 #define ADJ_ERR_INVALID_INPUTS 1
+#define ADJ_ERR_HASH_FAILED 2
 
-char adj_error_codes[2][ADJ_ERROR_MSG_BUF];
+char adj_error_codes[3][ADJ_ERROR_MSG_BUF];
 
 #define adj_chkierr(ierr) adj_chkierr_private(ierr, __FILE__, __LINE__)
 
