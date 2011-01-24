@@ -106,3 +106,32 @@ int adj_create_block(char* name, adj_nonlinear_block* nblock, void* context, int
 
   return ADJ_ERR_OK;
 }
+
+int adj_destroy_block(adj_block* block)
+{
+  return ADJ_ERR_OK;
+}
+
+int adj_variable_equal(adj_variable* var1, adj_variable* var2, int nvars)
+{
+  return memcmp(var1, var2, nvars * sizeof(adj_variable)) == 0 ? 1 : 0;
+}
+
+int adj_variable_str(adj_variable var, char* name, size_t namelen)
+{
+  char buf[255];
+  switch (var.type)
+  {
+  case (ADJ_FORWARD):
+    snprintf(buf, 255, ":Forward%s", var.auxiliary ? ":Auxiliary" : "");
+    break;
+  case (ADJ_ADJOINT):
+    snprintf(buf, 255, ":Adjoint[%d]", var.functional);
+    break;
+  case (ADJ_TLM):
+    snprintf(buf, 255, ":Sensitivity[%d]", var.functional);
+    break;
+  }
+  snprintf(name, namelen, "%s:%d:%d%s", var.name, var.timestep, var.iteration, buf);
+  return ADJ_ERR_OK;
+}
