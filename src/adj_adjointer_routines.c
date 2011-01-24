@@ -7,8 +7,45 @@ int adj_equation_count(adj_adjointer* adjointer, int* count);
 int adj_register_equation(adj_adjointer* adjointer, adj_variable var, int nblocks, adj_block* blocks, adj_variable* targets, int nrhsdeps, adj_variable* rhsdeps);
 int adj_record_variable(adj_adjointer* adjointer, adj_variable var, adj_vector value);
 int adj_record_auxiliary(adj_adjointer* adjointer, adj_variable var, adj_vector value);
-int adj_register_operator_callback(adj_adjointer* adjointer, int type, char* name, void (*fn)(void));
-int adj_register_data_callback(adj_adjointer* adjointer, int type, void (*fn)(void)); */
+int adj_register_operator_callback(adj_adjointer* adjointer, int type, char* name, void (*fn)(void)); */
+
+int adj_register_data_callback(adj_adjointer* adjointer, int type, void (*fn)(void))
+{
+
+  switch (type)
+  {
+    case ADJ_VEC_DUPLICATE_CB:
+      adjointer->callbacks.vec_duplicate = fn;
+      break;
+    case ADJ_VEC_AXPY_CB:
+      adjointer->callbacks.vec_axpy = fn;
+      break;
+    case ADJ_VEC_DESTROY_CB:
+      adjointer->callbacks.vec_destroy = (void(*)(adj_vector)) fn;
+      break;
+    case ADJ_VEC_DIVIDE_CB:
+      adjointer->callbacks.vec_divide = fn;
+      break;
+    case ADJ_VEC_SETVALUES_CB:
+      adjointer->callbacks.vec_setvalues = fn;
+      break;
+
+    case ADJ_MAT_DUPLICATE_CB:
+      adjointer->callbacks.mat_duplicate = fn;
+    case ADJ_MAT_AXPY_CB:
+      adjointer->callbacks.mat_axpy = fn;
+    case ADJ_MAT_DESTROY_CB:
+      adjointer->callbacks.mat_destroy = fn;
+    case ADJ_MAT_GETVECS_CB:
+      adjointer->callbacks.mat_getvecs = fn;
+
+   default:
+      snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Unknown data callback type %d.", type);
+      return ADJ_ERR_INVALID_INPUTS;
+  }
+
+  return ADJ_ERR_OK;
+}
 
 int adj_forget_adjoint_equation(adj_adjointer* adjointer, int equation)
 {
