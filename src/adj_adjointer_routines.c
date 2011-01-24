@@ -9,8 +9,52 @@ int adj_record_variable(adj_adjointer* adjointer, adj_variable var, adj_vector v
 int adj_record_auxiliary(adj_adjointer* adjointer, adj_variable var, adj_vector value);
 int adj_register_operator_callback(adj_adjointer* adjointer, int type, char* name, void (*fn)(void));
 int adj_register_data_callback(adj_adjointer* adjointer, int type, void (*fn)(void));
-int adj_forget_adjoint_equation(adj_adjointer* adjointer, int equation);
-int adj_find_operator_callback(adj_adjointer* adjointer, int type, char* name, void (**fn)(void)); */
+int adj_forget_adjoint_equation(adj_adjointer* adjointer, int equation); */
+
+int adj_find_operator_callback(adj_adjointer* adjointer, int type, char* name, void (**fn)(void))
+{
+  adj_op_callback_list* cb_list_ptr;
+  adj_op_callback* cb_ptr;
+
+  switch(type)
+  {
+    case ADJ_NBLOCK_COLOURING_CB:
+      cb_list_ptr = &(adjointer->nonlinear_colouring_list);
+      break;
+    case ADJ_NBLOCK_ACTION_CB:
+      cb_list_ptr = &(adjointer->nonlinear_action_list);
+      break;
+    case ADJ_NBLOCK_DERIVATIVE_ACTION_CB:
+      cb_list_ptr = &(adjointer->nonlinear_derivative_action_list);
+      break;
+    case ADJ_NBLOCK_DERIVATIVE_ASSEMBLY_CB:
+      cb_list_ptr = &(adjointer->nonlinear_derivative_assembly_list);
+      break;
+    case ADJ_BLOCK_ACTION_CB:
+      cb_list_ptr = &(adjointer->block_action_list);
+      break;
+    case ADJ_BLOCK_ASSEMBLY_CB:
+      cb_list_ptr = &(adjointer->block_assembly_list);
+      break;
+    default:
+      strncpy(adj_error_msg, "Unknown callback type.", ADJ_ERROR_MSG_BUF);
+      return ADJ_ERR_INVALID_INPUTS;
+  }
+
+  cb_ptr = cb_list_ptr->firstnode;
+  while (cb_ptr != NULL)
+  {
+    if (strncmp(cb_ptr->name, name, ADJ_NAMELEN) == 0)
+    {
+      *fn = cb_ptr->callback;
+      return ADJ_ERR_OK;
+    }
+    cb_ptr = cb_ptr->next;
+  }
+
+  snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Could not find callback type %d for operator %s.", type, name);
+  return ADJ_ERR_NEED_CALLBACK;
+}
 
 int adj_get_variable_value(adj_adjointer* adjointer, adj_variable var, adj_vector* value)
 {
