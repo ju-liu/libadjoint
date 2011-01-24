@@ -15,29 +15,29 @@ int adj_register_data_callback(adj_adjointer* adjointer, int type, void (*fn)(vo
   switch (type)
   {
     case ADJ_VEC_DUPLICATE_CB:
-      adjointer->callbacks.vec_duplicate = fn;
+      adjointer->callbacks.vec_duplicate = (void(*)(adj_vector x, adj_vector *newx)) fn;
       break;
     case ADJ_VEC_AXPY_CB:
-      adjointer->callbacks.vec_axpy = fn;
+      adjointer->callbacks.vec_axpy = (void(*)(adj_vector *y, adj_scalar alpha, adj_vector x)) fn;
       break;
     case ADJ_VEC_DESTROY_CB:
       adjointer->callbacks.vec_destroy = (void(*)(adj_vector*)) fn;
       break;
     case ADJ_VEC_DIVIDE_CB:
-      adjointer->callbacks.vec_divide = fn;
+      adjointer->callbacks.vec_divide = (void(*)(adj_vector numerator, adj_vector denominator, adj_vector *output)) fn;
       break;
     case ADJ_VEC_SETVALUES_CB:
-      adjointer->callbacks.vec_setvalues = fn;
+      adjointer->callbacks.vec_setvalues = (void(*)(adj_vector *vec, adj_scalar scalars[])) fn;
       break;
 
     case ADJ_MAT_DUPLICATE_CB:
-      adjointer->callbacks.mat_duplicate = fn;
+      adjointer->callbacks.mat_duplicate = (void(*)(adj_matrix matin, adj_matrix *matout)) fn;
     case ADJ_MAT_AXPY_CB:
-      adjointer->callbacks.mat_axpy = fn;
+      adjointer->callbacks.mat_axpy = (void(*)(adj_matrix *Y, adj_scalar alpha, adj_matrix X)) fn;
     case ADJ_MAT_DESTROY_CB:
-      adjointer->callbacks.mat_destroy = fn;
+      adjointer->callbacks.mat_destroy = (void(*)(adj_matrix *mat)) fn;
     case ADJ_MAT_GETVECS_CB:
-      adjointer->callbacks.mat_getvecs = fn;
+      adjointer->callbacks.mat_getvecs = (void(*)(adj_matrix mat, adj_vector *left)) fn;
 
    default:
       snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Unknown data callback type %d.", type);
