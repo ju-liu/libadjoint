@@ -21,7 +21,7 @@ int adj_register_data_callback(adj_adjointer* adjointer, int type, void (*fn)(vo
       adjointer->callbacks.vec_axpy = fn;
       break;
     case ADJ_VEC_DESTROY_CB:
-      adjointer->callbacks.vec_destroy = (void(*)(adj_vector)) fn;
+      adjointer->callbacks.vec_destroy = (void(*)(adj_vector*)) fn;
       break;
     case ADJ_VEC_DIVIDE_CB:
       adjointer->callbacks.vec_divide = fn;
@@ -157,7 +157,7 @@ int adj_forget_variable_value(adj_adjointer* adjointer, adj_variable_data* data)
     return ADJ_ERR_NEED_CALLBACK;
   }
   data->has_value = 0;
-  adjointer->callbacks.vec_destroy(data->value);
+  adjointer->callbacks.vec_destroy(&(data->value));
   return ADJ_ERR_OK;
 }
 

@@ -83,7 +83,7 @@ typedef struct
 {
   void (*vec_duplicate)(void);
   void (*vec_axpy)(void);
-  void (*vec_destroy)(adj_vector value);
+  void (*vec_destroy)(adj_vector* value);
   void (*vec_setvalues)(void);
   void (*vec_divide)(void);
 
