@@ -29,6 +29,9 @@ int adj_register_data_callback(adj_adjointer* adjointer, int type, void (*fn)(vo
     case ADJ_VEC_SETVALUES_CB:
       adjointer->callbacks.vec_setvalues = (void(*)(adj_vector *vec, adj_scalar scalars[])) fn;
       break;
+    case ADJ_VEC_GETSIZE_CB:
+      adjointer->callbacks.vec_getsize = (void(*)(adj_vector vec, int *sz)) fn;
+      break;
 
     case ADJ_MAT_DUPLICATE_CB:
       adjointer->callbacks.mat_duplicate = (void(*)(adj_matrix matin, adj_matrix *matout)) fn;
