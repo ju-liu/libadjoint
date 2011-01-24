@@ -55,10 +55,16 @@ typedef struct
 typedef struct adj_variable_data
 {
   int equation;
+
   int ntargeting_equations;
   int* targeting_equations;
+
   int ndepending_equations;
   int* depending_equations;
+
+  int nrhs_equations;
+  int* rhs_equations;
+
   int nadjoint_equations;
   int* adjoint_equations;
   int has_value;
@@ -128,5 +134,8 @@ typedef struct
 } adj_adjointer;
 
 int adj_create_variable(char* name, int timestep, int iteration, int auxiliary, adj_variable* var);
+int adj_variable_get_name(adj_variable var, char** name);
+int adj_variable_get_timestep(adj_variable var, int* timestep);
+int adj_variable_get_iteration(adj_variable var, int* iteration);
 
 #endif
