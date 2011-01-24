@@ -109,4 +109,4 @@ endif
 
 obj/adj_data_structures.o: include/libadjoint/adj_data_structures.h include/libadjoint/adj_constants.h include/libadjoint/adj_error_handling.h
 obj/adj_error_handling.o: include/libadjoint/adj_error_handling.h
-obj/adj_petsc_datastructures.o:  include/libadjoint/adj_petsc_datastructures.h adj_data_structures.h
+obj/adj_petsc_datastructures.o:  include/libadjoint/adj_petsc_datastructures.h include/libadjoint/adj_data_structures.h 
