@@ -8,8 +8,44 @@ int adj_register_equation(adj_adjointer* adjointer, adj_variable var, int nblock
 int adj_record_variable(adj_adjointer* adjointer, adj_variable var, adj_vector value);
 int adj_record_auxiliary(adj_adjointer* adjointer, adj_variable var, adj_vector value);
 int adj_register_operator_callback(adj_adjointer* adjointer, int type, char* name, void (*fn)(void));
-int adj_register_data_callback(adj_adjointer* adjointer, int type, void (*fn)(void));
-int adj_forget_adjoint_equation(adj_adjointer* adjointer, int equation); */
+int adj_register_data_callback(adj_adjointer* adjointer, int type, void (*fn)(void)); */
+
+int adj_forget_adjoint_equation(adj_adjointer* adjointer, int equation)
+{
+  adj_variable_data* data;
+  int should_we_delete;
+  int i;
+  int ierr;
+
+  if (adjointer->options[ADJ_ACTIVITY] == ADJ_ACTIVITY_NOTHING) return ADJ_ERR_OK;
+
+  data = adjointer->vardata.firstnode;
+  while (data != NULL)
+  {
+    if (data->has_value && data->nadjoint_equations > 0)
+    {
+      should_we_delete = 1;
+      for (i = 0; i < data->nadjoint_equations; i++)
+      {
+        if (equation > data->adjoint_equations[i])
+        {
+          should_we_delete = 0;
+          break;
+        }
+      }
+
+      if (should_we_delete)
+      {
+        ierr = adj_forget_variable_value(adjointer, data);
+        if (ierr != ADJ_ERR_OK) return ierr;
+      }
+    }
+
+    data = data->next;
+  }
+
+  return ADJ_ERR_OK;
+}
 
 int adj_find_operator_callback(adj_adjointer* adjointer, int type, char* name, void (**fn)(void))
 {
@@ -91,8 +127,6 @@ int adj_forget_variable_value(adj_adjointer* adjointer, adj_variable_data* data)
 int adj_destroy_variable_data(adj_adjointer* adjointer, adj_variable_data* data)
 {
 
-  assert(data->nadjoint_equations > 0);
-
   if (data->ntargeting_equations > 0)
   {
     free(data->targeting_equations);
@@ -109,6 +143,12 @@ int adj_destroy_variable_data(adj_adjointer* adjointer, adj_variable_data* data)
   {
     free(data->rhs_equations);
     data->nrhs_equations = 0;
+  }
+
+  if (data->nadjoint_equations > 0)
+  {
+    free(data->adjoint_equations);
+    data->nadjoint_equations = 0;
   }
 
   if (data->has_value)
