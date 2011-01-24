@@ -3,6 +3,7 @@
 
 #include <string.h>
 #include "adj_constants.h"
+#include "uthash.h"
 
 typedef struct
 {
@@ -115,11 +116,18 @@ typedef struct
 
 typedef struct
 {
+  adj_variable variable;
+  adj_variable_data* data;
+  adj_hash_handle hh;
+} adj_variable_hash;
+
+typedef struct
+{
   int nequations;
   adj_equation* equations;
 
   adj_variable_data_list vardata;
-  void* varhash;
+  adj_variable_hash* varhash;
 
   int options[ADJ_NO_OPTIONS];
 
