@@ -81,16 +81,16 @@ typedef struct
 
 typedef struct
 {
-  void (*vec_duplicate)(void);
-  void (*vec_axpy)(void);
-  void (*vec_destroy)(adj_vector* value);
-  void (*vec_setvalues)(void);
-  void (*vec_divide)(void);
-
-  void (*mat_duplicate)(void);
-  void (*mat_axpy)(void);
-  void (*mat_destroy)(void);
-  void (*mat_getvecs)(void);
+  void (*vec_duplicate)(adj_vector x, adj_vector *newx);
+  void (*vec_axpy)(adj_vector *y, adj_scalar alpha, adj_vector x);
+  void (*vec_destroy)(adj_vector *x);
+  void (*vec_setvalues)(adj_vector *vec, adj_scalar scalars[]);
+  void (*vec_getsize)(adj_vector vec, int *sz);
+  void (*vec_divide)(adj_vector numerator, adj_vector denominator, adj_vector *output);
+  void (*mat_duplicate)(adj_matrix matin, adj_matrix *matout);
+  void (*mat_axpy)(adj_matrix *Y, adj_scalar alpha, adj_matrix X);
+  void (*mat_destroy)(adj_matrix *mat);
+  void (*mat_getvecs)(adj_matrix mat, adj_vector *left);
 } adj_data_callbacks;
 
 typedef struct adj_op_callback
