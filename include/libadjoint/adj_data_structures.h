@@ -139,17 +139,17 @@ typedef struct
 
 typedef struct
 {
-  int nequations;
-  adj_equation* equations;
+  int nequations; /* Number of equations we have registered */
+  int equations_sz; /* Number of equations we can store without mallocing -- not the same! */
+  adj_equation* equations; /* Array of equations we have registered */
 
-  adj_variable_data_list vardata;
-  adj_variable_hash* varhash;
+  adj_variable_hash* varhash; /* The hash table for looking up information about variables */
+  adj_variable_data_list vardata; /* We also store a linked list so we can walk all our variable data */
 
-  int options[ADJ_NO_OPTIONS];
+  int options[ADJ_NO_OPTIONS]; /* Pretty obvious */
 
-  adj_data_callbacks callbacks;
-  adj_op_callback_list nonlinear_colouring_sz_list;
-  adj_op_callback_list nonlinear_colouring_list;
+  adj_data_callbacks callbacks; /* Data callbacks */
+  adj_op_callback_list nonlinear_colouring_list; /* Operator callbacks */
   adj_op_callback_list nonlinear_action_list;
   adj_op_callback_list nonlinear_derivative_action_list;
   adj_op_callback_list nonlinear_derivative_assembly_list;

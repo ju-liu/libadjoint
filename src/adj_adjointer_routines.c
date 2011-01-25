@@ -3,22 +3,54 @@
 /* int adj_create_adjointer(adj_adjointer* adjointer);
 int adj_destroy_adjointer(adj_adjointer* adjointer); */
 
-int adj_register_equation(adj_adjointer* adjointer, adj_variable var, int nblocks, adj_block* blocks, adj_variable* targets, int nrhsdeps, adj_variable* rhsdeps)
+int adj_register_equation(adj_adjointer* adjointer, adj_equation equation)
 {
   adj_variable_data data;
-  /* adj_variable_data* new_data; */
+  adj_variable_data* new_data;
   int ierr;
 
   if (adjointer->options[ADJ_ACTIVITY] == ADJ_ACTIVITY_NOTHING) return ADJ_ERR_OK;
 
-  /* Now, let's check we haven't solved for this variable before */
-  ierr = adj_find_variable_data(adjointer->varhash, &var, &data);
+  /* Let's check we haven't solved for this variable before */
+  ierr = adj_find_variable_data(adjointer->varhash, &(equation.variable), &data);
   if (ierr != ADJ_ERR_HASH_FAILED)
   {
     char buf[ADJ_NAME_LEN];
-    adj_variable_str(var, buf, ADJ_NAME_LEN);
+    adj_variable_str(equation.variable, buf, ADJ_NAME_LEN);
     snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "We have already registered an equation for variable %s.", buf);
     return ADJ_ERR_INVALID_INPUTS;
+  }
+
+  /* OK. We're good to go. */
+  /* Let's add it to the hash table. */
+  new_data = (adj_variable_data*) malloc(sizeof(adj_variable_data));
+  new_data->equation = adjointer->nequations + 1; /* we're about to fill it in, don't worry */
+  new_data->next = NULL;
+  new_data->storage.has_value = 0;
+
+  /* add to the hash table */
+  ierr = adj_add_variable_data(adjointer->varhash, &(equation.variable), new_data);
+  if (ierr != ADJ_ERR_OK) return ierr;
+
+  /* and add to the data list */
+  if (adjointer->vardata.firstnode == NULL)
+  {
+    adjointer->vardata.firstnode = new_data;
+    adjointer->vardata.lastnode = new_data;
+  }
+  else
+  {
+    adjointer->vardata.lastnode->next = new_data;
+    adjointer->vardata.lastnode = new_data;
+  }
+
+  /* OK. Next create an entry for the adj_equation in the adjointer. */
+
+  /* Check we have enough room, and if not, make some */
+  if (adjointer->nequations == adjointer->equations_sz)
+  {
+    adjointer->equations = (adj_equation*) realloc(adjointer->equations, (adjointer->equations_sz + ADJ_PREALLOC_SIZE) * sizeof(adj_equation));
+    adjointer->equations_sz = adjointer->equations_sz + ADJ_PREALLOC_SIZE;
   }
 
   return ADJ_ERR_OK;
