@@ -2,7 +2,6 @@
 
 /* int adj_create_adjointer(adj_adjointer* adjointer);
 int adj_destroy_adjointer(adj_adjointer* adjointer);
-adj_storage_data adj_storage_memory(adj_vector value);
 int adj_set_option(adj_adjointer* adjointer, int option, int choice);
 int adj_equation_count(adj_adjointer* adjointer, int* count);
 int adj_register_equation(adj_adjointer* adjointer, adj_variable var, int nblocks, adj_block* blocks, adj_variable* targets, int nrhsdeps, adj_variable* rhsdeps); */
@@ -18,8 +17,30 @@ int adj_record_variable(adj_adjointer* adjointer, adj_variable var, adj_storage_
   if (ierr != ADJ_ERR_OK && !var.auxiliary) return ierr;
   if (ierr != ADJ_ERR_OK && var.auxiliary)
   {
-    /* FIXME: add in the variable data to the hash table */
-    assert(0);
+    /* If the variable is auxiliary, it's alright that this is the first time we've ever seen it */
+    adj_variable_data* new_data;
+    new_data = (adj_variable_data*) malloc(sizeof(adj_variable_data));
+    new_data->equation = -1; /* never set */
+    new_data->next = NULL;
+    new_data->storage.has_value = 0;
+
+    /* add to the hash table */
+    ierr = adj_add_variable_data(adjointer->varhash, &var, new_data);
+    if (ierr != ADJ_ERR_OK) return ierr;
+
+    /* and add to the data list */
+    if (adjointer->vardata.firstnode == NULL)
+    {
+      adjointer->vardata.firstnode = new_data;
+      adjointer->vardata.lastnode = new_data;
+    }
+    else
+    {
+      adjointer->vardata.lastnode->next = new_data;
+      adjointer->vardata.lastnode = new_data;
+    }
+
+    data = *new_data;
   }
 
   if (data.storage.has_value)
@@ -310,4 +331,13 @@ int adj_destroy_variable_data(adj_adjointer* adjointer, adj_variable_data* data)
     return adj_forget_variable_value(adjointer, data);
 
   return ADJ_ERR_OK;
+}
+
+adj_storage_data adj_storage_memory(adj_vector value)
+{
+  adj_storage_data data;
+
+  data.storage_type = ADJ_STORAGE_MEMORY;
+  data.value = value;
+  return data;
 }
