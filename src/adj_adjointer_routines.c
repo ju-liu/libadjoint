@@ -2,7 +2,66 @@
 
 /* int adj_create_adjointer(adj_adjointer* adjointer);
 int adj_destroy_adjointer(adj_adjointer* adjointer); */
-int adj_register_equation(adj_adjointer* adjointer, adj_variable var, int nblocks, adj_block* blocks, adj_variable* targets, int nrhsdeps, adj_variable* rhsdeps);
+
+int adj_register_equation(adj_adjointer* adjointer, adj_variable var, int nblocks, adj_block* blocks, adj_variable* targets, int nrhsdeps, adj_variable* rhsdeps)
+{
+  adj_variable_data data;
+  /* adj_variable_data* new_data; */
+  int ierr;
+  int targets_variable;
+  int i;
+
+  if (adjointer->options[ADJ_ACTIVITY] == ADJ_ACTIVITY_NOTHING) return ADJ_ERR_OK;
+
+  /* First, let's check the variable isn't auxiliary.
+     Auxiliary means we don't solve an equation for it ... */
+  if (var.auxiliary)
+  {
+    char buf[ADJ_NAME_LEN];
+    adj_variable_str(var, buf, ADJ_NAME_LEN);
+    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Cannot register an equation for an auxiliary variable %s.", buf);
+    return ADJ_ERR_INVALID_INPUTS;
+  }
+
+  /* Now, let's check we haven't solved for this variable before */
+  ierr = adj_find_variable_data(adjointer->varhash, &var, &data);
+  if (ierr != ADJ_ERR_HASH_FAILED)
+  {
+    char buf[ADJ_NAME_LEN];
+    adj_variable_str(var, buf, ADJ_NAME_LEN);
+    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "We have already registered an equation for variable %s.", buf);
+    return ADJ_ERR_INVALID_INPUTS;
+  }
+
+  /* So we haven't seen this variable before. Let's check that the equation actually references this variable.
+     Let's also check that no targets are auxiliary */
+  targets_variable = 0;
+  for (i = 0; i < nblocks; i++)
+  {
+    if (adj_variable_equal(&var, &(targets[i]), 1))
+      targets_variable = 1;
+
+    if (targets[i].auxiliary)
+    {
+      char buf[ADJ_NAME_LEN];
+      adj_variable_str(var, buf, ADJ_NAME_LEN);
+      snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Cannot target an auxiliary variable %s.", buf);
+      return ADJ_ERR_INVALID_INPUTS;
+    }
+  }
+
+  if (!targets_variable)
+  {
+    char buf[ADJ_NAME_LEN];
+    adj_variable_str(var, buf, ADJ_NAME_LEN);
+    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Trying to register an equation for %s, but this equation doesn't target this variable.", buf);
+    return ADJ_ERR_INVALID_INPUTS;
+  }
+
+  /* OK! I think we've done all the sanity checking we can. */
+
+  return ADJ_ERR_OK;
+}
 
 int adj_set_option(adj_adjointer* adjointer, int option, int choice)
 {
@@ -61,8 +120,8 @@ int adj_record_variable(adj_adjointer* adjointer, adj_variable var, adj_storage_
 
   if (data.storage.has_value)
   {
-    char buf[255];
-    adj_variable_str(var, buf, 255);
+    char buf[ADJ_NAME_LEN];
+    adj_variable_str(var, buf, ADJ_NAME_LEN);
     snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Variable %s already has a value.", buf);
     return ADJ_ERR_INVALID_INPUTS;
   }
@@ -289,8 +348,8 @@ int adj_get_variable_value(adj_adjointer* adjointer, adj_variable var, adj_vecto
 
   if (!data.storage.has_value)
   {
-    char buf[255];
-    adj_variable_str(var, buf, 255);
+    char buf[ADJ_NAME_LEN];
+    adj_variable_str(var, buf, ADJ_NAME_LEN);
 
     ierr = ADJ_ERR_NEED_VALUE;
     snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Need a value for %s, but don't have one recorded.", buf);
