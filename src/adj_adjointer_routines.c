@@ -1,10 +1,26 @@
 #include "libadjoint/adj_adjointer_routines.h"
 
 /* int adj_create_adjointer(adj_adjointer* adjointer);
-int adj_destroy_adjointer(adj_adjointer* adjointer);
-int adj_set_option(adj_adjointer* adjointer, int option, int choice);
-int adj_equation_count(adj_adjointer* adjointer, int* count);
-int adj_register_equation(adj_adjointer* adjointer, adj_variable var, int nblocks, adj_block* blocks, adj_variable* targets, int nrhsdeps, adj_variable* rhsdeps); */
+int adj_destroy_adjointer(adj_adjointer* adjointer); */
+int adj_register_equation(adj_adjointer* adjointer, adj_variable var, int nblocks, adj_block* blocks, adj_variable* targets, int nrhsdeps, adj_variable* rhsdeps);
+
+int adj_set_option(adj_adjointer* adjointer, int option, int choice)
+{
+  if (option < 0 || option >= ADJ_NO_OPTIONS)
+  {
+    strncpy(adj_error_msg, "Unknown option.", ADJ_ERROR_MSG_BUF);
+    return ADJ_ERR_INVALID_INPUTS;
+  }
+
+  adjointer->options[option] = choice;
+  return ADJ_ERR_OK;
+}
+
+int adj_equation_count(adj_adjointer* adjointer, int* count)
+{
+  *count = adjointer->nequations;
+  return ADJ_ERR_OK;
+}
 
 int adj_record_variable(adj_adjointer* adjointer, adj_variable var, adj_storage_data storage)
 {
