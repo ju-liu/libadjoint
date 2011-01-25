@@ -9,13 +9,13 @@ int adj_create_variable(char* name, int timestep, int iteration, int auxiliary, 
   memset(var, 0, sizeof(adj_variable));
 
   slen = strlen(name);
-  if (slen > ADJ_NAMELEN)
+  if (slen > ADJ_NAME_LEN)
   {
-    strncpy(adj_error_msg, "Name variable too long; recompile with bigger ADJ_NAMELEN.", ADJ_ERROR_MSG_BUF);
+    strncpy(adj_error_msg, "Name variable too long; recompile with bigger ADJ_NAME_LEN.", ADJ_ERROR_MSG_BUF);
     return ADJ_ERR_INVALID_INPUTS;
   }
 
-  strncpy(var->name, name, ADJ_NAMELEN);
+  strncpy(var->name, name, ADJ_NAME_LEN);
   var->timestep = timestep;
   var->iteration = iteration;
   var->auxiliary = auxiliary;
@@ -49,9 +49,9 @@ int adj_create_nonlinear_block(char* name, int ndepends, adj_variable* depends, 
   memset(nblock, 0, sizeof(adj_nonlinear_block));
 
   slen = strlen(name);
-  if (slen > ADJ_NAMELEN)
+  if (slen > ADJ_NAME_LEN)
   {
-    strncpy(adj_error_msg, "Name variable too long; recompile with bigger ADJ_NAMELEN.", ADJ_ERROR_MSG_BUF);
+    strncpy(adj_error_msg, "Name variable too long; recompile with bigger ADJ_NAME_LEN.", ADJ_ERROR_MSG_BUF);
     return ADJ_ERR_INVALID_INPUTS;
   }
 
@@ -61,7 +61,7 @@ int adj_create_nonlinear_block(char* name, int ndepends, adj_variable* depends, 
     return ADJ_ERR_INVALID_INPUTS;
   }
 
-  strncpy(nblock->name, name, ADJ_NAMELEN);
+  strncpy(nblock->name, name, ADJ_NAME_LEN);
   nblock->coefficient = coefficient;
   nblock->context = context;
   nblock->ndepends = ndepends;
@@ -84,13 +84,13 @@ int adj_create_block(char* name, adj_nonlinear_block* nblock, void* context, int
   memset(block, 0, sizeof(adj_block));
 
   slen = strlen(name);
-  if (slen > ADJ_NAMELEN)
+  if (slen > ADJ_NAME_LEN)
   {
-    strncpy(adj_error_msg, "Name variable too long; recompile with bigger ADJ_NAMELEN.", ADJ_ERROR_MSG_BUF);
+    strncpy(adj_error_msg, "Name variable too long; recompile with bigger ADJ_NAME_LEN.", ADJ_ERROR_MSG_BUF);
     return ADJ_ERR_INVALID_INPUTS;
   }
 
-  strncpy(block->name, name, ADJ_NAMELEN);
+  strncpy(block->name, name, ADJ_NAME_LEN);
 
   if (nblock == NULL)
   {

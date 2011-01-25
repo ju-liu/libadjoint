@@ -7,7 +7,7 @@
 
 typedef struct
 {
-  char name[ADJ_NAMELEN];
+  char name[ADJ_NAME_LEN];
   int timestep; /* what timestep this variable is associated with */
   int iteration; /* what iteration inside the timestep */
   int type; /* forward, adjoint, or tlm */
@@ -29,7 +29,7 @@ typedef struct
 
 typedef struct
 {
-  char name[ADJ_NAMELEN];
+  char name[ADJ_NAME_LEN];
   adj_scalar coefficient;
   int ndepends;
   adj_variable* depends;
@@ -38,7 +38,7 @@ typedef struct
 
 typedef struct
 {
-  char name[ADJ_NAMELEN];
+  char name[ADJ_NAME_LEN];
   int has_nonlinear_block;
   adj_nonlinear_block nonlinear_block;
   void* context;
@@ -52,6 +52,20 @@ typedef struct
   adj_block* blocks;
   adj_variable* targets;
 } adj_equation;
+
+typedef struct
+{
+  int storage_type;
+  int has_value;
+
+  /* for ADJ_STORAGE_MEMORY */
+  adj_vector value;
+
+  /* for ADJ_STORAGE_DISK */
+  char* filename;
+
+  /* POD, temporal interpolation, ... */
+} adj_storage_data;
 
 typedef struct adj_variable_data
 {
@@ -68,8 +82,7 @@ typedef struct adj_variable_data
 
   int nadjoint_equations;
   int* adjoint_equations;
-  int has_value;
-  adj_vector value;
+  adj_storage_data storage;
   struct adj_variable_data* next;
 } adj_variable_data;
 
@@ -87,6 +100,7 @@ typedef struct
   void (*vec_setvalues)(adj_vector *vec, adj_scalar scalars[]);
   void (*vec_getsize)(adj_vector vec, int *sz);
   void (*vec_divide)(adj_vector numerator, adj_vector denominator, adj_vector *output);
+
   void (*mat_duplicate)(adj_matrix matin, adj_matrix *matout);
   void (*mat_axpy)(adj_matrix *Y, adj_scalar alpha, adj_matrix X);
   void (*mat_destroy)(adj_matrix *mat);
@@ -95,7 +109,7 @@ typedef struct
 
 typedef struct adj_op_callback
 {
-  char name[ADJ_NAMELEN];
+  char name[ADJ_NAME_LEN];
   void (*callback)(void);
   struct adj_op_callback* next;
 } adj_op_callback;
