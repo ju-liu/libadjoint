@@ -8,6 +8,7 @@ int adj_register_equation(adj_adjointer* adjointer, adj_equation equation)
   adj_variable_data* data_ptr;
   int ierr;
   int i;
+  int j;
 
   if (adjointer->options[ADJ_ACTIVITY] == ADJ_ACTIVITY_NOTHING) return ADJ_ERR_OK;
 
@@ -62,6 +63,69 @@ int adj_register_equation(adj_adjointer* adjointer, adj_equation equation)
     data_ptr->ntargeting_equations++;
     data_ptr->targeting_equations = (int*) realloc(data_ptr->targeting_equations, data_ptr->ntargeting_equations * sizeof(int));
     data_ptr->targeting_equations[data_ptr->ntargeting_equations - 1] = adjointer->nequations - 1;
+  }
+
+  /* Next: nonlinear dependencies of the right hand side */
+  for (i = 0; i < equation.nrhsdeps; i++)
+  {
+    ierr = adj_find_variable_data(adjointer->varhash, &(equation.rhsdeps[i]), &data_ptr);
+    if (ierr == ADJ_ERR_HASH_FAILED && equation.rhsdeps[i].auxiliary)
+    {
+      /* It's ok if it's auxiliary -- it legitimately can be the first time we've seen it */
+      adj_variable_data* new_data;
+      ierr = adj_add_new_hash_entry(adjointer, &(equation.rhsdeps[i]), &new_data);
+      if (ierr != ADJ_ERR_OK) return ierr;
+      new_data->equation = -1; /* it doesn't have an equation */
+      data_ptr = new_data;
+    }
+    else
+    {
+      return ierr;
+    }
+
+    /* Now data_ptr points to the data we're storing */
+    adj_append_unique(&(data_ptr->rhs_equations), &(data_ptr->nrhs_equations), adjointer->nequations - 1);
+  }
+
+  /* Now we need to record what we need for which adjoint equation from the rhs dependencies */
+  /* We do this after the previous loop to make sure that all of the dependencies exist in the hash table. */
+  for (i = 0; i < equation.nrhsdeps; i++)
+  {
+    /* We will loop through all other dependencies and register that the adjoint equation
+       associated with equation.rhsdeps[i] depends on all other equation.rhsdeps[j] */
+    int eqn_no;
+
+    if (equation.rhsdeps[i].auxiliary)
+    {
+      /* We don't solve any equation for it, and auxiliary variables thus don't have any associated
+         adjoint equation -- so we don't need to register any dependencies for it */
+      continue;
+    }
+
+    ierr = adj_find_variable_data(adjointer->varhash, &(equation.rhsdeps[i]), &data_ptr);
+    if (ierr != ADJ_ERR_OK) return ierr;
+
+    eqn_no = data_ptr->equation;
+    assert(eqn_no >= 0);
+
+    for (j = 0; j < equation.nrhsdeps; j++)
+    {
+      ierr = adj_find_variable_data(adjointer->varhash, &(equation.rhsdeps[j]), &data_ptr);
+      if (ierr != ADJ_ERR_OK) return ierr;
+      adj_append_unique(&(data_ptr->adjoint_equations), &(data_ptr->nadjoint_equations), eqn_no); /* dependency j is necessary for equation i */
+    }
+  }
+
+  /* And finally nonlinear dependencies of the left hand side */
+
+  for (i = 0; i< equation.nblocks; i++)
+  {
+    if (equation.blocks[i].has_nonlinear_block)
+    {
+      for (j = 0; j < equation.blocks[i].nonlinear_block.ndepends; j++)
+      {
+      }
+    }
   }
   return ADJ_ERR_OK;
 }
@@ -435,4 +499,19 @@ int adj_add_new_hash_entry(adj_adjointer* adjointer, adj_variable* var, adj_vari
   }
 
   return ADJ_ERR_OK;
+}
+
+void adj_append_unique(int** array, int* array_sz, int value)
+{
+  int i;
+
+  for (i = 0; i < *array_sz; i++)
+    if ((*array)[i] == value)
+      return;
+
+  /* So if we got here, we really do need to append it */
+  *array_sz = *array_sz + 1;
+  *array = (int*) realloc(*array, *array_sz * sizeof(int));
+  (*array)[*array_sz - 1] = value;
+  return;
 }

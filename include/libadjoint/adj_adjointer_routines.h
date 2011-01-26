@@ -22,4 +22,5 @@ int adj_destroy_variable_data(adj_adjointer* adjointer, adj_variable_data* data)
 int adj_add_new_hash_entry(adj_adjointer* adjointer, adj_variable* var, adj_variable_data** data);
 
 adj_storage_data adj_storage_memory(adj_vector value);
+void adj_append_unique(int** array, int* array_sz, int value);
 #endif
