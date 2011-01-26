@@ -1,9 +1,10 @@
-#include()
+#include "adj_setup.h"
+
 int main(void) 
 {
-  use adj_setup;
-  adj_init();
+  int ierr;
+  adj_init(ierr);
   TESTNAME();
-  adj_finalise();
+  adj_finalise(ierr);
 }
 
