@@ -1,5 +1,7 @@
 #include "adj_setup.h"
 
+void TESTNAME(void);
+
 int main(void) 
 {
   int ierr=0;
