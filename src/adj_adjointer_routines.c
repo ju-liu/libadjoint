@@ -1,13 +1,261 @@
 #include "libadjoint/adj_adjointer_routines.h"
 
 /* int adj_create_adjointer(adj_adjointer* adjointer);
-int adj_destroy_adjointer(adj_adjointer* adjointer);
-int adj_set_option(adj_adjointer* adjointer, int option, int choice);
-int adj_equation_count(adj_adjointer* adjointer, int* count);
-int adj_register_equation(adj_adjointer* adjointer, adj_variable var, int nblocks, adj_block* blocks, adj_variable* targets, int nrhsdeps, adj_variable* rhsdeps);
-int adj_record_variable(adj_adjointer* adjointer, adj_variable var, adj_vector value);
-int adj_record_auxiliary(adj_adjointer* adjointer, adj_variable var, adj_vector value);
-int adj_register_operator_callback(adj_adjointer* adjointer, int type, char* name, void (*fn)(void)); */
+int adj_destroy_adjointer(adj_adjointer* adjointer); */
+
+int adj_register_equation(adj_adjointer* adjointer, adj_equation equation)
+{
+  adj_variable_data* data_ptr;
+  int ierr;
+  int i;
+  int j;
+
+  if (adjointer->options[ADJ_ACTIVITY] == ADJ_ACTIVITY_NOTHING) return ADJ_ERR_OK;
+
+  /* Let's check we haven't solved for this variable before */
+  ierr = adj_find_variable_data(adjointer->varhash, &(equation.variable), &data_ptr);
+  if (ierr != ADJ_ERR_HASH_FAILED)
+  {
+    char buf[ADJ_NAME_LEN];
+    adj_variable_str(equation.variable, buf, ADJ_NAME_LEN);
+    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "We have already registered an equation for variable %s.", buf);
+    return ADJ_ERR_INVALID_INPUTS;
+  }
+
+  /* OK. We're good to go. */
+  /* Let's add it to the hash table. */
+  ierr = adj_add_new_hash_entry(adjointer, &(equation.variable), &data_ptr);
+  if (ierr != ADJ_ERR_OK) return ierr;
+  data_ptr->equation = adjointer->nequations + 1;
+  /* OK. Next create an entry for the adj_equation in the adjointer. */
+
+  /* Check we have enough room, and if not, make some */
+  if (adjointer->nequations == adjointer->equations_sz)
+  {
+    adjointer->equations = (adj_equation*) realloc(adjointer->equations, (adjointer->equations_sz + ADJ_PREALLOC_SIZE) * sizeof(adj_equation));
+    adjointer->equations_sz = adjointer->equations_sz + ADJ_PREALLOC_SIZE;
+  }
+
+  adjointer->nequations++;
+  adjointer->equations[adjointer->nequations - 1] = equation;
+  /* now we have copies of the pointer to the arrays of targets, blocks, rhs deps. */
+  /* but for consistency, any libadjoint object that the user creates, he must destroy --
+     it's simpler that way. */
+  /* so we're going to make our own copies, so that the user can destroy his. */
+  adjointer->equations[adjointer->nequations - 1].blocks = (adj_block*) malloc(equation.nblocks * sizeof(adj_block));
+  memcpy(adjointer->equations[adjointer->nequations - 1].blocks, equation.blocks, equation.nblocks * sizeof(adj_block));
+  adjointer->equations[adjointer->nequations - 1].targets = (adj_variable*) malloc(equation.nblocks * sizeof(adj_variable));
+  memcpy(adjointer->equations[adjointer->nequations - 1].targets, equation.targets, equation.nblocks * sizeof(adj_variable));
+  if (equation.nrhsdeps > 0)
+  {
+    adjointer->equations[adjointer->nequations - 1].rhsdeps = (adj_variable*) malloc(equation.nrhsdeps * sizeof(adj_variable));
+    memcpy(adjointer->equations[adjointer->nequations - 1].rhsdeps, equation.rhsdeps, equation.nrhsdeps * sizeof(adj_variable));
+  }
+
+  /* Now find all the entries we need to update in the hash table, and update them */
+  /* First: targeting equations */
+
+  for (i = 0; i < equation.nblocks; i++)
+  {
+    ierr = adj_find_variable_data(adjointer->varhash, &(equation.targets[i]), &data_ptr);
+    if (ierr != ADJ_ERR_OK) return ierr;
+
+    data_ptr->ntargeting_equations++;
+    data_ptr->targeting_equations = (int*) realloc(data_ptr->targeting_equations, data_ptr->ntargeting_equations * sizeof(int));
+    data_ptr->targeting_equations[data_ptr->ntargeting_equations - 1] = adjointer->nequations - 1;
+  }
+
+  /* Next: nonlinear dependencies of the right hand side */
+  for (i = 0; i < equation.nrhsdeps; i++)
+  {
+    ierr = adj_find_variable_data(adjointer->varhash, &(equation.rhsdeps[i]), &data_ptr);
+    if (ierr == ADJ_ERR_HASH_FAILED && equation.rhsdeps[i].auxiliary)
+    {
+      /* It's ok if it's auxiliary -- it legitimately can be the first time we've seen it */
+      adj_variable_data* new_data;
+      ierr = adj_add_new_hash_entry(adjointer, &(equation.rhsdeps[i]), &new_data);
+      if (ierr != ADJ_ERR_OK) return ierr;
+      new_data->equation = -1; /* it doesn't have an equation */
+      data_ptr = new_data;
+    }
+    else
+    {
+      return ierr;
+    }
+
+    /* Now data_ptr points to the data we're storing */
+    adj_append_unique(&(data_ptr->rhs_equations), &(data_ptr->nrhs_equations), adjointer->nequations - 1);
+  }
+
+  /* Now we need to record what we need for which adjoint equation from the rhs dependencies */
+  /* We do this after the previous loop to make sure that all of the dependencies exist in the hash table. */
+  for (i = 0; i < equation.nrhsdeps; i++)
+  {
+    /* We will loop through all other dependencies and register that the adjoint equation
+       associated with equation.rhsdeps[i] depends on all other equation.rhsdeps[j] */
+    int eqn_no;
+
+    if (equation.rhsdeps[i].auxiliary)
+    {
+      /* We don't solve any equation for it, and auxiliary variables thus don't have any associated
+         adjoint equation -- so we don't need to register any dependencies for it */
+      continue;
+    }
+
+    ierr = adj_find_variable_data(adjointer->varhash, &(equation.rhsdeps[i]), &data_ptr);
+    if (ierr != ADJ_ERR_OK) return ierr;
+
+    eqn_no = data_ptr->equation;
+    assert(eqn_no >= 0);
+
+    for (j = 0; j < equation.nrhsdeps; j++)
+    {
+      ierr = adj_find_variable_data(adjointer->varhash, &(equation.rhsdeps[j]), &data_ptr);
+      if (ierr != ADJ_ERR_OK) return ierr;
+      adj_append_unique(&(data_ptr->adjoint_equations), &(data_ptr->nadjoint_equations), eqn_no); /* dependency j is necessary for equation i */
+    }
+  }
+
+  /* And finally nonlinear dependencies of the left hand side */
+
+  for (i = 0; i< equation.nblocks; i++)
+  {
+    if (equation.blocks[i].has_nonlinear_block)
+    {
+      for (j = 0; j < equation.blocks[i].nonlinear_block.ndepends; j++)
+      {
+      }
+    }
+  }
+  return ADJ_ERR_OK;
+}
+
+int adj_set_option(adj_adjointer* adjointer, int option, int choice)
+{
+  if (option < 0 || option >= ADJ_NO_OPTIONS)
+  {
+    strncpy(adj_error_msg, "Unknown option.", ADJ_ERROR_MSG_BUF);
+    return ADJ_ERR_INVALID_INPUTS;
+  }
+
+  adjointer->options[option] = choice;
+  return ADJ_ERR_OK;
+}
+
+int adj_equation_count(adj_adjointer* adjointer, int* count)
+{
+  *count = adjointer->nequations;
+  return ADJ_ERR_OK;
+}
+
+int adj_record_variable(adj_adjointer* adjointer, adj_variable var, adj_storage_data storage)
+{
+  adj_variable_data* data_ptr;
+  int ierr;
+
+  if (adjointer->options[ADJ_ACTIVITY] == ADJ_ACTIVITY_NOTHING) return ADJ_ERR_OK;
+
+  ierr = adj_find_variable_data(adjointer->varhash, &var, &data_ptr);
+  if (ierr != ADJ_ERR_OK && !var.auxiliary) return ierr;
+  if (ierr != ADJ_ERR_OK && var.auxiliary)
+  {
+    /* If the variable is auxiliary, it's alright that this is the first time we've ever seen it */
+    adj_variable_data* new_data;
+    ierr = adj_add_new_hash_entry(adjointer, &var, &new_data);
+    if (ierr != ADJ_ERR_OK) return ierr;
+    new_data->equation = -1; /* it doesn't have an equation */
+    data_ptr = new_data;
+  }
+
+  if (data_ptr->storage.has_value)
+  {
+    char buf[ADJ_NAME_LEN];
+    adj_variable_str(var, buf, ADJ_NAME_LEN);
+    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Variable %s already has a value.", buf);
+    return ADJ_ERR_INVALID_INPUTS;
+  }
+
+  /* Just in case */
+  strncpy(adj_error_msg, "Need data callback.", ADJ_ERROR_MSG_BUF);
+
+  switch (storage.storage_type)
+  {
+    case ADJ_STORAGE_MEMORY:
+      if (adjointer->callbacks.vec_duplicate == NULL) return ADJ_ERR_NEED_CALLBACK;
+      if (adjointer->callbacks.vec_axpy == NULL) return ADJ_ERR_NEED_CALLBACK;
+      data_ptr->storage.storage_type = ADJ_STORAGE_MEMORY;
+      adjointer->callbacks.vec_duplicate(storage.value, &(data_ptr->storage.value));
+      adjointer->callbacks.vec_axpy(&(data_ptr->storage.value), (adj_scalar)1.0, storage.value);
+      break;
+    default:
+      strncpy(adj_error_msg, "Storage types other than ADJ_STORAGE_MEMORY are not implemented yet.", ADJ_ERROR_MSG_BUF);
+      return ADJ_ERR_NOT_IMPLEMENTED;
+  }
+
+  return ADJ_ERR_OK;
+}
+
+
+int adj_register_operator_callback(adj_adjointer* adjointer, int type, char* name, void (*fn)(void))
+{
+  adj_op_callback_list* cb_list_ptr;
+  adj_op_callback* cb_ptr;
+
+  switch(type)
+  {
+    case ADJ_NBLOCK_COLOURING_CB:
+      cb_list_ptr = &(adjointer->nonlinear_colouring_list);
+      break;
+    case ADJ_NBLOCK_ACTION_CB:
+      cb_list_ptr = &(adjointer->nonlinear_action_list);
+      break;
+    case ADJ_NBLOCK_DERIVATIVE_ACTION_CB:
+      cb_list_ptr = &(adjointer->nonlinear_derivative_action_list);
+      break;
+    case ADJ_NBLOCK_DERIVATIVE_ASSEMBLY_CB:
+      cb_list_ptr = &(adjointer->nonlinear_derivative_assembly_list);
+      break;
+    case ADJ_BLOCK_ACTION_CB:
+      cb_list_ptr = &(adjointer->block_action_list);
+      break;
+    case ADJ_BLOCK_ASSEMBLY_CB:
+      cb_list_ptr = &(adjointer->block_assembly_list);
+      break;
+    default:
+      strncpy(adj_error_msg, "Unknown callback type.", ADJ_ERROR_MSG_BUF);
+      return ADJ_ERR_INVALID_INPUTS;
+  }
+  /* First, we look for an existing callback data structure that might already exist, to replace the function */
+  cb_ptr = cb_list_ptr->firstnode;
+  while (cb_ptr != NULL)
+  {
+    if (strncmp(cb_ptr->name, name, ADJ_NAME_LEN) == 0)
+    {
+      cb_ptr->callback = fn;
+      return ADJ_ERR_OK;
+    }
+    cb_ptr = cb_ptr->next;
+  }
+
+  /* If we got here, that means that we didn't find it. Tack it on to the end of the list. */
+  cb_ptr = (adj_op_callback*) malloc(sizeof(adj_op_callback));
+  strncpy(cb_ptr->name, name, ADJ_NAME_LEN);
+  cb_ptr->callback = fn;
+
+  /* Special case for the first callback */
+  if (cb_list_ptr->firstnode == NULL)
+  {
+    cb_list_ptr->firstnode = cb_ptr;
+    cb_list_ptr->lastnode = cb_ptr;
+  }
+  else
+  {
+    cb_list_ptr->lastnode->next = cb_ptr;
+    cb_list_ptr->lastnode = cb_ptr;
+  }
+
+  return ADJ_ERR_OK;
+}
 
 int adj_register_data_callback(adj_adjointer* adjointer, int type, void (*fn)(void))
 {
@@ -62,7 +310,7 @@ int adj_forget_adjoint_equation(adj_adjointer* adjointer, int equation)
   data = adjointer->vardata.firstnode;
   while (data != NULL)
   {
-    if (data->has_value && data->nadjoint_equations > 0)
+    if (data->storage.has_value && data->nadjoint_equations > 0)
     {
       should_we_delete = 1;
       for (i = 0; i < data->nadjoint_equations; i++)
@@ -120,7 +368,7 @@ int adj_find_operator_callback(adj_adjointer* adjointer, int type, char* name, v
   cb_ptr = cb_list_ptr->firstnode;
   while (cb_ptr != NULL)
   {
-    if (strncmp(cb_ptr->name, name, ADJ_NAMELEN) == 0)
+    if (strncmp(cb_ptr->name, name, ADJ_NAME_LEN) == 0)
     {
       *fn = cb_ptr->callback;
       return ADJ_ERR_OK;
@@ -135,20 +383,29 @@ int adj_find_operator_callback(adj_adjointer* adjointer, int type, char* name, v
 int adj_get_variable_value(adj_adjointer* adjointer, adj_variable var, adj_vector* value)
 {
   int ierr;
-  adj_variable_data data;
+  adj_variable_data* data_ptr;
 
-  ierr = adj_find_variable_data(adjointer->varhash, &var, &data);
-  if (ierr != ADJ_ERR_OK)
+  ierr = adj_find_variable_data(adjointer->varhash, &var, &data_ptr);
+  if (ierr != ADJ_ERR_OK) return ierr;
+
+  if (data_ptr->storage.storage_type != ADJ_STORAGE_MEMORY)
   {
-    char buf[255];
-    adj_variable_str(var, buf, 255);
+    ierr = ADJ_ERR_NOT_IMPLEMENTED;
+    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Sorry, storage strategies other than ADJ_STORAGE_MEMORY are not implemented yet.");
+    return ierr;
+  }
+
+  if (!data_ptr->storage.has_value)
+  {
+    char buf[ADJ_NAME_LEN];
+    adj_variable_str(var, buf, ADJ_NAME_LEN);
 
     ierr = ADJ_ERR_NEED_VALUE;
     snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Need a value for %s, but don't have one recorded.", buf);
     return ierr;
   }
 
-  *value = data.value;
+  *value = data_ptr->storage.value;
   return ADJ_ERR_OK;
 }
 
@@ -159,8 +416,11 @@ int adj_forget_variable_value(adj_adjointer* adjointer, adj_variable_data* data)
     strncpy(adj_error_msg, "Need vec_destroy data callback.", ADJ_ERROR_MSG_BUF);
     return ADJ_ERR_NEED_CALLBACK;
   }
-  data->has_value = 0;
-  adjointer->callbacks.vec_destroy(&(data->value));
+
+  assert(data->storage.has_value);
+
+  data->storage.has_value = 0;
+  adjointer->callbacks.vec_destroy(&(data->storage.value));
   return ADJ_ERR_OK;
 }
 
@@ -191,8 +451,67 @@ int adj_destroy_variable_data(adj_adjointer* adjointer, adj_variable_data* data)
     data->nadjoint_equations = 0;
   }
 
-  if (data->has_value)
+  if (data->storage.has_value)
     return adj_forget_variable_value(adjointer, data);
 
   return ADJ_ERR_OK;
+}
+
+adj_storage_data adj_storage_memory(adj_vector value)
+{
+  adj_storage_data data;
+
+  data.storage_type = ADJ_STORAGE_MEMORY;
+  data.value = value;
+  return data;
+}
+
+int adj_add_new_hash_entry(adj_adjointer* adjointer, adj_variable* var, adj_variable_data** data)
+{
+  int ierr;
+
+  *data = (adj_variable_data*) malloc(sizeof(adj_variable_data));
+  (*data)->next = NULL;
+  (*data)->storage.has_value = 0;
+  (*data)->ntargeting_equations = 0;
+  (*data)->targeting_equations = NULL;
+  (*data)->ndepending_equations = 0;
+  (*data)->depending_equations = NULL;
+  (*data)->nrhs_equations = 0;
+  (*data)->rhs_equations = NULL;
+  (*data)->nadjoint_equations = 0;
+  (*data)->adjoint_equations = NULL;
+
+  /* add to the hash table */
+  ierr = adj_add_variable_data(adjointer->varhash, var, *data);
+  if (ierr != ADJ_ERR_OK) return ierr;
+
+  /* and add to the data list */
+  if (adjointer->vardata.firstnode == NULL)
+  {
+    adjointer->vardata.firstnode = *data;
+    adjointer->vardata.lastnode = *data;
+  }
+  else
+  {
+    adjointer->vardata.lastnode->next = *data;
+    adjointer->vardata.lastnode = *data;
+  }
+
+  return ADJ_ERR_OK;
+}
+
+void adj_append_unique(int** array, int* array_sz, int value)
+{
+  int i;
+
+  for (i = 0; i < *array_sz; i++)
+    if ((*array)[i] == value)
+      return;
+
+  /* So if we got here, we really do need to append it */
+  *array_sz = *array_sz + 1;
+  *array = (int*) realloc(*array, *array_sz * sizeof(int));
+  (*array)[*array_sz - 1] = value;
+  return;
 }

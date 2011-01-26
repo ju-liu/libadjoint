@@ -9,13 +9,13 @@ int adj_create_variable(char* name, int timestep, int iteration, int auxiliary, 
   memset(var, 0, sizeof(adj_variable));
 
   slen = strlen(name);
-  if (slen > ADJ_NAMELEN)
+  if (slen > ADJ_NAME_LEN)
   {
-    strncpy(adj_error_msg, "Name variable too long; recompile with bigger ADJ_NAMELEN.", ADJ_ERROR_MSG_BUF);
+    strncpy(adj_error_msg, "Name variable too long; recompile with bigger ADJ_NAME_LEN.", ADJ_ERROR_MSG_BUF);
     return ADJ_ERR_INVALID_INPUTS;
   }
 
-  strncpy(var->name, name, ADJ_NAMELEN);
+  strncpy(var->name, name, ADJ_NAME_LEN);
   var->timestep = timestep;
   var->iteration = iteration;
   var->auxiliary = auxiliary;
@@ -49,9 +49,9 @@ int adj_create_nonlinear_block(char* name, int ndepends, adj_variable* depends, 
   memset(nblock, 0, sizeof(adj_nonlinear_block));
 
   slen = strlen(name);
-  if (slen > ADJ_NAMELEN)
+  if (slen > ADJ_NAME_LEN)
   {
-    strncpy(adj_error_msg, "Name variable too long; recompile with bigger ADJ_NAMELEN.", ADJ_ERROR_MSG_BUF);
+    strncpy(adj_error_msg, "Name variable too long; recompile with bigger ADJ_NAME_LEN.", ADJ_ERROR_MSG_BUF);
     return ADJ_ERR_INVALID_INPUTS;
   }
 
@@ -61,7 +61,7 @@ int adj_create_nonlinear_block(char* name, int ndepends, adj_variable* depends, 
     return ADJ_ERR_INVALID_INPUTS;
   }
 
-  strncpy(nblock->name, name, ADJ_NAMELEN);
+  strncpy(nblock->name, name, ADJ_NAME_LEN);
   nblock->coefficient = coefficient;
   nblock->context = context;
   nblock->ndepends = ndepends;
@@ -84,13 +84,13 @@ int adj_create_block(char* name, adj_nonlinear_block* nblock, void* context, int
   memset(block, 0, sizeof(adj_block));
 
   slen = strlen(name);
-  if (slen > ADJ_NAMELEN)
+  if (slen > ADJ_NAME_LEN)
   {
-    strncpy(adj_error_msg, "Name variable too long; recompile with bigger ADJ_NAMELEN.", ADJ_ERROR_MSG_BUF);
+    strncpy(adj_error_msg, "Name variable too long; recompile with bigger ADJ_NAME_LEN.", ADJ_ERROR_MSG_BUF);
     return ADJ_ERR_INVALID_INPUTS;
   }
 
-  strncpy(block->name, name, ADJ_NAMELEN);
+  strncpy(block->name, name, ADJ_NAME_LEN);
 
   if (nblock == NULL)
   {
@@ -134,5 +134,92 @@ int adj_variable_str(adj_variable var, char* name, size_t namelen)
     break;
   }
   snprintf(name, namelen, "%s:%d:%d%s", var.name, var.timestep, var.iteration, buf);
+  return ADJ_ERR_OK;
+}
+
+int adj_create_equation(adj_variable var, int nblocks, adj_block* blocks, adj_variable* targets, adj_equation* equation)
+{
+  int targets_variable;
+  int i;
+
+  /* First, let's check the variable isn't auxiliary.
+     Auxiliary means we don't solve an equation for it ... */
+  if (var.auxiliary)
+  {
+    char buf[ADJ_NAME_LEN];
+    adj_variable_str(var, buf, ADJ_NAME_LEN);
+    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Cannot register an equation for an auxiliary variable %s.", buf);
+    return ADJ_ERR_INVALID_INPUTS;
+  }
+
+  /* Check we have a sane nblocks */
+  if (nblocks < 1)
+  {
+    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "You need at least one block in an equation.");
+    return ADJ_ERR_INVALID_INPUTS;
+  }
+
+  /* So we haven't seen this variable before. Let's check that the equation actually references this variable.
+     Let's also check that no targets are auxiliary */
+  targets_variable = 0;
+  for (i = 0; i < nblocks; i++)
+  {
+    if (adj_variable_equal(&var, &(targets[i]), 1))
+      targets_variable = 1;
+
+    if (targets[i].auxiliary)
+    {
+      char buf[ADJ_NAME_LEN];
+      adj_variable_str(var, buf, ADJ_NAME_LEN);
+      snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Cannot target an auxiliary variable %s.", buf);
+      return ADJ_ERR_INVALID_INPUTS;
+    }
+  }
+
+  if (!targets_variable)
+  {
+    char buf[ADJ_NAME_LEN];
+    adj_variable_str(var, buf, ADJ_NAME_LEN);
+    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Trying to register an equation for %s, but this equation doesn't target this variable.", buf);
+    return ADJ_ERR_INVALID_INPUTS;
+  }
+
+  /* OK. We've done all the sanity checking we can. Let's build the adj_equation. */
+  equation->variable = var;
+  equation->nblocks = nblocks;
+  equation->blocks = (adj_block*) malloc(nblocks * sizeof(adj_block));
+  memcpy(equation->blocks, blocks, nblocks * sizeof(adj_block));
+  equation->targets = (adj_variable*) malloc(nblocks * sizeof(adj_variable));
+  memcpy(equation->targets, targets, nblocks * sizeof(adj_variable));
+
+  equation->nrhsdeps = 0;
+  equation->rhsdeps = NULL;
+
+  return ADJ_ERR_OK;
+}
+
+int adj_set_rhs_dependencies(adj_equation* equation, int nrhsdeps, adj_variable* rhsdeps)
+{
+  if (nrhsdeps < 1)
+  {
+    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "If you are registering rhs dependencies, you must have at least one dependency.");
+    return ADJ_ERR_INVALID_INPUTS;
+  }
+
+  equation->nrhsdeps = nrhsdeps;
+  equation->rhsdeps = (adj_variable*) malloc(nrhsdeps * sizeof(adj_variable));
+  memcpy(equation->rhsdeps, rhsdeps, nrhsdeps * sizeof(adj_variable));
+  return ADJ_ERR_OK;
+}
+
+int adj_destroy_equation(adj_equation* equation)
+{
+  free(equation->blocks); equation->blocks = NULL;
+  free(equation->targets); equation->targets = NULL;
+  if (equation->nrhsdeps > 0)
+  {
+    free(equation->rhsdeps); equation->rhsdeps = NULL;
+  }
+
   return ADJ_ERR_OK;
 }

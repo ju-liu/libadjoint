@@ -1,7 +1,7 @@
 #ifndef ADJ_CONSTANTS_H
 #define ADJ_CONSTANTS_H
 
-#define ADJ_NAMELEN (size_t)255
+#define ADJ_NAME_LEN (size_t)255
 
 #define adj_scalar double
 
@@ -25,6 +25,9 @@
 #define ADJ_ISP_FIRSTORDER 0
 #define ADJ_ISP_SECONDORDER 1
 
+/* storage strategies */
+#define ADJ_STORAGE_MEMORY 0
+
 /* operator callbacks */
 #define ADJ_NBLOCK_COLOURING_CB 1
 #define ADJ_NBLOCK_ACTION_CB 2
@@ -44,4 +47,7 @@
 #define ADJ_MAT_AXPY_CB 21
 #define ADJ_MAT_DESTROY_CB 22
 #define ADJ_MAT_GETVECS_CB 23
+
+/* prealloc constant */
+#define ADJ_PREALLOC_SIZE 255
 #endif

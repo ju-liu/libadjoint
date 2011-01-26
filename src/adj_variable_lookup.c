@@ -20,7 +20,7 @@ int adj_add_variable_data(adj_variable_hash* hash, adj_variable* var, adj_variab
   return ADJ_ERR_OK;
 }
 
-int adj_find_variable_data(adj_variable_hash* hash, adj_variable* var, adj_variable_data* data)
+int adj_find_variable_data(adj_variable_hash* hash, adj_variable* var, adj_variable_data** data)
 {
   adj_variable_hash* check;
 
@@ -29,7 +29,7 @@ int adj_find_variable_data(adj_variable_hash* hash, adj_variable* var, adj_varia
   if (check == NULL)
     return ADJ_ERR_HASH_FAILED;
 
-  data = check->data;
+  *data = check->data;
   return ADJ_ERR_OK;
 }
 

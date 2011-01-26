@@ -18,4 +18,5 @@ void adj_init_error_codes(void)
   strncpy(adj_error_codes[ADJ_ERR_HASH_FAILED], "ADJ_ERR_HASH_FAILED", ADJ_ERROR_MSG_BUF);
   strncpy(adj_error_codes[ADJ_ERR_NEED_CALLBACK], "ADJ_ERR_NEED_CALLBACK", ADJ_ERROR_MSG_BUF);
   strncpy(adj_error_codes[ADJ_ERR_NEED_VALUE], "ADJ_ERR_NEED_VALUE", ADJ_ERROR_MSG_BUF);
+  strncpy(adj_error_codes[ADJ_ERR_NOT_IMPLEMENTED], "ADJ_ERR_NOT_IMPLEMENTED", ADJ_ERROR_MSG_BUF);
 }

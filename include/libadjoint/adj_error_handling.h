@@ -14,6 +14,7 @@ char adj_error_msg[ADJ_ERROR_MSG_BUF];
 #define ADJ_ERR_HASH_FAILED 2
 #define ADJ_ERR_NEED_CALLBACK 3
 #define ADJ_ERR_NEED_VALUE 4
+#define ADJ_ERR_NOT_IMPLEMENTED 5
 
 char adj_error_codes[3][ADJ_ERROR_MSG_BUF];
 

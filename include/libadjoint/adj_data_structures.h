@@ -7,7 +7,7 @@
 
 typedef struct
 {
-  char name[ADJ_NAMELEN];
+  char name[ADJ_NAME_LEN];
   int timestep; /* what timestep this variable is associated with */
   int iteration; /* what iteration inside the timestep */
   int type; /* forward, adjoint, or tlm */
@@ -29,7 +29,7 @@ typedef struct
 
 typedef struct
 {
-  char name[ADJ_NAMELEN];
+  char name[ADJ_NAME_LEN];
   adj_scalar coefficient;
   int ndepends;
   adj_variable* depends;
@@ -38,7 +38,7 @@ typedef struct
 
 typedef struct
 {
-  char name[ADJ_NAMELEN];
+  char name[ADJ_NAME_LEN];
   int has_nonlinear_block;
   adj_nonlinear_block nonlinear_block;
   void* context;
@@ -48,10 +48,26 @@ typedef struct
 typedef struct
 {
   adj_variable variable;
-  int ntargets;
+  int nblocks;
   adj_block* blocks;
   adj_variable* targets;
+  int nrhsdeps;
+  adj_variable* rhsdeps;
 } adj_equation;
+
+typedef struct
+{
+  int storage_type;
+  int has_value;
+
+  /* for ADJ_STORAGE_MEMORY */
+  adj_vector value;
+
+  /* for ADJ_STORAGE_DISK */
+  char* filename;
+
+  /* POD, temporal interpolation, ... */
+} adj_storage_data;
 
 typedef struct adj_variable_data
 {
@@ -68,8 +84,7 @@ typedef struct adj_variable_data
 
   int nadjoint_equations;
   int* adjoint_equations;
-  int has_value;
-  adj_vector value;
+  adj_storage_data storage;
   struct adj_variable_data* next;
 } adj_variable_data;
 
@@ -87,6 +102,7 @@ typedef struct
   void (*vec_setvalues)(adj_vector *vec, adj_scalar scalars[]);
   void (*vec_getsize)(adj_vector vec, int *sz);
   void (*vec_divide)(adj_vector numerator, adj_vector denominator, adj_vector *output);
+
   void (*mat_duplicate)(adj_matrix matin, adj_matrix *matout);
   void (*mat_axpy)(adj_matrix *Y, adj_scalar alpha, adj_matrix X);
   void (*mat_destroy)(adj_matrix *mat);
@@ -95,7 +111,7 @@ typedef struct
 
 typedef struct adj_op_callback
 {
-  char name[ADJ_NAMELEN];
+  char name[ADJ_NAME_LEN];
   void (*callback)(void);
   struct adj_op_callback* next;
 } adj_op_callback;
@@ -123,17 +139,17 @@ typedef struct
 
 typedef struct
 {
-  int nequations;
-  adj_equation* equations;
+  int nequations; /* Number of equations we have registered */
+  int equations_sz; /* Number of equations we can store without mallocing -- not the same! */
+  adj_equation* equations; /* Array of equations we have registered */
 
-  adj_variable_data_list vardata;
-  adj_variable_hash* varhash;
+  adj_variable_hash* varhash; /* The hash table for looking up information about variables */
+  adj_variable_data_list vardata; /* We also store a linked list so we can walk all our variable data */
 
-  int options[ADJ_NO_OPTIONS];
+  int options[ADJ_NO_OPTIONS]; /* Pretty obvious */
 
-  adj_data_callbacks callbacks;
-  adj_op_callback_list nonlinear_colouring_sz_list;
-  adj_op_callback_list nonlinear_colouring_list;
+  adj_data_callbacks callbacks; /* Data callbacks */
+  adj_op_callback_list nonlinear_colouring_list; /* Operator callbacks */
   adj_op_callback_list nonlinear_action_list;
   adj_op_callback_list nonlinear_derivative_action_list;
   adj_op_callback_list nonlinear_derivative_assembly_list;
@@ -151,5 +167,8 @@ int adj_create_block(char* name, adj_nonlinear_block* nblock, void* context, int
 int adj_destroy_block(adj_block* block);
 int adj_variable_equal(adj_variable* var1, adj_variable* var2, int nvars);
 int adj_variable_str(adj_variable var, char* name, size_t namelen);
+int adj_create_equation(adj_variable var, int nblocks, adj_block* blocks, adj_variable* targets, adj_equation* equation);
+int adj_set_rhs_dependencies(adj_equation* equation, int nrhsdeps, adj_variable* rhsdeps);
+int adj_destroy_equation(adj_equation* equation);
 
 #endif
