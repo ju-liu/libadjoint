@@ -23,27 +23,9 @@ int adj_register_equation(adj_adjointer* adjointer, adj_equation equation)
 
   /* OK. We're good to go. */
   /* Let's add it to the hash table. */
-  new_data = (adj_variable_data*) malloc(sizeof(adj_variable_data));
-  new_data->equation = adjointer->nequations + 1; /* we're about to fill it in, don't worry */
-  new_data->next = NULL;
-  new_data->storage.has_value = 0;
-
-  /* add to the hash table */
-  ierr = adj_add_variable_data(adjointer->varhash, &(equation.variable), new_data);
+  ierr = adj_add_new_hash_entry(adjointer, &(equation.variable), &new_data);
   if (ierr != ADJ_ERR_OK) return ierr;
-
-  /* and add to the data list */
-  if (adjointer->vardata.firstnode == NULL)
-  {
-    adjointer->vardata.firstnode = new_data;
-    adjointer->vardata.lastnode = new_data;
-  }
-  else
-  {
-    adjointer->vardata.lastnode->next = new_data;
-    adjointer->vardata.lastnode = new_data;
-  }
-
+  new_data->equation = adjointer->nequations + 1;
   /* OK. Next create an entry for the adj_equation in the adjointer. */
 
   /* Check we have enough room, and if not, make some */
@@ -105,27 +87,9 @@ int adj_record_variable(adj_adjointer* adjointer, adj_variable var, adj_storage_
   {
     /* If the variable is auxiliary, it's alright that this is the first time we've ever seen it */
     adj_variable_data* new_data;
-    new_data = (adj_variable_data*) malloc(sizeof(adj_variable_data));
-    new_data->equation = -1; /* never set */
-    new_data->next = NULL;
-    new_data->storage.has_value = 0;
-
-    /* add to the hash table */
-    ierr = adj_add_variable_data(adjointer->varhash, &var, new_data);
+    ierr = adj_add_new_hash_entry(adjointer, &var, &new_data);
     if (ierr != ADJ_ERR_OK) return ierr;
-
-    /* and add to the data list */
-    if (adjointer->vardata.firstnode == NULL)
-    {
-      adjointer->vardata.firstnode = new_data;
-      adjointer->vardata.lastnode = new_data;
-    }
-    else
-    {
-      adjointer->vardata.lastnode->next = new_data;
-      adjointer->vardata.lastnode = new_data;
-    }
-
+    new_data->equation = -1; /* it doesn't have an equation */
     data = *new_data;
   }
 
@@ -426,4 +390,31 @@ adj_storage_data adj_storage_memory(adj_vector value)
   data.storage_type = ADJ_STORAGE_MEMORY;
   data.value = value;
   return data;
+}
+
+int adj_add_new_hash_entry(adj_adjointer* adjointer, adj_variable* var, adj_variable_data** data)
+{
+  int ierr;
+
+  *data = (adj_variable_data*) malloc(sizeof(adj_variable_data));
+  (*data)->next = NULL;
+  (*data)->storage.has_value = 0;
+
+  /* add to the hash table */
+  ierr = adj_add_variable_data(adjointer->varhash, var, *data);
+  if (ierr != ADJ_ERR_OK) return ierr;
+
+  /* and add to the data list */
+  if (adjointer->vardata.firstnode == NULL)
+  {
+    adjointer->vardata.firstnode = *data;
+    adjointer->vardata.lastnode = *data;
+  }
+  else
+  {
+    adjointer->vardata.lastnode->next = *data;
+    adjointer->vardata.lastnode = *data;
+  }
+
+  return ADJ_ERR_OK;
 }

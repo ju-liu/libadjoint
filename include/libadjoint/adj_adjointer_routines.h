@@ -19,6 +19,7 @@ int adj_find_operator_callback(adj_adjointer* adjointer, int type, char* name, v
 int adj_get_variable_value(adj_adjointer* adjointer, adj_variable var, adj_vector* value);
 int adj_forget_variable_value(adj_adjointer* adjointer, adj_variable_data* data);
 int adj_destroy_variable_data(adj_adjointer* adjointer, adj_variable_data* data);
+int adj_add_new_hash_entry(adj_adjointer* adjointer, adj_variable* var, adj_variable_data** data);
 
 adj_storage_data adj_storage_memory(adj_vector value);
 #endif
