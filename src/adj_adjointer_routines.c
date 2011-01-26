@@ -53,6 +53,24 @@ int adj_register_equation(adj_adjointer* adjointer, adj_equation equation)
     adjointer->equations_sz = adjointer->equations_sz + ADJ_PREALLOC_SIZE;
   }
 
+  adjointer->nequations++;
+  adjointer->equations[adjointer->nequations] = equation;
+  /* now we have copies of the pointer to the arrays of targets, blocks, rhs deps. */
+  /* but for consistency, any libadjoint object that the user creates, he must destroy --
+     it's simpler that way. */
+  /* so we're going to make our own copies, so that the user can destroy his. */
+  adjointer->equations[adjointer->nequations].blocks = (adj_block*) malloc(equation.nblocks * sizeof(adj_block));
+  memcpy(adjointer->equations[adjointer->nequations].blocks, equation.blocks, equation.nblocks * sizeof(adj_block));
+  adjointer->equations[adjointer->nequations].targets = (adj_variable*) malloc(equation.nblocks * sizeof(adj_variable));
+  memcpy(adjointer->equations[adjointer->nequations].targets, equation.targets, equation.nblocks * sizeof(adj_variable));
+  if (equation.nrhsdeps > 0)
+  {
+    adjointer->equations[adjointer->nequations].rhsdeps = (adj_variable*) malloc(equation.nrhsdeps * sizeof(adj_variable));
+    memcpy(adjointer->equations[adjointer->nequations].rhsdeps, equation.rhsdeps, equation.nrhsdeps * sizeof(adj_variable));
+  }
+
+  /* Now find all the entries we need to update in the hash table, and update them */
+
   return ADJ_ERR_OK;
 }
 
