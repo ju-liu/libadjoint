@@ -42,6 +42,7 @@ void petsc_vec_destroy_proc(adj_vector *x)
 #ifdef HAVE_PETSC
     VecDestroy(*(Vec*) x->ptr);
 #endif
+    free(x->ptr);
 }
 
 void petsc_mat_duplicate_proc(adj_matrix matin, adj_matrix *matout) 
@@ -78,6 +79,7 @@ void petsc_mat_destroy_proc(adj_matrix *mat)
 #ifdef HAVE_PETSC
     MatDestroy(*(Mat*) mat->ptr);
 #endif
+    free(mat->ptr);
 }
 
 void petsc_vec_getsize_proc(adj_vector vec, int *sz)
