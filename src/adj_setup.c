@@ -12,7 +12,7 @@ void  adj_init(int ierr)
 #endif
 }
 
-void adj_finalise(int ierr)
+void adj_finalize(int ierr)
 {
   ierr=0;
 #ifdef HAVE_PETSC

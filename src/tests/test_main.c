@@ -2,9 +2,10 @@
 
 int main(void) 
 {
-  int ierr;
+  int ierr=0;
   adj_init(ierr);
   TESTNAME();
-  adj_finalise(ierr);
+  adj_finalize(ierr);
+  return 0;
 }
 
