@@ -1,14 +1,29 @@
 #include "libadjoint/adj_petsc_data_structures.h"                                                                                                                                  
+#include "libadjoint/adj_adjointer_routines.h" 
+#include "libadjoint/adj_constants.h"
 #ifdef HAVE_PETSC
 #include "petscvec.h"
 #include "petscmat.h"                                                                                                                                                                                          
 #endif
 
+void adj_set_petsc_data_callbacks(adj_adjointer* adjointer)
+{
+  adj_register_data_callback(adjointer, ADJ_VEC_DUPLICATE_CB, (void (*)(void)) petsc_vec_duplicate_proc);
+  adj_register_data_callback(adjointer, ADJ_VEC_AXPY_CB,(void (*)(void)) petsc_vec_axpy_proc);
+  adj_register_data_callback(adjointer, ADJ_VEC_DESTROY_CB, (void (*)(void)) petsc_vec_destroy_proc);
+  adj_register_data_callback(adjointer, ADJ_MAT_GETVECS_CB, (void (*)(void)) petsc_mat_getvecs_proc);
+  adj_register_data_callback(adjointer, ADJ_MAT_AXPY_CB,(void (*)(void)) petsc_mat_axpy_proc);
+  adj_register_data_callback(adjointer, ADJ_MAT_DESTROY_CB,(void (*)(void)) petsc_mat_destroy_proc);
+  adj_register_data_callback(adjointer, ADJ_MAT_DUPLICATE_CB,(void (*)(void)) petsc_mat_duplicate_proc);
+  adj_register_data_callback(adjointer, ADJ_VEC_SETVALUES_CB,(void (*)(void)) petsc_vec_setvalues_proc);
+  adj_register_data_callback(adjointer, ADJ_VEC_DIVIDE_CB,(void (*)(void)) petsc_vec_divide_proc);
+}
+
  
 void petsc_vec_duplicate_proc(adj_vector x, adj_vector *newx)
 {
 #ifdef HAVE_PETSC
-  Vec *new_vec=NULL;
+  Vec *new_vec=(Vec*) malloc(sizeof(Vec));
   VecDuplicate( *(Vec*) x.ptr, new_vec);
   VecZeroEntries(*new_vec);
   newx->ptr = new_vec;
@@ -33,7 +48,7 @@ void petsc_mat_duplicate_proc(adj_matrix matin, adj_matrix *matout)
 {
     /* Duplicate a matrix */
 #ifdef HAVE_PETSC
-    Mat *new_mat=NULL;
+    Mat *new_mat=(Mat*) malloc(sizeof(Mat));
     MatDuplicate(*(Mat*) matin.ptr, MAT_DO_NOT_COPY_VALUES, new_mat);
     MatZeroEntries(*new_mat);
     matout->ptr = (adj_matrix *) new_mat;
