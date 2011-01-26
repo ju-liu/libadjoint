@@ -3,6 +3,13 @@ ifeq (,${CC})
 	CC := mpicc
 endif
 
+# Compiler-specific stuff here
+CC_VERSION = $(shell $(CC) --version 2>&1) $(shell $(CC) -V 2>&1)
+ifneq (,$(findstring gcc, $(CC_VERSION)))
+	# gcc-specific settings here
+	COMPILER_CFLAGS := 
+endif
+
 # Identify if PETSc is installed
 PETSC_CPPFLAGS = $(shell make -f cfg/petsc_makefile getincludedirs 2>/dev/null)
 PETSC_LDFLAGS  = $(shell make -f cfg/petsc_makefile getlinklibs 2>/dev/null)
@@ -13,7 +20,7 @@ else
 endif
 
 DBGFLAGS = -g -O0 -Wall
-CFLAGS = $(DBGFLAGS) $(PETSC_CPPFLAGS) -Iinclude/
+CFLAGS = $(DBGFLAGS) $(PETSC_CPPFLAGS) -Iinclude/ $(COMPILER_CFLAGS)
 
 # Identify Fortran compiler
 ifeq (,${FC})
@@ -34,7 +41,7 @@ ifneq (,$(findstring NAG, $(FC_VERSION)))
 	COMPILER_FFLAGS = -f2003
 endif
 
-FFLAGS = $(DBGFLAGS) $(PETSC_CPPFLAGS) -Iinclude/ -DHAVE_PETSC $(COMPILER_FFLAGS)
+FFLAGS = $(DBGFLAGS) $(PETSC_CPPFLAGS) -Iinclude/ $(COMPILER_FFLAGS)
 
 AR = ar
 ARFLAGS = cr

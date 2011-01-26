@@ -31,7 +31,7 @@ void petsc_vec_destroy_proc(adj_vector *x)
 
 void petsc_mat_duplicate_proc(adj_matrix matin, adj_matrix *matout) 
 {
-    // Duplicate a matrix
+    /* Duplicate a matrix */
 #ifdef HAVE_PETSC
     Mat *new_mat=NULL;
     MatDuplicate(*(Mat*) matin.ptr, MAT_DO_NOT_COPY_VALUES, new_mat);
@@ -42,7 +42,7 @@ void petsc_mat_duplicate_proc(adj_matrix matin, adj_matrix *matout)
 
 void petsc_mat_getvecs_proc(adj_matrix mat, adj_vector *left)
 {
-  // Get vector(s) compatible with the matrix, i.e. with the same parallel layout
+  /* Get vector(s) compatible with the matrix, i.e. with the same parallel layout */
 #ifdef HAVE_PETSC
     MatGetVecs(*(Mat*) mat.ptr, 0, (Vec*) left->ptr);
     VecZeroEntries(*(Vec*) left->ptr);
@@ -51,7 +51,7 @@ void petsc_mat_getvecs_proc(adj_matrix mat, adj_vector *left)
 
 void petsc_mat_axpy_proc(adj_matrix *Y, adj_scalar alpha, adj_matrix X)
 {
-    // Computes Y = alpha*X + Y.
+    /* Computes Y = alpha*X + Y. */
 #ifdef HAVE_PETSC
     MatAXPY(*(Mat*) Y->ptr, alpha, *(Mat*) X.ptr, SAME_NONZERO_PATTERN);
 #endif
@@ -59,7 +59,7 @@ void petsc_mat_axpy_proc(adj_matrix *Y, adj_scalar alpha, adj_matrix X)
 
 void petsc_mat_destroy_proc(adj_matrix *mat)
 {
-    // Frees space taken by a matrix.
+    /* Frees space taken by a matrix. */
 #ifdef HAVE_PETSC
     MatDestroy(*(Mat*) mat->ptr);
 #endif

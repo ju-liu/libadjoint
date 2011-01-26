@@ -1,10 +1,11 @@
 #ifndef ADJ_ADJOINTER_ROUTINES_H
 #define ADJ_ADJOINTER_ROUTINES_H
 
+#include <assert.h>
+#include <stdio.h>
 #include "adj_data_structures.h"
 #include "adj_variable_lookup.h"
 #include "adj_error_handling.h"
-#include <assert.h>
 
 int adj_create_adjointer(adj_adjointer* adjointer);
 int adj_destroy_adjointer(adj_adjointer* adjointer);

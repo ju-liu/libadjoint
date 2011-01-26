@@ -60,6 +60,8 @@ int adj_register_equation(adj_adjointer* adjointer, adj_equation equation)
     ierr = adj_find_variable_data(adjointer->varhash, &(equation.targets[i]), &data_ptr);
     if (ierr != ADJ_ERR_OK) return ierr;
 
+    /* this is already guaranteed to be a unique entry -- we have never seen this equation before.
+       so we don't need adj_append_unique */
     data_ptr->ntargeting_equations++;
     data_ptr->targeting_equations = (int*) realloc(data_ptr->targeting_equations, data_ptr->ntargeting_equations * sizeof(int));
     data_ptr->targeting_equations[data_ptr->ntargeting_equations - 1] = adjointer->nequations - 1;
@@ -124,6 +126,64 @@ int adj_register_equation(adj_adjointer* adjointer, adj_equation equation)
     {
       for (j = 0; j < equation.blocks[i].nonlinear_block.ndepends; j++)
       {
+        /* Register that this equation depends on this variable */
+        ierr = adj_find_variable_data(adjointer->varhash, &(equation.blocks[i].nonlinear_block.depends[j]), &data_ptr);
+        if (ierr == ADJ_ERR_HASH_FAILED && equation.blocks[i].nonlinear_block.depends[j].auxiliary)
+        {
+          /* It's ok if it's auxiliary -- it legitimately can be the first time we've seen it */
+          adj_variable_data* new_data;
+          ierr = adj_add_new_hash_entry(adjointer, &(equation.blocks[i].nonlinear_block.depends[j]), &new_data);
+          if (ierr != ADJ_ERR_OK) return ierr;
+          new_data->equation = -1; /* it doesn't have an equation */
+          data_ptr = new_data;
+        }
+        else
+        {
+          return ierr;
+        }
+        adj_append_unique(&(data_ptr->depending_equations), &(data_ptr->ndepending_equations), adjointer->nequations - 1);
+      }
+    }
+  }
+
+  /* And now perform the updates for .adjoint_equations implied by the existence of these dependencies. 
+     This is probably the hardest, most mindbending thing in the whole library -- sorry. There's no way
+     to really make this easy; you just have to work through it. */
+  for (i = 0; i < equation.nblocks; i++)
+  {
+    if (equation.blocks[i].has_nonlinear_block)
+    {
+      adj_variable_data* block_target_data; /* fetch the hash entry associated with the target of this block */
+      ierr = adj_find_variable_data(adjointer->varhash, &(equation.targets[i]), &block_target_data);
+      if (ierr != ADJ_ERR_OK) return ierr;
+
+      for (j = 0; j < equation.blocks[i].nonlinear_block.ndepends; j++)
+      {
+        int k;
+        adj_variable_data* j_data;
+
+        /* j_data ALWAYS refers to the data associated with the j'th dependency, throughout this whole loop */
+        ierr = adj_find_variable_data(adjointer->varhash, &(equation.blocks[i].nonlinear_block.depends[j]), &j_data);
+        if (ierr != ADJ_ERR_OK) return ierr;
+
+        /* One set of dependencies: the (adjoint equation of) (the target of this block) (needs) (this dependency) */
+        adj_append_unique(&(j_data->adjoint_equations), &(j_data->nadjoint_equations), block_target_data->equation);
+
+        /* Another set of dependencies: the (adjoint equation of) (the j'th dependency) (needs) (the target of this block) */
+        adj_append_unique(&(block_target_data->adjoint_equations), &(block_target_data->nadjoint_equations), j_data->equation);
+
+        /* Now we loop over all the dependencies again and fill in the cross-dependencies */
+        for (k = 0; k < equation.blocks[i].nonlinear_block.ndepends; k++)
+        {
+          adj_variable_data* k_data;
+
+          /* k_data ALWAYS refers to the data associated with the k'th dependency, throughout this whole loop */
+          ierr = adj_find_variable_data(adjointer->varhash, &(equation.blocks[i].nonlinear_block.depends[k]), &k_data);
+          if (ierr != ADJ_ERR_OK) return ierr;
+
+          /* Another set of dependencies: the (adjoint equation of) (the j'th dependency) (needs) (the k'th dependency) */
+          adj_append_unique(&(k_data->adjoint_equations), &(k_data->nadjoint_equations), j_data->equation);
+        }
       }
     }
   }
