@@ -19,11 +19,12 @@
 #define ADJ_ACTIVITY 0
 #define ADJ_ISP_ORDER 1
 
+/* whichever value is zero defines the default */
 #define ADJ_ACTIVITY_ADJOINT 0
 #define ADJ_ACTIVITY_NOTHING 1
 
-#define ADJ_ISP_FIRSTORDER 0
-#define ADJ_ISP_SECONDORDER 1
+#define ADJ_ISP_SECONDORDER 0
+#define ADJ_ISP_FIRSTORDER 1
 
 /* storage strategies */
 #define ADJ_STORAGE_MEMORY 0
