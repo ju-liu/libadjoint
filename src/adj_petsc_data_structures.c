@@ -23,7 +23,7 @@ void adj_set_petsc_data_callbacks(adj_adjointer* adjointer)
 void petsc_vec_duplicate_proc(adj_vector x, adj_vector *newx)
 {
 #ifdef HAVE_PETSC
-  Vec *new_vec=NULL;
+  Vec *new_vec=(Vec*) malloc(sizeof(Vec));
   VecDuplicate( *(Vec*) x.ptr, new_vec);
   VecZeroEntries(*new_vec);
   newx->ptr = new_vec;
@@ -48,7 +48,7 @@ void petsc_mat_duplicate_proc(adj_matrix matin, adj_matrix *matout)
 {
     // Duplicate a matrix
 #ifdef HAVE_PETSC
-    Mat *new_mat=NULL;
+    Mat *new_mat=(Mat*) malloc(sizeof(Mat));
     MatDuplicate(*(Mat*) matin.ptr, MAT_DO_NOT_COPY_VALUES, new_mat);
     MatZeroEntries(*new_mat);
     matout->ptr = (adj_matrix *) new_mat;
