@@ -5,14 +5,14 @@ int adj_destroy_adjointer(adj_adjointer* adjointer); */
 
 int adj_register_equation(adj_adjointer* adjointer, adj_equation equation)
 {
-  adj_variable_data data;
-  adj_variable_data* new_data;
+  adj_variable_data* data_ptr;
   int ierr;
+  int i;
 
   if (adjointer->options[ADJ_ACTIVITY] == ADJ_ACTIVITY_NOTHING) return ADJ_ERR_OK;
 
   /* Let's check we haven't solved for this variable before */
-  ierr = adj_find_variable_data(adjointer->varhash, &(equation.variable), &data);
+  ierr = adj_find_variable_data(adjointer->varhash, &(equation.variable), &data_ptr);
   if (ierr != ADJ_ERR_HASH_FAILED)
   {
     char buf[ADJ_NAME_LEN];
@@ -23,9 +23,9 @@ int adj_register_equation(adj_adjointer* adjointer, adj_equation equation)
 
   /* OK. We're good to go. */
   /* Let's add it to the hash table. */
-  ierr = adj_add_new_hash_entry(adjointer, &(equation.variable), &new_data);
+  ierr = adj_add_new_hash_entry(adjointer, &(equation.variable), &data_ptr);
   if (ierr != ADJ_ERR_OK) return ierr;
-  new_data->equation = adjointer->nequations + 1;
+  data_ptr->equation = adjointer->nequations + 1;
   /* OK. Next create an entry for the adj_equation in the adjointer. */
 
   /* Check we have enough room, and if not, make some */
@@ -36,23 +36,33 @@ int adj_register_equation(adj_adjointer* adjointer, adj_equation equation)
   }
 
   adjointer->nequations++;
-  adjointer->equations[adjointer->nequations] = equation;
+  adjointer->equations[adjointer->nequations - 1] = equation;
   /* now we have copies of the pointer to the arrays of targets, blocks, rhs deps. */
   /* but for consistency, any libadjoint object that the user creates, he must destroy --
      it's simpler that way. */
   /* so we're going to make our own copies, so that the user can destroy his. */
-  adjointer->equations[adjointer->nequations].blocks = (adj_block*) malloc(equation.nblocks * sizeof(adj_block));
-  memcpy(adjointer->equations[adjointer->nequations].blocks, equation.blocks, equation.nblocks * sizeof(adj_block));
-  adjointer->equations[adjointer->nequations].targets = (adj_variable*) malloc(equation.nblocks * sizeof(adj_variable));
-  memcpy(adjointer->equations[adjointer->nequations].targets, equation.targets, equation.nblocks * sizeof(adj_variable));
+  adjointer->equations[adjointer->nequations - 1].blocks = (adj_block*) malloc(equation.nblocks * sizeof(adj_block));
+  memcpy(adjointer->equations[adjointer->nequations - 1].blocks, equation.blocks, equation.nblocks * sizeof(adj_block));
+  adjointer->equations[adjointer->nequations - 1].targets = (adj_variable*) malloc(equation.nblocks * sizeof(adj_variable));
+  memcpy(adjointer->equations[adjointer->nequations - 1].targets, equation.targets, equation.nblocks * sizeof(adj_variable));
   if (equation.nrhsdeps > 0)
   {
-    adjointer->equations[adjointer->nequations].rhsdeps = (adj_variable*) malloc(equation.nrhsdeps * sizeof(adj_variable));
-    memcpy(adjointer->equations[adjointer->nequations].rhsdeps, equation.rhsdeps, equation.nrhsdeps * sizeof(adj_variable));
+    adjointer->equations[adjointer->nequations - 1].rhsdeps = (adj_variable*) malloc(equation.nrhsdeps * sizeof(adj_variable));
+    memcpy(adjointer->equations[adjointer->nequations - 1].rhsdeps, equation.rhsdeps, equation.nrhsdeps * sizeof(adj_variable));
   }
 
   /* Now find all the entries we need to update in the hash table, and update them */
+  /* First: targeting equations */
 
+  for (i = 0; i < equation.nblocks; i++)
+  {
+    ierr = adj_find_variable_data(adjointer->varhash, &(equation.targets[i]), &data_ptr);
+    if (ierr != ADJ_ERR_OK) return ierr;
+
+    data_ptr->ntargeting_equations++;
+    data_ptr->targeting_equations = (int*) realloc(data_ptr->targeting_equations, data_ptr->ntargeting_equations * sizeof(int));
+    data_ptr->targeting_equations[data_ptr->ntargeting_equations - 1] = adjointer->nequations - 1;
+  }
   return ADJ_ERR_OK;
 }
 
@@ -76,12 +86,12 @@ int adj_equation_count(adj_adjointer* adjointer, int* count)
 
 int adj_record_variable(adj_adjointer* adjointer, adj_variable var, adj_storage_data storage)
 {
-  adj_variable_data data;
+  adj_variable_data* data_ptr;
   int ierr;
 
   if (adjointer->options[ADJ_ACTIVITY] == ADJ_ACTIVITY_NOTHING) return ADJ_ERR_OK;
 
-  ierr = adj_find_variable_data(adjointer->varhash, &var, &data);
+  ierr = adj_find_variable_data(adjointer->varhash, &var, &data_ptr);
   if (ierr != ADJ_ERR_OK && !var.auxiliary) return ierr;
   if (ierr != ADJ_ERR_OK && var.auxiliary)
   {
@@ -90,10 +100,10 @@ int adj_record_variable(adj_adjointer* adjointer, adj_variable var, adj_storage_
     ierr = adj_add_new_hash_entry(adjointer, &var, &new_data);
     if (ierr != ADJ_ERR_OK) return ierr;
     new_data->equation = -1; /* it doesn't have an equation */
-    data = *new_data;
+    data_ptr = new_data;
   }
 
-  if (data.storage.has_value)
+  if (data_ptr->storage.has_value)
   {
     char buf[ADJ_NAME_LEN];
     adj_variable_str(var, buf, ADJ_NAME_LEN);
@@ -109,9 +119,9 @@ int adj_record_variable(adj_adjointer* adjointer, adj_variable var, adj_storage_
     case ADJ_STORAGE_MEMORY:
       if (adjointer->callbacks.vec_duplicate == NULL) return ADJ_ERR_NEED_CALLBACK;
       if (adjointer->callbacks.vec_axpy == NULL) return ADJ_ERR_NEED_CALLBACK;
-      data.storage.storage_type = ADJ_STORAGE_MEMORY;
-      adjointer->callbacks.vec_duplicate(storage.value, &(data.storage.value));
-      adjointer->callbacks.vec_axpy(&(data.storage.value), (adj_scalar)1.0, storage.value);
+      data_ptr->storage.storage_type = ADJ_STORAGE_MEMORY;
+      adjointer->callbacks.vec_duplicate(storage.value, &(data_ptr->storage.value));
+      adjointer->callbacks.vec_axpy(&(data_ptr->storage.value), (adj_scalar)1.0, storage.value);
       break;
     default:
       strncpy(adj_error_msg, "Storage types other than ADJ_STORAGE_MEMORY are not implemented yet.", ADJ_ERROR_MSG_BUF);
@@ -309,19 +319,19 @@ int adj_find_operator_callback(adj_adjointer* adjointer, int type, char* name, v
 int adj_get_variable_value(adj_adjointer* adjointer, adj_variable var, adj_vector* value)
 {
   int ierr;
-  adj_variable_data data;
+  adj_variable_data* data_ptr;
 
-  ierr = adj_find_variable_data(adjointer->varhash, &var, &data);
+  ierr = adj_find_variable_data(adjointer->varhash, &var, &data_ptr);
   if (ierr != ADJ_ERR_OK) return ierr;
 
-  if (data.storage.storage_type != ADJ_STORAGE_MEMORY)
+  if (data_ptr->storage.storage_type != ADJ_STORAGE_MEMORY)
   {
     ierr = ADJ_ERR_NOT_IMPLEMENTED;
     snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Sorry, storage strategies other than ADJ_STORAGE_MEMORY are not implemented yet.");
     return ierr;
   }
 
-  if (!data.storage.has_value)
+  if (!data_ptr->storage.has_value)
   {
     char buf[ADJ_NAME_LEN];
     adj_variable_str(var, buf, ADJ_NAME_LEN);
@@ -331,7 +341,7 @@ int adj_get_variable_value(adj_adjointer* adjointer, adj_variable var, adj_vecto
     return ierr;
   }
 
-  *value = data.storage.value;
+  *value = data_ptr->storage.value;
   return ADJ_ERR_OK;
 }
 
@@ -399,6 +409,14 @@ int adj_add_new_hash_entry(adj_adjointer* adjointer, adj_variable* var, adj_vari
   *data = (adj_variable_data*) malloc(sizeof(adj_variable_data));
   (*data)->next = NULL;
   (*data)->storage.has_value = 0;
+  (*data)->ntargeting_equations = 0;
+  (*data)->targeting_equations = NULL;
+  (*data)->ndepending_equations = 0;
+  (*data)->depending_equations = NULL;
+  (*data)->nrhs_equations = 0;
+  (*data)->rhs_equations = NULL;
+  (*data)->nadjoint_equations = 0;
+  (*data)->adjoint_equations = NULL;
 
   /* add to the hash table */
   ierr = adj_add_variable_data(adjointer->varhash, var, *data);
