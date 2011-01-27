@@ -1,7 +1,124 @@
 #include "libadjoint/adj_adjointer_routines.h"
 
-/* int adj_create_adjointer(adj_adjointer* adjointer);
-int adj_destroy_adjointer(adj_adjointer* adjointer); */
+int adj_create_adjointer(adj_adjointer* adjointer)
+{
+  int i;
+
+  adjointer->nequations = 0;
+  adjointer->equations_sz = 0;
+  adjointer->equations = NULL;
+
+  adjointer->varhash = NULL;
+  adjointer->vardata.firstnode = NULL;
+  adjointer->vardata.lastnode = NULL;
+
+  adjointer->callbacks.vec_duplicate = NULL;
+  adjointer->callbacks.vec_axpy = NULL;
+  adjointer->callbacks.vec_destroy = NULL;
+  adjointer->callbacks.vec_setvalues = NULL;
+  adjointer->callbacks.vec_getsize = NULL;
+  adjointer->callbacks.vec_divide = NULL;
+
+  adjointer->callbacks.mat_duplicate = NULL;
+  adjointer->callbacks.mat_axpy = NULL;
+  adjointer->callbacks.mat_destroy = NULL;
+  adjointer->callbacks.mat_getvecs = NULL;
+
+  adjointer->nonlinear_colouring_list.firstnode = NULL;
+  adjointer->nonlinear_colouring_list.lastnode = NULL;
+  adjointer->nonlinear_action_list.firstnode = NULL;
+  adjointer->nonlinear_action_list.lastnode = NULL;
+  adjointer->nonlinear_derivative_action_list.firstnode = NULL;
+  adjointer->nonlinear_derivative_action_list.lastnode = NULL;
+  adjointer->nonlinear_derivative_assembly_list.firstnode = NULL;
+  adjointer->nonlinear_derivative_assembly_list.lastnode = NULL;
+  adjointer->block_action_list.firstnode = NULL;
+  adjointer->block_action_list.lastnode = NULL;
+  adjointer->block_assembly_list.firstnode = NULL;
+  adjointer->block_assembly_list.lastnode = NULL;
+
+  for (i = 0; i < ADJ_NO_OPTIONS; i++)
+    adjointer->options[i] = 0; /* 0 is the default for all options */
+
+  return ADJ_ERR_OK;
+}
+
+int adj_destroy_adjointer(adj_adjointer* adjointer)
+{
+  int i;
+  int ierr;
+  adj_variable_data* data_ptr;
+  adj_variable_data* data_ptr_tmp;
+  adj_op_callback* cb_ptr;
+  adj_op_callback* cb_ptr_tmp;
+
+  for (i = 0; i < adjointer->nequations; i++)
+  {
+    ierr = adj_destroy_equation(&(adjointer->equations[i]));
+    if (ierr != ADJ_ERR_OK) return ierr;
+  }
+  if (adjointer->equations != NULL) free(adjointer->equations);
+
+  data_ptr = adjointer->vardata.firstnode;
+  while (data_ptr != NULL)
+  {
+    ierr = adj_destroy_variable_data(adjointer, data_ptr);
+    data_ptr_tmp = data_ptr;
+    data_ptr = data_ptr->next;
+    free(data_ptr_tmp);
+  }
+
+  cb_ptr = adjointer->nonlinear_colouring_list.firstnode;
+  while(cb_ptr != NULL)
+  {
+    cb_ptr_tmp = cb_ptr;
+    cb_ptr = cb_ptr->next;
+    free(cb_ptr_tmp);
+  }
+
+  cb_ptr = adjointer->nonlinear_action_list.firstnode;
+  while(cb_ptr != NULL)
+  {
+    cb_ptr_tmp = cb_ptr;
+    cb_ptr = cb_ptr->next;
+    free(cb_ptr_tmp);
+  }
+
+  cb_ptr = adjointer->nonlinear_derivative_action_list.firstnode;
+  while(cb_ptr != NULL)
+  {
+    cb_ptr_tmp = cb_ptr;
+    cb_ptr = cb_ptr->next;
+    free(cb_ptr_tmp);
+  }
+
+  cb_ptr = adjointer->nonlinear_derivative_assembly_list.firstnode;
+  while(cb_ptr != NULL)
+  {
+    cb_ptr_tmp = cb_ptr;
+    cb_ptr = cb_ptr->next;
+    free(cb_ptr_tmp);
+  }
+
+  cb_ptr = adjointer->block_action_list.firstnode;
+  while(cb_ptr != NULL)
+  {
+    cb_ptr_tmp = cb_ptr;
+    cb_ptr = cb_ptr->next;
+    free(cb_ptr_tmp);
+  }
+
+  cb_ptr = adjointer->block_assembly_list.firstnode;
+  while(cb_ptr != NULL)
+  {
+    cb_ptr_tmp = cb_ptr;
+    cb_ptr = cb_ptr->next;
+    free(cb_ptr_tmp);
+  }
+
+  adj_create_adjointer(adjointer);
+  return ADJ_ERR_OK;
+}
 
 int adj_register_equation(adj_adjointer* adjointer, adj_equation equation)
 {
