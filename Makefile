@@ -23,7 +23,7 @@ DBGFLAGS = -g -O0 -Wall
 CFLAGS = $(DBGFLAGS) $(PETSC_CPPFLAGS) -Iinclude/ $(COMPILER_CFLAGS)
 
 # Identify Fortran compiler
-ifeq (,${FC})
+ifeq (f77,$(FC)) # the default value of FC is f77, for some arcane reason
 	FC := mpif90
 endif
 
