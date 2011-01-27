@@ -176,7 +176,13 @@ int adj_register_equation(adj_adjointer* adjointer, adj_equation equation)
   for (i = 0; i < equation.nblocks; i++)
   {
     ierr = adj_find_variable_data(&(adjointer->varhash), &(equation.targets[i]), &data_ptr);
-    if (ierr != ADJ_ERR_OK) return ierr;
+    if (ierr != ADJ_ERR_OK)
+    {
+      char buf[ADJ_NAME_LEN];
+      adj_variable_str(equation.targets[i], buf, ADJ_NAME_LEN);
+      snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "The equation to be registered has a block is targeting %s, but I do not have an equation for that variable yet.", buf);
+      return ierr;
+    }
 
     /* this is already guaranteed to be a unique entry -- we have never seen this equation before.
        so we don't need adj_append_unique */
@@ -362,6 +368,7 @@ int adj_record_variable(adj_adjointer* adjointer, adj_variable var, adj_storage_
       if (adjointer->callbacks.vec_duplicate == NULL) return ADJ_ERR_NEED_CALLBACK;
       if (adjointer->callbacks.vec_axpy == NULL) return ADJ_ERR_NEED_CALLBACK;
       data_ptr->storage.storage_type = ADJ_STORAGE_MEMORY;
+      data_ptr->storage.has_value = storage.has_value;
       adjointer->callbacks.vec_duplicate(storage.value, &(data_ptr->storage.value));
       adjointer->callbacks.vec_axpy(&(data_ptr->storage.value), (adj_scalar)1.0, storage.value);
       break;
@@ -639,6 +646,7 @@ adj_storage_data adj_storage_memory(adj_vector value)
 {
   adj_storage_data data;
 
+  data.has_value = 1;
   data.storage_type = ADJ_STORAGE_MEMORY;
   data.value = value;
   return data;

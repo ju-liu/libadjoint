@@ -79,7 +79,7 @@ class UnitTestHarness:
                 test.log("%d failures" % F)
 
             if (P, W, F) == (0, 0, 0):
-              print "    Warning: no output from test"
+              test.log("no output")
               warncount += 1
               warntests.append(test.exe)
 

@@ -71,6 +71,6 @@ void test_adj_dependencies(void)
 
   ierr = adj_find_variable_data(&(adjointer.varhash), &(u[2]), &data_ptr);
   adj_test_assert(ierr == 0, "Should have worked");
-  adj_test_assert(data_ptr->nadjoint_equations == 2, "Should be necessary for all three adjoint equations");
+  adj_test_assert(data_ptr->nadjoint_equations == 2, "Should be necessary for the first two adjoint equations");
   adj_test_assert(memcmp(data_ptr->adjoint_equations, adj_equations_u11, 2*sizeof(int)) == 0, "Should be {1, 2}");
 }
