@@ -2,7 +2,7 @@
 #include "adj_data_structures.h"
 #include "adj_test_tools.h"
 
-void test_adj_register_equation()
+void test_adj_register_equation(void)
 {
   int ierr, cnt;
   adj_adjointer adjointer;
