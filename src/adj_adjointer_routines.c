@@ -175,7 +175,13 @@ int adj_register_equation(adj_adjointer* adjointer, adj_equation equation)
   for (i = 0; i < equation.nblocks; i++)
   {
     ierr = adj_find_variable_data(&(adjointer->varhash), &(equation.targets[i]), &data_ptr);
-    if (ierr != ADJ_ERR_OK) return ierr;
+    if (ierr != ADJ_ERR_OK)
+    {
+      char buf[ADJ_NAME_LEN];
+      adj_variable_str(equation.targets[i], buf, ADJ_NAME_LEN);
+      snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "The equation to be registered has a block is targeting %s but I do not have an equation for that variable yet.", buf);
+      return ierr;
+    }
 
     /* this is already guaranteed to be a unique entry -- we have never seen this equation before.
        so we don't need adj_append_unique */
