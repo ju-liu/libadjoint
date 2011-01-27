@@ -63,6 +63,7 @@ int adj_destroy_adjointer(adj_adjointer* adjointer)
   while (data_ptr != NULL)
   {
     ierr = adj_destroy_variable_data(adjointer, data_ptr);
+    if (ierr != ADJ_ERR_OK) return ierr;
     data_ptr_tmp = data_ptr;
     data_ptr = data_ptr->next;
     free(data_ptr_tmp);
@@ -260,7 +261,7 @@ int adj_register_equation(adj_adjointer* adjointer, adj_equation equation)
           new_data->equation = -1; /* it doesn't have an equation */
           data_ptr = new_data;
         }
-        else
+        else if (ierr == ADJ_ERR_HASH_FAILED)
         {
           return ierr;
         }

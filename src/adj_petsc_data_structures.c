@@ -1,10 +1,4 @@
-#include "libadjoint/adj_petsc_data_structures.h"                                                                                                                                  
-#include "libadjoint/adj_adjointer_routines.h" 
-#include "libadjoint/adj_constants.h"
-#ifdef HAVE_PETSC
-#include "petscvec.h"
-#include "petscmat.h"                                                                                                                                                                                          
-#endif
+#include "libadjoint/adj_petsc_data_structures.h"
 
 void adj_set_petsc_data_callbacks(adj_adjointer* adjointer)
 {
@@ -19,7 +13,6 @@ void adj_set_petsc_data_callbacks(adj_adjointer* adjointer)
   adj_register_data_callback(adjointer, ADJ_VEC_DIVIDE_CB,(void (*)(void)) petsc_vec_divide_proc);
 }
 
- 
 void petsc_vec_duplicate_proc(adj_vector x, adj_vector *newx)
 {
 #ifdef HAVE_PETSC
@@ -110,3 +103,19 @@ void petsc_vec_divide_proc(adj_vector numerator, adj_vector denominator, adj_vec
 #endif
 }
 
+#ifdef HAVE_PETSC
+adj_vector petsc_vec_to_adj_vector(Vec* v)
+{
+  adj_vector vv;
+  vv.ptr = (void*)v;
+  vv.klass = 0;
+  return vv;
+}
+
+Vec petsc_vec_from_adj_vector(adj_vector vv)
+{
+  Vec v;
+  v = *(Vec*) vv.ptr;
+  return v;
+}
+#endif
