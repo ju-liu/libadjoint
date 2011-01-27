@@ -20,8 +20,8 @@ void test_adj_dependencies(void)
   adj_equation eqn;
   int ierr;
   int adj_equations_u0[3] = {1, 2, 3};
-  /* int adj_equations_u10[3] = {1, 2, 3};
-  int adj_equations_u11[2] = {1, 2}; */
+  int adj_equations_u10[3] = {1, 2, 3};
+  int adj_equations_u11[2] = {1, 2};
 
   adj_create_adjointer(&adjointer);
   adj_set_petsc_data_callbacks(&adjointer);
@@ -73,5 +73,14 @@ void test_adj_dependencies(void)
   adj_test_assert(data_ptr->nadjoint_equations == 3, "Should be necessary for all three adjoint equations");
   adj_test_assert(memcmp(data_ptr->adjoint_equations, adj_equations_u0, 3*sizeof(int)) == 0, "Should be {1, 2, 3}");
 
+  ierr = adj_find_variable_data(&(adjointer.varhash), &(u[1]), &data_ptr);
+  adj_test_assert(ierr == 0, "Should have worked");
+  adj_test_assert(data_ptr->nadjoint_equations == 3, "Should be necessary for all three adjoint equations");
+  adj_test_assert(memcmp(data_ptr->adjoint_equations, adj_equations_u10, 3*sizeof(int)) == 0, "Should be {1, 2, 3}");
+
+  ierr = adj_find_variable_data(&(adjointer.varhash), &(u[2]), &data_ptr);
+  adj_test_assert(ierr == 0, "Should have worked");
+  adj_test_assert(data_ptr->nadjoint_equations == 2, "Should be necessary for all three adjoint equations");
+  adj_test_assert(memcmp(data_ptr->adjoint_equations, adj_equations_u11, 2*sizeof(int)) == 0, "Should be {1, 2}");
 }
 #endif
