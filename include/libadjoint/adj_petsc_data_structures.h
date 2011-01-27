@@ -3,9 +3,13 @@
 
 #include <string.h>
 #include "adj_constants.h"
-#include "libadjoint/adj_data_structures.h"
+#include "adj_adjointer_routines.h"
+#include "adj_data_structures.h"
 #include "uthash.h"
-
+#ifdef HAVE_PETSC
+#include "petscvec.h"
+#include "petscmat.h"
+#endif
 
 void adj_set_petsc_data_callbacks(adj_adjointer *adjointer);
 
@@ -20,5 +24,10 @@ void petsc_mat_getvecs_proc(adj_matrix mat, adj_vector *left);
 void petsc_mat_axpy_proc(adj_matrix *Y, adj_scalar alpha, adj_matrix X);
 void petsc_mat_duplicate_proc(adj_matrix matin, adj_matrix *matout);
 void petsc_mat_destroy_proc(adj_matrix *mat);
+
+#ifdef HAVE_PETSC
+adj_vector petsc_vec_to_adj_vector(Vec* v);
+Vec petsc_vec_from_adj_vector(adj_vector vector);
+#endif
 
 #endif

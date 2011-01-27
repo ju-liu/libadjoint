@@ -255,7 +255,7 @@ int adj_register_equation(adj_adjointer* adjointer, adj_equation equation)
           new_data->equation = -1; /* it doesn't have an equation */
           data_ptr = new_data;
         }
-        else
+        else if (ierr == ADJ_ERR_HASH_FAILED)
         {
           return ierr;
         }
