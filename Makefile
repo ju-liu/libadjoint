@@ -75,7 +75,7 @@ obj/%.o: src/%.F90
 
 obj/%.o: src/%.c
 	@echo "  CC $<"
-	$(CC) $(CFLAGS) -c -o $@ $<
+	@$(CC) $(CFLAGS) -c -o $@ $<
 
 lib/libadjoint.a: $(FOBJ) $(COBJ)
 	@echo "  AR $@"
