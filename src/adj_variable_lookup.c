@@ -26,7 +26,7 @@ int adj_find_variable_data(adj_variable_hash* hash, adj_variable* var, adj_varia
 
   HASH_FIND(hh, hash, var, sizeof(adj_variable), check);
 
-  if (check == NULL)
+  if (!check) // == NULL)
     return ADJ_ERR_HASH_FAILED;
 
   *data = check->data;
