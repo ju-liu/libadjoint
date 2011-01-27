@@ -63,6 +63,7 @@ int adj_destroy_adjointer(adj_adjointer* adjointer)
   while (data_ptr != NULL)
   {
     ierr = adj_destroy_variable_data(adjointer, data_ptr);
+    if (ierr != ADJ_ERR_OK) return ierr;
     data_ptr_tmp = data_ptr;
     data_ptr = data_ptr->next;
     free(data_ptr_tmp);
