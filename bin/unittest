@@ -72,6 +72,11 @@ class UnitTestHarness:
                 test.log("1 pass")
               else:
                 test.log("%d passes" % P)
+            elif F > 0:
+              if F == 1:
+                test.log("1 fail")
+              else:
+                test.log("%d failures" % F)
 
             if (P, W, F) == (0, 0, 0):
               print "    Warning: no output from test"
