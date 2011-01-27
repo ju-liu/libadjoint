@@ -19,6 +19,7 @@ int adj_create_variable(char* name, int timestep, int iteration, int auxiliary, 
   var->timestep = timestep;
   var->iteration = iteration;
   var->auxiliary = auxiliary;
+  var->type = ADJ_FORWARD;
 
   return ADJ_ERR_OK;
 }
@@ -121,6 +122,9 @@ int adj_variable_equal(adj_variable* var1, adj_variable* var2, int nvars)
 int adj_variable_str(adj_variable var, char* name, size_t namelen)
 {
   char buf[255];
+  memset(buf, 0, 255*sizeof(char));
+  memset(name, 0, namelen*sizeof(char));
+
   switch (var.type)
   {
   case (ADJ_FORWARD):
@@ -132,6 +136,8 @@ int adj_variable_str(adj_variable var, char* name, size_t namelen)
   case (ADJ_TLM):
     snprintf(buf, 255, ":Sensitivity[%d]", var.functional);
     break;
+  default:
+    assert(0);
   }
   snprintf(name, namelen, "%s:%d:%d%s", var.name, var.timestep, var.iteration, buf);
   return ADJ_ERR_OK;
