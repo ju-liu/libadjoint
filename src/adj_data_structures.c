@@ -111,6 +111,9 @@ int adj_create_block(char* name, adj_nonlinear_block* nblock, void* context, int
 
 int adj_destroy_block(adj_block* block)
 {
+  /* Dummy to fool the compiler into not printing a warning */
+  adj_block b;
+  b = *block;
   return ADJ_ERR_OK;
 }
 

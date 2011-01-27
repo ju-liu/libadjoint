@@ -86,13 +86,15 @@ void petsc_vec_setvalues_proc(adj_vector *vec, adj_scalar scalars[])
 {
 #ifdef HAVE_PETSC
   int i, sz;
+  PetscInt* x;
   petsc_vec_getsize_proc(*vec, &sz);
-  PetscInt x[sz];
+  x = (PetscInt*) malloc(sz * sizeof(PetscInt));
   for (i=0; i<sz;  i++)
     x[i]=i;
   VecSetValues(*(Vec*) vec->ptr, sz, x, scalars, INSERT_VALUES);
   VecAssemblyBegin(*(Vec*) vec->ptr);
   VecAssemblyEnd(*(Vec*) vec->ptr);
+  free(x);
 #endif
 }
 
