@@ -1,14 +1,6 @@
 #include "libadjoint/adj_adjointer_routines.h"
 #include "libadjoint/adj_test_tools.h"
 
-#ifndef HAVE_PETSC
-void test_adj_dependencies(void)
-{
-  adj_test_assert(1 == 1, "Don't have PETSc so can't run this test.");
-}
-#else
-#include "libadjoint/adj_petsc_data_structures.h"
-
 void test_adj_dependencies(void)
 {
   adj_adjointer adjointer;
@@ -24,7 +16,6 @@ void test_adj_dependencies(void)
   int adj_equations_u11[2] = {1, 2};
 
   adj_create_adjointer(&adjointer);
-  adj_set_petsc_data_callbacks(&adjointer);
 
   /* Set up the problem */
   adj_create_variable("Velocity", 0, 0, ADJ_NORMAL_VARIABLE, &u[0]);
@@ -83,4 +74,3 @@ void test_adj_dependencies(void)
   adj_test_assert(data_ptr->nadjoint_equations == 2, "Should be necessary for the first two adjoint equations");
   adj_test_assert(memcmp(data_ptr->adjoint_equations, adj_equations_u11, 2*sizeof(int)) == 0, "Should be {1, 2}");
 }
-#endif

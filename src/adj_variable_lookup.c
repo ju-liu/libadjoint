@@ -41,7 +41,7 @@ void adj_print_hash(adj_variable_hash** hash)
   {
     char buf[255];
     adj_variable_str(entry->variable, buf, 255); buf[254] = '\0';
-    fprintf(stderr, "%s -> %p\n", buf, entry->data);
+    fprintf(stderr, "%s -> %p\n", buf, (void*)entry->data);
   }
 }
 

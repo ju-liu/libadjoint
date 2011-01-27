@@ -337,14 +337,6 @@ int adj_record_variable(adj_adjointer* adjointer, adj_variable var, adj_storage_
   adj_variable_data* data_ptr;
   int ierr;
 
-  if (!storage.has_value)
-  {
-	 char buf[ADJ_NAME_LEN];
-	 adj_variable_str(var, buf, ADJ_NAME_LEN);
-	 snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "The supplied storage data for recording variable %s has no value.", buf);
-	 return ADJ_ERR_INVALID_INPUTS;
-  }
-
   if (adjointer->options[ADJ_ACTIVITY] == ADJ_ACTIVITY_NOTHING) return ADJ_ERR_OK;
 
   ierr = adj_find_variable_data(&(adjointer->varhash), &var, &data_ptr);
@@ -376,6 +368,7 @@ int adj_record_variable(adj_adjointer* adjointer, adj_variable var, adj_storage_
       if (adjointer->callbacks.vec_duplicate == NULL) return ADJ_ERR_NEED_CALLBACK;
       if (adjointer->callbacks.vec_axpy == NULL) return ADJ_ERR_NEED_CALLBACK;
       data_ptr->storage.storage_type = ADJ_STORAGE_MEMORY;
+      data_ptr->storage.has_value = storage.has_value;
       adjointer->callbacks.vec_duplicate(storage.value, &(data_ptr->storage.value));
       adjointer->callbacks.vec_axpy(&(data_ptr->storage.value), (adj_scalar)1.0, storage.value);
       break;
@@ -384,7 +377,6 @@ int adj_record_variable(adj_adjointer* adjointer, adj_variable var, adj_storage_
       return ADJ_ERR_NOT_IMPLEMENTED;
   }
 
-  data_ptr->storage.has_value = 1;
   return ADJ_ERR_OK;
 }
 

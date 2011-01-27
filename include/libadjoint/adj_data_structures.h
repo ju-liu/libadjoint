@@ -2,6 +2,7 @@
 #define ADJ_DATA_STRUCTURES_H
 
 #include <string.h>
+#include <assert.h>
 #include "adj_constants.h"
 #include "uthash.h"
 
