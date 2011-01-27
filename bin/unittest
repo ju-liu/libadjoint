@@ -111,7 +111,7 @@ if __name__ == "__main__":
 
     if "--electricfence" in sys.argv:
       os.putenv("LD_PRELOAD", "/usr/lib/libefence.so.0.0")
-      #os.putenv("EF_DISABLE_BANNER", "1")
+      os.putenv("EF_DISABLE_BANNER", "1")
 
     TestHarness = UnitTestHarness(sys.argv[-1])
     TestHarness.run()

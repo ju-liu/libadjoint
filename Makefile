@@ -1,5 +1,5 @@
 # Identify C compiler
-ifeq (,${CC})
+ifeq ($(origin CC),default)
 	CC := mpicc
 endif
 
@@ -23,7 +23,7 @@ DBGFLAGS = -g -O0 -Wall
 CFLAGS = $(DBGFLAGS) $(PETSC_CPPFLAGS) -Iinclude/ $(COMPILER_CFLAGS)
 
 # Identify Fortran compiler
-ifeq (,${FC})
+ifeq ($(origin FC),default)
 	FC := mpif90
 endif
 
