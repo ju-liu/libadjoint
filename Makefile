@@ -121,3 +121,10 @@ obj/adj_adjointer_routines.o: include/libadjoint/adj_adjointer_routines.h includ
 	                            include/libadjoint/uthash.h include/libadjoint/adj_variable_lookup.h include/libadjoint/adj_error_handling.h
 obj/adj_variable_lookup.o: include/libadjoint/adj_variable_lookup.h include/libadjoint/adj_data_structures.h include/libadjoint/adj_constants.h include/libadjoint/uthash.h  include/libadjoint/adj_error_handling.h
 obj/adj_petsc_datastructures.o:  include/libadjoint/adj_petsc_datastructures.h include/libadjoint/adj_data_structures.h
+obj/adj_evaluation.o: include/libadjoint/adj_evaluation.h include/libadjoint/adj_data_structures.h include/libadjoint/adj_constants.h include/libadjoint/uthash.h include/libadjoint/adj_error_handling.h \
+	                    include/libadjoint/adj_adjointer_routines.h include/libadjoint/adj_data_structures.h include/libadjoint/adj_variable_lookup.h include/libadjoint/adj_error_handling.h
+obj/adj_petsc_data_structures.o: include/libadjoint/adj_petsc_data_structures.h include/libadjoint/adj_constants.h include/libadjoint/adj_adjointer_routines.h include/libadjoint/adj_data_structures.h include/libadjoint/uthash.h \
+	                               include/libadjoint/adj_variable_lookup.h include/libadjoint/adj_error_handling.h
+obj/adj_simplification.o: include/libadjoint/adj_simplification.h include/libadjoint/adj_data_structures.h include/libadjoint/adj_constants.h include/libadjoint/uthash.h include/libadjoint/adj_adjointer_routines.h \
+	                        include/libadjoint/adj_variable_lookup.h include/libadjoint/adj_error_handling.h
+obj/adj_test_tools.o: include/libadjoint/adj_test_tools.h
