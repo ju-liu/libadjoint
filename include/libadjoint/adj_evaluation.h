@@ -6,6 +6,7 @@
 #include "libadjoint/adj_adjointer_routines.h"
 
 int adj_evaluate_block_action(adj_adjointer* adjointer, adj_block block, adj_vector input, adj_vector* output);
-
+int adj_evaluate_block_assembly(adj_adjointer* adjointer, adj_block block, adj_matrix *output);
+int adj_evaluate_nonlinear_derivative_action(adj_adjointer* adjointer, adj_nonlinear_block_derivative* derivatives, adj_vector value, adj_vector rhs);
 
 #endif
