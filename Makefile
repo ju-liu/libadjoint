@@ -1,5 +1,5 @@
 # Identify C compiler
-ifeq (,${CC})
+ifeq ($(origin CC),default)
 	CC := mpicc
 endif
 
@@ -23,7 +23,7 @@ DBGFLAGS = -g -O0 -Wall
 CFLAGS = $(DBGFLAGS) $(PETSC_CPPFLAGS) -Iinclude/ $(COMPILER_CFLAGS)
 
 # Identify Fortran compiler
-ifeq (f77,$(FC)) # the default value of FC is f77, for some arcane reason
+ifeq ($(origin FC),default)
 	FC := mpif90
 endif
 
@@ -75,7 +75,7 @@ obj/%.o: src/%.F90
 
 obj/%.o: src/%.c
 	@echo "  CC $<"
-	@$(CC) $(CFLAGS) -c -o $@ $<
+	$(CC) $(CFLAGS) -c -o $@ $<
 
 lib/libadjoint.a: $(FOBJ) $(COBJ)
 	@echo "  AR $@"
