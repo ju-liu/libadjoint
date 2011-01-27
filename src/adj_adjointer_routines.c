@@ -180,7 +180,7 @@ int adj_register_equation(adj_adjointer* adjointer, adj_equation equation)
     {
       char buf[ADJ_NAME_LEN];
       adj_variable_str(equation.targets[i], buf, ADJ_NAME_LEN);
-      snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "The equation to be registered has a block is targeting %s but I do not have an equation for that variable yet.", buf);
+      snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "The equation to be registered has a block is targeting %s, but I do not have an equation for that variable yet.", buf);
       return ierr;
     }
 
