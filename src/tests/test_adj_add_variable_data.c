@@ -1,8 +1,8 @@
 #include <stdlib.h>
-#include "adj_data_structures.h"
-#include "adj_variable_lookup.h"
-#include "adj_test_tools.h"
-#include "adj_error_handling.h"
+#include "libadjoint/adj_data_structures.h"
+#include "libadjoint/adj_variable_lookup.h"
+#include "libadjoint/adj_test_tools.h"
+#include "libadjoint/adj_error_handling.h"
 
 void test_adj_add_variable_data() 
 {
@@ -10,25 +10,22 @@ void test_adj_add_variable_data()
 
   adj_variable_hash *hash=NULL;
   adj_variable_data* data = (adj_variable_data*) malloc(sizeof(adj_variable_data));
+  data->equation = 19;
 
   adj_variable a;
   adj_create_variable("Velocity", 0, 0, ADJ_NORMAL_VARIABLE, &a);
-
-  data->equation = 19;
 
   ierr=adj_add_variable_data(&hash, &a, data);
   adj_test_assert(ierr==ADJ_ERR_OK, "Should have worked");
   data = NULL;
 
-  /* adj_print_hash(&hash); */
-
   ierr=adj_find_variable_data(&hash, &a, &data);
   adj_test_assert(ierr==ADJ_ERR_OK, "Should have worked");
-  
-/*  call adj_add_variable_data(adjointer, variable, data, ierr)
-  call adj_test_assert(ierr == 0, "initial ierr")
+  adj_test_assert(data->equation == 19, "Should have worked");
 
-  call adj_add_variable_data(adjointer, variable, data, ierr)
-  call adj_test_assert(ierr /= 0, "second ierr")
-  call adj_destroy_hash(adjointer) */
+  ierr=adj_add_variable_data(&hash, &a, data);
+  adj_test_assert(ierr!=ADJ_ERR_OK, "Should not have worked");
+  
+  adj_destroy_hash(&hash);
+  free(data);
 }
