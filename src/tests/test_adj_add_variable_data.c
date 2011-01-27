@@ -16,11 +16,13 @@ void test_adj_add_variable_data()
 
   data->equation = 19;
 
-  ierr=adj_add_variable_data(hash, &a, data);
+  ierr=adj_add_variable_data(&hash, &a, data);
   adj_test_assert(ierr==ADJ_ERR_OK, "Should have worked");
   data = NULL;
 
-  ierr=adj_find_variable_data(hash, &a, &data);
+  /* adj_print_hash(&hash); */
+
+  ierr=adj_find_variable_data(&hash, &a, &data);
   adj_test_assert(ierr==ADJ_ERR_OK, "Should have worked");
   
 /*  call adj_add_variable_data(adjointer, variable, data, ierr)

@@ -130,7 +130,7 @@ int adj_register_equation(adj_adjointer* adjointer, adj_equation equation)
   if (adjointer->options[ADJ_ACTIVITY] == ADJ_ACTIVITY_NOTHING) return ADJ_ERR_OK;
 
   /* Let's check we haven't solved for this variable before */
-  ierr = adj_find_variable_data(adjointer->varhash, &(equation.variable), &data_ptr);
+  ierr = adj_find_variable_data(&(adjointer->varhash), &(equation.variable), &data_ptr);
   if (ierr != ADJ_ERR_HASH_FAILED)
   {
     char buf[ADJ_NAME_LEN];
@@ -174,7 +174,7 @@ int adj_register_equation(adj_adjointer* adjointer, adj_equation equation)
 
   for (i = 0; i < equation.nblocks; i++)
   {
-    ierr = adj_find_variable_data(adjointer->varhash, &(equation.targets[i]), &data_ptr);
+    ierr = adj_find_variable_data(&(adjointer->varhash), &(equation.targets[i]), &data_ptr);
     if (ierr != ADJ_ERR_OK) return ierr;
 
     /* this is already guaranteed to be a unique entry -- we have never seen this equation before.
@@ -187,7 +187,7 @@ int adj_register_equation(adj_adjointer* adjointer, adj_equation equation)
   /* Next: nonlinear dependencies of the right hand side */
   for (i = 0; i < equation.nrhsdeps; i++)
   {
-    ierr = adj_find_variable_data(adjointer->varhash, &(equation.rhsdeps[i]), &data_ptr);
+    ierr = adj_find_variable_data(&(adjointer->varhash), &(equation.rhsdeps[i]), &data_ptr);
     if (ierr == ADJ_ERR_HASH_FAILED && equation.rhsdeps[i].auxiliary)
     {
       /* It's ok if it's auxiliary -- it legitimately can be the first time we've seen it */
@@ -221,7 +221,7 @@ int adj_register_equation(adj_adjointer* adjointer, adj_equation equation)
       continue;
     }
 
-    ierr = adj_find_variable_data(adjointer->varhash, &(equation.rhsdeps[i]), &data_ptr);
+    ierr = adj_find_variable_data(&(adjointer->varhash), &(equation.rhsdeps[i]), &data_ptr);
     if (ierr != ADJ_ERR_OK) return ierr;
 
     eqn_no = data_ptr->equation;
@@ -229,7 +229,7 @@ int adj_register_equation(adj_adjointer* adjointer, adj_equation equation)
 
     for (j = 0; j < equation.nrhsdeps; j++)
     {
-      ierr = adj_find_variable_data(adjointer->varhash, &(equation.rhsdeps[j]), &data_ptr);
+      ierr = adj_find_variable_data(&(adjointer->varhash), &(equation.rhsdeps[j]), &data_ptr);
       if (ierr != ADJ_ERR_OK) return ierr;
       adj_append_unique(&(data_ptr->adjoint_equations), &(data_ptr->nadjoint_equations), eqn_no); /* dependency j is necessary for equation i */
     }
@@ -244,7 +244,7 @@ int adj_register_equation(adj_adjointer* adjointer, adj_equation equation)
       for (j = 0; j < equation.blocks[i].nonlinear_block.ndepends; j++)
       {
         /* Register that this equation depends on this variable */
-        ierr = adj_find_variable_data(adjointer->varhash, &(equation.blocks[i].nonlinear_block.depends[j]), &data_ptr);
+        ierr = adj_find_variable_data(&(adjointer->varhash), &(equation.blocks[i].nonlinear_block.depends[j]), &data_ptr);
         if (ierr == ADJ_ERR_HASH_FAILED && equation.blocks[i].nonlinear_block.depends[j].auxiliary)
         {
           /* It's ok if it's auxiliary -- it legitimately can be the first time we've seen it */
@@ -271,7 +271,7 @@ int adj_register_equation(adj_adjointer* adjointer, adj_equation equation)
     if (equation.blocks[i].has_nonlinear_block)
     {
       adj_variable_data* block_target_data; /* fetch the hash entry associated with the target of this block */
-      ierr = adj_find_variable_data(adjointer->varhash, &(equation.targets[i]), &block_target_data);
+      ierr = adj_find_variable_data(&(adjointer->varhash), &(equation.targets[i]), &block_target_data);
       if (ierr != ADJ_ERR_OK) return ierr;
 
       for (j = 0; j < equation.blocks[i].nonlinear_block.ndepends; j++)
@@ -280,7 +280,7 @@ int adj_register_equation(adj_adjointer* adjointer, adj_equation equation)
         adj_variable_data* j_data;
 
         /* j_data ALWAYS refers to the data associated with the j'th dependency, throughout this whole loop */
-        ierr = adj_find_variable_data(adjointer->varhash, &(equation.blocks[i].nonlinear_block.depends[j]), &j_data);
+        ierr = adj_find_variable_data(&(adjointer->varhash), &(equation.blocks[i].nonlinear_block.depends[j]), &j_data);
         if (ierr != ADJ_ERR_OK) return ierr;
 
         /* One set of dependencies: the (adjoint equation of) (the target of this block) (needs) (this dependency) */
@@ -295,7 +295,7 @@ int adj_register_equation(adj_adjointer* adjointer, adj_equation equation)
           adj_variable_data* k_data;
 
           /* k_data ALWAYS refers to the data associated with the k'th dependency, throughout this whole loop */
-          ierr = adj_find_variable_data(adjointer->varhash, &(equation.blocks[i].nonlinear_block.depends[k]), &k_data);
+          ierr = adj_find_variable_data(&(adjointer->varhash), &(equation.blocks[i].nonlinear_block.depends[k]), &k_data);
           if (ierr != ADJ_ERR_OK) return ierr;
 
           /* Another set of dependencies: the (adjoint equation of) (the j'th dependency) (needs) (the k'th dependency) */
@@ -332,7 +332,7 @@ int adj_record_variable(adj_adjointer* adjointer, adj_variable var, adj_storage_
 
   if (adjointer->options[ADJ_ACTIVITY] == ADJ_ACTIVITY_NOTHING) return ADJ_ERR_OK;
 
-  ierr = adj_find_variable_data(adjointer->varhash, &var, &data_ptr);
+  ierr = adj_find_variable_data(&(adjointer->varhash), &var, &data_ptr);
   if (ierr != ADJ_ERR_OK && !var.auxiliary) return ierr;
   if (ierr != ADJ_ERR_OK && var.auxiliary)
   {
@@ -562,7 +562,7 @@ int adj_get_variable_value(adj_adjointer* adjointer, adj_variable var, adj_vecto
   int ierr;
   adj_variable_data* data_ptr;
 
-  ierr = adj_find_variable_data(adjointer->varhash, &var, &data_ptr);
+  ierr = adj_find_variable_data(&(adjointer->varhash), &var, &data_ptr);
   if (ierr != ADJ_ERR_OK) return ierr;
 
   if (data_ptr->storage.storage_type != ADJ_STORAGE_MEMORY)
@@ -660,7 +660,7 @@ int adj_add_new_hash_entry(adj_adjointer* adjointer, adj_variable* var, adj_vari
   (*data)->adjoint_equations = NULL;
 
   /* add to the hash table */
-  ierr = adj_add_variable_data(adjointer->varhash, var, *data);
+  ierr = adj_add_variable_data(&(adjointer->varhash), var, *data);
   if (ierr != ADJ_ERR_OK) return ierr;
 
   /* and add to the data list */
