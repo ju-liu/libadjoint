@@ -85,7 +85,12 @@ module libadjoint
     integer :: j
 
     do j=1,ADJ_NAME_LEN
-      name(j:j) = var%name(j)
+      if (var%name(j) /= c_null_char) then
+        name(j:j) = var%name(j)
+      else
+        name(j:) = ' '
+        exit
+      end if
     end do
 
     ierr = ADJ_ERR_OK

@@ -3,7 +3,7 @@
 #include "libadjoint/adj_test_main.h"
 
 #ifndef HAVE_PETSC
-void test_adj_forget_equation(void)
+void test_adj_forget_adjoint_equation(void)
 {
   adj_test_assert(1 == 1, "Don't have PETSc so can't run this test.");
 }
@@ -12,7 +12,7 @@ void test_adj_forget_equation(void)
 
 int* has_values(adj_adjointer *adjointer, int nb_vars, adj_variable *vars);
 
-void test_adj_forget_equation(void)
+void test_adj_forget_adjoint_equation(void)
 {
   adj_adjointer adjointer;
   adj_nonlinear_block V;
