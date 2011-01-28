@@ -13,6 +13,15 @@ module libadjoint_data_structures
     integer(kind=c_int) :: auxiliary
     integer(kind=c_int) :: functional
   end type adj_variable
+
+  type, bind(c) :: adj_nonlinear_block
+    character(kind=c_char), dimension(ADJ_NAME_LEN) :: name
+    adj_scalar :: coefficient
+    integer(kind=c_int) :: ndepends
+    type(c_ptr) :: depends
+    type(c_ptr) :: context
+  end type adj_nonlinear_block
+
 end module libadjoint_data_structures
 
 module libadjoint
@@ -53,6 +62,27 @@ module libadjoint
       integer(kind=c_int), intent(in), value :: ierr
       character(kind=c_char), dimension(*), intent(in) :: filename, line
     end subroutine adj_chkierr_private_c
+
+    function adj_create_nonlinear_block_c(name, ndepends, depends, coefficient, context, nblock) result(ierr) &
+      & bind(c, name='adj_create_nonlinear_block')
+      use libadjoint_data_structures
+      use iso_c_binding
+      character(kind=c_char), dimension(ADJ_NAME_LEN), intent(in) :: name
+      integer(kind=c_int), intent(in), value :: ndepends
+      type(adj_variable), intent(in), dimension(ndepends) :: depends
+      adj_scalar, intent(in), value :: coefficient
+      type(c_ptr), intent(in), value :: context
+      type(adj_nonlinear_block), intent(out) :: nblock
+      integer(kind=c_int) :: ierr
+    end function adj_create_nonlinear_block_c
+
+    function adj_destroy_nonlinear_block(nblock) result(ierr) bind(c, name='adj_destroy_nonlinear_block')
+      use libadjoint_data_structures
+      use iso_c_binding
+      type(adj_nonlinear_block), intent(inout) :: nblock
+      integer(kind=c_int) :: ierr
+    end function adj_destroy_nonlinear_block
+
   end interface
 
   contains
@@ -95,6 +125,29 @@ module libadjoint
 
     ierr = ADJ_ERR_OK
   end function adj_variable_get_name
+
+  function adj_create_nonlinear_block(name, ndepends, depends, coefficient, context, nblock) result(ierr)
+    character(len=*), intent(in) :: name
+    integer, intent(in) :: ndepends
+    type(adj_variable), intent(in), dimension(ndepends) :: depends
+    adj_scalar, intent(in) :: coefficient
+    type(c_ptr), intent(in) :: context
+    type(adj_nonlinear_block), intent(out) :: nblock
+    integer :: ierr
+
+    character(kind=c_char), dimension(ADJ_NAME_LEN) :: name_c
+    integer :: j
+
+    do j=1,len_trim(name)
+      name_c(j) = name(j:j)
+    end do
+    do j=len_trim(name)+1,ADJ_NAME_LEN
+      name_c(j) = c_null_char
+    end do
+    name_c(ADJ_NAME_LEN) = c_null_char
+
+    ierr = adj_create_nonlinear_block_c(name_c, ndepends, depends, coefficient, context, nblock)
+  end function adj_create_nonlinear_block
 
   subroutine adj_chkierr_private(ierr, filename, line)
     integer, intent(in) :: ierr
