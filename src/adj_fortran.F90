@@ -22,6 +22,13 @@ module libadjoint_data_structures
     type(c_ptr) :: context
   end type adj_nonlinear_block
 
+  type, bind(c) :: adj_block
+    character(kind=c_char), dimension(ADJ_NAME_LEN) :: name
+    integer(kind=c_int) :: has_nonlinear_block
+    type(adj_nonlinear_block) :: nonlinear_block
+    type(c_ptr) :: context
+    integer(kind=c_int) :: hermitian
+  end type adj_block
 end module libadjoint_data_structures
 
 module libadjoint
@@ -83,6 +90,26 @@ module libadjoint
       integer(kind=c_int) :: ierr
     end function adj_destroy_nonlinear_block
 
+    function adj_create_block_c(name, nblock, context, block) result(ierr) bind(c, name='adj_create_block')
+      use libadjoint_data_structures
+      use iso_c_binding
+      character(kind=c_char), dimension(ADJ_NAME_LEN), intent(in) :: name
+      ! I want it to be
+      ! type(adj_nonlinear_block), intent(in), optional :: nblock
+      ! but I can't because optional and bind(c) are incompatible.
+      ! So ..
+      type(c_ptr), intent(in), value :: nblock
+      type(c_ptr), intent(in), value :: context
+      type(adj_block), intent(inout) :: block
+      integer(kind=c_int) :: ierr
+    end function adj_create_block_c
+
+    function adj_destroy_block(block) result(ierr) bind(c, name='adj_destroy_block')
+      use libadjoint_data_structures
+      use iso_c_binding
+      type(adj_block), intent(inout) :: block
+      integer(kind=c_int) :: ierr
+    end function adj_destroy_block
   end interface
 
   contains
@@ -148,6 +175,36 @@ module libadjoint
 
     ierr = adj_create_nonlinear_block_c(name_c, ndepends, depends, coefficient, context, nblock)
   end function adj_create_nonlinear_block
+
+  function adj_create_block(name, nblock, context, block) result(ierr)
+    use libadjoint_data_structures
+    use iso_c_binding
+    character(len=*), intent(in) :: name
+    type(adj_nonlinear_block), intent(in), optional, target :: nblock
+    type(c_ptr), intent(in) :: context
+    type(adj_block), intent(inout) :: block
+    integer :: ierr
+
+    character(kind=c_char), dimension(ADJ_NAME_LEN) :: name_c
+    integer :: j
+    type(c_ptr) :: nblock_ptr
+
+    do j=1,len_trim(name)
+      name_c(j) = name(j:j)
+    end do
+    do j=len_trim(name)+1,ADJ_NAME_LEN
+      name_c(j) = c_null_char
+    end do
+    name_c(ADJ_NAME_LEN) = c_null_char
+
+    if (present(nblock)) then
+      nblock_ptr = c_loc(nblock)
+    else
+      nblock_ptr = c_null_ptr
+    end if
+
+    ierr = adj_create_block_c(name_c, nblock_ptr, context, block)
+  end function adj_create_block
 
   subroutine adj_chkierr_private(ierr, filename, line)
     integer, intent(in) :: ierr
