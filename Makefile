@@ -99,7 +99,7 @@ clean:
 	@rm -f lib/*.a
 	@echo "  RM lib/*.a"
 	@rm -f tags
-	@rm -f include/libadjoint/adj_constants_f.h
+	@rm -f include/libadjoint/adj_constants_f.h include/libadjoint/adj_error_handling_f.h
 
 test: $(FTEST) $(CTEST)
 	@echo "  TEST bin/tests"
