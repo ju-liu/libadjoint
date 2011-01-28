@@ -18,7 +18,7 @@ endif
 PETSC_CPPFLAGS = $(shell make -f cfg/petsc_makefile getincludedirs 2>/dev/null)
 PETSC_LDFLAGS  = $(shell make -f cfg/petsc_makefile getlinklibs 2>/dev/null)
 ifeq (,$(PETSC_CPPFLAGS))
-	PETSC_CPPFLAGS := -UHAVE_PETSC
+	PETSC_CPPFLAGS := # want to have -UHAVE_PETSC, but that causes confusion on some fortran compilers (e.g. nag) and it isn't really necessary
 else
 	PETSC_CPPFLAGS := $(PETSC_CPPFLAGS) -DHAVE_PETSC
 endif
