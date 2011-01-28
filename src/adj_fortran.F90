@@ -38,6 +38,50 @@ module libadjoint_data_structures
     integer(kind=c_int) :: nrhsdeps
     type(c_ptr) :: rhsdeps
   end type adj_equation
+
+  type, bind(c) :: adj_data_callbacks
+    type(c_funptr) :: vec_duplicate
+    type(c_funptr) :: vec_axpy
+    type(c_funptr) :: vec_destroy
+    type(c_funptr) :: vec_setvalues
+    type(c_funptr) :: vec_getsize
+    type(c_funptr) :: vec_divide
+
+    type(c_funptr) :: mat_duplicate
+    type(c_funptr) :: mat_axpy
+    type(c_funptr) :: mat_destroy
+    type(c_funptr) :: mat_getvec
+  end type adj_data_callbacks
+
+  type, bind(c) :: adj_variable_data_list
+    type(c_ptr) :: firstnode
+    type(c_ptr) :: lastnode
+  end type adj_variable_data_list
+
+  type, bind(c) :: adj_op_callback_list
+    type(c_ptr) :: firstnode
+    type(c_ptr) :: lastnode
+  end type adj_op_callback_list
+
+  type, bind(c) :: adj_adjointer
+    integer(kind=c_int) :: nequations
+    integer(kind=c_int) :: equations_sz
+    type(c_ptr) :: equations
+
+    type(c_ptr) :: varhash
+    type(adj_variable_data_list) :: vardata
+
+    integer(kind=c_int), dimension(ADJ_NO_OPTIONS) :: options
+
+    type(adj_data_callbacks) :: callbacks
+    type(adj_op_callback_list) :: nonlinear_colouring_list
+    type(adj_op_callback_list) :: nonlinear_action_list
+    type(adj_op_callback_list) :: nonlinear_derivative_action_list
+    type(adj_op_callback_list) :: nonlinear_derivative_assembly_list
+    type(adj_op_callback_list) :: block_action_list
+    type(adj_op_callback_list) :: block_assembly_list
+
+  end type adj_adjointer
 end module libadjoint_data_structures
 
 module libadjoint
@@ -146,6 +190,36 @@ module libadjoint
       type(adj_equation), intent(inout) :: equation
       integer(kind=c_int) :: ierr
     end function adj_destroy_equation
+
+    function adj_create_adjointer(adjointer) result(ierr) bind(c, name='adj_create_adjointer')
+      use libadjoint_data_structures
+      use iso_c_binding
+      type(adj_adjointer), intent(inout) :: adjointer
+      integer(kind=c_int) :: ierr
+    end function adj_create_adjointer
+
+    function adj_destroy_adjointer(adjointer) result(ierr) bind(c, name='adj_destroy_adjointer')
+      use libadjoint_data_structures
+      use iso_c_binding
+      type(adj_adjointer), intent(inout) :: adjointer
+      integer(kind=c_int) :: ierr
+    end function adj_destroy_adjointer
+
+    function adj_set_option(adjointer, option, choice) result(ierr) bind(c, name='adj_set_option')
+      use libadjoint_data_structures
+      use iso_c_binding
+      type(adj_adjointer), intent(inout) :: adjointer
+      integer(kind=c_int), intent(in), value :: option, choice 
+      integer(kind=c_int) :: ierr
+    end function adj_set_option
+
+    function adj_equation_count(adjointer, count) result(ierr) bind(c, name='adj_equation_count')
+      use libadjoint_data_structures
+      use iso_c_binding
+      type(adj_adjointer), intent(inout) :: adjointer
+      integer(kind=c_int), intent(inout) :: count
+      integer(kind=c_int) :: ierr
+    end function adj_equation_count
   end interface
 
   contains

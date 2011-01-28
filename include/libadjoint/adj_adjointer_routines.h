@@ -16,6 +16,7 @@ int adj_record_variable(adj_adjointer* adjointer, adj_variable var, adj_storage_
 int adj_register_operator_callback(adj_adjointer* adjointer, int type, char* name, void (*fn)(void));
 int adj_register_data_callback(adj_adjointer* adjointer, int type, void (*fn)(void));
 int adj_forget_adjoint_equation(adj_adjointer* adjointer, int equation);
+
 int adj_find_operator_callback(adj_adjointer* adjointer, int type, char* name, void (**fn)(void));
 int adj_get_variable_value(adj_adjointer* adjointer, adj_variable var, adj_vector* value);
 int adj_forget_variable_value(adj_adjointer* adjointer, adj_variable_data* data);
