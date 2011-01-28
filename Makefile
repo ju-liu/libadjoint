@@ -71,7 +71,7 @@ bin/tests/%: src/tests/%.c src/tests/test_main.c lib/libadjoint.a
 obj/%.o: src/%.F90
 	@echo "  FC $<"
 	@$(FC) $(FFLAGS) -c -o $@ $<
-	@mv *.mod include/ 2>/dev/null || true
+	@mv *.mod include/libadjoint 2>/dev/null || true
 
 obj/%.o: src/%.c
 	@echo "  CC $<"
@@ -88,8 +88,8 @@ clean:
 	@echo "  RM obj/tests/*.o"
 	@rm -f bin/tests/*
 	@echo "  RM bin/tests/*"
-	@rm -f include/*.mod
-	@echo "  RM include/*.mod"
+	@rm -f include/libadjoint/*.mod include/*.mod *.mod
+	@echo "  RM include/libadjoint/*.mod"
 	@rm -f doc/*.pdf doc/*.bbl doc/*.log doc/*.aux doc/*.blg doc/*.spl doc/*.brf doc/*.out doc/*.toc
 	@echo "  RM doc/*.pdf"
 	@rm -f lib/*.a
@@ -115,10 +115,14 @@ tags: $(FSRC) $(CSRC)
 	@$(CTAGS) src/*.c src/*.F90
 endif
 
+include/libadjoint/adj_fortran.h: include/libadjoint/adj_constants_f.h include/libadjoint/adj_error_handling_f.h
 # replace C comments with F90 comments
 include/libadjoint/adj_constants_f.h: include/libadjoint/adj_constants.h
 	@echo "  SED $@"
 	@sed -e 's@/\*@!@' -e 's@\*/@@' -e 's@ADJ_CONSTANTS_H@ADJ_CONSTANTS_F_H@' $< > $@
+include/libadjoint/adj_error_handling_f.h: include/libadjoint/adj_error_handling.h
+	@echo "  SED $@"
+	@grep '^#' $< | grep -v '^#include' > $@
 
 # You can generate some of this with: for i in src/*.c; do gcc -Iinclude/ -MM $i; done | sed -e 's@\\@@' -e 's@^adj@obj/adj@'
 obj/adj_data_structures.o: include/libadjoint/adj_data_structures.h include/libadjoint/adj_constants.h include/libadjoint/adj_error_handling.h include/libadjoint/uthash.h
@@ -134,7 +138,7 @@ obj/adj_petsc_data_structures.o: include/libadjoint/adj_petsc_data_structures.h 
 obj/adj_simplification.o: include/libadjoint/adj_simplification.h include/libadjoint/adj_data_structures.h include/libadjoint/adj_constants.h include/libadjoint/uthash.h include/libadjoint/adj_adjointer_routines.h \
 	                        include/libadjoint/adj_variable_lookup.h include/libadjoint/adj_error_handling.h
 obj/adj_test_tools.o: include/libadjoint/adj_test_tools.h
-obj/adj_fortran.o: include/libadjoint/adj_constants_f.h
+obj/adj_fortran.o: include/libadjoint/adj_fortran.h
 obj/adj_core.o: include/libadjoint/adj_core.h include/libadjoint/adj_data_structures.h include/libadjoint/adj_constants.h include/libadjoint/uthash.h include/libadjoint/adj_error_handling.h include/libadjoint/adj_variable_lookup.h \
 	              include/libadjoint/adj_adjointer_routines.h include/libadjoint/adj_evaluation.h include/libadjoint/adj_data_structures.h include/libadjoint/adj_error_handling.h include/libadjoint/adj_adjointer_routines.h \
 	              include/libadjoint/adj_simplification.h
