@@ -288,6 +288,19 @@ module libadjoint
       type(adj_vector), intent(in), value :: val
       type(adj_storage_data) :: mem
     end function adj_storage_memory
+
+    function adj_get_adjoint_equation(adjointer, equation, functional, lhs, rhs, var) result(ierr) &
+            & bind(c, name='adj_get_adjoint_equation')
+      use libadjoint_data_structures
+      use iso_c_binding
+      type(adj_adjointer), intent(inout) :: adjointer
+      integer(kind=c_int), intent(in), value :: equation
+      integer(kind=c_int), intent(in), value :: functional
+      type(adj_matrix), intent(out) :: lhs
+      type(adj_vector), intent(out) :: rhs
+      type(adj_variable), intent(out) :: var
+      integer(kind=c_int) :: ierr
+    end function adj_get_adjoint_equation
   end interface
 
   contains
