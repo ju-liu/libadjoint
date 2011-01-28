@@ -46,7 +46,7 @@ void test_adj_forget_adjoint_equation(void)
   adj_create_variable("Velocity", 2, 0, ADJ_NORMAL_VARIABLE, &u[3]);
   adj_create_variable("Velocity", 2, 1, ADJ_NORMAL_VARIABLE, &u[4]);
 
-  adj_create_block("IdentityOperator", NULL, NULL, 0, &I);
+  adj_create_block("IdentityOperator", NULL, NULL, &I);
   ierr = adj_create_equation(u[0], 1, &I, &u[0], &eqn);
   adj_test_assert(ierr == 0, "Should have worked");
   ierr = adj_register_equation(&adjointer, eqn);
@@ -55,8 +55,8 @@ void test_adj_forget_adjoint_equation(void)
   adj_test_assert(ierr == 0, "Should have worked");
 
   adj_create_nonlinear_block("AdvectionOperator", 1, &u[0], 0.5, NULL, &V);
-  adj_create_block("TimesteppingOperator", &V, NULL, 0, &B[0]);
-  adj_create_block("BurgersOperator", &V, NULL, 0, &B[1]);
+  adj_create_block("TimesteppingOperator", &V, NULL, &B[0]);
+  adj_create_block("BurgersOperator", &V, NULL, &B[1]);
   ierr = adj_create_equation(u[1], 2, B, u, &eqn);
   adj_test_assert(ierr == 0, "Should have worked");
   ierr = adj_register_equation(&adjointer, eqn);
@@ -68,8 +68,8 @@ void test_adj_forget_adjoint_equation(void)
   adj_destroy_block(&B[1]);
 
   adj_create_nonlinear_block("AdvectionOperator", 2, u, 0.5, NULL, &V);
-  adj_create_block("TimesteppingOperator", &V, NULL, 0, &B[0]);
-  adj_create_block("BurgersOperator", &V, NULL, 0, &B[1]);
+  adj_create_block("TimesteppingOperator", &V, NULL, &B[0]);
+  adj_create_block("BurgersOperator", &V, NULL, &B[1]);
   u_tmp[0] = u[0];
   u_tmp[1] = u[2];
   ierr = adj_create_equation(u[2], 2, B, u_tmp, &eqn);
@@ -83,8 +83,8 @@ void test_adj_forget_adjoint_equation(void)
   adj_destroy_block(&B[1]);
 
   adj_create_nonlinear_block("AdvectionOperator", 1, &u[2], 0.5, NULL, &V);
-  adj_create_block("TimesteppingOperator", &V, NULL, 0, &B[0]);
-  adj_create_block("BurgersOperator", &V, NULL, 0, &B[1]);
+  adj_create_block("TimesteppingOperator", &V, NULL, &B[0]);
+  adj_create_block("BurgersOperator", &V, NULL, &B[1]);
   ierr = adj_create_equation(u[3], 2, B, &u[2], &eqn);
   adj_test_assert(ierr == 0, "Should have worked");
   ierr = adj_register_equation(&adjointer, eqn);
@@ -96,8 +96,8 @@ void test_adj_forget_adjoint_equation(void)
   adj_destroy_block(&B[1]);
 
   adj_create_nonlinear_block("AdvectionOperator", 2, &u[2], 0.5, NULL, &V);
-  adj_create_block("TimesteppingOperator", &V, NULL, 0, &B[0]);
-  adj_create_block("BurgersOperator", &V, NULL, 0, &B[1]);
+  adj_create_block("TimesteppingOperator", &V, NULL, &B[0]);
+  adj_create_block("BurgersOperator", &V, NULL, &B[1]);
   u_tmp[0] = u[2];
   u_tmp[1] = u[4];
   ierr = adj_create_equation(u[4], 2, B, u_tmp, &eqn);

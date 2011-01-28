@@ -164,7 +164,7 @@ int adj_variable_get_timestep(adj_variable var, int* timestep);
 int adj_variable_get_iteration(adj_variable var, int* iteration);
 int adj_create_nonlinear_block(char* name, int ndepends, adj_variable* depends, adj_scalar coefficient, void* context, adj_nonlinear_block* nblock);
 int adj_destroy_nonlinear_block(adj_nonlinear_block* nblock);
-int adj_create_block(char* name, adj_nonlinear_block* nblock, void* context, int hermitian, adj_block* block);
+int adj_create_block(char* name, adj_nonlinear_block* nblock, void* context, adj_block* block);
 int adj_destroy_block(adj_block* block);
 int adj_variable_equal(adj_variable* var1, adj_variable* var2, int nvars);
 int adj_variable_str(adj_variable var, char* name, size_t namelen);

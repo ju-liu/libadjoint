@@ -77,7 +77,7 @@ int adj_destroy_nonlinear_block(adj_nonlinear_block* nblock)
   return ADJ_ERR_OK;
 }
 
-int adj_create_block(char* name, adj_nonlinear_block* nblock, void* context, int hermitian, adj_block* block)
+int adj_create_block(char* name, adj_nonlinear_block* nblock, void* context, adj_block* block)
 {
   size_t slen;
 
@@ -104,7 +104,7 @@ int adj_create_block(char* name, adj_nonlinear_block* nblock, void* context, int
   }
 
   block->context = context;
-  block->hermitian = hermitian;
+  block->hermitian = 0;
 
   return ADJ_ERR_OK;
 }

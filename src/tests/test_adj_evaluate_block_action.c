@@ -27,7 +27,7 @@ void test_adj_evaluate_block_action(void)
   adj_set_petsc_data_callbacks(&adjointer);
   adj_register_operator_callback(&adjointer, ADJ_BLOCK_ACTION_CB, "IdentityOperator", (void (*)(void)) identity_action_callback);
 
-  adj_create_block("IdentityOperator", NULL, NULL, 0, &I);
+  adj_create_block("IdentityOperator", NULL, NULL, &I);
   VecCreateSeq(PETSC_COMM_SELF, dim, &input);
   VecSet(input, 1.0);
 

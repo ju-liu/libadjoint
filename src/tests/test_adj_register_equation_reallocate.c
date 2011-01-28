@@ -13,7 +13,7 @@ void test_adj_register_equation_reallocate(void)
 
   adj_create_adjointer(&adjointer);
 
-  adj_create_block("IdentityOperator", NULL, NULL, 0, &block);
+  adj_create_block("IdentityOperator", NULL, NULL, &block);
   for (i = 0; i < 2*ADJ_PREALLOC_SIZE + 1; i++)
   {
     adj_create_variable("Velocity", i, 0, ADJ_NORMAL_VARIABLE, &var);
