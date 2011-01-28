@@ -7,7 +7,11 @@ endif
 CC_VERSION = $(shell $(CC) --version 2>&1) $(shell $(CC) -V 2>&1)
 ifneq (,$(findstring gcc, $(CC_VERSION)))
 	# gcc-specific settings here
-	COMPILER_CFLAGS := -Wextra -Wunused-parameter -Wunused-result -Wunsafe-loop-optimizations -Wpointer-arith -Wstrict-prototypes -ggdb3 -fstack-protector-all
+	COMPILER_CFLAGS := -Wall -Wextra -Wunused-parameter -Wunused-result -Wunsafe-loop-optimizations -Wpointer-arith -Wstrict-prototypes -ggdb3 -fstack-protector-all
+endif
+ifneq (,$(findstring icc, $(CC_VERSION)))
+	# icc-specific settings here
+	COMPILER_CFLAGS := -Wall 
 endif
 
 # Identify if PETSc is installed
@@ -19,7 +23,7 @@ else
 	PETSC_CPPFLAGS := $(PETSC_CPPFLAGS) -DHAVE_PETSC
 endif
 
-DBGFLAGS = -g -O0 -Wall
+DBGFLAGS = -g -O0
 CFLAGS = $(DBGFLAGS) $(PETSC_CPPFLAGS) -Iinclude/ $(COMPILER_CFLAGS)
 
 # Identify Fortran compiler
