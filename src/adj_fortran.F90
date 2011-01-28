@@ -32,6 +32,14 @@ module libadjoint
       integer(kind=c_int) :: ierr
     end function adj_create_variable_c
 
+    function adj_variable_get_timestep(var, timestep) result(ierr) bind(c, name='adj_variable_get_timestep')
+      use libadjoint_data_structures
+      use iso_c_binding
+      type(adj_variable), intent(in), value :: var
+      integer(kind=c_int), intent(out) :: timestep
+      integer(kind=c_int) :: ierr
+    end function adj_variable_get_timestep
+
     subroutine adj_chkierr_private_c(ierr, filename, line) bind(c, name='adj_chkierr_private')
       use iso_c_binding
       integer(kind=c_int), intent(in), value :: ierr
