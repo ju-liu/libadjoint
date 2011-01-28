@@ -6,7 +6,7 @@ void adj_set_petsc_data_callbacks(adj_adjointer* adjointer)
   adj_register_data_callback(adjointer, ADJ_VEC_DUPLICATE_CB, (void (*)(void)) petsc_vec_duplicate_proc);
   adj_register_data_callback(adjointer, ADJ_VEC_AXPY_CB,(void (*)(void)) petsc_vec_axpy_proc);
   adj_register_data_callback(adjointer, ADJ_VEC_DESTROY_CB, (void (*)(void)) petsc_vec_destroy_proc);
-  adj_register_data_callback(adjointer, ADJ_MAT_GETVECS_CB, (void (*)(void)) petsc_mat_getvecs_proc);
+  adj_register_data_callback(adjointer, ADJ_MAT_GETVECS_CB, (void (*)(void)) petsc_mat_getvec_proc);
   adj_register_data_callback(adjointer, ADJ_MAT_AXPY_CB,(void (*)(void)) petsc_mat_axpy_proc);
   adj_register_data_callback(adjointer, ADJ_MAT_DESTROY_CB,(void (*)(void)) petsc_mat_destroy_proc);
   adj_register_data_callback(adjointer, ADJ_MAT_DUPLICATE_CB,(void (*)(void)) petsc_mat_duplicate_proc);
@@ -50,7 +50,7 @@ void petsc_mat_duplicate_proc(adj_matrix matin, adj_matrix *matout)
 #endif
 }
 
-void petsc_mat_getvecs_proc(adj_matrix mat, adj_vector *left)
+void petsc_mat_getvec_proc(adj_matrix mat, adj_vector *left)
 {
   /* Get vector(s) compatible with the matrix, i.e. with the same parallel layout */
 #ifdef HAVE_PETSC

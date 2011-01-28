@@ -22,8 +22,41 @@ int adj_get_adjoint_equation(adj_adjointer* adjointer, int equation, int functio
     return ADJ_ERR_INVALID_INPUTS;
   }
 
+  strncpy(adj_error_msg, "Need a data callback, but it hasn't been supplied.", ADJ_ERROR_MSG_BUF);
+  if (adjointer->callbacks.mat_getvec == NULL)  return ADJ_ERR_NEED_CALLBACK;
+  if (adjointer->callbacks.vec_destroy == NULL) return ADJ_ERR_NEED_CALLBACK;
+  if (adjointer->callbacks.vec_axpy == NULL)    return ADJ_ERR_NEED_CALLBACK;
+  if (adjointer->callbacks.mat_axpy == NULL)    return ADJ_ERR_NEED_CALLBACK;
+  if (adjointer->callbacks.mat_destroy == NULL) return ADJ_ERR_NEED_CALLBACK;
+
   fwd_eqn = adjointer->equations[equation];
   fwd_var = fwd_eqn.variable;
+
+  ierr = adj_find_variable_data(&(adjointer->varhash), &fwd_var, &fwd_data);
+  if (ierr != ADJ_ERR_OK) return ierr;
+
+  /* Check that we have all the adjoint values we need, before we start allocating stuff */
+  for (i = 0; i < fwd_data->ntargeting_equations; i++)
+  {
+    adj_equation other_fwd_eqn;
+    adj_variable other_adj_var;
+    adj_vector adj_value;
+
+    if (fwd_data->targeting_equations[i] == equation) continue; /* that term goes in the lhs, and we've already taken care of it */
+    other_fwd_eqn = adjointer->equations[fwd_data->targeting_equations[i]];
+
+    /* Find the adjoint variable we want this to multiply */
+    other_adj_var = other_fwd_eqn.variable; other_adj_var.type = ADJ_ADJOINT; other_adj_var.functional = functional;
+    /* and now get its value */
+    ierr = adj_get_variable_value(adjointer, other_adj_var, &adj_value);
+    if (ierr != ADJ_ERR_OK)
+    {
+      char buf[255];
+      adj_variable_str(other_adj_var, buf, 255);
+      snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Need a value for variable %s, but don't have one.", buf);
+      return ADJ_ERR_NEED_VALUE;
+    }
+  }
 
   /* Create the associated adjoint variable */
   ierr = adj_create_variable(fwd_var.name, fwd_var.timestep, fwd_var.iteration, fwd_var.auxiliary, adj_var);
@@ -67,9 +100,6 @@ int adj_get_adjoint_equation(adj_adjointer* adjointer, int equation, int functio
    * Computation of A* terms                                                  |
    * -------------------------------------------------------------------------- */
 
-  ierr = adj_find_variable_data(&(adjointer->varhash), &fwd_var, &fwd_data);
-  if (ierr != ADJ_ERR_OK) return ierr;
-
   /* fwd_data->targeting_equations what forward equations have nonzero blocks in the column of A associated with fwd_var. */
   /* That column of A becomes the current row of A* we want to now compute. */
 
@@ -92,6 +122,45 @@ int adj_get_adjoint_equation(adj_adjointer* adjointer, int equation, int functio
   }
 
   /* Great! Now let's assemble the RHS contributions of A*. */
+
+  /* First, allocate the rhs. */
+  adjointer->callbacks.mat_getvec(*lhs, rhs);
+
+  /* Now loop through the off-diagonal blocks of A*. */
+  for (i = 0; i < fwd_data->ntargeting_equations; i++)
+  {
+    adj_equation other_fwd_eqn;
+    adj_block block;
+    adj_variable other_adj_var;
+    adj_vector adj_value;
+    adj_vector rhs_tmp;
+
+    if (fwd_data->targeting_equations[i] == equation) continue; /* that term goes in the lhs, and we've already taken care of it */
+    other_fwd_eqn = adjointer->equations[fwd_data->targeting_equations[i]];
+
+    for (j = 0; j < other_fwd_eqn.nblocks; j++)
+    {
+      if (adj_variable_equal(&fwd_var, &(other_fwd_eqn.targets[j]), 1))
+      {
+        block = other_fwd_eqn.blocks[j];
+        break;
+      }
+    }
+
+    /* OK. Now we've found the right block ... */
+    block.hermitian = 1;
+
+    /* Find the adjoint variable we want this to multiply */
+    other_adj_var = other_fwd_eqn.variable; other_adj_var.type = ADJ_ADJOINT; other_adj_var.functional = functional;
+    /* and now get its value */
+    ierr = adj_get_variable_value(adjointer, other_adj_var, &adj_value);
+    assert(ierr == ADJ_ERR_OK); /* we should have them all, we checked for them earlier */
+
+    ierr = adj_evaluate_block_action(adjointer, block, adj_value, &rhs_tmp);
+    if (ierr != ADJ_ERR_OK) return ierr;
+    adjointer->callbacks.vec_axpy(rhs, (adj_scalar)1.0, rhs_tmp);
+    adjointer->callbacks.vec_destroy(&rhs_tmp);
+  }
 
   return ADJ_ERR_OK;
 }
