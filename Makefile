@@ -60,7 +60,7 @@ DISABLED_TESTS =
 FTEST = $(filter-out $(DISABLED_TESTS), $(patsubst src/tests/%,bin/tests/%,$(basename $(filter-out src/tests/test_main.F90, $(wildcard src/tests/*.F90)))))
 CTEST = $(filter-out $(DISABLED_TESTS), $(patsubst src/tests/%,bin/tests/%,$(basename $(filter-out src/tests/test_main.c, $(wildcard src/tests/*.c)))))
 
-CTAGS = $(shell which ctags)
+CTAGS = $(shell which ctags 2>/dev/null)
 
 all: lib/libadjoint.a
 
