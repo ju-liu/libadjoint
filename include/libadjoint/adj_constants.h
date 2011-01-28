@@ -1,9 +1,12 @@
 #ifndef ADJ_CONSTANTS_H
 #define ADJ_CONSTANTS_H
 
-#define ADJ_NAME_LEN (size_t)255
+/* You cannot use comments of more than one line in this file */
+
+#define ADJ_NAME_LEN 255
 
 #define adj_scalar double
+#define adj_scalar_f real(kind=c_double)
 
 /* values for the .type field of an adj_variable */
 #define ADJ_FORWARD 1
