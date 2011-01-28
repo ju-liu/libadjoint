@@ -80,8 +80,24 @@ module libadjoint_data_structures
     type(adj_op_callback_list) :: nonlinear_derivative_assembly_list
     type(adj_op_callback_list) :: block_action_list
     type(adj_op_callback_list) :: block_assembly_list
-
   end type adj_adjointer
+
+  type, bind(c) :: adj_vector
+    type(c_ptr) :: ptr
+    integer(kind=c_int) :: klass
+  end type adj_vector
+
+  type, bind(c) :: adj_matrix
+    type(c_ptr) :: ptr
+    integer(kind=c_int) :: klass
+  end type adj_matrix
+
+  type, bind(c) :: adj_storage_data
+    integer(kind=c_int) :: storage_type
+    integer(kind=c_int) :: has_value
+    type(adj_vector) :: value
+    type(c_ptr) :: filename
+  end type adj_storage_data
 end module libadjoint_data_structures
 
 module libadjoint
@@ -220,6 +236,34 @@ module libadjoint
       integer(kind=c_int), intent(inout) :: count
       integer(kind=c_int) :: ierr
     end function adj_equation_count
+
+    function adj_register_equation(adjointer, equation) result(ierr) bind(c, name='adj_register_equation')
+      use libadjoint_data_structures
+      use iso_c_binding
+      type(adj_adjointer), intent(inout) :: adjointer
+      type(adj_equation), intent(in), value :: equation
+      integer(kind=c_int) :: ierr
+    end function adj_register_equation
+
+    function adj_record_variable(adjointer, var, storage) result(ierr) bind(c, name='adj_record_variable')
+      use libadjoint_data_structures
+      use iso_c_binding
+      type(adj_adjointer), intent(inout) :: adjointer
+      type(adj_variable), intent(in), value :: var
+      type(adj_storage_data), intent(in), value :: storage
+      integer(kind=c_int) :: ierr
+    end function adj_record_variable
+
+    function adj_register_operator_callback_c(adjointer, type, name, fnptr) result(ierr) &
+           & bind(c, name='adj_register_operator_callback')
+      use libadjoint_data_structures
+      use iso_c_binding
+      type(adj_adjointer), intent(inout) :: adjointer
+      integer(kind=c_int), intent(in), value :: type
+      character(kind=c_char), dimension(ADJ_NAME_LEN), intent(in) :: name
+      type(c_funptr), intent(in), value :: fnptr
+      integer(kind=c_int) :: ierr
+    end function adj_register_operator_callback_c
   end interface
 
   contains
@@ -315,6 +359,27 @@ module libadjoint
 
     ierr = adj_create_block_c(name_c, nblock_ptr, context, block)
   end function adj_create_block
+
+    function adj_register_operator_callback(adjointer, type, name, fnptr) result(ierr)
+    type(adj_adjointer), intent(inout) :: adjointer
+    integer(kind=c_int), intent(in) :: type
+    character(len=*), intent(in) :: name
+    type(c_funptr), intent(in), value :: fnptr
+    integer(kind=c_int) :: ierr
+
+    character(kind=c_char), dimension(ADJ_NAME_LEN) :: name_c
+    integer :: j
+
+    do j=1,len_trim(name)
+      name_c(j) = name(j:j)
+    end do
+    do j=len_trim(name)+1,ADJ_NAME_LEN
+      name_c(j) = c_null_char
+    end do
+    name_c(ADJ_NAME_LEN) = c_null_char
+
+    ierr = adj_register_operator_callback_c(adjointer, type, name_c, fnptr)
+  end function adj_register_operator_callback
 
   subroutine adj_chkierr_private(ierr, filename, line)
     integer, intent(in) :: ierr
