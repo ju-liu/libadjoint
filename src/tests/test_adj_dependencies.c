@@ -1,5 +1,6 @@
 #include "libadjoint/adj_adjointer_routines.h"
 #include "libadjoint/adj_test_tools.h"
+#include "libadjoint/adj_test_main.h"
 
 void test_adj_dependencies(void)
 {

@@ -1,10 +1,11 @@
-#include "adj_adjointer_routines.h"
-#include "adj_data_structures.h"
-#include "adj_test_tools.h"
+#include "libadjoint/adj_adjointer_routines.h"
+#include "libadjoint/adj_data_structures.h"
+#include "libadjoint/adj_test_tools.h"
+#include "libadjoint/adj_test_main.h"
 
 void test_adj_register_equation_reallocate(void)
 {
-  int ierr, cnt, i;
+  int cnt, i;
   adj_adjointer adjointer;
   adj_variable var;
   adj_block block;
@@ -16,11 +17,9 @@ void test_adj_register_equation_reallocate(void)
   for (i = 0; i < 2*ADJ_PREALLOC_SIZE + 1; i++)
   {
     adj_create_variable("Velocity", i, 0, ADJ_NORMAL_VARIABLE, &var);
-    ierr=adj_create_equation(var, 1, &block, &var, &equation); 
-    /* adj_test_assert(ierr==ADJ_ERR_OK, "Should work"); */
+    adj_create_equation(var, 1, &block, &var, &equation); 
     adj_register_equation(&adjointer, equation);
-    /* adj_test_assert(ierr==ADJ_ERR_OK, "Should work"); */
-    ierr = adj_destroy_equation(&equation);
+    adj_destroy_equation(&equation);
   }
 
   adj_equation_count(&adjointer, &cnt);

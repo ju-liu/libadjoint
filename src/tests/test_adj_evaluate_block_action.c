@@ -1,6 +1,7 @@
 #include "libadjoint/adj_adjointer_routines.h"
 #include "libadjoint/adj_test_tools.h"
 #include "libadjoint/adj_evaluation.h"
+#include "libadjoint/adj_test_main.h"
 #include <string.h>
 
 #ifndef HAVE_PETSC

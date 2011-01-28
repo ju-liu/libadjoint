@@ -1,6 +1,7 @@
-#include "adj_adjointer_routines.h"
-#include "adj_data_structures.h"
-#include "adj_test_tools.h"
+#include "libadjoint/adj_adjointer_routines.h"
+#include "libadjoint/adj_data_structures.h"
+#include "libadjoint/adj_test_tools.h"
+#include "libadjoint/adj_test_main.h"
 
 void test_adj_register_equation(void)
 {

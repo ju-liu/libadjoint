@@ -1,5 +1,6 @@
 #include "libadjoint/adj_adjointer_routines.h"
 #include "libadjoint/adj_test_tools.h"
+#include "libadjoint/adj_test_main.h"
 
 #ifndef HAVE_PETSC
 void test_adj_forget_equation(void)

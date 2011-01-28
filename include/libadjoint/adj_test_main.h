@@ -1,0 +1,1 @@
+void TESTNAME(void);

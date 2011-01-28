@@ -64,13 +64,13 @@ CTAGS = $(shell which ctags)
 
 all: lib/libadjoint.a
 
-obj/tests/%: src/tests/%.F90 src/tests/test_main.F90 lib/libadjoint.a
+bin/tests/%: src/tests/%.F90 src/tests/test_main.F90 lib/libadjoint.a
 	@echo "  FC $@"
-	@$(FC) $(FFLAGS) -DTESTNAME=$(notdir $@) -o $@ $< src/tests/test_main.F90 -Llib/ -ladjoint $(PETSC_LDFLAGS)
+	@$(FC) $(FFLAGS) -DTESTNAME=$(notdir $@) -o $@ $< src/tests/test_main.F90 -Llib/ -ladjoint $(PETSC_LDFLAGS) $(LIBS)
 
 bin/tests/%: src/tests/%.c src/tests/test_main.c lib/libadjoint.a
 	@echo "  CC $@"
-	@$(CC) $(CFLAGS) -DTESTNAME=$(notdir $@) -o $@ $< src/tests/test_main.c -Llib/ -ladjoint -I./include/libadjoint $(PETSC_LDFLAGS)
+	@$(CC) $(CFLAGS) -DTESTNAME=$(notdir $@) -o $@ $< src/tests/test_main.c -Llib/ -ladjoint $(PETSC_LDFLAGS) $(LIBS)
 
 obj/%.o: src/%.F90
 	@echo "  FC $<"
