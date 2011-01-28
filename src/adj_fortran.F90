@@ -40,6 +40,14 @@ module libadjoint
       integer(kind=c_int) :: ierr
     end function adj_variable_get_timestep
 
+    function adj_variable_get_iteration(var, iteration) result(ierr) bind(c, name='adj_variable_get_iteration')
+      use libadjoint_data_structures
+      use iso_c_binding
+      type(adj_variable), intent(in), value :: var
+      integer(kind=c_int), intent(out) :: iteration
+      integer(kind=c_int) :: ierr
+    end function adj_variable_get_iteration
+
     subroutine adj_chkierr_private_c(ierr, filename, line) bind(c, name='adj_chkierr_private')
       use iso_c_binding
       integer(kind=c_int), intent(in), value :: ierr
@@ -102,5 +110,16 @@ module libadjoint
 
     call adj_chkierr_private_c(ierr, filename_c, line_c)
   end subroutine adj_chkierr_private
+
+  subroutine adj_test_assert(bool, testdesc)
+    logical, intent(in) :: bool
+    character(len=*), intent(in) :: testdesc
+
+    if (.not. bool) then
+      print *, "  fail: " // testdesc
+    else
+      print *, "  pass"
+    end if
+  end subroutine adj_test_assert
 
 end module libadjoint

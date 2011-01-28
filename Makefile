@@ -45,7 +45,7 @@ ifneq (,$(findstring NAG, $(FC_VERSION)))
 	COMPILER_FFLAGS = -f2003
 endif
 
-FFLAGS = $(DBGFLAGS) $(PETSC_CPPFLAGS) -Iinclude/ $(COMPILER_FFLAGS)
+FFLAGS = $(DBGFLAGS) $(PETSC_CPPFLAGS) -Iinclude/ -Iinclude/libadjoint $(COMPILER_FFLAGS)
 
 AR = ar
 ARFLAGS = cr
@@ -64,13 +64,13 @@ CTAGS = $(shell which ctags)
 
 all: lib/libadjoint.a
 
-bin/tests/%: src/tests/%.F90 src/tests/test_main.F90 lib/libadjoint.a
-	@echo "  FC $@"
-	@$(FC) $(FFLAGS) -DTESTNAME=$(notdir $@) -o $@ $< src/tests/test_main.F90 -Llib/ -ladjoint $(PETSC_LDFLAGS) $(LIBS)
-
 bin/tests/%: src/tests/%.c src/tests/test_main.c lib/libadjoint.a
 	@echo "  CC $@"
 	@$(CC) $(CFLAGS) -DTESTNAME=$(notdir $@) -o $@ $< src/tests/test_main.c -Llib/ -ladjoint $(PETSC_LDFLAGS) $(LIBS)
+
+bin/tests/%: src/tests/%.F90 src/tests/test_main.F90 lib/libadjoint.a
+	@echo "  FC $@"
+	@$(FC) $(FFLAGS) -DTESTNAME=$(notdir $@) -o $@ $< src/tests/test_main.F90 -Llib/ -ladjoint $(PETSC_LDFLAGS) $(LIBS)
 
 obj/%.o: src/%.F90
 	@echo "  FC $<"
