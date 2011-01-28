@@ -264,6 +264,30 @@ module libadjoint
       type(c_funptr), intent(in), value :: fnptr
       integer(kind=c_int) :: ierr
     end function adj_register_operator_callback_c
+
+    function adj_register_data_callback(adjointer, type, fnptr) result(ierr) bind(c, name='adj_register_data_callback')
+      use libadjoint_data_structures
+      use iso_c_binding
+      type(adj_adjointer), intent(inout) :: adjointer
+      integer(kind=c_int), intent(in), value :: type
+      type(c_funptr), intent(in), value :: fnptr
+      integer(kind=c_int) :: ierr
+    end function adj_register_data_callback
+
+    function adj_forget_adjoint_equation(adjointer, equation) result(ierr) bind(c, name='adj_forget_adjoint_equation')
+      use libadjoint_data_structures
+      use iso_c_binding
+      type(adj_adjointer), intent(inout) :: adjointer
+      integer(kind=c_int), intent(in), value :: equation
+      integer(kind=c_int) :: ierr
+    end function adj_forget_adjoint_equation
+
+    function adj_storage_memory(val) result(mem) bind(c, name='adj_storage_memory')
+      use libadjoint_data_structures
+      use iso_c_binding
+      type(adj_vector), intent(in), value :: val
+      type(adj_storage_data) :: mem
+    end function adj_storage_memory
   end interface
 
   contains
