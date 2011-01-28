@@ -29,6 +29,15 @@ module libadjoint_data_structures
     type(c_ptr) :: context
     integer(kind=c_int) :: hermitian
   end type adj_block
+
+  type, bind(c) :: adj_equation
+    type(adj_variable) :: variable
+    integer(kind=c_int) :: nblocks
+    type(c_ptr) :: blocks
+    type(c_ptr) :: targets
+    integer(kind=c_int) :: nrhsdeps
+    type(c_ptr) :: rhsdeps
+  end type adj_equation
 end module libadjoint_data_structures
 
 module libadjoint
@@ -110,6 +119,33 @@ module libadjoint
       type(adj_block), intent(inout) :: block
       integer(kind=c_int) :: ierr
     end function adj_destroy_block
+
+    function adj_create_equation(var, nblocks, blocks, targets, equation) result(ierr) bind(c, name='adj_create_equation')
+      use libadjoint_data_structures
+      use iso_c_binding
+      type(adj_variable), intent(in), value :: var
+      integer(kind=c_int), intent(in), value :: nblocks
+      type(adj_variable), dimension(nblocks), intent(in) :: blocks
+      type(adj_block), dimension(nblocks), intent(in) :: targets
+      type(adj_equation), intent(inout) :: equation
+      integer(kind=c_int) :: ierr
+    end function adj_create_equation
+
+    function adj_set_rhs_dependencies(equation, nrhsdeps, rhsdeps) result(ierr) bind(c, name='adj_set_rhs_dependencies')
+      use libadjoint_data_structures
+      use iso_c_binding
+      type(adj_equation), intent(inout) :: equation
+      integer(kind=c_int), intent(in), value :: nrhsdeps
+      type(adj_variable), dimension(nrhsdeps), intent(in) :: rhsdeps
+      integer(kind=c_int) :: ierr
+    end function adj_set_rhs_dependencies
+
+    function adj_destroy_equation(equation) result(ierr) bind(c, name='adj_destroy_equation')
+      use libadjoint_data_structures
+      use iso_c_binding
+      type(adj_equation), intent(inout) :: equation
+      integer(kind=c_int) :: ierr
+    end function adj_destroy_equation
   end interface
 
   contains
