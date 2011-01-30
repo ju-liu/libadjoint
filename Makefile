@@ -56,7 +56,7 @@ FOBJ = $(patsubst src/%.F90,obj/%.o,$(FSRC))
 CSRC = $(wildcard src/*.c)
 COBJ = $(patsubst src/%.c,obj/%.o,$(CSRC))
 
-DISABLED_TESTS =  
+DISABLED_TESTS = bin/tests/test_adj_evaluate_block_action_nonlinear
 FTEST = $(filter-out $(DISABLED_TESTS), $(patsubst src/tests/%,bin/tests/%,$(basename $(filter-out src/tests/test_main.F90, $(wildcard src/tests/*.F90)))))
 CTEST = $(filter-out $(DISABLED_TESTS), $(patsubst src/tests/%,bin/tests/%,$(basename $(filter-out src/tests/test_main.c, $(wildcard src/tests/*.c)))))
 

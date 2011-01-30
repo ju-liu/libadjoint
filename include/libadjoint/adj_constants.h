@@ -8,6 +8,9 @@
 #define adj_scalar double
 #define adj_scalar_f real(kind=c_double)
 
+#define ADJ_TRUE 1
+#define ADJ_FALSE 0
+
 /* values for the .type field of an adj_variable */
 #define ADJ_FORWARD 1
 #define ADJ_ADJOINT 2

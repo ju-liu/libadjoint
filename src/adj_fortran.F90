@@ -280,7 +280,8 @@ module libadjoint
     subroutine adj_chkierr_private_c(ierr, filename, line) bind(c, name='adj_chkierr_private')
       use iso_c_binding
       integer(kind=c_int), intent(in), value :: ierr
-      character(kind=c_char), dimension(*), intent(in) :: filename, line
+      character(kind=c_char), dimension(*), intent(in) :: filename
+      integer(kind=c_int), intent(in) :: line
     end subroutine adj_chkierr_private_c
 
     function adj_create_nonlinear_block_c(name, ndepends, depends, coefficient, context, nblock) result(ierr) &
@@ -324,16 +325,16 @@ module libadjoint
       integer(kind=c_int) :: ierr
     end function adj_destroy_block
 
-    function adj_create_equation(var, nblocks, blocks, targets, equation) result(ierr) bind(c, name='adj_create_equation')
+    function adj_create_equation_c(var, nblocks, blocks, targets, equation) result(ierr) bind(c, name='adj_create_equation')
       use libadjoint_data_structures
       use iso_c_binding
       type(adj_variable), intent(in), value :: var
       integer(kind=c_int), intent(in), value :: nblocks
-      type(adj_variable), dimension(nblocks), intent(in) :: blocks
-      type(adj_block), dimension(nblocks), intent(in) :: targets
+      type(adj_block), dimension(nblocks), intent(in) :: blocks
+      type(adj_variable), dimension(nblocks), intent(in) :: targets
       type(adj_equation), intent(inout) :: equation
       integer(kind=c_int) :: ierr
-    end function adj_create_equation
+    end function adj_create_equation_c
 
     function adj_set_rhs_dependencies(equation, nrhsdeps, rhsdeps) result(ierr) bind(c, name='adj_set_rhs_dependencies')
       use libadjoint_data_structures
@@ -488,17 +489,18 @@ module libadjoint
     ierr = ADJ_ERR_OK
   end function adj_variable_get_name
 
-  function adj_create_nonlinear_block(name, ndepends, depends, coefficient, context, nblock) result(ierr)
+  function adj_create_nonlinear_block(name, depends, coefficient, context, nblock) result(ierr)
     character(len=*), intent(in) :: name
-    integer, intent(in) :: ndepends
-    type(adj_variable), intent(in), dimension(ndepends) :: depends
-    adj_scalar_f, intent(in) :: coefficient
-    type(c_ptr), intent(in) :: context
+    type(adj_variable), intent(in), dimension(:) :: depends
+    adj_scalar_f, intent(in), optional :: coefficient
+    type(c_ptr), intent(in), optional :: context
     type(adj_nonlinear_block), intent(out) :: nblock
     integer :: ierr
 
     character(kind=c_char), dimension(ADJ_NAME_LEN) :: name_c
     integer :: j
+    adj_scalar_f :: coefficient_c
+    type(c_ptr) :: context_c
 
     do j=1,len_trim(name)
       name_c(j) = name(j:j)
@@ -508,7 +510,19 @@ module libadjoint
     end do
     name_c(ADJ_NAME_LEN) = c_null_char
 
-    ierr = adj_create_nonlinear_block_c(name_c, ndepends, depends, coefficient, context, nblock)
+    if (present(coefficient)) then
+      coefficient_c = coefficient
+    else
+      coefficient_c = 1.0
+    endif
+
+    if (present(context)) then
+      context_c = context
+    else
+      context_c = c_null_ptr
+    endif
+
+    ierr = adj_create_nonlinear_block_c(name_c, size(depends), depends, coefficient_c, context_c, nblock)
   end function adj_create_nonlinear_block
 
   function adj_create_block(name, nblock, context, block) result(ierr)
@@ -516,13 +530,14 @@ module libadjoint
     use iso_c_binding
     character(len=*), intent(in) :: name
     type(adj_nonlinear_block), intent(in), optional, target :: nblock
-    type(c_ptr), intent(in) :: context
+    type(c_ptr), intent(in), optional :: context
     type(adj_block), intent(inout) :: block
     integer :: ierr
 
     character(kind=c_char), dimension(ADJ_NAME_LEN) :: name_c
     integer :: j
     type(c_ptr) :: nblock_ptr
+    type(c_ptr) :: context_c
 
     do j=1,len_trim(name)
       name_c(j) = name(j:j)
@@ -538,10 +553,16 @@ module libadjoint
       nblock_ptr = c_null_ptr
     end if
 
-    ierr = adj_create_block_c(name_c, nblock_ptr, context, block)
+    if (present(context)) then
+      context_c = context
+    else
+      context_c = c_null_ptr
+    endif
+
+    ierr = adj_create_block_c(name_c, nblock_ptr, context_c, block)
   end function adj_create_block
 
-    function adj_register_operator_callback(adjointer, type, name, fnptr) result(ierr)
+  function adj_register_operator_callback(adjointer, type, name, fnptr) result(ierr)
     type(adj_adjointer), intent(inout) :: adjointer
     integer(kind=c_int), intent(in) :: type
     character(len=*), intent(in) :: name
@@ -562,11 +583,29 @@ module libadjoint
     ierr = adj_register_operator_callback_c(adjointer, type, name_c, fnptr)
   end function adj_register_operator_callback
 
+  function adj_create_equation(var, blocks, targets, equation) result(ierr)
+    use libadjoint_data_structures
+    use iso_c_binding
+    type(adj_variable), intent(in), value :: var
+    type(adj_block), dimension(:), intent(in) :: blocks
+    type(adj_variable), dimension(:), intent(in) :: targets
+    type(adj_equation), intent(inout) :: equation
+    integer :: ierr
+
+    if (size(blocks) /= size(targets)) then
+      ! Can't set the error message from Fortran, I think?
+      ierr = ADJ_ERR_INVALID_INPUTS
+      return
+    end if
+
+    ierr = adj_create_equation_c(var, size(blocks), blocks, targets, equation)
+  end function adj_create_equation
+
   subroutine adj_chkierr_private(ierr, filename, line)
     integer, intent(in) :: ierr
-    character(len=*), intent(in) :: filename, line
+    character(len=*), intent(in) :: filename
+    integer, intent(in) :: line
     character(kind=c_char), dimension(len_trim(filename)+1) :: filename_c
-    character(kind=c_char), dimension(len_trim(line)+1) :: line_c
     integer :: j
 
     do j=1,len_trim(filename)
@@ -574,12 +613,7 @@ module libadjoint
     end do
     filename_c(len_trim(filename)+1) = c_null_char
 
-    do j=1,len_trim(line)
-      line_c(j) = line(j:j)
-    end do
-    line_c(len_trim(line)+1) = c_null_char
-
-    call adj_chkierr_private_c(ierr, filename_c, line_c)
+    call adj_chkierr_private_c(ierr, filename_c, line)
   end subroutine adj_chkierr_private
 
   subroutine adj_test_assert(bool, testdesc)
