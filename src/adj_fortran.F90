@@ -16,7 +16,7 @@ module libadjoint_data_structures
 
   type, bind(c) :: adj_nonlinear_block
     character(kind=c_char), dimension(ADJ_NAME_LEN) :: name
-    adj_scalar :: coefficient
+    adj_scalar_f :: coefficient
     integer(kind=c_int) :: ndepends
     type(c_ptr) :: depends
     type(c_ptr) :: context
@@ -106,6 +106,150 @@ module libadjoint
   use iso_c_binding
   implicit none
 
+  abstract interface
+    subroutine adj_vec_duplicate_proc(x, newx) bind(c)
+      ! Creates a new vector of the same type as an existing vector and set its entries to zero.
+      use iso_c_binding
+      use libadjoint_data_structures
+      type(adj_vector), intent(in), value :: x
+      type(adj_vector), intent(out) :: newx
+    end subroutine adj_vec_duplicate_proc
+
+    subroutine adj_vec_axpy_proc(y, alpha, x) bind(c)
+      ! Computes y = alpha x + y.
+      use iso_c_binding
+      use libadjoint_data_structures
+      type(adj_vector), intent(inout) :: y
+      adj_scalar_f, intent(in), value :: alpha
+      type(adj_vector), intent(in), value :: x
+    end subroutine adj_vec_axpy_proc
+
+    subroutine adj_vec_destroy_proc(x) bind(c)
+      ! Destroys a vector.
+      use iso_c_binding
+      use libadjoint_data_structures
+      type(adj_vector), intent(inout) :: x
+    end subroutine adj_vec_destroy_proc
+
+    subroutine adj_vec_setvalues_proc(vec, scalars) bind(c)
+      use iso_c_binding
+      use libadjoint_data_structures
+      type(adj_vector), intent(inout) :: vec
+      adj_scalar_f, dimension(*), intent(in) :: scalars
+    end subroutine adj_vec_setvalues_proc
+
+    subroutine adj_vec_pointwisedivide_proc(numerator, denominator, output) bind(c)
+      use libadjoint_data_structures
+      type(adj_vector), intent(in), value :: numerator, denominator
+      type(adj_vector), intent(inout) :: output
+    end subroutine adj_vec_pointwisedivide_proc
+
+    subroutine adj_mat_duplicate_proc(matin, matout) bind(c)
+      ! Allocate a new matrix, using a given matrix as the model
+      use iso_c_binding
+      use libadjoint_data_structures
+      type(adj_matrix), intent(in), value :: matin
+      type(adj_matrix), intent(out) :: matout
+    end subroutine adj_mat_duplicate_proc
+
+    subroutine adj_mat_axpy_proc(Y, alpha, X) bind(c)
+      ! Computes Y = alpha*X + Y.
+      use iso_c_binding
+      use libadjoint_data_structures
+      type(adj_matrix), intent(inout) :: Y
+      adj_scalar_f, intent(in), value :: alpha
+      type(adj_matrix), intent(in), value :: X
+    end subroutine adj_mat_axpy_proc
+
+    subroutine adj_mat_destroy_proc(mat) bind(c)
+      ! Frees space taken by a matrix.
+      use iso_c_binding
+      use libadjoint_data_structures
+      type(adj_matrix), intent(inout) :: mat
+    end subroutine adj_mat_destroy_proc
+
+    subroutine adj_mat_getvecs_proc(mat, left) bind(c)
+    ! Get vector(s) compatible with the matrix, i.e. with the same parallel layout
+      use iso_c_binding
+      use libadjoint_data_structures
+      type(adj_matrix), intent(in), value :: mat
+      type(adj_vector), intent(out) :: left
+    end subroutine adj_mat_getvecs_proc
+
+    subroutine adj_nonlinear_colouring_proc(nvar, variables, dependencies, derivative, sz, colouring) bind(c)
+      use iso_c_binding
+      use libadjoint_data_structures
+      integer(kind=c_int), intent(in) :: nvar
+      type(adj_variable), dimension(nvar), intent(in) :: variables
+      type(adj_vector), dimension(nvar), intent(in) :: dependencies
+      type(adj_variable), intent(in) :: derivative
+      integer(kind=c_int), intent(in) :: sz
+      integer(kind=c_int), dimension(sz), intent(out) :: colouring
+    end subroutine adj_nonlinear_colouring_proc
+
+    subroutine adj_nonlinear_action_proc(nvar, variables, dependencies, input, context, output) bind(c)
+      use iso_c_binding
+      use libadjoint_data_structures
+      integer(kind=c_int), intent(in) :: nvar
+      type(adj_variable), dimension(nvar), intent(in) :: variables
+      type(adj_vector), dimension(nvar), intent(in) :: dependencies
+      type(adj_vector), intent(in) :: input
+      type(c_ptr), intent(in) :: context
+      type(adj_vector), intent(out) :: output
+    end subroutine adj_nonlinear_action_proc
+
+    subroutine adj_nonlinear_derivative_action_proc(nvar, variables, dependencies, derivative, contraction, hermitian, &
+                                                  & input, context, output) bind(c)
+      use iso_c_binding
+      use libadjoint_data_structures
+      integer(kind=c_int), intent(in) :: nvar
+      type(adj_variable), dimension(nvar), intent(in) :: variables
+      type(adj_vector), dimension(nvar), intent(in) :: dependencies
+      type(adj_variable), intent(in) :: derivative
+      type(adj_vector), intent(in) :: contraction
+      logical(kind=c_bool), intent(in) :: hermitian
+      type(adj_vector), intent(in) :: input
+      type(c_ptr), intent(in) :: context
+      type(adj_vector), intent(out) :: output
+    end subroutine adj_nonlinear_derivative_action_proc
+
+    subroutine adj_nonlinear_derivative_assembly_proc(nvar, variables, dependencies, derivative, contraction, hermitian, &
+                                                    & context, output) bind(c)
+      use iso_c_binding
+      use libadjoint_data_structures
+      integer(kind=c_int), intent(in) :: nvar
+      type(adj_variable), dimension(nvar), intent(in) :: variables
+      type(adj_vector), dimension(nvar), intent(in) :: dependencies
+      type(adj_variable), intent(in) :: derivative
+      type(adj_vector), intent(in) :: contraction
+      logical(kind=c_bool), intent(in) :: hermitian
+      type(c_ptr), intent(in) :: context
+      type(adj_matrix), intent(out) :: output
+    end subroutine adj_nonlinear_derivative_assembly_proc
+   
+    subroutine adj_block_action_proc(nvar, variables, dependencies, hermitian, input, context, output) bind(c)
+      use iso_c_binding
+      use libadjoint_data_structures
+      integer(kind=c_int), intent(in), value :: nvar
+      type(adj_variable), dimension(nvar), intent(in) :: variables
+      type(adj_vector), dimension(nvar), intent(in) :: dependencies
+      integer(kind=c_int), intent(in), value :: hermitian
+      type(adj_vector), intent(in), value :: input
+      type(c_ptr), intent(in), value :: context
+      type(adj_vector), intent(out) :: output
+    end subroutine adj_block_action_proc
+
+    subroutine adj_block_assembly_proc(nvar, variables, dependencies, hermitian, context, output) bind(c)
+      use iso_c_binding
+      use libadjoint_data_structures
+      integer(kind=c_int), intent(in), value :: nvar
+      type(adj_variable), dimension(nvar), intent(in) :: variables
+      type(adj_vector), dimension(nvar), intent(in) :: dependencies
+      integer(kind=c_int), intent(in), value :: hermitian
+      type(c_ptr), intent(in), value :: context
+      type(adj_matrix), intent(out) :: output
+    end subroutine adj_block_assembly_proc
+  end interface
 
   interface
     function adj_create_variable_c(name, timestep, iteration, auxiliary, var) result(ierr) bind(c, name='adj_create_variable')
@@ -146,7 +290,7 @@ module libadjoint
       character(kind=c_char), dimension(ADJ_NAME_LEN), intent(in) :: name
       integer(kind=c_int), intent(in), value :: ndepends
       type(adj_variable), intent(in), dimension(ndepends) :: depends
-      adj_scalar, intent(in), value :: coefficient
+      adj_scalar_f, intent(in), value :: coefficient
       type(c_ptr), intent(in), value :: context
       type(adj_nonlinear_block), intent(out) :: nblock
       integer(kind=c_int) :: ierr
@@ -348,7 +492,7 @@ module libadjoint
     character(len=*), intent(in) :: name
     integer, intent(in) :: ndepends
     type(adj_variable), intent(in), dimension(ndepends) :: depends
-    adj_scalar, intent(in) :: coefficient
+    adj_scalar_f, intent(in) :: coefficient
     type(c_ptr), intent(in) :: context
     type(adj_nonlinear_block), intent(out) :: nblock
     integer :: ierr

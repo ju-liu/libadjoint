@@ -65,7 +65,7 @@ int adj_evaluate_block_assembly(adj_adjointer* adjointer, adj_block block, adj_m
     }
   }
 
-  block_assembly_func(nb_variables, variables, dependencies, block.hermitian, block.context, output );
+  block_assembly_func(nb_variables, variables, dependencies, block.hermitian, block.context, output);
 
   if (block.has_nonlinear_block)
     free(dependencies);

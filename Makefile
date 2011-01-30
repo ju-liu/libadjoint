@@ -123,7 +123,7 @@ include/libadjoint/adj_fortran.h: include/libadjoint/adj_constants_f.h include/l
 # replace C comments with F90 comments
 include/libadjoint/adj_constants_f.h: include/libadjoint/adj_constants.h
 	@echo "  SED $@"
-	@sed -e 's@/\*@!@' -e 's@\*/@@' -e 's@ADJ_CONSTANTS_H@ADJ_CONSTANTS_F_H@' -e 's@adj_scalar double@adj_scalar real(kind=c_double)@' $< > $@
+	@sed -e 's@/\*@!@' -e 's@\*/@@' -e 's@ADJ_CONSTANTS_H@ADJ_CONSTANTS_F_H@' -e '/adj_scalar /d' $< > $@
 include/libadjoint/adj_error_handling_f.h: include/libadjoint/adj_error_handling.h
 	@echo "  SED $@"
 	@grep '^#' $< | grep -v '^#include' > $@
