@@ -39,9 +39,12 @@ subroutine identity_assembly_callback(nvar, variables, dependencies, hermitian, 
   call VecSet(ones, one, ierr)
   call MatDiagonalSet(output_mat, ones, INSERT_VALUES, ierr)
   call VecDestroy(ones, ierr)
+! MatHermitianTranspose was only added in petsc 3.1, it seems
+#if PETSC_VERSION_MINOR > 0
   if (hermitian == ADJ_TRUE) then
     call MatHermitianTranspose(output_mat, MAT_REUSE_MATRIX, output_mat, ierr)
   end if
+#endif
   output = petsc_mat_to_adj_matrix(output_mat)
 end subroutine identity_assembly_callback
 
