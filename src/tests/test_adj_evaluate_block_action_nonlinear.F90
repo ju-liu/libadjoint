@@ -82,6 +82,8 @@ subroutine test_adj_evaluate_block_action_nonlinear
   call adj_chkierr(ierr)
   ierr = adj_create_equation(var=u0, blocks=(/I/), targets=(/u0/), equation=equation)
   call adj_test_assert(ierr == 0, "Should have worked")
+  ierr = adj_register_equation(adjointer, equation)
+  call adj_test_assert(ierr == 0, "Should have worked")
 
   ! Set up the input
   call VecCreateSeq(PETSC_COMM_SELF, m, input, ierr)
