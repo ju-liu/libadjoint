@@ -7,7 +7,7 @@ endif
 CC_VERSION = $(shell $(CC) --version 2>&1) $(shell $(CC) -V 2>&1)
 ifneq (,$(findstring gcc, $(CC_VERSION)))
 	# gcc-specific settings here
-	COMPILER_CFLAGS := -Wextra -Wunused-parameter -Wunused-result -Wfloat-equal -Wunsafe-loop-optimizations -Wpointer-arith -Wstrict-prototypes -ggdb3 -fstack-protector-all
+	COMPILER_CFLAGS := -Wextra -Wunused-parameter -Wunused-result -Wunsafe-loop-optimizations -Wpointer-arith -Wstrict-prototypes -ggdb3 -fstack-protector-all
 endif
 
 # Identify if PETSc is installed

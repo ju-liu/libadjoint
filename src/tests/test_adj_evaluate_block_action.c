@@ -50,10 +50,10 @@ void test_adj_evaluate_block_action(void)
 void identity_action_callback(int nb_variables, adj_variable* variables, adj_vector* dependencies, int hermitian, adj_vector input, void* context, adj_vector output)
 {
   (void) hermitian;
-  (void*) context;
+  (void) context;
   (void) nb_variables;
-  (void*) variables;
-  (void*) dependencies;
+  (void) variables;
+  (void) dependencies;
   VecDuplicate(petsc_vec_from_adj_vector(input), (Vec*)output.ptr);
   VecCopy(petsc_vec_from_adj_vector(input), *(Vec*)output.ptr);
 }
