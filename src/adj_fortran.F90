@@ -655,7 +655,9 @@ module libadjoint_petsc_data_structures
     type(adj_adjointer), intent(inout) :: adjointer
     integer(kind=c_int) :: ierr
 
+#ifdef HAVE_PETSC
     call PetscInitialize(PETSC_NULL_CHARACTER, ierr)
+#endif
 
     ierr = adj_register_data_callback(adjointer, ADJ_VEC_DUPLICATE_CB, c_funloc(petsc_vec_duplicate_proc))
     call adj_chkierr(ierr)
