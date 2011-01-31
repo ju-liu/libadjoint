@@ -87,7 +87,8 @@ subroutine test_adj_get_adjoint_equation_block_action
   PetscScalar, parameter :: one = 1.0
   type(adj_matrix) :: lhs
   type(adj_vector) :: rhs
-  Vec :: lambda0, lambda1, sum
+  Vec, target :: lambda0, lambda1, sum
+  type(adj_vector) :: lambda1_vec
   PetscScalar :: norm
   PetscRandom :: rctx
   KSP :: ksp
@@ -129,5 +130,32 @@ subroutine test_adj_get_adjoint_equation_block_action
   call petsc_vec_destroy_proc(rhs)
   call petsc_mat_destroy_proc(lhs)
 
+  ierr = adj_get_adjoint_equation(adjointer, equation=0, functional=0, lhs=lhs, rhs=rhs, var=adj_var1)
+  call adj_test_assert(ierr == ADJ_ERR_NEED_VALUE, "Should need the value for lambda1")
+
+  ! We'll decide on a random value for lambda1 (lambda1 = dJ/du, so that's the same
+  ! as a random functional)
+  call VecCreateSeq(PETSC_COMM_SELF, m, lambda1, ierr)
+  call PetscRandomCreate(PETSC_COMM_SELF, rctx, ierr)
+  call PetscRandomSetFromOptions(rctx, ierr)
+  call VecSetRandom(lambda1, rctx, ierr)
+  call PetscRandomDestroy(rctx, ierr)
+
+  lambda1_vec%klass = 0
+  lambda1_vec%ptr = c_loc(lambda1)
+  ierr = adj_record_variable(adjointer, adj_var1, adj_storage_memory(lambda1_vec))
+  call adj_test_assert(ierr == ADJ_ERR_OK, "Should have worked")
+
+  ierr = adj_get_adjoint_equation(adjointer, equation=0, functional=0, lhs=lhs, rhs=rhs, var=adj_var1)
+  call adj_test_assert(ierr == ADJ_ERR_NEED_CALLBACK, "Should need the block_action_callback")
+
+  ierr = adj_register_operator_callback(adjointer, ADJ_BLOCK_ACTION_CB, "IdentityOperator", c_funloc(identity_action_callback))
+  call adj_test_assert(ierr == ADJ_ERR_OK, "Should have worked")
+
+  ierr = adj_get_adjoint_equation(adjointer, equation=0, functional=0, lhs=lhs, rhs=rhs, var=adj_var1)
+  call adj_test_assert(ierr == ADJ_ERR_OK, "Should have worked")
+  
+  ! So now solve lhs . lambda0 = rhs
+  ! With this setup, lambda0 = -1 * lambda1.
 end subroutine test_adj_get_adjoint_equation_block_action
 #endif
