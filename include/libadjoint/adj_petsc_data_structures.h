@@ -10,7 +10,7 @@
 #include "libadjoint/adj_petsc.h"
 #endif
 
-void adj_set_petsc_data_callbacks(adj_adjointer *adjointer);
+int adj_set_petsc_data_callbacks(adj_adjointer *adjointer);
 
 void petsc_vec_duplicate_proc(adj_vector x, adj_vector *newx);
 void petsc_vec_axpy_proc(adj_vector *y, adj_scalar alpha, adj_vector x);

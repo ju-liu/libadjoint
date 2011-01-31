@@ -1,19 +1,31 @@
 #include "libadjoint/adj_petsc_data_structures.h"
 
-void adj_set_petsc_data_callbacks(adj_adjointer* adjointer)
+int adj_set_petsc_data_callbacks(adj_adjointer* adjointer)
 {
+  int ierr;
 #ifdef HAVE_PETSC
   PetscInitializeNoArguments();
 #endif
-  adj_register_data_callback(adjointer, ADJ_VEC_DUPLICATE_CB, (void (*)(void)) petsc_vec_duplicate_proc);
-  adj_register_data_callback(adjointer, ADJ_VEC_AXPY_CB,(void (*)(void)) petsc_vec_axpy_proc);
-  adj_register_data_callback(adjointer, ADJ_VEC_DESTROY_CB, (void (*)(void)) petsc_vec_destroy_proc);
-  adj_register_data_callback(adjointer, ADJ_VEC_SETVALUES_CB,(void (*)(void)) petsc_vec_setvalues_proc);
-  adj_register_data_callback(adjointer, ADJ_VEC_DIVIDE_CB,(void (*)(void)) petsc_vec_divide_proc);
-  adj_register_data_callback(adjointer, ADJ_MAT_GETVECS_CB, (void (*)(void)) petsc_mat_getvec_proc);
-  adj_register_data_callback(adjointer, ADJ_MAT_AXPY_CB,(void (*)(void)) petsc_mat_axpy_proc);
-  adj_register_data_callback(adjointer, ADJ_MAT_DESTROY_CB,(void (*)(void)) petsc_mat_destroy_proc);
-  adj_register_data_callback(adjointer, ADJ_MAT_DUPLICATE_CB,(void (*)(void)) petsc_mat_duplicate_proc);
+  ierr = adj_register_data_callback(adjointer, ADJ_VEC_DUPLICATE_CB, (void (*)(void)) petsc_vec_duplicate_proc);
+  adj_chkierr(ierr);
+  ierr = adj_register_data_callback(adjointer, ADJ_VEC_AXPY_CB,(void (*)(void)) petsc_vec_axpy_proc);
+  adj_chkierr(ierr);
+  ierr = adj_register_data_callback(adjointer, ADJ_VEC_DESTROY_CB, (void (*)(void)) petsc_vec_destroy_proc);
+  adj_chkierr(ierr);
+  ierr = adj_register_data_callback(adjointer, ADJ_VEC_SETVALUES_CB,(void (*)(void)) petsc_vec_setvalues_proc);
+  adj_chkierr(ierr);
+  ierr = adj_register_data_callback(adjointer, ADJ_VEC_DIVIDE_CB,(void (*)(void)) petsc_vec_divide_proc);
+  adj_chkierr(ierr);
+  ierr = adj_register_data_callback(adjointer, ADJ_MAT_GETVEC_CB, (void (*)(void)) petsc_mat_getvec_proc);
+  adj_chkierr(ierr);
+  ierr = adj_register_data_callback(adjointer, ADJ_MAT_AXPY_CB,(void (*)(void)) petsc_mat_axpy_proc);
+  adj_chkierr(ierr);
+  ierr = adj_register_data_callback(adjointer, ADJ_MAT_DESTROY_CB,(void (*)(void)) petsc_mat_destroy_proc);
+  adj_chkierr(ierr);
+  ierr = adj_register_data_callback(adjointer, ADJ_MAT_DUPLICATE_CB,(void (*)(void)) petsc_mat_duplicate_proc);
+  adj_chkierr(ierr);
+
+  return ierr;
 }
 
 void petsc_vec_duplicate_proc(adj_vector x, adj_vector *newx)

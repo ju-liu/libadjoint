@@ -281,7 +281,7 @@ module libadjoint
       use iso_c_binding
       integer(kind=c_int), intent(in), value :: ierr
       character(kind=c_char), dimension(*), intent(in) :: filename
-      integer(kind=c_int), intent(in) :: line
+      integer(kind=c_int), intent(in), value :: line
     end subroutine adj_chkierr_private_c
 
     function adj_create_nonlinear_block_c(name, ndepends, depends, coefficient, context, nblock) result(ierr) &
@@ -661,7 +661,7 @@ module libadjoint_petsc_data_structures
     call adj_chkierr(ierr)
     ierr = adj_register_data_callback(adjointer, ADJ_VEC_DIVIDE_CB, c_funloc(petsc_vec_divide_proc))
     call adj_chkierr(ierr)
-    ierr = adj_register_data_callback(adjointer, ADJ_MAT_GETVECS_CB, c_funloc(petsc_mat_getvec_proc))
+    ierr = adj_register_data_callback(adjointer, ADJ_MAT_GETVEC_CB, c_funloc(petsc_mat_getvec_proc))
     call adj_chkierr(ierr)
     ierr = adj_register_data_callback(adjointer, ADJ_MAT_AXPY_CB, c_funloc(petsc_mat_axpy_proc))
     call adj_chkierr(ierr)

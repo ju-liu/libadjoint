@@ -468,12 +468,16 @@ int adj_register_data_callback(adj_adjointer* adjointer, int type, void (*fn)(vo
 
     case ADJ_MAT_DUPLICATE_CB:
       adjointer->callbacks.mat_duplicate = (void(*)(adj_matrix matin, adj_matrix *matout)) fn;
+      break;
     case ADJ_MAT_AXPY_CB:
       adjointer->callbacks.mat_axpy = (void(*)(adj_matrix *Y, adj_scalar alpha, adj_matrix X)) fn;
+      break;
     case ADJ_MAT_DESTROY_CB:
       adjointer->callbacks.mat_destroy = (void(*)(adj_matrix *mat)) fn;
-    case ADJ_MAT_GETVECS_CB:
+      break;
+    case ADJ_MAT_GETVEC_CB:
       adjointer->callbacks.mat_getvec = (void(*)(adj_matrix mat, adj_vector *left)) fn;
+      break;
 
    default:
       snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Unknown data callback type %d.", type);

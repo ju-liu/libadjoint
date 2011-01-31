@@ -53,7 +53,7 @@
 #define ADJ_MAT_DUPLICATE_CB 20
 #define ADJ_MAT_AXPY_CB 21
 #define ADJ_MAT_DESTROY_CB 22
-#define ADJ_MAT_GETVECS_CB 23
+#define ADJ_MAT_GETVEC_CB 23
 
 /* prealloc constant */
 #define ADJ_PREALLOC_SIZE 255
