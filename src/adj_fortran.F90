@@ -808,7 +808,7 @@ module libadjoint_petsc_data_structures
 
     output%klass = 0
     allocate(input_ptr)
-    input_ptr => input
+    input_ptr = input
     output%ptr = c_loc(input_ptr)
   end function petsc_vec_to_adj_vector
 
@@ -828,7 +828,7 @@ module libadjoint_petsc_data_structures
 
     output%klass = 0
     allocate(input_ptr)
-    input_ptr => input
+    input_ptr = input
     output%ptr = c_loc(input_ptr)
   end function petsc_mat_to_adj_matrix
 #endif

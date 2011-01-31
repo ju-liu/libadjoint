@@ -126,8 +126,8 @@ subroutine test_adj_get_adjoint_equation_block_action
   ierr = adj_get_adjoint_equation(adjointer, equation=1, functional=0, lhs=lhs, rhs=rhs, var=adj_var1)
   call adj_test_assert(ierr == ADJ_ERR_OK, "Should have worked")
   ! We don't actually need the memory for lhs and rhs, so we'll delete them now
-  !call petsc_vec_destroy_proc(rhs)
-  !call petsc_mat_destroy_proc(lhs)
+  call petsc_vec_destroy_proc(rhs)
+  call petsc_mat_destroy_proc(lhs)
 
 end subroutine test_adj_get_adjoint_equation_block_action
 #endif
