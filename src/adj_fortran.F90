@@ -643,6 +643,10 @@ module libadjoint_petsc_data_structures
 #ifdef HAVE_PETSC
   public :: petsc_vec_from_adj_vector
   public :: petsc_vec_to_adj_vector
+  public :: petsc_mat_from_adj_matrix
+  public :: petsc_mat_to_adj_matrix
+  public :: petsc_vec_destroy_proc
+  public :: petsc_mat_destroy_proc
 #endif
 
   contains
@@ -744,8 +748,10 @@ module libadjoint_petsc_data_structures
     type(adj_matrix), intent(out) :: matout
     integer :: ierr
 #ifdef HAVE_PETSC
-    call MatDuplicate(matin, MAT_DO_NOT_COPY_VALUES, matout, ierr)
-    call MatZeroEntries(matout, ierr)
+    Mat :: matout_petsc
+    call MatDuplicate(petsc_mat_from_adj_matrix(matin), MAT_DO_NOT_COPY_VALUES, matout_petsc, ierr)
+    call MatZeroEntries(matout_petsc, ierr)
+    matout = petsc_mat_to_adj_matrix(matout_petsc)
 #endif
   end subroutine petsc_mat_duplicate_proc
 
@@ -757,7 +763,7 @@ module libadjoint_petsc_data_structures
     type(adj_matrix), intent(in), value :: X
     integer :: ierr
 #ifdef HAVE_PETSC
-    call MatAXPY(Y, alpha, X, SAME_NONZERO_PATTERN, ierr)
+    call MatAXPY(petsc_mat_from_adj_matrix(Y), alpha, petsc_mat_from_adj_matrix(X), SAME_NONZERO_PATTERN, ierr)
 #endif
   end subroutine petsc_mat_axpy_proc
 
@@ -767,7 +773,7 @@ module libadjoint_petsc_data_structures
     type(adj_matrix), intent(inout) :: mat
     integer :: ierr
 #ifdef HAVE_PETSC
-    call MatDestroy(mat, ierr)
+    call MatDestroy(petsc_mat_from_adj_matrix(mat), ierr)
 #endif
   end subroutine petsc_mat_destroy_proc
 
@@ -779,7 +785,7 @@ module libadjoint_petsc_data_structures
     integer :: ierr
 #ifdef HAVE_PETSC
     Vec :: leftvec
-    call MatGetVecs(mat, PETSC_NULL_OBJECT, leftvec, ierr)
+    call MatGetVecs(petsc_mat_from_adj_matrix(mat), PETSC_NULL_OBJECT, leftvec, ierr)
     call VecZeroEntries(leftvec, ierr)
     left = petsc_vec_to_adj_vector(leftvec)
 #endif
@@ -805,6 +811,26 @@ module libadjoint_petsc_data_structures
     input_ptr => input
     output%ptr = c_loc(input_ptr)
   end function petsc_vec_to_adj_vector
+
+  function petsc_mat_from_adj_matrix(input) result(output)
+    type(adj_matrix), intent(in) :: input
+    Mat :: output
+    Mat, pointer :: tmp
+
+    call c_f_pointer(input%ptr, tmp)
+    output = tmp
+  end function petsc_mat_from_adj_matrix
+
+  function petsc_mat_to_adj_matrix(input) result(output)
+    Mat, intent(in), target :: input
+    Mat, pointer :: input_ptr
+    type(adj_matrix) :: output
+
+    output%klass = 0
+    allocate(input_ptr)
+    input_ptr => input
+    output%ptr = c_loc(input_ptr)
+  end function petsc_mat_to_adj_matrix
 #endif
 end module libadjoint_petsc_data_structures
 

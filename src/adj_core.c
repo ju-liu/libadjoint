@@ -16,7 +16,7 @@ int adj_get_adjoint_equation(adj_adjointer* adjointer, int equation, int functio
     return ADJ_ERR_INVALID_INPUTS;
   }
 
-  if (equation < 0 || equation > adjointer->nequations)
+  if (equation < 0 || equation >= adjointer->nequations)
   {
     snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Invalid equation number %d.", equation);
     return ADJ_ERR_INVALID_INPUTS;
@@ -28,12 +28,13 @@ int adj_get_adjoint_equation(adj_adjointer* adjointer, int equation, int functio
   if (adjointer->callbacks.vec_axpy == NULL)    return ADJ_ERR_NEED_CALLBACK;
   if (adjointer->callbacks.mat_axpy == NULL)    return ADJ_ERR_NEED_CALLBACK;
   if (adjointer->callbacks.mat_destroy == NULL) return ADJ_ERR_NEED_CALLBACK;
+  strncpy(adj_error_msg, "", ADJ_ERROR_MSG_BUF);
 
   fwd_eqn = adjointer->equations[equation];
   fwd_var = fwd_eqn.variable;
 
   ierr = adj_find_variable_data(&(adjointer->varhash), &fwd_var, &fwd_data);
-  if (ierr != ADJ_ERR_OK) return ierr;
+  assert(ierr == ADJ_ERR_OK);
 
   /* Check that we have all the adjoint values we need, before we start allocating stuff */
   for (i = 0; i < fwd_data->ntargeting_equations; i++)
