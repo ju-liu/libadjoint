@@ -168,13 +168,13 @@ module libadjoint
       type(adj_matrix), intent(inout) :: mat
     end subroutine adj_mat_destroy_proc
 
-    subroutine adj_mat_getvecs_proc(mat, left) bind(c)
-    ! Get vector(s) compatible with the matrix, i.e. with the same parallel layout
+    subroutine adj_mat_getvec_proc(mat, left) bind(c)
+    ! Get vector compatible with the output of the matrix
       use iso_c_binding
       use libadjoint_data_structures
       type(adj_matrix), intent(in), value :: mat
       type(adj_vector), intent(out) :: left
-    end subroutine adj_mat_getvecs_proc
+    end subroutine adj_mat_getvec_proc
 
     subroutine adj_nonlinear_colouring_proc(nvar, variables, dependencies, derivative, sz, colouring) bind(c)
       use iso_c_binding
@@ -628,3 +628,181 @@ module libadjoint
   end subroutine adj_test_assert
 
 end module libadjoint
+
+module libadjoint_petsc_data_structures
+
+  use libadjoint
+  use iso_c_binding
+  implicit none
+#ifdef HAVE_PETSC
+#include "libadjoint/adj_petsc_f.h"
+#endif
+
+  private
+  public :: adj_set_petsc_data_callbacks
+#ifdef HAVE_PETSC
+  public :: petsc_vec_from_adj_vector
+  public :: petsc_vec_to_adj_vector
+#endif
+
+  contains
+
+  function adj_set_petsc_data_callbacks(adjointer) result(ierr)
+    type(adj_adjointer), intent(inout) :: adjointer
+    integer(kind=c_int) :: ierr
+
+    ierr = adj_register_data_callback(adjointer, ADJ_VEC_DUPLICATE_CB, c_funloc(petsc_vec_duplicate_proc))
+    call adj_chkierr(ierr)
+    ierr = adj_register_data_callback(adjointer, ADJ_VEC_AXPY_CB, c_funloc(petsc_vec_axpy_proc))
+    call adj_chkierr(ierr)
+    ierr = adj_register_data_callback(adjointer, ADJ_VEC_DESTROY_CB, c_funloc(petsc_vec_destroy_proc))
+    call adj_chkierr(ierr)
+    ierr = adj_register_data_callback(adjointer, ADJ_VEC_SETVALUES_CB, c_funloc(petsc_vec_setvalues_proc))
+    call adj_chkierr(ierr)
+    ierr = adj_register_data_callback(adjointer, ADJ_VEC_DIVIDE_CB, c_funloc(petsc_vec_divide_proc))
+    call adj_chkierr(ierr)
+    ierr = adj_register_data_callback(adjointer, ADJ_MAT_GETVECS_CB, c_funloc(petsc_mat_getvec_proc))
+    call adj_chkierr(ierr)
+    ierr = adj_register_data_callback(adjointer, ADJ_MAT_AXPY_CB, c_funloc(petsc_mat_axpy_proc))
+    call adj_chkierr(ierr)
+    ierr = adj_register_data_callback(adjointer, ADJ_MAT_DESTROY_CB, c_funloc(petsc_mat_destroy_proc))
+    call adj_chkierr(ierr)
+    ierr = adj_register_data_callback(adjointer, ADJ_MAT_DUPLICATE_CB, c_funloc(petsc_mat_duplicate_proc))
+    call adj_chkierr(ierr)
+  end function adj_set_petsc_data_callbacks
+
+  subroutine petsc_vec_duplicate_proc(x, newx) bind(c)
+    type(adj_vector), intent(in), value :: x
+    type(adj_vector), intent(out) :: newx
+    integer :: ierr
+#ifdef HAVE_PETSC
+    Vec :: x_petsc
+    Vec :: newx_petsc
+    x_petsc = petsc_vec_from_adj_vector(x)
+    call VecDuplicate(x_petsc, newx_petsc, ierr)
+    call VecZeroEntries(newx_petsc, ierr)
+    newx = petsc_vec_to_adj_vector(newx_petsc)
+#endif
+  end subroutine petsc_vec_duplicate_proc
+
+  subroutine petsc_vec_axpy_proc(y, alpha, x) bind(c)
+    type(adj_vector), intent(inout) :: y
+    adj_scalar_f, intent(in), value :: alpha
+    type(adj_vector), intent(in), value :: x
+    integer :: ierr
+#ifdef HAVE_PETSC
+    Vec :: y_petsc, x_petsc
+    y_petsc = petsc_vec_from_adj_vector(y)
+    x_petsc = petsc_vec_from_adj_vector(x)
+    call VecAXPY(y_petsc, alpha, x_petsc, ierr)
+#endif
+  end subroutine petsc_vec_axpy_proc
+
+  subroutine petsc_vec_destroy_proc(x) bind(c)
+    ! Destroys a vector.
+    use iso_c_binding
+    type(adj_vector), intent(inout) :: x
+    integer :: ierr
+#ifdef HAVE_PETSC
+    Vec, pointer :: xvec
+    call c_f_pointer(x%ptr, xvec)
+    call VecDestroy(xvec, ierr)
+    deallocate(xvec)
+#endif
+  end subroutine petsc_vec_destroy_proc
+
+  subroutine petsc_vec_setvalues_proc(vec, scalars) bind(c)
+    type(adj_vector), intent(inout) :: vec
+    adj_scalar_f, dimension(*), intent(in) :: scalars
+    integer :: ierr
+    integer :: i
+    integer :: sz
+#ifdef HAVE_PETSC
+    call VecGetSize(petsc_vec_from_adj_vector(vec), sz, ierr)
+    call VecSetValues(petsc_vec_from_adj_vector(vec), sz, (/ (i, i=0,sz-1) /), scalars, INSERT_VALUES, ierr)
+    call VecAssemblyBegin(petsc_vec_from_adj_vector(vec), ierr)
+    call VecAssemblyEnd(petsc_vec_from_adj_vector(vec), ierr)
+#endif
+  end subroutine petsc_vec_setvalues_proc
+
+  subroutine petsc_vec_divide_proc(numerator, denominator, output) bind(c)
+    type(adj_vector), intent(in), value :: numerator, denominator
+    type(adj_vector), intent(inout) :: output
+    integer :: ierr
+#ifdef HAVE_PETSC
+    call VecPointwiseDivide(petsc_vec_from_adj_vector(output), petsc_vec_from_adj_vector(numerator), &
+                          & petsc_vec_from_adj_vector(denominator), ierr)
+#endif
+  end subroutine petsc_vec_divide_proc
+
+  subroutine petsc_mat_duplicate_proc(matin, matout) bind(c)
+    ! Duplicate a matrix
+    use iso_c_binding
+    type(adj_matrix), intent(in), value :: matin
+    type(adj_matrix), intent(out) :: matout
+    integer :: ierr
+#ifdef HAVE_PETSC
+    call MatDuplicate(matin, MAT_DO_NOT_COPY_VALUES, matout, ierr)
+    call MatZeroEntries(matout, ierr)
+#endif
+  end subroutine petsc_mat_duplicate_proc
+
+  subroutine petsc_mat_axpy_proc(Y, alpha, X) bind(c)
+    ! Computes Y = alpha*X + Y.
+    use iso_c_binding
+    type(adj_matrix), intent(inout) :: Y
+    adj_scalar_f, intent(in), value :: alpha
+    type(adj_matrix), intent(in), value :: X
+    integer :: ierr
+#ifdef HAVE_PETSC
+    call MatAXPY(Y, alpha, X, SAME_NONZERO_PATTERN, ierr)
+#endif
+  end subroutine petsc_mat_axpy_proc
+
+  subroutine petsc_mat_destroy_proc(mat) bind(c)
+    ! Frees space taken by a matrix.
+    use iso_c_binding
+    type(adj_matrix), intent(inout) :: mat
+    integer :: ierr
+#ifdef HAVE_PETSC
+    call MatDestroy(mat, ierr)
+#endif
+  end subroutine petsc_mat_destroy_proc
+
+  subroutine petsc_mat_getvec_proc(mat, left) bind(c)
+    ! Get vector compatible with the output of the matrix
+    use iso_c_binding
+    type(adj_matrix), intent(in), value :: mat
+    type(adj_vector), intent(out) :: left
+    integer :: ierr
+#ifdef HAVE_PETSC
+    Vec :: leftvec
+    call MatGetVecs(mat, PETSC_NULL_OBJECT, leftvec, ierr)
+    call VecZeroEntries(leftvec, ierr)
+    left = petsc_vec_to_adj_vector(leftvec)
+#endif
+  end subroutine petsc_mat_getvec_proc
+
+#ifdef HAVE_PETSC
+  function petsc_vec_from_adj_vector(input) result(output)
+    type(adj_vector), intent(in) :: input
+    Vec :: output
+    Vec, pointer :: tmp
+
+    call c_f_pointer(input%ptr, tmp)
+    output = tmp
+  end function petsc_vec_from_adj_vector
+
+  function petsc_vec_to_adj_vector(input) result(output)
+    Vec, intent(in), target :: input
+    Vec, pointer :: input_ptr
+    type(adj_vector) :: output
+
+    output%klass = 0
+    allocate(input_ptr)
+    input_ptr => input
+    output%ptr = c_loc(input_ptr)
+  end function petsc_vec_to_adj_vector
+#endif
+end module libadjoint_petsc_data_structures
+

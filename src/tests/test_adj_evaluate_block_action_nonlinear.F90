@@ -12,7 +12,8 @@ end subroutine test_adj_evaluate_block_action_nonlinear
 
 #include "libadjoint/adj_fortran.h"
 
-subroutine timestepping_action_callback(nvar, variables, dependencies, hermitian, input, context, output) bind(c)
+subroutine timestepping_action_callback(nvar, variables, dependencies, hermitian, input, context, output) &
+         & bind(c, name='timestepping_action_callback_')
   use libadjoint
   use iso_c_binding
   implicit none
@@ -41,6 +42,7 @@ end subroutine timestepping_action_callback
 
 subroutine test_adj_evaluate_block_action_nonlinear
   use libadjoint
+  use libadjoint_petsc_data_structures
   use iso_c_binding
   implicit none
 #include "finclude/petsc.h"
@@ -64,8 +66,8 @@ subroutine test_adj_evaluate_block_action_nonlinear
 
   ierr = adj_create_adjointer(adjointer)
   call adj_chkierr(ierr)
-  !ierr = adj_set_petsc_data_callbacks(adjointer)
-  !call adj_chkierr(ierr)
+  ierr = adj_set_petsc_data_callbacks(adjointer)
+  call adj_chkierr(ierr)
   ierr = adj_register_operator_callback(adjointer, ADJ_BLOCK_ACTION_CB, &
                                       & "TimesteppingOperator", c_funloc(timestepping_action_callback))
   call adj_chkierr(ierr)
