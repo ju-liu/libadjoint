@@ -11,7 +11,7 @@ void test_adj_evaluate_block_action(void)
 }
 #else
 #include "libadjoint/adj_petsc_data_structures.h"
-#include "petsc.h"
+#include "libadjoint/adj_petsc.h"
 
 void identity_action_callback(int nb_variables, adj_variable* variables, adj_vector* dependencies, int hermitian, adj_vector input, void* context, adj_vector output);
 

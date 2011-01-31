@@ -7,8 +7,7 @@
 #include "adj_data_structures.h"
 #include "uthash.h"
 #ifdef HAVE_PETSC
-#include "petscvec.h"
-#include "petscmat.h"
+#include "libadjoint/adj_petsc.h"
 #endif
 
 void adj_set_petsc_data_callbacks(adj_adjointer *adjointer);
