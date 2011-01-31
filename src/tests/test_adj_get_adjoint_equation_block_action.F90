@@ -154,8 +154,29 @@ subroutine test_adj_get_adjoint_equation_block_action
 
   ierr = adj_get_adjoint_equation(adjointer, equation=0, functional=0, lhs=lhs, rhs=rhs, var=adj_var1)
   call adj_test_assert(ierr == ADJ_ERR_OK, "Should have worked")
-  
+
   ! So now solve lhs . lambda0 = rhs
   ! With this setup, lambda0 = -1 * lambda1.
+
+  call VecDuplicate(lambda1, lambda0, ierr)
+  call KSPCreate(PETSC_COMM_SELF, ksp, ierr)
+  call KSPSetOperators(ksp, petsc_mat_from_adj_matrix(lhs), petsc_mat_from_adj_matrix(lhs), SAME_NONZERO_PATTERN, ierr)
+  call KSPSetFromOptions(ksp, ierr)
+  call KSPSolve(ksp, petsc_vec_from_adj_vector(rhs), lambda0, ierr)
+  call petsc_vec_destroy_proc(rhs)
+  call petsc_mat_destroy_proc(lhs)
+
+  ! OK. Now compare lambda0 and lambda1.
+  call VecDuplicate(lambda1, sum, ierr)
+  call VecZeroEntries(sum, ierr)
+  call VecAXPY(sum, one, lambda0, ierr)
+  call VecAXPY(sum, one, lambda1, ierr)
+  call VecNorm(sum, NORM_2, norm, ierr)
+
+  call VecDestroy(lambda0, ierr)
+  call VecDestroy(lambda1, ierr)
+  call VecDestroy(sum, ierr)
+
+  call adj_test_assert(norm == 0, "lambda1 should equal -1 * lambda0")
 end subroutine test_adj_get_adjoint_equation_block_action
 #endif

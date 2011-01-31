@@ -159,7 +159,7 @@ int adj_get_adjoint_equation(adj_adjointer* adjointer, int equation, int functio
 
     ierr = adj_evaluate_block_action(adjointer, block, adj_value, &rhs_tmp);
     if (ierr != ADJ_ERR_OK) return ierr;
-    adjointer->callbacks.vec_axpy(rhs, (adj_scalar)1.0, rhs_tmp);
+    adjointer->callbacks.vec_axpy(rhs, (adj_scalar)-1.0, rhs_tmp);
     adjointer->callbacks.vec_destroy(&rhs_tmp);
   }
 
