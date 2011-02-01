@@ -16,8 +16,6 @@ int adj_set_petsc_data_callbacks(adj_adjointer* adjointer)
   adj_chkierr(ierr);
   ierr = adj_register_data_callback(adjointer, ADJ_VEC_DIVIDE_CB,(void (*)(void)) petsc_vec_divide_proc);
   adj_chkierr(ierr);
-  ierr = adj_register_data_callback(adjointer, ADJ_MAT_GETVEC_CB, (void (*)(void)) petsc_mat_getvec_proc);
-  adj_chkierr(ierr);
   ierr = adj_register_data_callback(adjointer, ADJ_MAT_AXPY_CB,(void (*)(void)) petsc_mat_axpy_proc);
   adj_chkierr(ierr);
   ierr = adj_register_data_callback(adjointer, ADJ_MAT_DESTROY_CB,(void (*)(void)) petsc_mat_destroy_proc);
@@ -73,18 +71,6 @@ void petsc_mat_duplicate_proc(adj_matrix matin, adj_matrix *matout)
 #else
     (void) matin;
     (void) matout;
-#endif
-}
-
-void petsc_mat_getvec_proc(adj_matrix mat, adj_vector *left)
-{
-  /* Get vector(s) compatible with the matrix, i.e. with the same parallel layout */
-#ifdef HAVE_PETSC
-    MatGetVecs(*(Mat*) mat.ptr, 0, (Vec*) left->ptr);
-    VecZeroEntries(*(Vec*) left->ptr);
-#else
-    (void) mat;
-    (void) left;
 #endif
 }
 

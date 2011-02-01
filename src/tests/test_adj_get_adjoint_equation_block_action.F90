@@ -9,7 +9,7 @@ subroutine test_adj_get_adjoint_equation_block_action
 end subroutine test_adj_get_adjoint_equation_block_action
 #else
 
-subroutine identity_assembly_callback(nvar, variables, dependencies, hermitian, context, output) bind(c)
+subroutine identity_assembly_callback(nvar, variables, dependencies, hermitian, context, output, rhs) bind(c)
   use iso_c_binding
   use libadjoint
   use libadjoint_petsc_data_structures
@@ -23,6 +23,7 @@ subroutine identity_assembly_callback(nvar, variables, dependencies, hermitian, 
   integer(kind=c_int), intent(in), value :: hermitian
   type(c_ptr), intent(in), value :: context
   type(adj_matrix), intent(out) :: output
+  type(adj_vector), intent(out) :: rhs
 
   integer, parameter :: m = 2
   integer :: ierr
@@ -30,6 +31,7 @@ subroutine identity_assembly_callback(nvar, variables, dependencies, hermitian, 
   PetscScalar, parameter :: one = 1.0
   Vec :: ones
   Mat :: output_mat
+  Vec :: rhs_petsc
 
   call adj_test_assert(nvar == 0, "We don't depend on any variables")
 
@@ -46,6 +48,9 @@ subroutine identity_assembly_callback(nvar, variables, dependencies, hermitian, 
   end if
 #endif
   output = petsc_mat_to_adj_matrix(output_mat)
+  call MatGetVecs(output_mat, PETSC_NULL_OBJECT, rhs_petsc, ierr)
+  call VecZeroEntries(rhs_petsc, ierr)
+  rhs = petsc_vec_to_adj_vector(rhs_petsc)
 end subroutine identity_assembly_callback
 
 subroutine identity_action_callback(nvar, variables, dependencies, hermitian, input, context, output) bind(c)

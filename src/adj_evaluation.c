@@ -37,10 +37,10 @@ int adj_evaluate_block_action(adj_adjointer* adjointer, adj_block block, adj_vec
 }
 
 
-int adj_evaluate_block_assembly(adj_adjointer* adjointer, adj_block block, adj_matrix *output)
+int adj_evaluate_block_assembly(adj_adjointer* adjointer, adj_block block, adj_matrix *output, adj_vector* rhs)
 {
   int i, ierr;
-  void (*block_assembly_func)(int, adj_variable*, adj_vector*, int, void*, adj_matrix*) = NULL;
+  void (*block_assembly_func)(int, adj_variable*, adj_vector*, int, void*, adj_matrix*, adj_vector*) = NULL;
   adj_vector* dependencies = NULL;
   int nb_variables = 0;
   adj_variable* variables = NULL;
@@ -65,7 +65,7 @@ int adj_evaluate_block_assembly(adj_adjointer* adjointer, adj_block block, adj_m
     }
   }
 
-  block_assembly_func(nb_variables, variables, dependencies, block.hermitian, block.context, output);
+  block_assembly_func(nb_variables, variables, dependencies, block.hermitian, block.context, output, rhs);
 
   if (block.has_nonlinear_block)
     free(dependencies);
