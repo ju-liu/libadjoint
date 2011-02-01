@@ -467,7 +467,7 @@ int adj_register_data_callback(adj_adjointer* adjointer, int type, void (*fn)(vo
       adjointer->callbacks.vec_destroy = (void(*)(adj_vector*)) fn;
       break;
     case ADJ_VEC_DIVIDE_CB:
-      adjointer->callbacks.vec_divide = (void(*)(adj_vector numerator, adj_vector denominator, adj_vector *output)) fn;
+      adjointer->callbacks.vec_divide = (void(*)(adj_vector *numerator, adj_vector denominator)) fn;
       break;
     case ADJ_VEC_SETVALUES_CB:
       adjointer->callbacks.vec_setvalues = (void(*)(adj_vector *vec, adj_scalar scalars[])) fn;
