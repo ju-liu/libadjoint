@@ -62,6 +62,10 @@ CTEST = $(filter-out $(DISABLED_TESTS), $(patsubst src/tests/%,bin/tests/%,$(bas
 
 CTAGS = $(shell which ctags 2>/dev/null)
 
+ifeq ($(origin DESTDIR),undefined)
+	DESTDIR := /usr/local
+endif
+
 all: lib/libadjoint.a
 
 bin/tests/%: src/tests/%.c src/tests/test_main.c lib/libadjoint.a
@@ -118,6 +122,14 @@ tags: $(FSRC) $(CSRC)
 	@echo "  CTAGS src/*.c src/*.F90"
 	@$(CTAGS) src/*.c src/*.F90
 endif
+
+install: lib/libadjoint.a
+	@echo "  INSTALL $(DESTDIR)/lib"
+	@install -d $(DESTDIR)/lib
+	@install lib/libadjoint.a $(DESTDIR)/lib
+	@echo "  INSTALL $(DESTDIR)/include/libadjoint"
+	@install -d $(DESTDIR)/include/libadjoint
+	@install include/libadjoint/* $(DESTDIR)/include/libadjoint
 
 include/libadjoint/adj_fortran.h: include/libadjoint/adj_constants_f.h include/libadjoint/adj_error_handling_f.h
 # replace C comments with F90 comments
