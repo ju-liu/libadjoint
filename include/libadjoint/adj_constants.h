@@ -1,9 +1,15 @@
 #ifndef ADJ_CONSTANTS_H
 #define ADJ_CONSTANTS_H
 
-#define ADJ_NAME_LEN (size_t)255
+/* You cannot use comments of more than one line in this file */
+
+#define ADJ_NAME_LEN 255
 
 #define adj_scalar double
+#define adj_scalar_f real(kind=c_double)
+
+#define ADJ_TRUE 1
+#define ADJ_FALSE 0
 
 /* values for the .type field of an adj_variable */
 #define ADJ_FORWARD 1
@@ -47,7 +53,7 @@
 #define ADJ_MAT_DUPLICATE_CB 20
 #define ADJ_MAT_AXPY_CB 21
 #define ADJ_MAT_DESTROY_CB 22
-#define ADJ_MAT_GETVECS_CB 23
+#define ADJ_MAT_GETVEC_CB 23
 
 /* prealloc constant */
 #define ADJ_PREALLOC_SIZE 255

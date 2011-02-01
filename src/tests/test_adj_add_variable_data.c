@@ -3,6 +3,7 @@
 #include "libadjoint/adj_variable_lookup.h"
 #include "libadjoint/adj_test_tools.h"
 #include "libadjoint/adj_error_handling.h"
+#include "libadjoint/adj_test_main.h"
 
 void test_adj_add_variable_data(void)
 {

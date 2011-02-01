@@ -1,6 +1,7 @@
 #include "libadjoint/adj_adjointer_routines.h"
 #include "libadjoint/adj_test_tools.h"
 #include "libadjoint/adj_evaluation.h"
+#include "libadjoint/adj_test_main.h"
 #include <string.h>
 
 #ifndef HAVE_PETSC
@@ -10,7 +11,7 @@ void test_adj_evaluate_block_action(void)
 }
 #else
 #include "libadjoint/adj_petsc_data_structures.h"
-#include "petsc.h"
+#include "libadjoint/adj_petsc.h"
 
 void identity_action_callback(int nb_variables, adj_variable* variables, adj_vector* dependencies, int hermitian, adj_vector input, void* context, adj_vector output);
 
@@ -26,7 +27,7 @@ void test_adj_evaluate_block_action(void)
   adj_set_petsc_data_callbacks(&adjointer);
   adj_register_operator_callback(&adjointer, ADJ_BLOCK_ACTION_CB, "IdentityOperator", (void (*)(void)) identity_action_callback);
 
-  adj_create_block("IdentityOperator", NULL, NULL, 0, &I);
+  adj_create_block("IdentityOperator", NULL, NULL, &I);
   VecCreateSeq(PETSC_COMM_SELF, dim, &input);
   VecSet(input, 1.0);
 

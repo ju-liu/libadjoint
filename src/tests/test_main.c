@@ -1,4 +1,4 @@
-void TESTNAME(void);
+#include "libadjoint/adj_test_main.h"
 
 int main(void) 
 {

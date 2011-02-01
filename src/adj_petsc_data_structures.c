@@ -1,17 +1,31 @@
 #include "libadjoint/adj_petsc_data_structures.h"
 
-void adj_set_petsc_data_callbacks(adj_adjointer* adjointer)
+int adj_set_petsc_data_callbacks(adj_adjointer* adjointer)
 {
+  int ierr;
+#ifdef HAVE_PETSC
   PetscInitializeNoArguments();
-  adj_register_data_callback(adjointer, ADJ_VEC_DUPLICATE_CB, (void (*)(void)) petsc_vec_duplicate_proc);
-  adj_register_data_callback(adjointer, ADJ_VEC_AXPY_CB,(void (*)(void)) petsc_vec_axpy_proc);
-  adj_register_data_callback(adjointer, ADJ_VEC_DESTROY_CB, (void (*)(void)) petsc_vec_destroy_proc);
-  adj_register_data_callback(adjointer, ADJ_MAT_GETVECS_CB, (void (*)(void)) petsc_mat_getvecs_proc);
-  adj_register_data_callback(adjointer, ADJ_MAT_AXPY_CB,(void (*)(void)) petsc_mat_axpy_proc);
-  adj_register_data_callback(adjointer, ADJ_MAT_DESTROY_CB,(void (*)(void)) petsc_mat_destroy_proc);
-  adj_register_data_callback(adjointer, ADJ_MAT_DUPLICATE_CB,(void (*)(void)) petsc_mat_duplicate_proc);
-  adj_register_data_callback(adjointer, ADJ_VEC_SETVALUES_CB,(void (*)(void)) petsc_vec_setvalues_proc);
-  adj_register_data_callback(adjointer, ADJ_VEC_DIVIDE_CB,(void (*)(void)) petsc_vec_divide_proc);
+#endif
+  ierr = adj_register_data_callback(adjointer, ADJ_VEC_DUPLICATE_CB, (void (*)(void)) petsc_vec_duplicate_proc);
+  adj_chkierr(ierr);
+  ierr = adj_register_data_callback(adjointer, ADJ_VEC_AXPY_CB,(void (*)(void)) petsc_vec_axpy_proc);
+  adj_chkierr(ierr);
+  ierr = adj_register_data_callback(adjointer, ADJ_VEC_DESTROY_CB, (void (*)(void)) petsc_vec_destroy_proc);
+  adj_chkierr(ierr);
+  ierr = adj_register_data_callback(adjointer, ADJ_VEC_SETVALUES_CB,(void (*)(void)) petsc_vec_setvalues_proc);
+  adj_chkierr(ierr);
+  ierr = adj_register_data_callback(adjointer, ADJ_VEC_DIVIDE_CB,(void (*)(void)) petsc_vec_divide_proc);
+  adj_chkierr(ierr);
+  ierr = adj_register_data_callback(adjointer, ADJ_MAT_GETVEC_CB, (void (*)(void)) petsc_mat_getvec_proc);
+  adj_chkierr(ierr);
+  ierr = adj_register_data_callback(adjointer, ADJ_MAT_AXPY_CB,(void (*)(void)) petsc_mat_axpy_proc);
+  adj_chkierr(ierr);
+  ierr = adj_register_data_callback(adjointer, ADJ_MAT_DESTROY_CB,(void (*)(void)) petsc_mat_destroy_proc);
+  adj_chkierr(ierr);
+  ierr = adj_register_data_callback(adjointer, ADJ_MAT_DUPLICATE_CB,(void (*)(void)) petsc_mat_duplicate_proc);
+  adj_chkierr(ierr);
+
+  return ierr;
 }
 
 void petsc_vec_duplicate_proc(adj_vector x, adj_vector *newx)
@@ -21,6 +35,9 @@ void petsc_vec_duplicate_proc(adj_vector x, adj_vector *newx)
   VecDuplicate( *(Vec*) x.ptr, new_vec);
   VecZeroEntries(*new_vec);
   newx->ptr = new_vec;
+#else
+  (void) x;
+  (void) newx;
 #endif
 }
 
@@ -28,6 +45,10 @@ void petsc_vec_axpy_proc(adj_vector *y, adj_scalar alpha, adj_vector x)
 {
 #ifdef HAVE_PETSC
     VecAXPY(*(Vec*) y->ptr, alpha, *(Vec*) x.ptr);
+#else
+    (void) y;
+    (void) alpha;
+    (void) x;
 #endif
 }
 
@@ -35,8 +56,10 @@ void petsc_vec_destroy_proc(adj_vector *x)
 {
 #ifdef HAVE_PETSC
     VecDestroy(*(Vec*) x->ptr);
-#endif
     free(x->ptr);
+#else
+    (void) x;
+#endif
 }
 
 void petsc_mat_duplicate_proc(adj_matrix matin, adj_matrix *matout) 
@@ -47,15 +70,21 @@ void petsc_mat_duplicate_proc(adj_matrix matin, adj_matrix *matout)
     MatDuplicate(*(Mat*) matin.ptr, MAT_DO_NOT_COPY_VALUES, new_mat);
     MatZeroEntries(*new_mat);
     matout->ptr = (adj_matrix *) new_mat;
+#else
+    (void) matin;
+    (void) matout;
 #endif
 }
 
-void petsc_mat_getvecs_proc(adj_matrix mat, adj_vector *left)
+void petsc_mat_getvec_proc(adj_matrix mat, adj_vector *left)
 {
   /* Get vector(s) compatible with the matrix, i.e. with the same parallel layout */
 #ifdef HAVE_PETSC
     MatGetVecs(*(Mat*) mat.ptr, 0, (Vec*) left->ptr);
     VecZeroEntries(*(Vec*) left->ptr);
+#else
+    (void) mat;
+    (void) left;
 #endif
 }
 
@@ -64,6 +93,10 @@ void petsc_mat_axpy_proc(adj_matrix *Y, adj_scalar alpha, adj_matrix X)
     /* Computes Y = alpha*X + Y. */
 #ifdef HAVE_PETSC
     MatAXPY(*(Mat*) Y->ptr, alpha, *(Mat*) X.ptr, SAME_NONZERO_PATTERN);
+#else
+    (void) Y;
+    (void) alpha;
+    (void) X;
 #endif
 }
 
@@ -72,14 +105,19 @@ void petsc_mat_destroy_proc(adj_matrix *mat)
     /* Frees space taken by a matrix. */
 #ifdef HAVE_PETSC
     MatDestroy(*(Mat*) mat->ptr);
-#endif
     free(mat->ptr);
+#else
+    (void) mat;
+#endif
 }
 
 void petsc_vec_getsize_proc(adj_vector vec, int *sz)
 {
 #ifdef HAVE_PETSC
   VecGetSize(*(Vec*) vec.ptr, sz);
+#else
+  (void) vec;
+  (void) sz;
 #endif
 }
 
@@ -96,6 +134,9 @@ void petsc_vec_setvalues_proc(adj_vector *vec, adj_scalar scalars[])
   VecAssemblyBegin(*(Vec*) vec->ptr);
   VecAssemblyEnd(*(Vec*) vec->ptr);
   free(x);
+#else
+  (void) vec;
+  (void) scalars;
 #endif
 }
 
@@ -103,6 +144,10 @@ void petsc_vec_divide_proc(adj_vector numerator, adj_vector denominator, adj_vec
 {
 #ifdef HAVE_PETSC
   VecPointwiseDivide(*(Vec*) output->ptr, *(Vec*) numerator.ptr, *(Vec*) denominator.ptr);
+#else
+  (void) numerator;
+  (void) denominator;
+  (void) output;
 #endif
 }
 

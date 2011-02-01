@@ -22,7 +22,7 @@ int adj_create_adjointer(adj_adjointer* adjointer)
   adjointer->callbacks.mat_duplicate = NULL;
   adjointer->callbacks.mat_axpy = NULL;
   adjointer->callbacks.mat_destroy = NULL;
-  adjointer->callbacks.mat_getvecs = NULL;
+  adjointer->callbacks.mat_getvec = NULL;
 
   adjointer->nonlinear_colouring_list.firstnode = NULL;
   adjointer->nonlinear_colouring_list.lastnode = NULL;
@@ -340,7 +340,15 @@ int adj_record_variable(adj_adjointer* adjointer, adj_variable var, adj_storage_
   if (adjointer->options[ADJ_ACTIVITY] == ADJ_ACTIVITY_NOTHING) return ADJ_ERR_OK;
 
   ierr = adj_find_variable_data(&(adjointer->varhash), &var, &data_ptr);
-  if (ierr != ADJ_ERR_OK && !var.auxiliary) return ierr;
+  if (ierr != ADJ_ERR_OK && !var.auxiliary)
+  {
+    char buf[255];
+    adj_variable_str(var, buf, 255);
+    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, \
+        "Tried to record a value for variable %s, but couldn't look it up in the hash table.", buf);
+    return ierr;
+  }
+
   if (ierr != ADJ_ERR_OK && var.auxiliary)
   {
     /* If the variable is auxiliary, it's alright that this is the first time we've ever seen it */
@@ -468,12 +476,16 @@ int adj_register_data_callback(adj_adjointer* adjointer, int type, void (*fn)(vo
 
     case ADJ_MAT_DUPLICATE_CB:
       adjointer->callbacks.mat_duplicate = (void(*)(adj_matrix matin, adj_matrix *matout)) fn;
+      break;
     case ADJ_MAT_AXPY_CB:
       adjointer->callbacks.mat_axpy = (void(*)(adj_matrix *Y, adj_scalar alpha, adj_matrix X)) fn;
+      break;
     case ADJ_MAT_DESTROY_CB:
       adjointer->callbacks.mat_destroy = (void(*)(adj_matrix *mat)) fn;
-    case ADJ_MAT_GETVECS_CB:
-      adjointer->callbacks.mat_getvecs = (void(*)(adj_matrix mat, adj_vector *left)) fn;
+      break;
+    case ADJ_MAT_GETVEC_CB:
+      adjointer->callbacks.mat_getvec = (void(*)(adj_matrix mat, adj_vector *left)) fn;
+      break;
 
    default:
       snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Unknown data callback type %d.", type);

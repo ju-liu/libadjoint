@@ -1,6 +1,7 @@
-#include "adj_adjointer_routines.h"
-#include "adj_data_structures.h"
-#include "adj_test_tools.h"
+#include "libadjoint/adj_adjointer_routines.h"
+#include "libadjoint/adj_data_structures.h"
+#include "libadjoint/adj_test_tools.h"
+#include "libadjoint/adj_test_main.h"
 
 void test_adj_register_equation(void)
 {
@@ -13,8 +14,8 @@ void test_adj_register_equation(void)
 
   adj_create_variable("Velocity", 0, 0, ADJ_NORMAL_VARIABLE, &vars[0]);
   adj_create_variable("Velocity", 1, 0, ADJ_NORMAL_VARIABLE, &vars[1]);
-  adj_create_block("IdentityOperator", NULL, NULL, 0, &blocks[0]);
-  adj_create_block("IdentityOperator", NULL, NULL, 0, &blocks[1]);
+  adj_create_block("IdentityOperator", NULL, NULL, &blocks[0]);
+  adj_create_block("IdentityOperator", NULL, NULL, &blocks[1]);
 
   ierr=adj_create_equation(vars[0], 1, &blocks[0], &vars[1], &equation); /* nonsense */
   adj_test_assert(ierr!=ADJ_ERR_OK, "Should not work");

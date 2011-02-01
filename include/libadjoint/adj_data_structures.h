@@ -107,7 +107,7 @@ typedef struct
   void (*mat_duplicate)(adj_matrix matin, adj_matrix *matout);
   void (*mat_axpy)(adj_matrix *Y, adj_scalar alpha, adj_matrix X);
   void (*mat_destroy)(adj_matrix *mat);
-  void (*mat_getvecs)(adj_matrix mat, adj_vector *left);
+  void (*mat_getvec)(adj_matrix mat, adj_vector *left);
 } adj_data_callbacks;
 
 typedef struct adj_op_callback
@@ -164,7 +164,7 @@ int adj_variable_get_timestep(adj_variable var, int* timestep);
 int adj_variable_get_iteration(adj_variable var, int* iteration);
 int adj_create_nonlinear_block(char* name, int ndepends, adj_variable* depends, adj_scalar coefficient, void* context, adj_nonlinear_block* nblock);
 int adj_destroy_nonlinear_block(adj_nonlinear_block* nblock);
-int adj_create_block(char* name, adj_nonlinear_block* nblock, void* context, int hermitian, adj_block* block);
+int adj_create_block(char* name, adj_nonlinear_block* nblock, void* context, adj_block* block);
 int adj_destroy_block(adj_block* block);
 int adj_variable_equal(adj_variable* var1, adj_variable* var2, int nvars);
 int adj_variable_str(adj_variable var, char* name, size_t namelen);

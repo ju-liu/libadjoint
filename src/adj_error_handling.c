@@ -2,6 +2,8 @@
 
 void adj_chkierr_private(int ierr, char* file, int line)
 {
+  char adj_error_codes[6][ADJ_ERROR_MSG_BUF] = {"ADJ_ERR_OK", "ADJ_ERR_INVALID_INPUTS", "ADJ_ERR_HASH_FAILED",
+                                                "ADJ_ERR_NEED_CALLBACK", "ADJ_ERR_NEED_VALUE", "ADJ_ERR_NOT_IMPLEMENTED"};
   if (ierr > 0)
   {
     fprintf(stderr, "Error: file %s:%d\n", file, line);
@@ -9,14 +11,4 @@ void adj_chkierr_private(int ierr, char* file, int line)
     fprintf(stderr, "Error: %s\n", adj_error_msg);
     exit(ierr);
   }
-}
-
-void adj_init_error_codes(void)
-{
-  strncpy(adj_error_codes[ADJ_ERR_OK], "ADJ_ERR_OK", ADJ_ERROR_MSG_BUF);
-  strncpy(adj_error_codes[ADJ_ERR_INVALID_INPUTS], "ADJ_ERR_INVALID_INPUTS", ADJ_ERROR_MSG_BUF);
-  strncpy(adj_error_codes[ADJ_ERR_HASH_FAILED], "ADJ_ERR_HASH_FAILED", ADJ_ERROR_MSG_BUF);
-  strncpy(adj_error_codes[ADJ_ERR_NEED_CALLBACK], "ADJ_ERR_NEED_CALLBACK", ADJ_ERROR_MSG_BUF);
-  strncpy(adj_error_codes[ADJ_ERR_NEED_VALUE], "ADJ_ERR_NEED_VALUE", ADJ_ERROR_MSG_BUF);
-  strncpy(adj_error_codes[ADJ_ERR_NOT_IMPLEMENTED], "ADJ_ERR_NOT_IMPLEMENTED", ADJ_ERROR_MSG_BUF);
 }
