@@ -1,3 +1,20 @@
+AR = ar
+ARFLAGS = cr
+
+FSRC = $(wildcard src/*.F90)
+FOBJ = $(patsubst src/%.F90,obj/%.o,$(FSRC))
+
+CSRC = $(wildcard src/*.c)
+COBJ = $(patsubst src/%.c,obj/%.o,$(CSRC))
+
+DISABLED_TESTS = 
+FTEST = $(filter-out $(DISABLED_TESTS), $(patsubst src/tests/%,bin/tests/%,$(basename $(filter-out src/tests/test_main.F90, $(wildcard src/tests/*.F90)))))
+CTEST = $(filter-out $(DISABLED_TESTS), $(patsubst src/tests/%,bin/tests/%,$(basename $(filter-out src/tests/test_main.c, $(wildcard src/tests/*.c)))))
+
+CTAGS = $(shell which ctags 2>/dev/null)
+
+MAKE = make -s
+
 # Identify C compiler
 ifeq ($(origin CC),default)
 	CC := mpicc
@@ -15,8 +32,8 @@ ifneq (,$(findstring icc, $(CC_VERSION)))
 endif
 
 # Identify if PETSc is installed
-PETSC_CPPFLAGS = $(shell make -f cfg/petsc_makefile getincludedirs 2>/dev/null)
-PETSC_LDFLAGS  = $(shell make -f cfg/petsc_makefile getlinklibs 2>/dev/null)
+PETSC_CPPFLAGS = $(shell $(MAKE) -f cfg/petsc_makefile getincludedirs 2>/dev/null)
+PETSC_LDFLAGS  = $(shell $(MAKE) -f cfg/petsc_makefile getlinklibs 2>/dev/null)
 ifeq (,$(PETSC_CPPFLAGS))
 	PETSC_CPPFLAGS := # want to have -UHAVE_PETSC, but that causes confusion on some fortran compilers (e.g. nag) and it isn't really necessary
 else
@@ -47,23 +64,12 @@ endif
 
 FFLAGS := $(FFLAGS) $(DBGFLAGS) $(PETSC_CPPFLAGS) -Iinclude/ -Iinclude/libadjoint $(COMPILER_FFLAGS)
 
-AR = ar
-ARFLAGS = cr
-
-FSRC = $(wildcard src/*.F90)
-FOBJ = $(patsubst src/%.F90,obj/%.o,$(FSRC))
-
-CSRC = $(wildcard src/*.c)
-COBJ = $(patsubst src/%.c,obj/%.o,$(CSRC))
-
-DISABLED_TESTS = 
-FTEST = $(filter-out $(DISABLED_TESTS), $(patsubst src/tests/%,bin/tests/%,$(basename $(filter-out src/tests/test_main.F90, $(wildcard src/tests/*.F90)))))
-CTEST = $(filter-out $(DISABLED_TESTS), $(patsubst src/tests/%,bin/tests/%,$(basename $(filter-out src/tests/test_main.c, $(wildcard src/tests/*.c)))))
-
-CTAGS = $(shell which ctags 2>/dev/null)
-
 ifeq ($(origin DESTDIR),undefined)
-	DESTDIR := /usr/local
+	DESTDIR := /
+endif
+
+ifeq ($(origin prefix),undefined)
+	prefix := usr/local
 endif
 
 all: lib/libadjoint.a
@@ -124,12 +130,12 @@ tags: $(FSRC) $(CSRC)
 endif
 
 install: lib/libadjoint.a
-	@echo "  INSTALL $(DESTDIR)/lib"
-	@install -d $(DESTDIR)/lib
-	@install lib/libadjoint.a $(DESTDIR)/lib
-	@echo "  INSTALL $(DESTDIR)/include/libadjoint"
-	@install -d $(DESTDIR)/include/libadjoint
-	@install include/libadjoint/* $(DESTDIR)/include/libadjoint
+	@echo "  INSTALL $(DESTDIR)/$(prefix)/lib"
+	@install -d $(DESTDIR)/$(prefix)/lib
+	@install lib/libadjoint.a $(DESTDIR)/$(prefix)/lib
+	@echo "  INSTALL $(DESTDIR)/$(prefix)/include/libadjoint"
+	@install -d $(DESTDIR)/$(prefix)/include/libadjoint
+	@install include/libadjoint/* $(DESTDIR)/$(prefix)/include/libadjoint
 
 include/libadjoint/adj_fortran.h: include/libadjoint/adj_constants_f.h include/libadjoint/adj_error_handling_f.h
 # replace C comments with F90 comments
