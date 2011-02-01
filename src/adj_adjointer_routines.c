@@ -394,6 +394,8 @@ int adj_register_operator_callback(adj_adjointer* adjointer, int type, char* nam
   adj_op_callback_list* cb_list_ptr;
   adj_op_callback* cb_ptr;
 
+  if (adjointer->options[ADJ_ACTIVITY] == ADJ_ACTIVITY_NOTHING) return ADJ_ERR_OK;
+
   switch(type)
   {
     case ADJ_NBLOCK_COLOURING_CB:
@@ -452,6 +454,7 @@ int adj_register_operator_callback(adj_adjointer* adjointer, int type, char* nam
 
 int adj_register_data_callback(adj_adjointer* adjointer, int type, void (*fn)(void))
 {
+  if (adjointer->options[ADJ_ACTIVITY] == ADJ_ACTIVITY_NOTHING) return ADJ_ERR_OK;
 
   switch (type)
   {
