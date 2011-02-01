@@ -23,7 +23,6 @@ int adj_get_adjoint_equation(adj_adjointer* adjointer, int equation, int functio
   }
 
   strncpy(adj_error_msg, "Need a data callback, but it hasn't been supplied.", ADJ_ERROR_MSG_BUF);
-  if (adjointer->callbacks.mat_getvec == NULL)  return ADJ_ERR_NEED_CALLBACK;
   if (adjointer->callbacks.vec_destroy == NULL) return ADJ_ERR_NEED_CALLBACK;
   if (adjointer->callbacks.vec_axpy == NULL)    return ADJ_ERR_NEED_CALLBACK;
   if (adjointer->callbacks.mat_axpy == NULL)    return ADJ_ERR_NEED_CALLBACK;
@@ -118,14 +117,11 @@ int adj_get_adjoint_equation(adj_adjointer* adjointer, int equation, int functio
       }
     }
     block.hermitian = 1;
-    ierr = adj_evaluate_block_assembly(adjointer, block, lhs);
+    ierr = adj_evaluate_block_assembly(adjointer, block, lhs, rhs);
     if (ierr != ADJ_ERR_OK) return ierr;
   }
 
   /* Great! Now let's assemble the RHS contributions of A*. */
-
-  /* First, allocate the rhs. */
-  adjointer->callbacks.mat_getvec(*lhs, rhs);
 
   /* Now loop through the off-diagonal blocks of A*. */
   for (i = 0; i < fwd_data->ntargeting_equations; i++)

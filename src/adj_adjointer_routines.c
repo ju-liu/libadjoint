@@ -22,7 +22,6 @@ int adj_create_adjointer(adj_adjointer* adjointer)
   adjointer->callbacks.mat_duplicate = NULL;
   adjointer->callbacks.mat_axpy = NULL;
   adjointer->callbacks.mat_destroy = NULL;
-  adjointer->callbacks.mat_getvec = NULL;
 
   adjointer->nonlinear_colouring_list.firstnode = NULL;
   adjointer->nonlinear_colouring_list.lastnode = NULL;
@@ -394,6 +393,8 @@ int adj_register_operator_callback(adj_adjointer* adjointer, int type, char* nam
   adj_op_callback_list* cb_list_ptr;
   adj_op_callback* cb_ptr;
 
+  if (adjointer->options[ADJ_ACTIVITY] == ADJ_ACTIVITY_NOTHING) return ADJ_ERR_OK;
+
   switch(type)
   {
     case ADJ_NBLOCK_COLOURING_CB:
@@ -452,6 +453,7 @@ int adj_register_operator_callback(adj_adjointer* adjointer, int type, char* nam
 
 int adj_register_data_callback(adj_adjointer* adjointer, int type, void (*fn)(void))
 {
+  if (adjointer->options[ADJ_ACTIVITY] == ADJ_ACTIVITY_NOTHING) return ADJ_ERR_OK;
 
   switch (type)
   {
@@ -482,9 +484,6 @@ int adj_register_data_callback(adj_adjointer* adjointer, int type, void (*fn)(vo
       break;
     case ADJ_MAT_DESTROY_CB:
       adjointer->callbacks.mat_destroy = (void(*)(adj_matrix *mat)) fn;
-      break;
-    case ADJ_MAT_GETVEC_CB:
-      adjointer->callbacks.mat_getvec = (void(*)(adj_matrix mat, adj_vector *left)) fn;
       break;
 
    default:

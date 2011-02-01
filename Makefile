@@ -24,7 +24,7 @@ else
 endif
 
 DBGFLAGS = -g -O0
-CFLAGS = $(DBGFLAGS) $(PETSC_CPPFLAGS) -Iinclude/ $(COMPILER_CFLAGS)
+CFLAGS := $(CFLAGS) $(DBGFLAGS) $(PETSC_CPPFLAGS) -Iinclude/ $(COMPILER_CFLAGS)
 
 # Identify Fortran compiler
 ifeq ($(origin FC),default)
@@ -45,7 +45,7 @@ ifneq (,$(findstring NAG, $(FC_VERSION)))
 	COMPILER_FFLAGS = -f2003
 endif
 
-FFLAGS = $(DBGFLAGS) $(PETSC_CPPFLAGS) -Iinclude/ -Iinclude/libadjoint $(COMPILER_FFLAGS)
+FFLAGS := $(FFLAGS) $(DBGFLAGS) $(PETSC_CPPFLAGS) -Iinclude/ -Iinclude/libadjoint $(COMPILER_FFLAGS)
 
 AR = ar
 ARFLAGS = cr
