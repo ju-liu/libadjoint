@@ -102,7 +102,7 @@ typedef struct
   void (*vec_destroy)(adj_vector *x);
   void (*vec_setvalues)(adj_vector *vec, adj_scalar scalars[]);
   void (*vec_getsize)(adj_vector vec, int *sz);
-  void (*vec_divide)(adj_vector numerator, adj_vector denominator, adj_vector *output);
+  void (*vec_divide)(adj_vector numerator, adj_vector *denominator);
 
   void (*mat_duplicate)(adj_matrix matin, adj_matrix *matout);
   void (*mat_axpy)(adj_matrix *Y, adj_scalar alpha, adj_matrix X);

@@ -137,10 +137,10 @@ module libadjoint
       adj_scalar_f, dimension(*), intent(in) :: scalars
     end subroutine adj_vec_setvalues_proc
 
-    subroutine adj_vec_pointwisedivide_proc(numerator, denominator, output) bind(c)
+    subroutine adj_vec_pointwisedivide_proc(numerator, denominator) bind(c)
       use libadjoint_data_structures
-      type(adj_vector), intent(in), value :: numerator, denominator
-      type(adj_vector), intent(inout) :: output
+      type(adj_vector), intent(in), value :: numerator
+      type(adj_vector), intent(inout) :: denominator
     end subroutine adj_vec_pointwisedivide_proc
 
     subroutine adj_mat_duplicate_proc(matin, matout) bind(c)
@@ -723,12 +723,14 @@ module libadjoint_petsc_data_structures
 #endif
   end subroutine petsc_vec_setvalues_proc
 
-  subroutine petsc_vec_divide_proc(numerator, denominator, output) bind(c)
-    type(adj_vector), intent(in), value :: numerator, denominator
-    type(adj_vector), intent(inout) :: output
+  subroutine petsc_vec_divide_proc(numerator, denominator) bind(c)
+    ! Computes denominator = numerator/denominator pointwise
+    type(adj_vector), intent(in), value :: numerator 
+    type(adj_vector), intent(inout) :: denominator
     integer :: ierr
 #ifdef HAVE_PETSC
-    call VecPointwiseDivide(petsc_vec_from_adj_vector(output), petsc_vec_from_adj_vector(numerator), &
+
+    call VecPointwiseDivide(petsc_vec_from_adj_vector(denominator), petsc_vec_from_adj_vector(numerator), &
                           & petsc_vec_from_adj_vector(denominator), ierr)
 #endif
   end subroutine petsc_vec_divide_proc
