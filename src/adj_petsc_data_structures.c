@@ -126,10 +126,10 @@ void petsc_vec_setvalues_proc(adj_vector *vec, adj_scalar scalars[])
 #endif
 }
 
-void petsc_vec_divide_proc(adj_vector numerator, adj_vector *denominator)
+void petsc_vec_divide_proc(adj_vector *numerator, adj_vector denominator)
 {
 #ifdef HAVE_PETSC
-  VecPointwiseDivide(*(Vec*) denominator->ptr, *(Vec*) numerator.ptr, *(Vec*) denominator->ptr);
+  VecPointwiseDivide(*(Vec*) numerator->ptr, *(Vec*) numerator->ptr, *(Vec*) denominator.ptr);
 #else
   (void) numerator;
   (void) denominator;
