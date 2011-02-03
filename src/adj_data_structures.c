@@ -42,7 +42,7 @@ int adj_variable_get_iteration(adj_variable var, int* iteration)
   return ADJ_ERR_OK;
 }
 
-int adj_create_nonlinear_block(char* name, int ndepends, adj_variable* depends, adj_scalar coefficient, void* context, adj_nonlinear_block* nblock)
+int adj_create_nonlinear_block(char* name, int ndepends, adj_variable* depends, void* context, adj_nonlinear_block* nblock)
 {
   size_t slen;
 
@@ -63,7 +63,7 @@ int adj_create_nonlinear_block(char* name, int ndepends, adj_variable* depends, 
   }
 
   strncpy(nblock->name, name, ADJ_NAME_LEN);
-  nblock->coefficient = coefficient;
+  nblock->coefficient = (adj_scalar)1.0;
   nblock->context = context;
   nblock->ndepends = ndepends;
   nblock->depends = malloc(ndepends * sizeof(adj_variable));
@@ -74,6 +74,12 @@ int adj_create_nonlinear_block(char* name, int ndepends, adj_variable* depends, 
 int adj_destroy_nonlinear_block(adj_nonlinear_block* nblock)
 {
   free(nblock->depends);
+  return ADJ_ERR_OK;
+}
+
+int adj_nonlinear_block_set_coefficient(adj_nonlinear_block* nblock, adj_scalar coefficient)
+{
+  nblock->coefficient = coefficient;
   return ADJ_ERR_OK;
 }
 
