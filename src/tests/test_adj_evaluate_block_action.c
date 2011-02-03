@@ -13,7 +13,7 @@ void test_adj_evaluate_block_action(void)
 #include "libadjoint/adj_petsc_data_structures.h"
 #include "libadjoint/adj_petsc.h"
 
-void identity_action_callback(int nb_variables, adj_variable* variables, adj_vector* dependencies, int hermitian, adj_vector input, void* context, adj_vector output);
+void identity_action_callback(int nb_variables, adj_variable* variables, adj_vector* dependencies, int hermitian, adj_scalar coefficient, adj_vector input, void* context, adj_vector output);
 
 void test_adj_evaluate_block_action(void)
 {
@@ -48,7 +48,7 @@ void test_adj_evaluate_block_action(void)
   adj_test_assert(norm == 0.0, "Norm should be zero");
 }
 
-void identity_action_callback(int nb_variables, adj_variable* variables, adj_vector* dependencies, int hermitian, adj_vector input, void* context, adj_vector output)
+void identity_action_callback(int nb_variables, adj_variable* variables, adj_vector* dependencies, int hermitian, adj_scalar coefficient, adj_vector input, void* context, adj_vector output)
 {
   (void) hermitian;
   (void) context;
@@ -57,5 +57,6 @@ void identity_action_callback(int nb_variables, adj_variable* variables, adj_vec
   (void) dependencies;
   VecDuplicate(petsc_vec_from_adj_vector(input), (Vec*)output.ptr);
   VecCopy(petsc_vec_from_adj_vector(input), *(Vec*)output.ptr);
+  VecScale(*(Vec*)output.ptr, (PetscScalar) coefficient);
 }
 #endif

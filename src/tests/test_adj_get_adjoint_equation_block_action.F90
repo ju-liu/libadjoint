@@ -9,7 +9,7 @@ subroutine test_adj_get_adjoint_equation_block_action
 end subroutine test_adj_get_adjoint_equation_block_action
 #else
 
-subroutine identity_assembly_callback(nvar, variables, dependencies, hermitian, context, output, rhs) bind(c)
+subroutine identity_assembly_callback(nvar, variables, dependencies, hermitian, coefficient, context, output, rhs) bind(c)
   use iso_c_binding
   use libadjoint
   use libadjoint_petsc_data_structures
@@ -21,6 +21,7 @@ subroutine identity_assembly_callback(nvar, variables, dependencies, hermitian, 
   type(adj_variable), dimension(nvar), intent(in) :: variables
   type(adj_vector), dimension(nvar), intent(in) :: dependencies
   integer(kind=c_int), intent(in), value :: hermitian
+  adj_scalar_f, intent(in), value :: coefficient
   type(c_ptr), intent(in), value :: context
   type(adj_matrix), intent(out) :: output
   type(adj_vector), intent(out) :: rhs
@@ -29,6 +30,7 @@ subroutine identity_assembly_callback(nvar, variables, dependencies, hermitian, 
   integer :: ierr
 
   PetscScalar, parameter :: one = 1.0
+  PetscScalar :: coefficient_petsc
   Vec :: ones
   Mat :: output_mat
   Vec :: rhs_petsc
@@ -47,13 +49,15 @@ subroutine identity_assembly_callback(nvar, variables, dependencies, hermitian, 
     call MatHermitianTranspose(output_mat, MAT_REUSE_MATRIX, output_mat, ierr)
   end if
 #endif
+  coefficient_petsc = coefficient ! I wish fortran had casts!
+  call MatScale(output_mat, coefficient_petsc, ierr)
   output = petsc_mat_to_adj_matrix(output_mat)
   call MatGetVecs(output_mat, PETSC_NULL_OBJECT, rhs_petsc, ierr)
   call VecZeroEntries(rhs_petsc, ierr)
   rhs = petsc_vec_to_adj_vector(rhs_petsc)
 end subroutine identity_assembly_callback
 
-subroutine identity_action_callback(nvar, variables, dependencies, hermitian, input, context, output) bind(c)
+subroutine identity_action_callback(nvar, variables, dependencies, hermitian, coefficient, input, context, output) bind(c)
   use iso_c_binding
   use libadjoint
   use libadjoint_petsc_data_structures
@@ -64,16 +68,20 @@ subroutine identity_action_callback(nvar, variables, dependencies, hermitian, in
   type(adj_variable), dimension(nvar), intent(in) :: variables
   type(adj_vector), dimension(nvar), intent(in) :: dependencies
   integer(kind=c_int), intent(in), value :: hermitian
+  adj_scalar_f, intent(in), value :: coefficient
   type(adj_vector), intent(in), value :: input
   type(c_ptr), intent(in), value :: context
   type(adj_vector), intent(out) :: output
 
   Vec :: output_vec
   integer :: ierr
+  PetscScalar :: coefficient_petsc
 
   call adj_test_assert(nvar == 0, "We don't depend on any variables")
   call VecDuplicate(petsc_vec_from_adj_vector(input), output_vec, ierr)
   call VecCopy(petsc_vec_from_adj_vector(input), output_vec, ierr)
+  coefficient_petsc = coefficient ! I wish fortran had casts!
+  call VecScale(output_vec, coefficient_petsc, ierr)
   output = petsc_vec_to_adj_vector(output_vec)
 end subroutine identity_action_callback
 

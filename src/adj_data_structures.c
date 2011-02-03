@@ -111,6 +111,7 @@ int adj_create_block(char* name, adj_nonlinear_block* nblock, void* context, adj
 
   block->context = context;
   block->hermitian = 0;
+  block->coefficient = (adj_scalar)1.0;
 
   return ADJ_ERR_OK;
 }
@@ -119,6 +120,12 @@ int adj_destroy_block(adj_block* block)
 {
   /* Dummy to fool the compiler into not printing a warning */
   (void) block;
+  return ADJ_ERR_OK;
+}
+
+int adj_block_set_coefficient(adj_block* block, adj_scalar coefficient)
+{
+  block->coefficient = coefficient;
   return ADJ_ERR_OK;
 }
 

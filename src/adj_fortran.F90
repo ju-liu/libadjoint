@@ -219,25 +219,27 @@ module libadjoint
       type(adj_matrix), intent(out) :: output
     end subroutine adj_nonlinear_derivative_assembly_proc
    
-    subroutine adj_block_action_proc(nvar, variables, dependencies, hermitian, input, context, output) bind(c)
+    subroutine adj_block_action_proc(nvar, variables, dependencies, hermitian, coefficient, input, context, output) bind(c)
       use iso_c_binding
       use libadjoint_data_structures
       integer(kind=c_int), intent(in), value :: nvar
       type(adj_variable), dimension(nvar), intent(in) :: variables
       type(adj_vector), dimension(nvar), intent(in) :: dependencies
       integer(kind=c_int), intent(in), value :: hermitian
+      adj_scalar_f, intent(in), value :: coefficient
       type(adj_vector), intent(in), value :: input
       type(c_ptr), intent(in), value :: context
       type(adj_vector), intent(out) :: output
     end subroutine adj_block_action_proc
 
-    subroutine adj_block_assembly_proc(nvar, variables, dependencies, hermitian, context, output, rhs) bind(c)
+    subroutine adj_block_assembly_proc(nvar, variables, dependencies, hermitian, coefficient, context, output, rhs) bind(c)
       use iso_c_binding
       use libadjoint_data_structures
       integer(kind=c_int), intent(in), value :: nvar
       type(adj_variable), dimension(nvar), intent(in) :: variables
       type(adj_vector), dimension(nvar), intent(in) :: dependencies
       integer(kind=c_int), intent(in), value :: hermitian
+      adj_scalar_f, intent(in), value :: coefficient
       type(c_ptr), intent(in), value :: context
       type(adj_matrix), intent(out) :: output
       type(adj_vector), intent(out) :: rhs
@@ -325,6 +327,14 @@ module libadjoint
       type(adj_block), intent(inout) :: block
       integer(kind=c_int) :: ierr
     end function adj_destroy_block
+
+    function adj_block_set_coefficient(block, coefficient) result(ierr) bind(c, name='adj_block_set_coefficient')
+      use libadjoint_data_structures
+      use iso_c_binding
+      type(adj_block), intent(inout) :: block
+      adj_scalar_f, intent(in), value :: coefficient
+      integer(kind=c_int) :: ierr
+    end function adj_block_set_coefficient
 
     function adj_create_equation_c(var, nblocks, blocks, targets, equation) result(ierr) bind(c, name='adj_create_equation')
       use libadjoint_data_structures
