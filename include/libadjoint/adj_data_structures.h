@@ -20,12 +20,14 @@ typedef struct
 {
   void* ptr; /* a pointer to the user's data */
   int klass; /* a field to be set by the user in case adj_vector masks multiple separate types (scalar, vector, etc.) */
+  int flags; /* for any flags the user might like to set */
 } adj_vector;
 
 typedef struct
 { 
   void* ptr; /* a pointer to the user's data */
   int klass; /* a field to be set by the user in case adj_matrix masks multiple separate types (scalar, vector, etc.) */
+  int flags; /* for any flags the user might like to set */
 } adj_matrix;
 
 typedef struct

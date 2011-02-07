@@ -85,11 +85,13 @@ module libadjoint_data_structures
   type, bind(c) :: adj_vector
     type(c_ptr) :: ptr
     integer(kind=c_int) :: klass
+    integer(kind=c_int) :: flags
   end type adj_vector
 
   type, bind(c) :: adj_matrix
     type(c_ptr) :: ptr
     integer(kind=c_int) :: klass
+    integer(kind=c_int) :: flags
   end type adj_matrix
 
   type, bind(c) :: adj_storage_data
