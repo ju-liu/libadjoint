@@ -8,6 +8,9 @@ int adj_create_adjointer(adj_adjointer* adjointer)
   adjointer->equations_sz = 0;
   adjointer->equations = NULL;
 
+  adjointer->ntimesteps = 0;
+  adjointer->timestep_start = NULL;
+
   adjointer->varhash = NULL;
   adjointer->vardata.firstnode = NULL;
   adjointer->vardata.lastnode = NULL;
@@ -57,6 +60,8 @@ int adj_destroy_adjointer(adj_adjointer* adjointer)
     if (ierr != ADJ_ERR_OK) return ierr;
   }
   if (adjointer->equations != NULL) free(adjointer->equations);
+
+  if (adjointer->timestep_start != NULL) free(adjointer->timestep_start);
 
   data_ptr = adjointer->vardata.firstnode;
   while (data_ptr != NULL)
@@ -139,7 +144,29 @@ int adj_register_equation(adj_adjointer* adjointer, adj_equation equation)
     return ADJ_ERR_INVALID_INPUTS;
   }
 
+  /* Let's check the timesteps match up */
+  if (adjointer->ntimesteps == 0) /* we haven't registered any equations yet */
+  {
+    if (equation.variable.timestep != 0) /* this isn't timestep 0 */
+    {
+      strncpy(adj_error_msg, "The first equation registered must have timestep 0.", ADJ_ERROR_MSG_BUF);
+      return ADJ_ERR_INVALID_INPUTS;
+    }
+  }
+  else /* we have registered an equation before */
+  {
+    /* if  (not same timestep as before)                     &&  (not the next timestep) */
+    if ((equation.variable.timestep != adjointer->ntimesteps - 1) && (equation.variable.timestep != adjointer->ntimesteps))
+    {
+      snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, \
+          "Timestep numbers must either stay the same or increment by one. Valid values are %d or %d, but you have supplied %d.", \
+          adjointer->ntimesteps - 1, adjointer->ntimesteps, equation.variable.timestep);
+      return ADJ_ERR_INVALID_INPUTS;
+    }
+  }
+
   /* OK. We're good to go. */
+
   /* Let's add it to the hash table. */
   ierr = adj_add_new_hash_entry(adjointer, &(equation.variable), &data_ptr);
   if (ierr != ADJ_ERR_OK) return ierr;
@@ -155,6 +182,20 @@ int adj_register_equation(adj_adjointer* adjointer, adj_equation equation)
 
   adjointer->nequations++;
   adjointer->equations[adjointer->nequations - 1] = equation;
+
+  /* Do any necessary recording of timestep indices */
+  if (adjointer->ntimesteps == 0)
+  {
+    adj_append_unique(&(adjointer->timestep_start), &(adjointer->ntimesteps), adjointer->nequations - 1);
+  }
+  else
+  {
+    if (adjointer->ntimesteps == equation.variable.timestep) /* We have started a new timestep */
+    {
+      adj_append_unique(&(adjointer->timestep_start), &(adjointer->ntimesteps), adjointer->nequations - 1);
+    }
+  }
+
   /* now we have copies of the pointer to the arrays of targets, blocks, rhs deps. */
   /* but for consistency, any libadjoint object that the user creates, he must destroy --
      it's simpler that way. */
@@ -695,6 +736,43 @@ int adj_add_new_hash_entry(adj_adjointer* adjointer, adj_variable* var, adj_vari
     adjointer->vardata.lastnode = *data;
   }
 
+  return ADJ_ERR_OK;
+}
+
+int adj_timestep_count(adj_adjointer* adjointer, int* count)
+{
+  *count = adjointer->ntimesteps;
+  return ADJ_ERR_OK;
+}
+
+int adj_timestep_start(adj_adjointer* adjointer, int timestep, int* start)
+{
+  if (timestep < 0 || timestep >= adjointer->ntimesteps)
+  {
+    strncpy(adj_error_msg, "Invalid timestep supplied to adj_timestep_start.", ADJ_ERROR_MSG_BUF);
+    return ADJ_ERR_INVALID_INPUTS;
+  }
+
+  *start = adjointer->timestep_start[timestep];
+  return ADJ_ERR_OK;
+}
+
+int adj_timestep_end(adj_adjointer* adjointer, int timestep, int* end)
+{
+  if (timestep < 0 || timestep >= adjointer->ntimesteps)
+  {
+    strncpy(adj_error_msg, "Invalid timestep supplied to adj_timestep_end.", ADJ_ERROR_MSG_BUF);
+    return ADJ_ERR_INVALID_INPUTS;
+  }
+
+  if (timestep < adjointer->ntimesteps-1)
+  {
+    *end = adjointer->timestep_start[timestep+1] - 1;
+  }
+  else
+  {
+    *end = adjointer->nequations - 1;
+  }
   return ADJ_ERR_OK;
 }
 

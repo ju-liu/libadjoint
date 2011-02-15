@@ -68,6 +68,9 @@ module libadjoint_data_structures
     integer(kind=c_int) :: equations_sz
     type(c_ptr) :: equations
 
+    integer(kind=c_int) :: ntimesteps
+    type(c_ptr) :: timestep_start
+
     type(c_ptr) :: varhash
     type(adj_variable_data_list) :: vardata
 
@@ -338,10 +341,10 @@ module libadjoint
       integer(kind=c_int) :: ierr
     end function adj_block_set_coefficient
 
-    function adj_create_equation_c(var, nblocks, blocks, targets, equation) result(ierr) bind(c, name='adj_create_equation')
+    function adj_create_equation_c(variable, nblocks, blocks, targets, equation) result(ierr) bind(c, name='adj_create_equation')
       use libadjoint_data_structures
       use iso_c_binding
-      type(adj_variable), intent(in), value :: var
+      type(adj_variable), intent(in), value :: variable
       integer(kind=c_int), intent(in), value :: nblocks
       type(adj_block), dimension(nblocks), intent(in) :: blocks
       type(adj_variable), dimension(nblocks), intent(in) :: targets
@@ -403,11 +406,11 @@ module libadjoint
       integer(kind=c_int) :: ierr
     end function adj_register_equation
 
-    function adj_record_variable(adjointer, var, storage) result(ierr) bind(c, name='adj_record_variable')
+    function adj_record_variable(adjointer, variable, storage) result(ierr) bind(c, name='adj_record_variable')
       use libadjoint_data_structures
       use iso_c_binding
       type(adj_adjointer), intent(inout) :: adjointer
-      type(adj_variable), intent(in), value :: var
+      type(adj_variable), intent(in), value :: variable
       type(adj_storage_data), intent(in), value :: storage
       integer(kind=c_int) :: ierr
     end function adj_record_variable
@@ -440,6 +443,32 @@ module libadjoint
       integer(kind=c_int) :: ierr
     end function adj_forget_adjoint_equation
 
+    function adj_timestep_count(adjointer, count) result(ierr) bind(c, name='adj_timestep_count')
+      use libadjoint_data_structures
+      use iso_c_binding
+      type(adj_adjointer), intent(inout) :: adjointer
+      integer(kind=c_int), intent(out) :: count
+      integer(kind=c_int) :: ierr
+    end function adj_timestep_count
+
+    function adj_timestep_start(adjointer, timestep, start) result(ierr) bind(c, name='adj_timestep_start')
+      use libadjoint_data_structures
+      use iso_c_binding
+      type(adj_adjointer), intent(inout) :: adjointer
+      integer(kind=c_int), intent(in), value :: timestep
+      integer(kind=c_int), intent(out) :: start
+      integer(kind=c_int) :: ierr
+    end function adj_timestep_start
+
+    function adj_timestep_end(adjointer, timestep, end) result(ierr) bind(c, name='adj_timestep_end')
+      use libadjoint_data_structures
+      use iso_c_binding
+      type(adj_adjointer), intent(inout) :: adjointer
+      integer(kind=c_int), intent(in), value :: timestep
+      integer(kind=c_int), intent(out) :: end
+      integer(kind=c_int) :: ierr
+    end function adj_timestep_end
+
     function adj_storage_memory(val) result(mem) bind(c, name='adj_storage_memory')
       use libadjoint_data_structures
       use iso_c_binding
@@ -447,7 +476,7 @@ module libadjoint
       type(adj_storage_data) :: mem
     end function adj_storage_memory
 
-    function adj_get_adjoint_equation(adjointer, equation, functional, lhs, rhs, var) result(ierr) &
+    function adj_get_adjoint_equation(adjointer, equation, functional, lhs, rhs, variable) result(ierr) &
             & bind(c, name='adj_get_adjoint_equation')
       use libadjoint_data_structures
       use iso_c_binding
@@ -456,18 +485,18 @@ module libadjoint
       integer(kind=c_int), intent(in), value :: functional
       type(adj_matrix), intent(out) :: lhs
       type(adj_vector), intent(out) :: rhs
-      type(adj_variable), intent(out) :: var
+      type(adj_variable), intent(out) :: variable
       integer(kind=c_int) :: ierr
     end function adj_get_adjoint_equation
   end interface
 
   contains
 
-  function adj_create_variable(name, timestep, iteration, auxiliary, var) result(ierr)
+  function adj_create_variable(name, timestep, iteration, auxiliary, variable) result(ierr)
     character(len=*), intent(in) :: name
     integer, intent(in) :: timestep, iteration
     integer, intent(in) :: auxiliary
-    type(adj_variable), intent(out) :: var
+    type(adj_variable), intent(out) :: variable
     integer :: ierr
 
     character(kind=c_char), dimension(ADJ_NAME_LEN) :: name_c
@@ -481,18 +510,18 @@ module libadjoint
     end do
     name_c(ADJ_NAME_LEN) = c_null_char
 
-    ierr = adj_create_variable_c(name_c, timestep, iteration, auxiliary, var)
+    ierr = adj_create_variable_c(name_c, timestep, iteration, auxiliary, variable)
   end function adj_create_variable
 
-  function adj_variable_get_name(var, name) result(ierr)
-    type(adj_variable), intent(in) :: var
+  function adj_variable_get_name(variable, name) result(ierr)
+    type(adj_variable), intent(in) :: variable
     character(len=ADJ_NAME_LEN), intent(out) :: name
     integer :: ierr
     integer :: j
 
     do j=1,ADJ_NAME_LEN
-      if (var%name(j) /= c_null_char) then
-        name(j:j) = var%name(j)
+      if (variable%name(j) /= c_null_char) then
+        name(j:j) = variable%name(j)
       else
         name(j:) = ' '
         exit
@@ -595,10 +624,10 @@ module libadjoint
     ierr = adj_register_operator_callback_c(adjointer, type, name_c, fnptr)
   end function adj_register_operator_callback
 
-  function adj_create_equation(var, blocks, targets, equation) result(ierr)
+  function adj_create_equation(variable, blocks, targets, equation) result(ierr)
     use libadjoint_data_structures
     use iso_c_binding
-    type(adj_variable), intent(in), value :: var
+    type(adj_variable), intent(in), value :: variable
     type(adj_block), dimension(:), intent(in) :: blocks
     type(adj_variable), dimension(:), intent(in) :: targets
     type(adj_equation), intent(inout) :: equation
@@ -610,7 +639,7 @@ module libadjoint
       return
     end if
 
-    ierr = adj_create_equation_c(var, size(blocks), blocks, targets, equation)
+    ierr = adj_create_equation_c(variable, size(blocks), blocks, targets, equation)
   end function adj_create_equation
 
   subroutine adj_chkierr_private(ierr, filename, line)

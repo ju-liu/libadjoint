@@ -146,6 +146,9 @@ typedef struct
   int equations_sz; /* Number of equations we can store without mallocing -- not the same! */
   adj_equation* equations; /* Array of equations we have registered */
 
+  int ntimesteps; /* Number of timesteps we have seen */
+  int* timestep_start; /* Which equation is the first one for timestep n */
+
   adj_variable_hash* varhash; /* The hash table for looking up information about variables */
   adj_variable_data_list vardata; /* We also store a linked list so we can walk all our variable data */
 
