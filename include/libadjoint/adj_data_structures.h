@@ -193,10 +193,13 @@ int adj_nonlinear_block_set_coefficient(adj_nonlinear_block* nblock, adj_scalar 
 int adj_create_block(char* name, adj_nonlinear_block* nblock, void* context, adj_block* block);
 int adj_destroy_block(adj_block* block);
 int adj_block_set_coefficient(adj_block* block, adj_scalar coefficient);
-int adj_variable_equal(adj_variable* var1, adj_variable* var2, int nvars);
-int adj_variable_str(adj_variable var, char* name, size_t namelen);
 int adj_create_equation(adj_variable var, int nblocks, adj_block* blocks, adj_variable* targets, adj_equation* equation);
 int adj_set_rhs_dependencies(adj_equation* equation, int nrhsdeps, adj_variable* rhsdeps);
 int adj_destroy_equation(adj_equation* equation);
+
+#ifndef ADJ_HIDE_FROM_USER
+int adj_variable_equal(adj_variable* var1, adj_variable* var2, int nvars);
+int adj_variable_str(adj_variable var, char* name, size_t namelen);
+#endif
 
 #endif
