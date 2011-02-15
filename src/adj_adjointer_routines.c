@@ -548,6 +548,7 @@ int adj_forget_adjoint_equation(adj_adjointer* adjointer, int equation)
   int should_we_delete;
   int i;
   int ierr;
+  int min_timestep;
 
   if (adjointer->options[ADJ_ACTIVITY] == ADJ_ACTIVITY_NOTHING) return ADJ_ERR_OK;
 
@@ -557,12 +558,28 @@ int adj_forget_adjoint_equation(adj_adjointer* adjointer, int equation)
     if (data->storage.has_value && data->nadjoint_equations > 0)
     {
       should_we_delete = 1;
+      /* Check the adjoint equations we could explicitly compute */
       for (i = 0; i < data->nadjoint_equations; i++)
       {
         if (equation > data->adjoint_equations[i])
         {
           should_we_delete = 0;
           break;
+        }
+      }
+
+      /* Also check that it isn't necessary for any timesteps we still have to compute
+         functional right-hand-sides for */
+      if (data->ndepending_timesteps > 0 && should_we_delete == 1)
+      {
+        int start_equation;
+        min_timestep = adj_minval(data->depending_timesteps, data->ndepending_timesteps);
+        ierr = adj_timestep_start_equation(adjointer, data->depending_timesteps[i], &start_equation);
+        assert(ierr == ADJ_ERR_OK);
+
+        if (equation > start_equation)
+        {
+          should_we_delete = 0;
         }
       }
 
@@ -893,4 +910,23 @@ void adj_extend_functional_data(adj_timestep_data* timestep_data, int extent)
     timestep_data->functional_data[i].dependencies = NULL;
   }
   timestep_data->nfunctionals = extent;
+}
+
+int adj_minval(int* array, int array_sz)
+{
+  int i;
+  int minval;
+
+  assert(array_sz > 0);
+
+  minval = array[0];
+  for (i = 1; i < array_sz; i++)
+  {
+    if (array[i] < minval)
+    {
+      minval = array[i];
+    }
+  }
+
+  return minval;
 }

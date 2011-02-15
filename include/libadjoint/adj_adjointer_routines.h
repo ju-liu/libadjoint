@@ -33,4 +33,5 @@ adj_storage_data adj_storage_memory(adj_vector value);
 void adj_append_unique(int** array, int* array_sz, int value);
 void adj_extend_timestep_data(adj_adjointer* adjointer, int extent);
 void adj_extend_functional_data(adj_timestep_data* timestep_data, int extent);
+int adj_minval(int* array, int array_sz);
 #endif
