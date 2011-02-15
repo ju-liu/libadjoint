@@ -580,7 +580,7 @@ int adj_forget_adjoint_equation(adj_adjointer* adjointer, int equation)
       {
         int start_equation;
         min_timestep = adj_minval(data->depending_timesteps, data->ndepending_timesteps);
-        ierr = adj_timestep_start_equation(adjointer, data->depending_timesteps[i], &start_equation);
+        ierr = adj_timestep_start_equation(adjointer, min_timestep, &start_equation);
         assert(ierr == ADJ_ERR_OK);
 
         if (equation > start_equation)
