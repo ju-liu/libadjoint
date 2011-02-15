@@ -69,7 +69,7 @@ module libadjoint_data_structures
     type(c_ptr) :: equations
 
     integer(kind=c_int) :: ntimesteps
-    type(c_ptr) :: timestep_start
+    type(c_ptr) :: timestep_data
 
     type(c_ptr) :: varhash
     type(adj_variable_data_list) :: vardata

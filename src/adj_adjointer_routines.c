@@ -9,7 +9,7 @@ int adj_create_adjointer(adj_adjointer* adjointer)
   adjointer->equations = NULL;
 
   adjointer->ntimesteps = 0;
-  adjointer->timestep_start = NULL;
+  adjointer->timestep_data = NULL;
 
   adjointer->varhash = NULL;
   adjointer->vardata.firstnode = NULL;
@@ -48,6 +48,7 @@ int adj_create_adjointer(adj_adjointer* adjointer)
 int adj_destroy_adjointer(adj_adjointer* adjointer)
 {
   int i;
+  int j;
   int ierr;
   adj_variable_data* data_ptr;
   adj_variable_data* data_ptr_tmp;
@@ -61,7 +62,14 @@ int adj_destroy_adjointer(adj_adjointer* adjointer)
   }
   if (adjointer->equations != NULL) free(adjointer->equations);
 
-  if (adjointer->timestep_start != NULL) free(adjointer->timestep_start);
+  if (adjointer->timestep_data != NULL)
+  {
+    for (i = 0; i < adjointer->ntimesteps; i++)
+      for (j = 0; j < adjointer->timestep_data[i].nfunctionals; j++)
+        if (adjointer->timestep_data[i].functional_data[j].dependencies != NULL) 
+          free(adjointer->timestep_data[i].functional_data[j].dependencies);
+    free(adjointer->timestep_data);
+  }
 
   data_ptr = adjointer->vardata.firstnode;
   while (data_ptr != NULL)
@@ -145,7 +153,7 @@ int adj_register_equation(adj_adjointer* adjointer, adj_equation equation)
   }
 
   /* Let's check the timesteps match up */
-  if (adjointer->ntimesteps == 0) /* we haven't registered any equations yet */
+  if (adjointer->nequations == 0) /* we haven't registered any equations yet */
   {
     if (equation.variable.timestep != 0) /* this isn't timestep 0 */
     {
@@ -155,12 +163,14 @@ int adj_register_equation(adj_adjointer* adjointer, adj_equation equation)
   }
   else /* we have registered an equation before */
   {
+    int old_timestep;
     /* if  (not same timestep as before)                     &&  (not the next timestep) */
-    if ((equation.variable.timestep != adjointer->ntimesteps - 1) && (equation.variable.timestep != adjointer->ntimesteps))
+    old_timestep = adjointer->equations[adjointer->nequations-1].variable.timestep;
+    if ((equation.variable.timestep != old_timestep) && (equation.variable.timestep != old_timestep+1))
     {
       snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, \
           "Timestep numbers must either stay the same or increment by one. Valid values are %d or %d, but you have supplied %d.", \
-          adjointer->ntimesteps - 1, adjointer->ntimesteps, equation.variable.timestep);
+          old_timestep, old_timestep+1, equation.variable.timestep);
       return ADJ_ERR_INVALID_INPUTS;
     }
   }
@@ -184,16 +194,10 @@ int adj_register_equation(adj_adjointer* adjointer, adj_equation equation)
   adjointer->equations[adjointer->nequations - 1] = equation;
 
   /* Do any necessary recording of timestep indices */
-  if (adjointer->ntimesteps == 0)
+  if (adjointer->ntimesteps < equation.variable.timestep + 1) /* adjointer->ntimesteps should be at least equation.variable.timestep + 1 */
   {
-    adj_append_unique(&(adjointer->timestep_start), &(adjointer->ntimesteps), adjointer->nequations - 1);
-  }
-  else
-  {
-    if (adjointer->ntimesteps == equation.variable.timestep) /* We have started a new timestep */
-    {
-      adj_append_unique(&(adjointer->timestep_start), &(adjointer->ntimesteps), adjointer->nequations - 1);
-    }
+    adj_extend_timestep_data(adjointer, equation.variable.timestep + 1); /* extend the array as necessary */
+    adjointer->timestep_data[equation.variable.timestep].start_equation = adjointer->nequations - 1; /* and fill in the start equation */
   }
 
   /* now we have copies of the pointer to the arrays of targets, blocks, rhs deps. */
@@ -753,7 +757,7 @@ int adj_timestep_start(adj_adjointer* adjointer, int timestep, int* start)
     return ADJ_ERR_INVALID_INPUTS;
   }
 
-  *start = adjointer->timestep_start[timestep];
+  *start = adjointer->timestep_data[timestep].start_equation;
   return ADJ_ERR_OK;
 }
 
@@ -767,7 +771,7 @@ int adj_timestep_end(adj_adjointer* adjointer, int timestep, int* end)
 
   if (timestep < adjointer->ntimesteps-1)
   {
-    *end = adjointer->timestep_start[timestep+1] - 1;
+    *end = adjointer->timestep_data[timestep+1].start_equation - 1;
   }
   else
   {
@@ -789,4 +793,24 @@ void adj_append_unique(int** array, int* array_sz, int value)
   *array = (int*) realloc(*array, *array_sz * sizeof(int));
   (*array)[*array_sz - 1] = value;
   return;
+}
+
+void adj_extend_timestep_data(adj_adjointer* adjointer, int extent)
+{
+  /* We have an array adjointer->timestep_data, of size adjointer->ntimesteps.
+     We want to realloc that to have size extent. We'll also need to zero/initialise
+     all the timestep_data's we've just allocated. */
+  int i;
+
+  assert(extent > adjointer->ntimesteps);
+  adjointer->timestep_data = realloc(adjointer->timestep_data, extent * sizeof(adj_timestep_data));
+  for (i = adjointer->ntimesteps; i < extent; i++)
+  {
+    adjointer->timestep_data[i].start_equation = -1;
+    adjointer->timestep_data[i].start_time = -666; /* I wish there was an easy way to get a NaN here */
+    adjointer->timestep_data[i].end_time = -666;
+    adjointer->timestep_data[i].nfunctionals = 0;
+    adjointer->timestep_data[i].functional_data = NULL;
+  }
+  adjointer->ntimesteps = extent;
 }

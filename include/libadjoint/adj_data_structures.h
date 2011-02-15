@@ -142,12 +142,28 @@ typedef struct
 
 typedef struct
 {
+  adj_variable* dependencies;
+} adj_functional_data;
+
+typedef struct
+{
+  int start_equation;
+
+  adj_scalar start_time;
+  adj_scalar end_time;
+
+  int nfunctionals;
+  adj_functional_data* functional_data;
+} adj_timestep_data;
+
+typedef struct
+{
   int nequations; /* Number of equations we have registered */
   int equations_sz; /* Number of equations we can store without mallocing -- not the same! */
   adj_equation* equations; /* Array of equations we have registered */
 
   int ntimesteps; /* Number of timesteps we have seen */
-  int* timestep_start; /* Which equation is the first one for timestep n */
+  adj_timestep_data* timestep_data; /* Data for each timestep we have seen */
 
   adj_variable_hash* varhash; /* The hash table for looking up information about variables */
   adj_variable_data_list vardata; /* We also store a linked list so we can walk all our variable data */

@@ -29,4 +29,5 @@ int adj_timestep_end(adj_adjointer* adjointer, int timestep, int* end);
 
 adj_storage_data adj_storage_memory(adj_vector value);
 void adj_append_unique(int** array, int* array_sz, int value);
+void adj_extend_timestep_data(adj_adjointer* adjointer, int extent);
 #endif
