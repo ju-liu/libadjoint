@@ -197,7 +197,10 @@ int adj_register_equation(adj_adjointer* adjointer, adj_equation equation)
   if (adjointer->ntimesteps < equation.variable.timestep + 1) /* adjointer->ntimesteps should be at least equation.variable.timestep + 1 */
   {
     adj_extend_timestep_data(adjointer, equation.variable.timestep + 1); /* extend the array as necessary */
-    adjointer->timestep_data[equation.variable.timestep].start_equation = adjointer->nequations - 1; /* and fill in the start equation */
+  }
+  if (adjointer->timestep_data[equation.variable.timestep].start_equation == -1) /* -1 is the sentinel value for unset */
+  {
+    adjointer->timestep_data[equation.variable.timestep].start_equation = adjointer->nequations - 1; /* fill in the start equation */
   }
 
   /* now we have copies of the pointer to the arrays of targets, blocks, rhs deps. */
