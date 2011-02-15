@@ -479,6 +479,18 @@ module libadjoint
       integer(kind=c_int) :: ierr
     end function adj_timestep_set_times
 
+    function adj_timestep_set_functional_dependencies_c(adjointer, timestep, functional, ndepends, dependencies) result(ierr) &
+                                                      & bind(c, name='adj_timestep_set_functional_dependencies')
+      use libadjoint_data_structures
+      use iso_c_binding
+      type(adj_adjointer), intent(inout) :: adjointer
+      integer(kind=c_int), intent(in), value :: timestep
+      integer(kind=c_int), intent(in), value :: functional
+      integer(kind=c_int), intent(in), value :: ndepends
+      type(adj_variable), dimension(*), intent(in) :: dependencies
+      integer(kind=c_int) :: ierr
+    end function adj_timestep_set_functional_dependencies_c
+
     function adj_storage_memory(val) result(mem) bind(c, name='adj_storage_memory')
       use libadjoint_data_structures
       use iso_c_binding
@@ -651,6 +663,18 @@ module libadjoint
 
     ierr = adj_create_equation_c(variable, size(blocks), blocks, targets, equation)
   end function adj_create_equation
+
+  function adj_timestep_set_functional_dependencies(adjointer, timestep, functional, dependencies) result(ierr)
+    use libadjoint_data_structures
+    use iso_c_binding
+    type(adj_adjointer), intent(inout) :: adjointer
+    integer, intent(in) :: timestep
+    integer, intent(in) :: functional
+    type(adj_variable), dimension(:), intent(in) :: dependencies
+    integer :: ierr
+
+    ierr = adj_timestep_set_functional_dependencies_c(adjointer, timestep, functional, size(dependencies), dependencies)
+  end function adj_timestep_set_functional_dependencies
 
   subroutine adj_chkierr_private(ierr, filename, line)
     integer, intent(in) :: ierr

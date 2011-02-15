@@ -142,6 +142,7 @@ typedef struct
 
 typedef struct
 {
+  int ndepends;
   adj_variable* dependencies;
 } adj_functional_data;
 

@@ -785,11 +785,44 @@ int adj_timestep_end_equation(adj_adjointer* adjointer, int timestep, int* end)
 
 int adj_timestep_set_times(adj_adjointer* adjointer, int timestep, adj_scalar start, adj_scalar end)
 {
+  if (timestep < 0)
+  {
+    strncpy(adj_error_msg, "Invalid timestep supplied to adj_timestep_set_times.", ADJ_ERROR_MSG_BUF);
+    return ADJ_ERR_INVALID_INPUTS;
+  }
+
   if (adjointer->ntimesteps <= timestep)
     adj_extend_timestep_data(adjointer, timestep + 1);
 
   adjointer->timestep_data[timestep].start_time = start;
   adjointer->timestep_data[timestep].end_time = end;
+
+  return ADJ_ERR_OK;
+}
+int adj_timestep_set_functional_dependencies(adj_adjointer* adjointer, int timestep, int functional, int ndepends, adj_variable* dependencies)
+{
+  if (timestep < 0)
+  {
+    strncpy(adj_error_msg, "Invalid timestep supplied to adj_timestep_set_times.", ADJ_ERROR_MSG_BUF);
+    return ADJ_ERR_INVALID_INPUTS;
+  }
+
+  if (ndepends < 0)
+  {
+    strncpy(adj_error_msg, "Must supply a nonnegative number of dependencies.", ADJ_ERROR_MSG_BUF);
+    return ADJ_ERR_INVALID_INPUTS;
+  }
+
+  if (adjointer->ntimesteps <= timestep)
+    adj_extend_timestep_data(adjointer, timestep + 1);
+
+  if (adjointer->timestep_data[timestep].nfunctionals <= functional)
+    adj_extend_functional_data(&(adjointer->timestep_data[timestep]), functional + 1);
+
+  adjointer->timestep_data[timestep].functional_data[functional].ndepends = ndepends;
+  adjointer->timestep_data[timestep].functional_data[functional].dependencies = \
+                                     (adj_variable*) malloc(ndepends * sizeof(adj_variable));
+  memcpy(adjointer->timestep_data[timestep].functional_data[functional].dependencies, dependencies, ndepends * sizeof(adj_variable));
 
   return ADJ_ERR_OK;
 }
@@ -817,7 +850,7 @@ void adj_extend_timestep_data(adj_adjointer* adjointer, int extent)
   int i;
 
   assert(extent > adjointer->ntimesteps);
-  adjointer->timestep_data = realloc(adjointer->timestep_data, extent * sizeof(adj_timestep_data));
+  adjointer->timestep_data = (adj_timestep_data*) realloc(adjointer->timestep_data, extent * sizeof(adj_timestep_data));
   for (i = adjointer->ntimesteps; i < extent; i++)
   {
     adjointer->timestep_data[i].start_equation = -1;
@@ -827,4 +860,18 @@ void adj_extend_timestep_data(adj_adjointer* adjointer, int extent)
     adjointer->timestep_data[i].functional_data = NULL;
   }
   adjointer->ntimesteps = extent;
+}
+
+void adj_extend_functional_data(adj_timestep_data* timestep_data, int extent)
+{
+  int i;
+
+  assert(extent > timestep_data->nfunctionals);
+  timestep_data->functional_data = (adj_functional_data*) realloc(timestep_data->functional_data, extent * sizeof(adj_functional_data));
+  for (i = timestep_data->nfunctionals; i < extent; i++)
+  {
+    timestep_data->functional_data[i].ndepends = 0;
+    timestep_data->functional_data[i].dependencies = NULL;
+  }
+  timestep_data->nfunctionals = extent;
 }
