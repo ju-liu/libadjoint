@@ -180,7 +180,7 @@ int adj_register_equation(adj_adjointer* adjointer, adj_equation equation)
   /* Let's add it to the hash table. */
   ierr = adj_add_new_hash_entry(adjointer, &(equation.variable), &data_ptr);
   if (ierr != ADJ_ERR_OK) return ierr;
-  data_ptr->equation = adjointer->nequations + 1;
+  data_ptr->equation = adjointer->nequations;
   /* OK. Next create an entry for the adj_equation in the adjointer. */
 
   /* Check we have enough room, and if not, make some */
@@ -551,6 +551,12 @@ int adj_forget_adjoint_equation(adj_adjointer* adjointer, int equation)
   int min_timestep;
 
   if (adjointer->options[ADJ_ACTIVITY] == ADJ_ACTIVITY_NOTHING) return ADJ_ERR_OK;
+
+  if (equation >= adjointer->nequations)
+  {
+    strncpy(adj_error_msg, "No such equation.", ADJ_ERROR_MSG_BUF);
+    return ADJ_ERR_INVALID_INPUTS;
+  }
 
   data = adjointer->vardata.firstnode;
   while (data != NULL)

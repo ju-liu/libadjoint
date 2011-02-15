@@ -12,9 +12,9 @@ void test_adj_dependencies(void)
   adj_variable_data* data_ptr;
   adj_equation eqn;
   int ierr;
-  int adj_equations_u0[3] = {1, 2, 3};
-  int adj_equations_u10[3] = {1, 2, 3};
-  int adj_equations_u11[2] = {1, 2};
+  int adj_equations_u0[3] = {0, 1, 2};
+  int adj_equations_u10[3] = {0, 1, 2};
+  int adj_equations_u11[2] = {0, 1};
 
   adj_create_adjointer(&adjointer);
 
