@@ -75,21 +75,24 @@ typedef struct
 
 typedef struct adj_variable_data
 {
-  int equation;
+  int equation; /* the equation that solves for this variable */
 
-  int ntargeting_equations;
+  int ntargeting_equations; /* any equations that target this variable */
   int* targeting_equations;
 
-  int ndepending_equations;
+  int ndepending_equations; /* any equations whose operators depend on this variable */
   int* depending_equations;
 
-  int nrhs_equations;
+  int nrhs_equations; /* any equations whose right-hand sides depend on this variable */
   int* rhs_equations;
 
-  int nadjoint_equations;
+  int ndepending_timesteps; /* any timesteps that need this variable for the computation of a functional */
+  int* depending_timesteps;
+
+  int nadjoint_equations; /* computed: the adjoint equations that need this variable */
   int* adjoint_equations;
-  adj_storage_data storage;
-  struct adj_variable_data* next;
+  adj_storage_data storage; /* its storage record */
+  struct adj_variable_data* next; /* a pointer to the next one, so we can walk the list */
 } adj_variable_data;
 
 typedef struct

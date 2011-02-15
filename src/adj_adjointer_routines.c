@@ -724,6 +724,8 @@ int adj_add_new_hash_entry(adj_adjointer* adjointer, adj_variable* var, adj_vari
   (*data)->depending_equations = NULL;
   (*data)->nrhs_equations = 0;
   (*data)->rhs_equations = NULL;
+  (*data)->ndepending_timesteps = 0;
+  (*data)->depending_timesteps = NULL;
   (*data)->nadjoint_equations = 0;
   (*data)->adjoint_equations = NULL;
 
@@ -801,6 +803,7 @@ int adj_timestep_set_times(adj_adjointer* adjointer, int timestep, adj_scalar st
 }
 int adj_timestep_set_functional_dependencies(adj_adjointer* adjointer, int timestep, int functional, int ndepends, adj_variable* dependencies)
 {
+  int i;
   if (timestep < 0)
   {
     strncpy(adj_error_msg, "Invalid timestep supplied to adj_timestep_set_times.", ADJ_ERROR_MSG_BUF);
@@ -823,6 +826,22 @@ int adj_timestep_set_functional_dependencies(adj_adjointer* adjointer, int times
   adjointer->timestep_data[timestep].functional_data[functional].dependencies = \
                                      (adj_variable*) malloc(ndepends * sizeof(adj_variable));
   memcpy(adjointer->timestep_data[timestep].functional_data[functional].dependencies, dependencies, ndepends * sizeof(adj_variable));
+
+  for (i = 0; i < ndepends; i++)
+  {
+    int ierr;
+    adj_variable_data* data_ptr;
+
+    ierr = adj_find_variable_data(&(adjointer->varhash), &(dependencies[i]), &data_ptr);
+    if (ierr == ADJ_ERR_HASH_FAILED)
+    {
+      ierr = adj_add_new_hash_entry(adjointer, &(dependencies[i]), &data_ptr);
+      if (ierr != ADJ_ERR_OK) return ierr;
+    }
+
+    /* Record that this variable is necessary for the functional evaluation at this point in time */
+    adj_append_unique(&(data_ptr->depending_timesteps), &(data_ptr->ndepending_timesteps), timestep);
+  }
 
   return ADJ_ERR_OK;
 }
