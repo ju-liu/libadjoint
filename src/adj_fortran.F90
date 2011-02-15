@@ -451,23 +451,33 @@ module libadjoint
       integer(kind=c_int) :: ierr
     end function adj_timestep_count
 
-    function adj_timestep_start(adjointer, timestep, start) result(ierr) bind(c, name='adj_timestep_start')
+    function adj_timestep_start_equation(adjointer, timestep, start) result(ierr) bind(c, name='adj_timestep_start_equation')
       use libadjoint_data_structures
       use iso_c_binding
       type(adj_adjointer), intent(inout) :: adjointer
       integer(kind=c_int), intent(in), value :: timestep
       integer(kind=c_int), intent(out) :: start
       integer(kind=c_int) :: ierr
-    end function adj_timestep_start
+    end function adj_timestep_start_equation
 
-    function adj_timestep_end(adjointer, timestep, end) result(ierr) bind(c, name='adj_timestep_end')
+    function adj_timestep_end_equation(adjointer, timestep, end) result(ierr) bind(c, name='adj_timestep_end_equation')
       use libadjoint_data_structures
       use iso_c_binding
       type(adj_adjointer), intent(inout) :: adjointer
       integer(kind=c_int), intent(in), value :: timestep
       integer(kind=c_int), intent(out) :: end
       integer(kind=c_int) :: ierr
-    end function adj_timestep_end
+    end function adj_timestep_end_equation
+
+    function adj_timestep_set_times(adjointer, timestep, start, end) result(ierr) bind(c, name='adj_timestep_set_times')
+      use libadjoint_data_structures
+      use iso_c_binding
+      type(adj_adjointer), intent(inout) :: adjointer
+      integer(kind=c_int), intent(in), value :: timestep
+      adj_scalar_f, intent(in), value :: start
+      adj_scalar_f, intent(in), value :: end
+      integer(kind=c_int) :: ierr
+    end function adj_timestep_set_times
 
     function adj_storage_memory(val) result(mem) bind(c, name='adj_storage_memory')
       use libadjoint_data_structures

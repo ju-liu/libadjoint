@@ -752,7 +752,7 @@ int adj_timestep_count(adj_adjointer* adjointer, int* count)
   return ADJ_ERR_OK;
 }
 
-int adj_timestep_start(adj_adjointer* adjointer, int timestep, int* start)
+int adj_timestep_start_equation(adj_adjointer* adjointer, int timestep, int* start)
 {
   if (timestep < 0 || timestep >= adjointer->ntimesteps)
   {
@@ -764,7 +764,7 @@ int adj_timestep_start(adj_adjointer* adjointer, int timestep, int* start)
   return ADJ_ERR_OK;
 }
 
-int adj_timestep_end(adj_adjointer* adjointer, int timestep, int* end)
+int adj_timestep_end_equation(adj_adjointer* adjointer, int timestep, int* end)
 {
   if (timestep < 0 || timestep >= adjointer->ntimesteps)
   {
@@ -780,6 +780,17 @@ int adj_timestep_end(adj_adjointer* adjointer, int timestep, int* end)
   {
     *end = adjointer->nequations - 1;
   }
+  return ADJ_ERR_OK;
+}
+
+int adj_timestep_set_times(adj_adjointer* adjointer, int timestep, adj_scalar start, adj_scalar end)
+{
+  if (adjointer->ntimesteps <= timestep)
+    adj_extend_timestep_data(adjointer, timestep + 1);
+
+  adjointer->timestep_data[timestep].start_time = start;
+  adjointer->timestep_data[timestep].end_time = end;
+
   return ADJ_ERR_OK;
 }
 
