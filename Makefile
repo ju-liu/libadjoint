@@ -101,6 +101,12 @@ LD := $(FC)
 LDFLAGS := -shared -Wl,-soname,libadjoint.so
 
 ###############################################################################
+# Variables for the python bindings                                           #
+###############################################################################
+H2XML = $(shell which h2xml 2>/dev/null)
+XML2PY = $(shell which xml2py 2>/dev/null)
+
+###############################################################################
 # The targets                                                                 #
 ###############################################################################
 all: lib/libadjoint.a lib/libadjoint.so
@@ -145,6 +151,8 @@ clean:
 	@echo "  RM lib/*.a"
 	@rm -f lib/*.so
 	@echo "  RM lib/*.so"
+	@rm -f lib/*.py
+	@echo "  RM lib/*.py"
 	@rm -f tags
 	@rm -f include/libadjoint/adj_constants_f.h include/libadjoint/adj_error_handling_f.h
 
@@ -160,10 +168,22 @@ doc/design.pdf: doc/design.tex doc/literature.bib
 		echo "    pdflatex failed. Maybe you need to install python-pygments?"
 
 ifneq (,$(CTAGS))
-lib/libadjoint.a: tags
+all: tags
+test: tags
 tags: $(FSRC) $(CSRC)
 	@echo "  CTAGS src/*.c src/*.F90"
 	@$(CTAGS) src/*.c src/*.F90
+endif
+
+ifneq (,$(H2XML))
+all: lib/libadjoint.py
+test: lib/libadjoint.py
+lib/libadjoint.py: lib/libadjoint.so
+	@echo "  H2XML  include/libadjoint/libadjoint.h"
+	@$(H2XML) -q -I. include/libadjoint/libadjoint.h -o lib/libadjoint.xml
+	@echo "  XML2PY lib/libadjoint.py"
+	@$(XML2PY) -r '^adj.*' -l lib/libadjoint.so lib/libadjoint.xml -o lib/libadjoint.py
+	@rm -f lib/libadjoint.xml
 endif
 
 install: lib/libadjoint.a lib/libadjoint.so
