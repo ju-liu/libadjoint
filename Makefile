@@ -1,20 +1,43 @@
-AR = ar
-ARFLAGS = cr
-
+###############################################################################
+# Find all the relevant objects                                               #
+###############################################################################
 FSRC = $(wildcard src/*.F90)
 FOBJ = $(patsubst src/%.F90,obj/%.o,$(FSRC))
 
 CSRC = $(wildcard src/*.c)
 COBJ = $(patsubst src/%.c,obj/%.o,$(CSRC))
 
+###############################################################################
+# Variables for unit tests                                                    #
+###############################################################################
 DISABLED_TESTS = 
 FTEST = $(filter-out $(DISABLED_TESTS), $(patsubst src/tests/%,bin/tests/%,$(basename $(filter-out src/tests/test_main.F90, $(wildcard src/tests/*.F90)))))
 CTEST = $(filter-out $(DISABLED_TESTS), $(patsubst src/tests/%,bin/tests/%,$(basename $(filter-out src/tests/test_main.c, $(wildcard src/tests/*.c)))))
 
+###############################################################################
+# Variables for unit tests                                                    #
+###############################################################################
 CTAGS = $(shell which ctags 2>/dev/null)
 
+###############################################################################
+# Generic compiler flags                                                      #
+###############################################################################
+# Identify if PETSc is installed
 MAKE = make -s
+PETSC_CPPFLAGS = $(shell $(MAKE) -f cfg/petsc_makefile getincludedirs 2>/dev/null)
+PETSC_LDFLAGS  = $(shell $(MAKE) -f cfg/petsc_makefile getlinklibs 2>/dev/null)
+ifeq (,$(PETSC_CPPFLAGS))
+	PETSC_CPPFLAGS := # want to have -UHAVE_PETSC, but that causes confusion on some fortran compilers (e.g. nag) and it isn't really necessary
+else
+	PETSC_CPPFLAGS := $(PETSC_CPPFLAGS) -DHAVE_PETSC
+endif
 
+DBGFLAGS = -g -O0
+PICFLAG = -fPIC
+
+###############################################################################
+# C compiler variables                                                        #
+###############################################################################
 # Identify C compiler
 ifeq ($(origin CC),default)
 	CC := mpicc
@@ -31,18 +54,11 @@ ifneq (,$(findstring icc, $(CC_VERSION)))
 	COMPILER_CFLAGS := -Wall 
 endif
 
-# Identify if PETSc is installed
-PETSC_CPPFLAGS = $(shell $(MAKE) -f cfg/petsc_makefile getincludedirs 2>/dev/null)
-PETSC_LDFLAGS  = $(shell $(MAKE) -f cfg/petsc_makefile getlinklibs 2>/dev/null)
-ifeq (,$(PETSC_CPPFLAGS))
-	PETSC_CPPFLAGS := # want to have -UHAVE_PETSC, but that causes confusion on some fortran compilers (e.g. nag) and it isn't really necessary
-else
-	PETSC_CPPFLAGS := $(PETSC_CPPFLAGS) -DHAVE_PETSC
-endif
+CFLAGS := $(CFLAGS) $(DBGFLAGS) $(PICFLAG) $(PETSC_CPPFLAGS) -Iinclude/ $(COMPILER_CFLAGS)
 
-DBGFLAGS = -g -O0
-CFLAGS := $(CFLAGS) $(DBGFLAGS) $(PETSC_CPPFLAGS) -Iinclude/ $(COMPILER_CFLAGS)
-
+###############################################################################
+# F90 compiler variables                                                      #
+###############################################################################
 # Identify Fortran compiler
 ifeq ($(origin FC),default)
 	FC := mpif90
@@ -62,8 +78,11 @@ ifneq (,$(findstring NAG, $(FC_VERSION)))
 	COMPILER_FFLAGS = -f2003
 endif
 
-FFLAGS := $(FFLAGS) $(DBGFLAGS) $(PETSC_CPPFLAGS) -Iinclude/ -Iinclude/libadjoint $(COMPILER_FFLAGS)
+FFLAGS := $(FFLAGS) $(DBGFLAGS) $(PICFLAG) $(PETSC_CPPFLAGS) -Iinclude/ -Iinclude/libadjoint $(COMPILER_FFLAGS)
 
+###############################################################################
+# Variables for make install                                                  #
+###############################################################################
 ifeq ($(origin DESTDIR),undefined)
 	DESTDIR := /
 endif
@@ -72,7 +91,19 @@ ifeq ($(origin prefix),undefined)
 	prefix := usr/local
 endif
 
-all: lib/libadjoint.a
+###############################################################################
+# Variables for static and shared libraries                                   #
+###############################################################################
+AR = ar
+ARFLAGS = cr
+
+LD := $(FC)
+LDFLAGS := -shared -Wl,-soname,libadjoint.so.1
+
+###############################################################################
+# The targets                                                                 #
+###############################################################################
+all: lib/libadjoint.a lib/libadjoint.so
 
 bin/tests/%: src/tests/%.c src/tests/test_main.c lib/libadjoint.a
 	@echo "  CC $@"
@@ -95,6 +126,10 @@ lib/libadjoint.a: $(COBJ) $(FOBJ)
 	@echo "  AR $@"
 	@$(AR) $(ARFLAGS) $@ $(FOBJ) $(COBJ)
 
+lib/libadjoint.so: $(COBJ) $(FOBJ)
+	@echo "  LD $@"
+	@$(LD) $(LDFLAGS) -o $@ $(FOBJ) $(COBJ) $(PETSC_LDFLAGS) $(LIBS)
+
 clean:
 	@rm -f obj/*.o
 	@echo "  RM obj/*.o"
@@ -108,6 +143,8 @@ clean:
 	@echo "  RM doc/*.pdf"
 	@rm -f lib/*.a
 	@echo "  RM lib/*.a"
+	@rm -f lib/*.so
+	@echo "  RM lib/*.so"
 	@rm -f tags
 	@rm -f include/libadjoint/adj_constants_f.h include/libadjoint/adj_error_handling_f.h
 

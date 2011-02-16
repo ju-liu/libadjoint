@@ -722,6 +722,30 @@ module libadjoint_petsc_data_structures
   public :: petsc_mat_to_adj_matrix
   public :: petsc_vec_destroy_proc
   public :: petsc_mat_destroy_proc
+
+  interface petsc_vec_from_adj_vector
+    module procedure petsc_vec_from_adj_vector_f
+  end interface petsc_vec_from_adj_vector
+
+  interface petsc_vec_to_adj_vector
+    module procedure petsc_vec_to_adj_vector_f
+  end interface petsc_vec_to_adj_vector
+
+  interface petsc_mat_from_adj_matrix
+    module procedure petsc_mat_from_adj_matrix_f
+  end interface petsc_mat_from_adj_matrix
+
+  interface petsc_mat_to_adj_matrix
+    module procedure petsc_mat_to_adj_matrix_f
+  end interface petsc_mat_to_adj_matrix
+
+  interface petsc_vec_destroy_proc
+    module procedure petsc_vec_destroy_proc_f
+  end interface
+
+  interface petsc_mat_destroy_proc
+    module procedure petsc_mat_destroy_proc_f
+  end interface
 #endif
 
   contains
@@ -734,25 +758,25 @@ module libadjoint_petsc_data_structures
     call PetscInitialize(PETSC_NULL_CHARACTER, ierr)
 #endif
 
-    ierr = adj_register_data_callback(adjointer, ADJ_VEC_DUPLICATE_CB, c_funloc(petsc_vec_duplicate_proc))
+    ierr = adj_register_data_callback(adjointer, ADJ_VEC_DUPLICATE_CB, c_funloc(petsc_vec_duplicate_proc_f))
     call adj_chkierr(ierr)
-    ierr = adj_register_data_callback(adjointer, ADJ_VEC_AXPY_CB, c_funloc(petsc_vec_axpy_proc))
+    ierr = adj_register_data_callback(adjointer, ADJ_VEC_AXPY_CB, c_funloc(petsc_vec_axpy_proc_f))
     call adj_chkierr(ierr)
-    ierr = adj_register_data_callback(adjointer, ADJ_VEC_DESTROY_CB, c_funloc(petsc_vec_destroy_proc))
+    ierr = adj_register_data_callback(adjointer, ADJ_VEC_DESTROY_CB, c_funloc(petsc_vec_destroy_proc_f))
     call adj_chkierr(ierr)
-    ierr = adj_register_data_callback(adjointer, ADJ_VEC_SETVALUES_CB, c_funloc(petsc_vec_setvalues_proc))
+    ierr = adj_register_data_callback(adjointer, ADJ_VEC_SETVALUES_CB, c_funloc(petsc_vec_setvalues_proc_f))
     call adj_chkierr(ierr)
-    ierr = adj_register_data_callback(adjointer, ADJ_VEC_DIVIDE_CB, c_funloc(petsc_vec_divide_proc))
+    ierr = adj_register_data_callback(adjointer, ADJ_VEC_DIVIDE_CB, c_funloc(petsc_vec_divide_proc_f))
     call adj_chkierr(ierr)
-    ierr = adj_register_data_callback(adjointer, ADJ_MAT_AXPY_CB, c_funloc(petsc_mat_axpy_proc))
+    ierr = adj_register_data_callback(adjointer, ADJ_MAT_AXPY_CB, c_funloc(petsc_mat_axpy_proc_f))
     call adj_chkierr(ierr)
-    ierr = adj_register_data_callback(adjointer, ADJ_MAT_DESTROY_CB, c_funloc(petsc_mat_destroy_proc))
+    ierr = adj_register_data_callback(adjointer, ADJ_MAT_DESTROY_CB, c_funloc(petsc_mat_destroy_proc_f))
     call adj_chkierr(ierr)
-    ierr = adj_register_data_callback(adjointer, ADJ_MAT_DUPLICATE_CB, c_funloc(petsc_mat_duplicate_proc))
+    ierr = adj_register_data_callback(adjointer, ADJ_MAT_DUPLICATE_CB, c_funloc(petsc_mat_duplicate_proc_f))
     call adj_chkierr(ierr)
   end function adj_set_petsc_data_callbacks
 
-  subroutine petsc_vec_duplicate_proc(x, newx) bind(c)
+  subroutine petsc_vec_duplicate_proc_f(x, newx) bind(c)
     type(adj_vector), intent(in), value :: x
     type(adj_vector), intent(out) :: newx
     integer :: ierr
@@ -764,9 +788,9 @@ module libadjoint_petsc_data_structures
     call VecZeroEntries(newx_petsc, ierr)
     newx = petsc_vec_to_adj_vector(newx_petsc)
 #endif
-  end subroutine petsc_vec_duplicate_proc
+  end subroutine petsc_vec_duplicate_proc_f
 
-  subroutine petsc_vec_axpy_proc(y, alpha, x) bind(c)
+  subroutine petsc_vec_axpy_proc_f(y, alpha, x) bind(c)
     type(adj_vector), intent(inout) :: y
     adj_scalar_f, intent(in), value :: alpha
     type(adj_vector), intent(in), value :: x
@@ -777,9 +801,9 @@ module libadjoint_petsc_data_structures
     x_petsc = petsc_vec_from_adj_vector(x)
     call VecAXPY(y_petsc, alpha, x_petsc, ierr)
 #endif
-  end subroutine petsc_vec_axpy_proc
+  end subroutine petsc_vec_axpy_proc_f
 
-  subroutine petsc_vec_destroy_proc(x) bind(c)
+  subroutine petsc_vec_destroy_proc_f(x) bind(c)
     ! Destroys a vector.
     use iso_c_binding
     type(adj_vector), intent(inout) :: x
@@ -790,9 +814,9 @@ module libadjoint_petsc_data_structures
     call VecDestroy(xvec, ierr)
     deallocate(xvec)
 #endif
-  end subroutine petsc_vec_destroy_proc
+  end subroutine petsc_vec_destroy_proc_f
 
-  subroutine petsc_vec_setvalues_proc(vec, scalars) bind(c)
+  subroutine petsc_vec_setvalues_proc_f(vec, scalars) bind(c)
     type(adj_vector), intent(inout) :: vec
     adj_scalar_f, dimension(*), intent(in) :: scalars
     integer :: ierr
@@ -804,9 +828,9 @@ module libadjoint_petsc_data_structures
     call VecAssemblyBegin(petsc_vec_from_adj_vector(vec), ierr)
     call VecAssemblyEnd(petsc_vec_from_adj_vector(vec), ierr)
 #endif
-  end subroutine petsc_vec_setvalues_proc
+  end subroutine petsc_vec_setvalues_proc_f
 
-  subroutine petsc_vec_divide_proc(numerator, denominator) bind(c)
+  subroutine petsc_vec_divide_proc_f(numerator, denominator) bind(c)
     ! Computes numerator = numerator/denominator pointwise
     type(adj_vector), intent(inout) :: numerator 
     type(adj_vector), intent(in), value :: denominator
@@ -816,9 +840,9 @@ module libadjoint_petsc_data_structures
     call VecPointwiseDivide(petsc_vec_from_adj_vector(numerator), petsc_vec_from_adj_vector(numerator), &
                           & petsc_vec_from_adj_vector(denominator), ierr)
 #endif
-  end subroutine petsc_vec_divide_proc
+  end subroutine petsc_vec_divide_proc_f
 
-  subroutine petsc_mat_duplicate_proc(matin, matout) bind(c)
+  subroutine petsc_mat_duplicate_proc_f(matin, matout) bind(c)
     ! Duplicate a matrix
     use iso_c_binding
     type(adj_matrix), intent(in), value :: matin
@@ -830,9 +854,9 @@ module libadjoint_petsc_data_structures
     call MatZeroEntries(matout_petsc, ierr)
     matout = petsc_mat_to_adj_matrix(matout_petsc)
 #endif
-  end subroutine petsc_mat_duplicate_proc
+  end subroutine petsc_mat_duplicate_proc_f
 
-  subroutine petsc_mat_axpy_proc(Y, alpha, X) bind(c)
+  subroutine petsc_mat_axpy_proc_f(Y, alpha, X) bind(c)
     ! Computes Y = alpha*X + Y.
     use iso_c_binding
     type(adj_matrix), intent(inout) :: Y
@@ -842,9 +866,9 @@ module libadjoint_petsc_data_structures
 #ifdef HAVE_PETSC
     call MatAXPY(petsc_mat_from_adj_matrix(Y), alpha, petsc_mat_from_adj_matrix(X), SAME_NONZERO_PATTERN, ierr)
 #endif
-  end subroutine petsc_mat_axpy_proc
+  end subroutine petsc_mat_axpy_proc_f
 
-  subroutine petsc_mat_destroy_proc(mat) bind(c)
+  subroutine petsc_mat_destroy_proc_f(mat) bind(c)
     ! Frees space taken by a matrix.
     use iso_c_binding
     type(adj_matrix), intent(inout) :: mat
@@ -852,19 +876,19 @@ module libadjoint_petsc_data_structures
 #ifdef HAVE_PETSC
     call MatDestroy(petsc_mat_from_adj_matrix(mat), ierr)
 #endif
-  end subroutine petsc_mat_destroy_proc
+  end subroutine petsc_mat_destroy_proc_f
 
 #ifdef HAVE_PETSC
-  function petsc_vec_from_adj_vector(input) result(output)
+  function petsc_vec_from_adj_vector_f(input) result(output)
     type(adj_vector), intent(in) :: input
     Vec :: output
     Vec, pointer :: tmp
 
     call c_f_pointer(input%ptr, tmp)
     output = tmp
-  end function petsc_vec_from_adj_vector
+  end function petsc_vec_from_adj_vector_f
 
-  function petsc_vec_to_adj_vector(input) result(output)
+  function petsc_vec_to_adj_vector_f(input) result(output)
     Vec, intent(in), target :: input
     Vec, pointer :: input_ptr
     type(adj_vector) :: output
@@ -873,18 +897,18 @@ module libadjoint_petsc_data_structures
     allocate(input_ptr)
     input_ptr = input
     output%ptr = c_loc(input_ptr)
-  end function petsc_vec_to_adj_vector
+  end function petsc_vec_to_adj_vector_f
 
-  function petsc_mat_from_adj_matrix(input) result(output)
+  function petsc_mat_from_adj_matrix_f(input) result(output)
     type(adj_matrix), intent(in) :: input
     Mat :: output
     Mat, pointer :: tmp
 
     call c_f_pointer(input%ptr, tmp)
     output = tmp
-  end function petsc_mat_from_adj_matrix
+  end function petsc_mat_from_adj_matrix_f
 
-  function petsc_mat_to_adj_matrix(input) result(output)
+  function petsc_mat_to_adj_matrix_f(input) result(output)
     Mat, intent(in), target :: input
     Mat, pointer :: input_ptr
     type(adj_matrix) :: output
@@ -893,7 +917,7 @@ module libadjoint_petsc_data_structures
     allocate(input_ptr)
     input_ptr = input
     output%ptr = c_loc(input_ptr)
-  end function petsc_mat_to_adj_matrix
+  end function petsc_mat_to_adj_matrix_f
 #endif
 end module libadjoint_petsc_data_structures
 
