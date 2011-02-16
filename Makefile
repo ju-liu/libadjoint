@@ -98,7 +98,7 @@ AR = ar
 ARFLAGS = cr
 
 LD := $(FC)
-LDFLAGS := -shared -Wl,-soname,libadjoint.so.1
+LDFLAGS := -shared -Wl,-soname,libadjoint.so
 
 ###############################################################################
 # The targets                                                                 #
@@ -107,11 +107,11 @@ all: lib/libadjoint.a lib/libadjoint.so
 
 bin/tests/%: src/tests/%.c src/tests/test_main.c lib/libadjoint.a
 	@echo "  CC $@"
-	@$(CC) $(CFLAGS) -DTESTNAME=$(notdir $@) -o $@ $< src/tests/test_main.c -Llib/ -ladjoint $(PETSC_LDFLAGS) $(LIBS)
+	@$(CC) $(CFLAGS) -DTESTNAME=$(notdir $@) -o $@ $< src/tests/test_main.c lib/libadjoint.a $(PETSC_LDFLAGS) $(LIBS)
 
 bin/tests/%: src/tests/%.F90 src/tests/test_main.F90 lib/libadjoint.a
 	@echo "  FC $@"
-	@$(FC) $(FFLAGS) -DTESTNAME=$(notdir $@) -o $@ $< src/tests/test_main.F90 -Llib/ -ladjoint $(PETSC_LDFLAGS) $(LIBS)
+	@$(FC) $(FFLAGS) -DTESTNAME=$(notdir $@) -o $@ $< src/tests/test_main.F90 lib/libadjoint.a $(PETSC_LDFLAGS) $(LIBS)
 
 obj/%.o: src/%.F90
 	@echo "  FC $<"
@@ -166,10 +166,11 @@ tags: $(FSRC) $(CSRC)
 	@$(CTAGS) src/*.c src/*.F90
 endif
 
-install: lib/libadjoint.a
+install: lib/libadjoint.a lib/libadjoint.so
 	@echo "  INSTALL $(DESTDIR)/$(prefix)/lib"
 	@install -d $(DESTDIR)/$(prefix)/lib
 	@install lib/libadjoint.a $(DESTDIR)/$(prefix)/lib
+	@install lib/libadjoint.so $(DESTDIR)/$(prefix)/lib
 	@echo "  INSTALL $(DESTDIR)/$(prefix)/include/libadjoint"
 	@install -d $(DESTDIR)/$(prefix)/include/libadjoint
 	@install include/libadjoint/* $(DESTDIR)/$(prefix)/include/libadjoint
