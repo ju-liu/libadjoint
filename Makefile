@@ -197,6 +197,7 @@ ifneq (,$(H2XML))
 	@echo "  INSTALL $(PYDIR)"
 	@install -d $(PYDIR)
 	@install lib/libadjoint.py $(PYDIR)
+	@sed -i "s@CDLL('lib/libadjoint.so')@CDLL('/$(prefix)/lib/libadjoint.so')@" $(PYDIR)/libadjoint.py
 endif
 	@echo "  INSTALL $(DESTDIR)/$(prefix)/include/libadjoint"
 	@install -d $(DESTDIR)/$(prefix)/include/libadjoint
