@@ -105,6 +105,7 @@ LDFLAGS := -shared -Wl,-soname,libadjoint.so
 ###############################################################################
 H2XML = $(shell which h2xml 2>/dev/null)
 XML2PY = $(shell which xml2py 2>/dev/null)
+PYDIR = $(shell python -c  "import distutils.sysconfig; print distutils.sysconfig.get_python_lib().replace('/usr/', '$(DESTDIR)/$(prefix)/')")
 
 ###############################################################################
 # The targets                                                                 #
@@ -178,6 +179,7 @@ endif
 ifneq (,$(H2XML))
 all: lib/libadjoint.py
 test: lib/libadjoint.py
+install: lib/libadjoint.py
 lib/libadjoint.py: lib/libadjoint.so
 	@echo "  H2XML  include/libadjoint/libadjoint.h"
 	@$(H2XML) -q -I. include/libadjoint/libadjoint.h -o lib/libadjoint.xml
@@ -191,6 +193,11 @@ install: lib/libadjoint.a lib/libadjoint.so
 	@install -d $(DESTDIR)/$(prefix)/lib
 	@install lib/libadjoint.a $(DESTDIR)/$(prefix)/lib
 	@install lib/libadjoint.so $(DESTDIR)/$(prefix)/lib
+ifneq (,$(H2XML))
+	@echo "  INSTALL $(PYDIR)"
+	@install -d $(PYDIR)
+	@install lib/libadjoint.py $(PYDIR)
+endif
 	@echo "  INSTALL $(DESTDIR)/$(prefix)/include/libadjoint"
 	@install -d $(DESTDIR)/$(prefix)/include/libadjoint
 	@install include/libadjoint/* $(DESTDIR)/$(prefix)/include/libadjoint

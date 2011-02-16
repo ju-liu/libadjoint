@@ -14,4 +14,4 @@ export prefix=/usr
 export DEB_BUILD_OPTIONS=nostrip
 
 %:
-	dh $@ 
+	dh --with=python2 $@ 
