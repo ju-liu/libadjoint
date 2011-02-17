@@ -554,7 +554,7 @@ int adj_register_data_callback(adj_adjointer* adjointer, int type, void (*fn)(vo
   return ADJ_ERR_OK;
 }
 
-int adj_register_functional_derivative_callback(adj_adjointer* adjointer, char* name, void (*fn)(adj_variable variable_to_differentiate_with, adj_variable* variables, adj_vector* variable_values, char* functional_name, double starttime, double endtime, adj_vector* output))
+int adj_register_functional_derivative_callback(adj_adjointer* adjointer, char* name, void (*fn)(adj_variable variable, adj_variable* dependencies, adj_vector* values, char* name, adj_scalar starttime, adj_scalar endtime, adj_vector* output))
 {
   adj_func_deriv_callback_list* cb_list_ptr;
   adj_func_deriv_callback* cb_ptr;

@@ -131,7 +131,7 @@ typedef struct
 typedef struct adj_func_deriv_callback
 {
   char name[ADJ_NAME_LEN];
-  void (*callback)(adj_variable variable_to_differentiate_with, adj_variable* variables, adj_vector* variable_values, char* functional_name, double starttime, double endtime, adj_vector* output);
+  void (*callback)(adj_variable variable, adj_variable* dependencies, adj_vector* values, char* name, double starttime, double endtime, adj_vector* output);
   struct adj_func_deriv_callback* next;
 } adj_func_deriv_callback;
 
