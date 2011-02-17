@@ -146,10 +146,15 @@ int adj_register_equation(adj_adjointer* adjointer, adj_equation equation)
   ierr = adj_find_variable_data(&(adjointer->varhash), &(equation.variable), &data_ptr);
   if (ierr != ADJ_ERR_HASH_FAILED)
   {
-    char buf[ADJ_NAME_LEN];
-    adj_variable_str(equation.variable, buf, ADJ_NAME_LEN);
-    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "We have already registered an equation for variable %s.", buf);
-    return ADJ_ERR_INVALID_INPUTS;
+    /* We may have legitimately seen this before, if it's been registered as a functional dependency.
+       So we have to check its hash table entry for the equation */
+    if (data_ptr->equation >= 0)
+    {
+      char buf[ADJ_NAME_LEN];
+      adj_variable_str(equation.variable, buf, ADJ_NAME_LEN);
+      snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "We have already registered an equation for variable %s.", buf);
+      return ADJ_ERR_INVALID_INPUTS;
+    }
   }
 
   /* Let's check the timesteps match up */
@@ -178,8 +183,13 @@ int adj_register_equation(adj_adjointer* adjointer, adj_equation equation)
   /* OK. We're good to go. */
 
   /* Let's add it to the hash table. */
-  ierr = adj_add_new_hash_entry(adjointer, &(equation.variable), &data_ptr);
-  if (ierr != ADJ_ERR_OK) return ierr;
+  /* ierr is from the call to adj_find_variable_data. If it is ADJ_ERR_HASH_FAILED, it means
+     we have to add it in to the hash table. */
+  if (ierr == ADJ_ERR_HASH_FAILED)
+  {
+    ierr = adj_add_new_hash_entry(adjointer, &(equation.variable), &data_ptr);
+    if (ierr != ADJ_ERR_OK) return ierr;
+  }
   data_ptr->equation = adjointer->nequations;
   /* OK. Next create an entry for the adj_equation in the adjointer. */
 
@@ -739,6 +749,7 @@ int adj_add_new_hash_entry(adj_adjointer* adjointer, adj_variable* var, adj_vari
   int ierr;
 
   *data = (adj_variable_data*) malloc(sizeof(adj_variable_data));
+  (*data)->equation = -1;
   (*data)->next = NULL;
   (*data)->storage.has_value = 0;
   (*data)->ntargeting_equations = 0;
