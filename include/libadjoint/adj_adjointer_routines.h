@@ -28,6 +28,7 @@ adj_storage_data adj_storage_memory(adj_vector value);
 #ifndef ADJ_HIDE_FROM_USER
 int adj_find_operator_callback(adj_adjointer* adjointer, int type, char* name, void (**fn)(void));
 int adj_get_variable_value(adj_adjointer* adjointer, adj_variable var, adj_vector* value);
+int adj_has_variable_value(adj_adjointer* adjointer, adj_variable var);
 int adj_forget_variable_value(adj_adjointer* adjointer, adj_variable_data* data);
 int adj_destroy_variable_data(adj_adjointer* adjointer, adj_variable_data* data);
 int adj_add_new_hash_entry(adj_adjointer* adjointer, adj_variable* var, adj_variable_data** data);

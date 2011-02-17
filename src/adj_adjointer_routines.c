@@ -717,6 +717,26 @@ int adj_get_variable_value(adj_adjointer* adjointer, adj_variable var, adj_vecto
   return ADJ_ERR_OK;
 }
 
+int adj_has_variable_value(adj_adjointer* adjointer, adj_variable var)
+{
+  int ierr;
+  adj_variable_data* data_ptr;
+
+  ierr = adj_find_variable_data(&(adjointer->varhash), &var, &data_ptr);
+  if (ierr != ADJ_ERR_OK) return ierr;
+
+  if (!data_ptr->storage.has_value)
+  {
+    char buf[ADJ_NAME_LEN];
+    adj_variable_str(var, buf, ADJ_NAME_LEN);
+
+    ierr = ADJ_ERR_NEED_VALUE;
+    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Need a value for %s, but don't have one recorded.", buf);
+    return ierr;
+  }
+  return ADJ_ERR_OK;
+}
+
 int adj_forget_variable_value(adj_adjointer* adjointer, adj_variable_data* data)
 {
   if (adjointer->callbacks.vec_destroy == NULL)

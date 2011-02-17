@@ -40,7 +40,6 @@ int adj_get_adjoint_equation(adj_adjointer* adjointer, int equation, int functio
   {
     adj_equation other_fwd_eqn;
     adj_variable other_adj_var;
-    adj_vector adj_value;
 
     if (fwd_data->targeting_equations[i] == equation) continue; /* that term goes in the lhs, and we've already taken care of it */
     other_fwd_eqn = adjointer->equations[fwd_data->targeting_equations[i]];
@@ -48,7 +47,7 @@ int adj_get_adjoint_equation(adj_adjointer* adjointer, int equation, int functio
     /* Find the adjoint variable we want this to multiply */
     other_adj_var = other_fwd_eqn.variable; other_adj_var.type = ADJ_ADJOINT; other_adj_var.functional = functional;
     /* and now get its value */
-    ierr = adj_get_variable_value(adjointer, other_adj_var, &adj_value);
+    ierr = adj_has_variable_value(adjointer, other_adj_var);
     if (ierr != ADJ_ERR_OK)
     {
       char buf[255];
