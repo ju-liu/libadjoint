@@ -3,9 +3,11 @@
 
 #include "adj_data_structures.h"
 
+#ifndef ADJ_HIDE_FROM_USER
 int adj_add_variable_data(adj_variable_hash** hash, adj_variable* var, adj_variable_data* data);
 int adj_find_variable_data(adj_variable_hash** hash, adj_variable* var, adj_variable_data** data);
 void adj_print_hash(adj_variable_hash** hash);
 int adj_destroy_hash(adj_variable_hash** hash);
+#endif
 
 #endif

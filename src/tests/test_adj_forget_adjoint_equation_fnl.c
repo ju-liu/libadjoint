@@ -12,24 +12,19 @@ void test_adj_forget_adjoint_equation(void)
 
 int* has_values(adj_adjointer *adjointer, int nb_vars, adj_variable *vars);
 
-void test_adj_forget_adjoint_equation(void)
+void test_adj_forget_adjoint_equation_fnl(void)
 {
   adj_adjointer adjointer;
   adj_nonlinear_block V;
   adj_block B[2], I;
   adj_variable u[5];
   adj_variable u_tmp[2];
-  adj_variable_data* data_ptr;
   adj_equation eqn;
   int ierr;
-  int adj_equations_u0[3] = {0, 1, 2};
-  int adj_equations_u10[3] = {0, 1, 2};
-  int adj_equations_u11[5] = {0, 1, 2, 3, 4};
-  int adj_equations_u20[3] = {2, 3, 4};
-  int adj_equations_u21[2] = {2, 3};
-  int before_3[5] = {1, 1, 1, 1, 1};
-  int after_3[5] = {1, 1, 1, 0, 0};
-  int after_1[5] = {0, 0, 0, 0, 0};
+  int before_2[5] = {1, 1, 1, 1, 1};
+  int after_2[5] = {1, 1, 1, 1, 0};
+  int after_1[5] = {1, 1, 1, 0, 0};
+  int after_0[5] = {0, 0, 0, 0, 0};
   Vec vec;
   adj_vector value;
   int i, dim=2;
@@ -114,32 +109,6 @@ void test_adj_forget_adjoint_equation(void)
   adj_destroy_block(&B[0]);
   adj_destroy_block(&B[1]);
 
-  /* OK. Now let's check the dependencies */
-  ierr = adj_find_variable_data(&(adjointer.varhash), &(u[0]), &data_ptr);
-  adj_test_assert(ierr == ADJ_ERR_OK, "Should have worked");
-  adj_test_assert(data_ptr->nadjoint_equations == 3, "Should be {1, 2, 3}");
-  adj_test_assert(memcmp(data_ptr->adjoint_equations, adj_equations_u0, 3*sizeof(int)) == 0, "Should be {1, 2, 3}");
-
-  ierr = adj_find_variable_data(&(adjointer.varhash), &(u[1]), &data_ptr);
-  adj_test_assert(ierr == ADJ_ERR_OK, "Should have worked");
-  adj_test_assert(data_ptr->nadjoint_equations == 3, "Should be {1, 2, 3}");
-  adj_test_assert(memcmp(data_ptr->adjoint_equations, adj_equations_u10, 3*sizeof(int)) == 0, "Should be {1, 2, 3}");
-
-  ierr = adj_find_variable_data(&(adjointer.varhash), &(u[2]), &data_ptr);
-  adj_test_assert(ierr == ADJ_ERR_OK, "Should have worked");
-  adj_test_assert(data_ptr->nadjoint_equations == 5, "Should be {1, 2, 3, 4, 5}");
-  adj_test_assert(memcmp(data_ptr->adjoint_equations, adj_equations_u11, 5*sizeof(int)) == 0, "Should be {1, 2, 3, 4, 5}");
-
-  ierr = adj_find_variable_data(&(adjointer.varhash), &(u[3]), &data_ptr);
-  adj_test_assert(ierr == ADJ_ERR_OK, "Should have worked");
-  adj_test_assert(data_ptr->nadjoint_equations == 3, "Should be {3, 4, 5}");
-  adj_test_assert(memcmp(data_ptr->adjoint_equations, adj_equations_u20, 3*sizeof(int)) == 0, "Should be {3, 4, 5}");
-
-  ierr = adj_find_variable_data(&(adjointer.varhash), &(u[4]), &data_ptr);
-  adj_test_assert(ierr == ADJ_ERR_OK, "Should have worked");
-  adj_test_assert(data_ptr->nadjoint_equations == 2, "Should be {3, 4}");
-  adj_test_assert(memcmp(data_ptr->adjoint_equations, adj_equations_u21, 2*sizeof(int)) == 0, "Should be {3, 4}");
-
   /* Now let's record things, and then forget. */
   VecCreateSeq(PETSC_COMM_SELF, dim, &vec);
   VecSet(vec, 1.0);
@@ -151,8 +120,12 @@ void test_adj_forget_adjoint_equation(void)
     adj_test_assert(ierr == ADJ_ERR_OK, "Should have worked");
   }
 
+  /* One last spanner in the works. Claim that u20 is necessary for timestep 1's functional computation. */
+  ierr = adj_timestep_set_functional_dependencies(&adjointer, 1, 0, 1, &u[3]);
+  adj_test_assert(ierr == ADJ_ERR_OK, "Should have worked fine");
+
   has_val = has_values(&adjointer, 5, u);
-  adj_test_assert(memcmp(has_val, before_3, 5 * sizeof(int)) == 0, "Should be {1, 1, 1, 1, 1}");
+  adj_test_assert(memcmp(has_val, before_2, 5 * sizeof(int)) == 0, "Should be {1, 1, 1, 1, 1}");
   free(has_val);
 
   ierr = adj_forget_adjoint_equation(&adjointer, 5);
@@ -161,31 +134,31 @@ void test_adj_forget_adjoint_equation(void)
   ierr = adj_forget_adjoint_equation(&adjointer, 4);
   adj_test_assert(ierr == ADJ_ERR_OK, "Should have worked");
   has_val = has_values(&adjointer, 5, u);
-  adj_test_assert(memcmp(has_val, before_3, 5 * sizeof(int)) == 0, "Should be {1, 1, 1, 1, 1}");
+  adj_test_assert(memcmp(has_val, before_2, 5 * sizeof(int)) == 0, "Should be {1, 1, 1, 1, 1}");
   free(has_val);
 
   ierr = adj_forget_adjoint_equation(&adjointer, 3);
   adj_test_assert(ierr == ADJ_ERR_OK, "Should have worked");
   has_val = has_values(&adjointer, 5, u);
-  adj_test_assert(memcmp(has_val, before_3, 5 * sizeof(int)) == 0, "Should be {1, 1, 1, 1, 1}");
+  adj_test_assert(memcmp(has_val, before_2, 5 * sizeof(int)) == 0, "Should be {1, 1, 1, 1, 1}");
   free(has_val);
 
   ierr = adj_forget_adjoint_equation(&adjointer, 2);
   adj_test_assert(ierr == ADJ_ERR_OK, "Should have worked");
   has_val = has_values(&adjointer, 5, u);
-  adj_test_assert(memcmp(has_val, after_3, 5 * sizeof(int)) == 0, "Should be {1, 1, 1, 0, 0}");
+  adj_test_assert(memcmp(has_val, after_2, 5 * sizeof(int)) == 0, "Should be {1, 1, 1, 1, 0}");
   free(has_val);
 
   ierr = adj_forget_adjoint_equation(&adjointer, 1);
   adj_test_assert(ierr == ADJ_ERR_OK, "Should have worked");
   has_val = has_values(&adjointer, 5, u);
-  adj_test_assert(memcmp(has_val, after_3, 5 * sizeof(int)) == 0, "Should be {1, 1, 1, 0, 0}");
+  adj_test_assert(memcmp(has_val, after_1, 5 * sizeof(int)) == 0, "Should be {1, 1, 1, 0, 0}");
   free(has_val);
 
   ierr = adj_forget_adjoint_equation(&adjointer, 0);
   adj_test_assert(ierr == ADJ_ERR_OK, "Should have worked");
   has_val = has_values(&adjointer, 5, u);
-  adj_test_assert(memcmp(has_val, after_1, 5 * sizeof(int)) == 0, "Should be {0, 0, 0, 0, 0}");
+  adj_test_assert(memcmp(has_val, after_0, 5 * sizeof(int)) == 0, "Should be {0, 0, 0, 0, 0}");
   free(has_val);
 }
 

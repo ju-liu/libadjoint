@@ -68,6 +68,9 @@ module libadjoint_data_structures
     integer(kind=c_int) :: equations_sz
     type(c_ptr) :: equations
 
+    integer(kind=c_int) :: ntimesteps
+    type(c_ptr) :: timestep_data
+
     type(c_ptr) :: varhash
     type(adj_variable_data_list) :: vardata
 
@@ -338,10 +341,10 @@ module libadjoint
       integer(kind=c_int) :: ierr
     end function adj_block_set_coefficient
 
-    function adj_create_equation_c(var, nblocks, blocks, targets, equation) result(ierr) bind(c, name='adj_create_equation')
+    function adj_create_equation_c(variable, nblocks, blocks, targets, equation) result(ierr) bind(c, name='adj_create_equation')
       use libadjoint_data_structures
       use iso_c_binding
-      type(adj_variable), intent(in), value :: var
+      type(adj_variable), intent(in), value :: variable
       integer(kind=c_int), intent(in), value :: nblocks
       type(adj_block), dimension(nblocks), intent(in) :: blocks
       type(adj_variable), dimension(nblocks), intent(in) :: targets
@@ -403,11 +406,11 @@ module libadjoint
       integer(kind=c_int) :: ierr
     end function adj_register_equation
 
-    function adj_record_variable(adjointer, var, storage) result(ierr) bind(c, name='adj_record_variable')
+    function adj_record_variable(adjointer, variable, storage) result(ierr) bind(c, name='adj_record_variable')
       use libadjoint_data_structures
       use iso_c_binding
       type(adj_adjointer), intent(inout) :: adjointer
-      type(adj_variable), intent(in), value :: var
+      type(adj_variable), intent(in), value :: variable
       type(adj_storage_data), intent(in), value :: storage
       integer(kind=c_int) :: ierr
     end function adj_record_variable
@@ -440,6 +443,54 @@ module libadjoint
       integer(kind=c_int) :: ierr
     end function adj_forget_adjoint_equation
 
+    function adj_timestep_count(adjointer, count) result(ierr) bind(c, name='adj_timestep_count')
+      use libadjoint_data_structures
+      use iso_c_binding
+      type(adj_adjointer), intent(inout) :: adjointer
+      integer(kind=c_int), intent(out) :: count
+      integer(kind=c_int) :: ierr
+    end function adj_timestep_count
+
+    function adj_timestep_start_equation(adjointer, timestep, start) result(ierr) bind(c, name='adj_timestep_start_equation')
+      use libadjoint_data_structures
+      use iso_c_binding
+      type(adj_adjointer), intent(inout) :: adjointer
+      integer(kind=c_int), intent(in), value :: timestep
+      integer(kind=c_int), intent(out) :: start
+      integer(kind=c_int) :: ierr
+    end function adj_timestep_start_equation
+
+    function adj_timestep_end_equation(adjointer, timestep, end) result(ierr) bind(c, name='adj_timestep_end_equation')
+      use libadjoint_data_structures
+      use iso_c_binding
+      type(adj_adjointer), intent(inout) :: adjointer
+      integer(kind=c_int), intent(in), value :: timestep
+      integer(kind=c_int), intent(out) :: end
+      integer(kind=c_int) :: ierr
+    end function adj_timestep_end_equation
+
+    function adj_timestep_set_times(adjointer, timestep, start, end) result(ierr) bind(c, name='adj_timestep_set_times')
+      use libadjoint_data_structures
+      use iso_c_binding
+      type(adj_adjointer), intent(inout) :: adjointer
+      integer(kind=c_int), intent(in), value :: timestep
+      adj_scalar_f, intent(in), value :: start
+      adj_scalar_f, intent(in), value :: end
+      integer(kind=c_int) :: ierr
+    end function adj_timestep_set_times
+
+    function adj_timestep_set_functional_dependencies_c(adjointer, timestep, functional, ndepends, dependencies) result(ierr) &
+                                                      & bind(c, name='adj_timestep_set_functional_dependencies')
+      use libadjoint_data_structures
+      use iso_c_binding
+      type(adj_adjointer), intent(inout) :: adjointer
+      integer(kind=c_int), intent(in), value :: timestep
+      integer(kind=c_int), intent(in), value :: functional
+      integer(kind=c_int), intent(in), value :: ndepends
+      type(adj_variable), dimension(*), intent(in) :: dependencies
+      integer(kind=c_int) :: ierr
+    end function adj_timestep_set_functional_dependencies_c
+
     function adj_storage_memory(val) result(mem) bind(c, name='adj_storage_memory')
       use libadjoint_data_structures
       use iso_c_binding
@@ -447,7 +498,7 @@ module libadjoint
       type(adj_storage_data) :: mem
     end function adj_storage_memory
 
-    function adj_get_adjoint_equation(adjointer, equation, functional, lhs, rhs, var) result(ierr) &
+    function adj_get_adjoint_equation(adjointer, equation, functional, lhs, rhs, variable) result(ierr) &
             & bind(c, name='adj_get_adjoint_equation')
       use libadjoint_data_structures
       use iso_c_binding
@@ -456,18 +507,18 @@ module libadjoint
       integer(kind=c_int), intent(in), value :: functional
       type(adj_matrix), intent(out) :: lhs
       type(adj_vector), intent(out) :: rhs
-      type(adj_variable), intent(out) :: var
+      type(adj_variable), intent(out) :: variable
       integer(kind=c_int) :: ierr
     end function adj_get_adjoint_equation
   end interface
 
   contains
 
-  function adj_create_variable(name, timestep, iteration, auxiliary, var) result(ierr)
+  function adj_create_variable(name, timestep, iteration, auxiliary, variable) result(ierr)
     character(len=*), intent(in) :: name
     integer, intent(in) :: timestep, iteration
     integer, intent(in) :: auxiliary
-    type(adj_variable), intent(out) :: var
+    type(adj_variable), intent(out) :: variable
     integer :: ierr
 
     character(kind=c_char), dimension(ADJ_NAME_LEN) :: name_c
@@ -481,18 +532,18 @@ module libadjoint
     end do
     name_c(ADJ_NAME_LEN) = c_null_char
 
-    ierr = adj_create_variable_c(name_c, timestep, iteration, auxiliary, var)
+    ierr = adj_create_variable_c(name_c, timestep, iteration, auxiliary, variable)
   end function adj_create_variable
 
-  function adj_variable_get_name(var, name) result(ierr)
-    type(adj_variable), intent(in) :: var
+  function adj_variable_get_name(variable, name) result(ierr)
+    type(adj_variable), intent(in) :: variable
     character(len=ADJ_NAME_LEN), intent(out) :: name
     integer :: ierr
     integer :: j
 
     do j=1,ADJ_NAME_LEN
-      if (var%name(j) /= c_null_char) then
-        name(j:j) = var%name(j)
+      if (variable%name(j) /= c_null_char) then
+        name(j:j) = variable%name(j)
       else
         name(j:) = ' '
         exit
@@ -595,10 +646,10 @@ module libadjoint
     ierr = adj_register_operator_callback_c(adjointer, type, name_c, fnptr)
   end function adj_register_operator_callback
 
-  function adj_create_equation(var, blocks, targets, equation) result(ierr)
+  function adj_create_equation(variable, blocks, targets, equation) result(ierr)
     use libadjoint_data_structures
     use iso_c_binding
-    type(adj_variable), intent(in), value :: var
+    type(adj_variable), intent(in), value :: variable
     type(adj_block), dimension(:), intent(in) :: blocks
     type(adj_variable), dimension(:), intent(in) :: targets
     type(adj_equation), intent(inout) :: equation
@@ -610,8 +661,20 @@ module libadjoint
       return
     end if
 
-    ierr = adj_create_equation_c(var, size(blocks), blocks, targets, equation)
+    ierr = adj_create_equation_c(variable, size(blocks), blocks, targets, equation)
   end function adj_create_equation
+
+  function adj_timestep_set_functional_dependencies(adjointer, timestep, functional, dependencies) result(ierr)
+    use libadjoint_data_structures
+    use iso_c_binding
+    type(adj_adjointer), intent(inout) :: adjointer
+    integer, intent(in) :: timestep
+    integer, intent(in) :: functional
+    type(adj_variable), dimension(:), intent(in) :: dependencies
+    integer :: ierr
+
+    ierr = adj_timestep_set_functional_dependencies_c(adjointer, timestep, functional, size(dependencies), dependencies)
+  end function adj_timestep_set_functional_dependencies
 
   subroutine adj_chkierr_private(ierr, filename, line)
     integer, intent(in) :: ierr
@@ -659,6 +722,30 @@ module libadjoint_petsc_data_structures
   public :: petsc_mat_to_adj_matrix
   public :: petsc_vec_destroy_proc
   public :: petsc_mat_destroy_proc
+
+  interface petsc_vec_from_adj_vector
+    module procedure petsc_vec_from_adj_vector_f
+  end interface petsc_vec_from_adj_vector
+
+  interface petsc_vec_to_adj_vector
+    module procedure petsc_vec_to_adj_vector_f
+  end interface petsc_vec_to_adj_vector
+
+  interface petsc_mat_from_adj_matrix
+    module procedure petsc_mat_from_adj_matrix_f
+  end interface petsc_mat_from_adj_matrix
+
+  interface petsc_mat_to_adj_matrix
+    module procedure petsc_mat_to_adj_matrix_f
+  end interface petsc_mat_to_adj_matrix
+
+  interface petsc_vec_destroy_proc
+    module procedure petsc_vec_destroy_proc_f
+  end interface
+
+  interface petsc_mat_destroy_proc
+    module procedure petsc_mat_destroy_proc_f
+  end interface
 #endif
 
   contains
@@ -671,25 +758,25 @@ module libadjoint_petsc_data_structures
     call PetscInitialize(PETSC_NULL_CHARACTER, ierr)
 #endif
 
-    ierr = adj_register_data_callback(adjointer, ADJ_VEC_DUPLICATE_CB, c_funloc(petsc_vec_duplicate_proc))
+    ierr = adj_register_data_callback(adjointer, ADJ_VEC_DUPLICATE_CB, c_funloc(petsc_vec_duplicate_proc_f))
     call adj_chkierr(ierr)
-    ierr = adj_register_data_callback(adjointer, ADJ_VEC_AXPY_CB, c_funloc(petsc_vec_axpy_proc))
+    ierr = adj_register_data_callback(adjointer, ADJ_VEC_AXPY_CB, c_funloc(petsc_vec_axpy_proc_f))
     call adj_chkierr(ierr)
-    ierr = adj_register_data_callback(adjointer, ADJ_VEC_DESTROY_CB, c_funloc(petsc_vec_destroy_proc))
+    ierr = adj_register_data_callback(adjointer, ADJ_VEC_DESTROY_CB, c_funloc(petsc_vec_destroy_proc_f))
     call adj_chkierr(ierr)
-    ierr = adj_register_data_callback(adjointer, ADJ_VEC_SETVALUES_CB, c_funloc(petsc_vec_setvalues_proc))
+    ierr = adj_register_data_callback(adjointer, ADJ_VEC_SETVALUES_CB, c_funloc(petsc_vec_setvalues_proc_f))
     call adj_chkierr(ierr)
-    ierr = adj_register_data_callback(adjointer, ADJ_VEC_DIVIDE_CB, c_funloc(petsc_vec_divide_proc))
+    ierr = adj_register_data_callback(adjointer, ADJ_VEC_DIVIDE_CB, c_funloc(petsc_vec_divide_proc_f))
     call adj_chkierr(ierr)
-    ierr = adj_register_data_callback(adjointer, ADJ_MAT_AXPY_CB, c_funloc(petsc_mat_axpy_proc))
+    ierr = adj_register_data_callback(adjointer, ADJ_MAT_AXPY_CB, c_funloc(petsc_mat_axpy_proc_f))
     call adj_chkierr(ierr)
-    ierr = adj_register_data_callback(adjointer, ADJ_MAT_DESTROY_CB, c_funloc(petsc_mat_destroy_proc))
+    ierr = adj_register_data_callback(adjointer, ADJ_MAT_DESTROY_CB, c_funloc(petsc_mat_destroy_proc_f))
     call adj_chkierr(ierr)
-    ierr = adj_register_data_callback(adjointer, ADJ_MAT_DUPLICATE_CB, c_funloc(petsc_mat_duplicate_proc))
+    ierr = adj_register_data_callback(adjointer, ADJ_MAT_DUPLICATE_CB, c_funloc(petsc_mat_duplicate_proc_f))
     call adj_chkierr(ierr)
   end function adj_set_petsc_data_callbacks
 
-  subroutine petsc_vec_duplicate_proc(x, newx) bind(c)
+  subroutine petsc_vec_duplicate_proc_f(x, newx) bind(c)
     type(adj_vector), intent(in), value :: x
     type(adj_vector), intent(out) :: newx
     integer :: ierr
@@ -701,9 +788,9 @@ module libadjoint_petsc_data_structures
     call VecZeroEntries(newx_petsc, ierr)
     newx = petsc_vec_to_adj_vector(newx_petsc)
 #endif
-  end subroutine petsc_vec_duplicate_proc
+  end subroutine petsc_vec_duplicate_proc_f
 
-  subroutine petsc_vec_axpy_proc(y, alpha, x) bind(c)
+  subroutine petsc_vec_axpy_proc_f(y, alpha, x) bind(c)
     type(adj_vector), intent(inout) :: y
     adj_scalar_f, intent(in), value :: alpha
     type(adj_vector), intent(in), value :: x
@@ -714,9 +801,9 @@ module libadjoint_petsc_data_structures
     x_petsc = petsc_vec_from_adj_vector(x)
     call VecAXPY(y_petsc, alpha, x_petsc, ierr)
 #endif
-  end subroutine petsc_vec_axpy_proc
+  end subroutine petsc_vec_axpy_proc_f
 
-  subroutine petsc_vec_destroy_proc(x) bind(c)
+  subroutine petsc_vec_destroy_proc_f(x) bind(c)
     ! Destroys a vector.
     use iso_c_binding
     type(adj_vector), intent(inout) :: x
@@ -727,9 +814,9 @@ module libadjoint_petsc_data_structures
     call VecDestroy(xvec, ierr)
     deallocate(xvec)
 #endif
-  end subroutine petsc_vec_destroy_proc
+  end subroutine petsc_vec_destroy_proc_f
 
-  subroutine petsc_vec_setvalues_proc(vec, scalars) bind(c)
+  subroutine petsc_vec_setvalues_proc_f(vec, scalars) bind(c)
     type(adj_vector), intent(inout) :: vec
     adj_scalar_f, dimension(*), intent(in) :: scalars
     integer :: ierr
@@ -741,9 +828,9 @@ module libadjoint_petsc_data_structures
     call VecAssemblyBegin(petsc_vec_from_adj_vector(vec), ierr)
     call VecAssemblyEnd(petsc_vec_from_adj_vector(vec), ierr)
 #endif
-  end subroutine petsc_vec_setvalues_proc
+  end subroutine petsc_vec_setvalues_proc_f
 
-  subroutine petsc_vec_divide_proc(numerator, denominator) bind(c)
+  subroutine petsc_vec_divide_proc_f(numerator, denominator) bind(c)
     ! Computes numerator = numerator/denominator pointwise
     type(adj_vector), intent(inout) :: numerator 
     type(adj_vector), intent(in), value :: denominator
@@ -753,9 +840,9 @@ module libadjoint_petsc_data_structures
     call VecPointwiseDivide(petsc_vec_from_adj_vector(numerator), petsc_vec_from_adj_vector(numerator), &
                           & petsc_vec_from_adj_vector(denominator), ierr)
 #endif
-  end subroutine petsc_vec_divide_proc
+  end subroutine petsc_vec_divide_proc_f
 
-  subroutine petsc_mat_duplicate_proc(matin, matout) bind(c)
+  subroutine petsc_mat_duplicate_proc_f(matin, matout) bind(c)
     ! Duplicate a matrix
     use iso_c_binding
     type(adj_matrix), intent(in), value :: matin
@@ -767,9 +854,9 @@ module libadjoint_petsc_data_structures
     call MatZeroEntries(matout_petsc, ierr)
     matout = petsc_mat_to_adj_matrix(matout_petsc)
 #endif
-  end subroutine petsc_mat_duplicate_proc
+  end subroutine petsc_mat_duplicate_proc_f
 
-  subroutine petsc_mat_axpy_proc(Y, alpha, X) bind(c)
+  subroutine petsc_mat_axpy_proc_f(Y, alpha, X) bind(c)
     ! Computes Y = alpha*X + Y.
     use iso_c_binding
     type(adj_matrix), intent(inout) :: Y
@@ -779,9 +866,9 @@ module libadjoint_petsc_data_structures
 #ifdef HAVE_PETSC
     call MatAXPY(petsc_mat_from_adj_matrix(Y), alpha, petsc_mat_from_adj_matrix(X), SAME_NONZERO_PATTERN, ierr)
 #endif
-  end subroutine petsc_mat_axpy_proc
+  end subroutine petsc_mat_axpy_proc_f
 
-  subroutine petsc_mat_destroy_proc(mat) bind(c)
+  subroutine petsc_mat_destroy_proc_f(mat) bind(c)
     ! Frees space taken by a matrix.
     use iso_c_binding
     type(adj_matrix), intent(inout) :: mat
@@ -789,19 +876,19 @@ module libadjoint_petsc_data_structures
 #ifdef HAVE_PETSC
     call MatDestroy(petsc_mat_from_adj_matrix(mat), ierr)
 #endif
-  end subroutine petsc_mat_destroy_proc
+  end subroutine petsc_mat_destroy_proc_f
 
 #ifdef HAVE_PETSC
-  function petsc_vec_from_adj_vector(input) result(output)
+  function petsc_vec_from_adj_vector_f(input) result(output)
     type(adj_vector), intent(in) :: input
     Vec :: output
     Vec, pointer :: tmp
 
     call c_f_pointer(input%ptr, tmp)
     output = tmp
-  end function petsc_vec_from_adj_vector
+  end function petsc_vec_from_adj_vector_f
 
-  function petsc_vec_to_adj_vector(input) result(output)
+  function petsc_vec_to_adj_vector_f(input) result(output)
     Vec, intent(in), target :: input
     Vec, pointer :: input_ptr
     type(adj_vector) :: output
@@ -810,18 +897,18 @@ module libadjoint_petsc_data_structures
     allocate(input_ptr)
     input_ptr = input
     output%ptr = c_loc(input_ptr)
-  end function petsc_vec_to_adj_vector
+  end function petsc_vec_to_adj_vector_f
 
-  function petsc_mat_from_adj_matrix(input) result(output)
+  function petsc_mat_from_adj_matrix_f(input) result(output)
     type(adj_matrix), intent(in) :: input
     Mat :: output
     Mat, pointer :: tmp
 
     call c_f_pointer(input%ptr, tmp)
     output = tmp
-  end function petsc_mat_from_adj_matrix
+  end function petsc_mat_from_adj_matrix_f
 
-  function petsc_mat_to_adj_matrix(input) result(output)
+  function petsc_mat_to_adj_matrix_f(input) result(output)
     Mat, intent(in), target :: input
     Mat, pointer :: input_ptr
     type(adj_matrix) :: output
@@ -830,7 +917,7 @@ module libadjoint_petsc_data_structures
     allocate(input_ptr)
     input_ptr = input
     output%ptr = c_loc(input_ptr)
-  end function petsc_mat_to_adj_matrix
+  end function petsc_mat_to_adj_matrix_f
 #endif
 end module libadjoint_petsc_data_structures
 

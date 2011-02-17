@@ -75,21 +75,24 @@ typedef struct
 
 typedef struct adj_variable_data
 {
-  int equation;
+  int equation; /* the equation that solves for this variable */
 
-  int ntargeting_equations;
+  int ntargeting_equations; /* any equations that target this variable */
   int* targeting_equations;
 
-  int ndepending_equations;
+  int ndepending_equations; /* any equations whose operators depend on this variable */
   int* depending_equations;
 
-  int nrhs_equations;
+  int nrhs_equations; /* any equations whose right-hand sides depend on this variable */
   int* rhs_equations;
 
-  int nadjoint_equations;
+  int ndepending_timesteps; /* any timesteps that need this variable for the computation of a functional */
+  int* depending_timesteps;
+
+  int nadjoint_equations; /* computed: the adjoint equations that need this variable */
   int* adjoint_equations;
-  adj_storage_data storage;
-  struct adj_variable_data* next;
+  adj_storage_data storage; /* its storage record */
+  struct adj_variable_data* next; /* a pointer to the next one, so we can walk the list */
 } adj_variable_data;
 
 typedef struct
@@ -142,9 +145,29 @@ typedef struct
 
 typedef struct
 {
+  int ndepends;
+  adj_variable* dependencies;
+} adj_functional_data;
+
+typedef struct
+{
+  int start_equation;
+
+  adj_scalar start_time;
+  adj_scalar end_time;
+
+  int nfunctionals;
+  adj_functional_data* functional_data;
+} adj_timestep_data;
+
+typedef struct
+{
   int nequations; /* Number of equations we have registered */
   int equations_sz; /* Number of equations we can store without mallocing -- not the same! */
   adj_equation* equations; /* Array of equations we have registered */
+
+  int ntimesteps; /* Number of timesteps we have seen */
+  adj_timestep_data* timestep_data; /* Data for each timestep we have seen */
 
   adj_variable_hash* varhash; /* The hash table for looking up information about variables */
   adj_variable_data_list vardata; /* We also store a linked list so we can walk all our variable data */
@@ -170,10 +193,13 @@ int adj_nonlinear_block_set_coefficient(adj_nonlinear_block* nblock, adj_scalar 
 int adj_create_block(char* name, adj_nonlinear_block* nblock, void* context, adj_block* block);
 int adj_destroy_block(adj_block* block);
 int adj_block_set_coefficient(adj_block* block, adj_scalar coefficient);
-int adj_variable_equal(adj_variable* var1, adj_variable* var2, int nvars);
-int adj_variable_str(adj_variable var, char* name, size_t namelen);
 int adj_create_equation(adj_variable var, int nblocks, adj_block* blocks, adj_variable* targets, adj_equation* equation);
 int adj_set_rhs_dependencies(adj_equation* equation, int nrhsdeps, adj_variable* rhsdeps);
 int adj_destroy_equation(adj_equation* equation);
+
+#ifndef ADJ_HIDE_FROM_USER
+int adj_variable_equal(adj_variable* var1, adj_variable* var2, int nvars);
+int adj_variable_str(adj_variable var, char* name, size_t namelen);
+#endif
 
 #endif

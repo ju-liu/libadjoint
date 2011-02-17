@@ -1,8 +1,9 @@
 Source: libadjoint
 Priority: extra
 Maintainer: Patrick Farrell <patrick.farrell06@imperial.ac.uk>
-Build-Depends: debhelper (>= 7.0.50~), libpetsc3.1-dev, gfortran (>= 4:4.4.4-1ubuntu2)
+Build-Depends: debhelper (>= 7.0.50~), libpetsc3.1-dev, gfortran (>= 4:4.4.4-1ubuntu2), python (>= 2.5), python-ctypeslib
 Standards-Version: 3.8.4
+XS-Python-Version: >= 2.5
 Section: libs
 Homepage: http://amcg.ese.ic.ac.uk/pfarrell
 
@@ -10,12 +11,20 @@ Package: libadjoint-dev
 Section: libdevel
 Architecture: any
 Depends: libadjoint (= ${binary:Version})
-Description: A library for adjointing computational models
- A library for adjointing computational models
+Description: A library for adjointing computational models (development headers)
+ A library for adjointing computational models (development headers)
 
 Package: libadjoint
 Section: libs
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}
+Depends: libadjoint, ${shlibs:Depends}, ${misc:Depends}
 Description: A library for adjointing computational models
  A library for adjointing computational models
+
+Package: python-libadjoint
+Section: python
+Architecture: any
+XB-Python-Version: ${python:Versions}
+Depends: libadjoint (= ${binary:Version}), ${python:Depends}
+Description: A library for adjointing computational models (python interface)
+ A library for adjointing computational models (python interface)

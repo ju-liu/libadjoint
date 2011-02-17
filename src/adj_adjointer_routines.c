@@ -8,6 +8,9 @@ int adj_create_adjointer(adj_adjointer* adjointer)
   adjointer->equations_sz = 0;
   adjointer->equations = NULL;
 
+  adjointer->ntimesteps = 0;
+  adjointer->timestep_data = NULL;
+
   adjointer->varhash = NULL;
   adjointer->vardata.firstnode = NULL;
   adjointer->vardata.lastnode = NULL;
@@ -45,6 +48,7 @@ int adj_create_adjointer(adj_adjointer* adjointer)
 int adj_destroy_adjointer(adj_adjointer* adjointer)
 {
   int i;
+  int j;
   int ierr;
   adj_variable_data* data_ptr;
   adj_variable_data* data_ptr_tmp;
@@ -57,6 +61,15 @@ int adj_destroy_adjointer(adj_adjointer* adjointer)
     if (ierr != ADJ_ERR_OK) return ierr;
   }
   if (adjointer->equations != NULL) free(adjointer->equations);
+
+  if (adjointer->timestep_data != NULL)
+  {
+    for (i = 0; i < adjointer->ntimesteps; i++)
+      for (j = 0; j < adjointer->timestep_data[i].nfunctionals; j++)
+        if (adjointer->timestep_data[i].functional_data[j].dependencies != NULL) 
+          free(adjointer->timestep_data[i].functional_data[j].dependencies);
+    free(adjointer->timestep_data);
+  }
 
   data_ptr = adjointer->vardata.firstnode;
   while (data_ptr != NULL)
@@ -139,11 +152,35 @@ int adj_register_equation(adj_adjointer* adjointer, adj_equation equation)
     return ADJ_ERR_INVALID_INPUTS;
   }
 
+  /* Let's check the timesteps match up */
+  if (adjointer->nequations == 0) /* we haven't registered any equations yet */
+  {
+    if (equation.variable.timestep != 0) /* this isn't timestep 0 */
+    {
+      strncpy(adj_error_msg, "The first equation registered must have timestep 0.", ADJ_ERROR_MSG_BUF);
+      return ADJ_ERR_INVALID_INPUTS;
+    }
+  }
+  else /* we have registered an equation before */
+  {
+    int old_timestep;
+    /* if  (not same timestep as before)                     &&  (not the next timestep) */
+    old_timestep = adjointer->equations[adjointer->nequations-1].variable.timestep;
+    if ((equation.variable.timestep != old_timestep) && (equation.variable.timestep != old_timestep+1))
+    {
+      snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, \
+          "Timestep numbers must either stay the same or increment by one. Valid values are %d or %d, but you have supplied %d.", \
+          old_timestep, old_timestep+1, equation.variable.timestep);
+      return ADJ_ERR_INVALID_INPUTS;
+    }
+  }
+
   /* OK. We're good to go. */
+
   /* Let's add it to the hash table. */
   ierr = adj_add_new_hash_entry(adjointer, &(equation.variable), &data_ptr);
   if (ierr != ADJ_ERR_OK) return ierr;
-  data_ptr->equation = adjointer->nequations + 1;
+  data_ptr->equation = adjointer->nequations;
   /* OK. Next create an entry for the adj_equation in the adjointer. */
 
   /* Check we have enough room, and if not, make some */
@@ -155,6 +192,17 @@ int adj_register_equation(adj_adjointer* adjointer, adj_equation equation)
 
   adjointer->nequations++;
   adjointer->equations[adjointer->nequations - 1] = equation;
+
+  /* Do any necessary recording of timestep indices */
+  if (adjointer->ntimesteps < equation.variable.timestep + 1) /* adjointer->ntimesteps should be at least equation.variable.timestep + 1 */
+  {
+    adj_extend_timestep_data(adjointer, equation.variable.timestep + 1); /* extend the array as necessary */
+  }
+  if (adjointer->timestep_data[equation.variable.timestep].start_equation == -1) /* -1 is the sentinel value for unset */
+  {
+    adjointer->timestep_data[equation.variable.timestep].start_equation = adjointer->nequations - 1; /* fill in the start equation */
+  }
+
   /* now we have copies of the pointer to the arrays of targets, blocks, rhs deps. */
   /* but for consistency, any libadjoint object that the user creates, he must destroy --
      it's simpler that way. */
@@ -500,8 +548,15 @@ int adj_forget_adjoint_equation(adj_adjointer* adjointer, int equation)
   int should_we_delete;
   int i;
   int ierr;
+  int min_timestep;
 
   if (adjointer->options[ADJ_ACTIVITY] == ADJ_ACTIVITY_NOTHING) return ADJ_ERR_OK;
+
+  if (equation >= adjointer->nequations)
+  {
+    strncpy(adj_error_msg, "No such equation.", ADJ_ERROR_MSG_BUF);
+    return ADJ_ERR_INVALID_INPUTS;
+  }
 
   data = adjointer->vardata.firstnode;
   while (data != NULL)
@@ -509,12 +564,28 @@ int adj_forget_adjoint_equation(adj_adjointer* adjointer, int equation)
     if (data->storage.has_value && data->nadjoint_equations > 0)
     {
       should_we_delete = 1;
+      /* Check the adjoint equations we could explicitly compute */
       for (i = 0; i < data->nadjoint_equations; i++)
       {
         if (equation > data->adjoint_equations[i])
         {
           should_we_delete = 0;
           break;
+        }
+      }
+
+      /* Also check that it isn't necessary for any timesteps we still have to compute
+         functional right-hand-sides for */
+      if (data->ndepending_timesteps > 0 && should_we_delete == 1)
+      {
+        int start_equation;
+        min_timestep = adj_minval(data->depending_timesteps, data->ndepending_timesteps);
+        ierr = adj_timestep_start_equation(adjointer, min_timestep, &start_equation);
+        assert(ierr == ADJ_ERR_OK);
+
+        if (equation > start_equation)
+        {
+          should_we_delete = 0;
         }
       }
 
@@ -676,6 +747,8 @@ int adj_add_new_hash_entry(adj_adjointer* adjointer, adj_variable* var, adj_vari
   (*data)->depending_equations = NULL;
   (*data)->nrhs_equations = 0;
   (*data)->rhs_equations = NULL;
+  (*data)->ndepending_timesteps = 0;
+  (*data)->depending_timesteps = NULL;
   (*data)->nadjoint_equations = 0;
   (*data)->adjoint_equations = NULL;
 
@@ -698,6 +771,104 @@ int adj_add_new_hash_entry(adj_adjointer* adjointer, adj_variable* var, adj_vari
   return ADJ_ERR_OK;
 }
 
+int adj_timestep_count(adj_adjointer* adjointer, int* count)
+{
+  *count = adjointer->ntimesteps;
+  return ADJ_ERR_OK;
+}
+
+int adj_timestep_start_equation(adj_adjointer* adjointer, int timestep, int* start)
+{
+  if (timestep < 0 || timestep >= adjointer->ntimesteps)
+  {
+    strncpy(adj_error_msg, "Invalid timestep supplied to adj_timestep_start.", ADJ_ERROR_MSG_BUF);
+    return ADJ_ERR_INVALID_INPUTS;
+  }
+
+  *start = adjointer->timestep_data[timestep].start_equation;
+  return ADJ_ERR_OK;
+}
+
+int adj_timestep_end_equation(adj_adjointer* adjointer, int timestep, int* end)
+{
+  if (timestep < 0 || timestep >= adjointer->ntimesteps)
+  {
+    strncpy(adj_error_msg, "Invalid timestep supplied to adj_timestep_end.", ADJ_ERROR_MSG_BUF);
+    return ADJ_ERR_INVALID_INPUTS;
+  }
+
+  if (timestep < adjointer->ntimesteps-1)
+  {
+    *end = adjointer->timestep_data[timestep+1].start_equation - 1;
+  }
+  else
+  {
+    *end = adjointer->nequations - 1;
+  }
+  return ADJ_ERR_OK;
+}
+
+int adj_timestep_set_times(adj_adjointer* adjointer, int timestep, adj_scalar start, adj_scalar end)
+{
+  if (timestep < 0)
+  {
+    strncpy(adj_error_msg, "Invalid timestep supplied to adj_timestep_set_times.", ADJ_ERROR_MSG_BUF);
+    return ADJ_ERR_INVALID_INPUTS;
+  }
+
+  if (adjointer->ntimesteps <= timestep)
+    adj_extend_timestep_data(adjointer, timestep + 1);
+
+  adjointer->timestep_data[timestep].start_time = start;
+  adjointer->timestep_data[timestep].end_time = end;
+
+  return ADJ_ERR_OK;
+}
+int adj_timestep_set_functional_dependencies(adj_adjointer* adjointer, int timestep, int functional, int ndepends, adj_variable* dependencies)
+{
+  int i;
+  if (timestep < 0)
+  {
+    strncpy(adj_error_msg, "Invalid timestep supplied to adj_timestep_set_times.", ADJ_ERROR_MSG_BUF);
+    return ADJ_ERR_INVALID_INPUTS;
+  }
+
+  if (ndepends < 0)
+  {
+    strncpy(adj_error_msg, "Must supply a nonnegative number of dependencies.", ADJ_ERROR_MSG_BUF);
+    return ADJ_ERR_INVALID_INPUTS;
+  }
+
+  if (adjointer->ntimesteps <= timestep)
+    adj_extend_timestep_data(adjointer, timestep + 1);
+
+  if (adjointer->timestep_data[timestep].nfunctionals <= functional)
+    adj_extend_functional_data(&(adjointer->timestep_data[timestep]), functional + 1);
+
+  adjointer->timestep_data[timestep].functional_data[functional].ndepends = ndepends;
+  adjointer->timestep_data[timestep].functional_data[functional].dependencies = \
+                                     (adj_variable*) malloc(ndepends * sizeof(adj_variable));
+  memcpy(adjointer->timestep_data[timestep].functional_data[functional].dependencies, dependencies, ndepends * sizeof(adj_variable));
+
+  for (i = 0; i < ndepends; i++)
+  {
+    int ierr;
+    adj_variable_data* data_ptr;
+
+    ierr = adj_find_variable_data(&(adjointer->varhash), &(dependencies[i]), &data_ptr);
+    if (ierr == ADJ_ERR_HASH_FAILED)
+    {
+      ierr = adj_add_new_hash_entry(adjointer, &(dependencies[i]), &data_ptr);
+      if (ierr != ADJ_ERR_OK) return ierr;
+    }
+
+    /* Record that this variable is necessary for the functional evaluation at this point in time */
+    adj_append_unique(&(data_ptr->depending_timesteps), &(data_ptr->ndepending_timesteps), timestep);
+  }
+
+  return ADJ_ERR_OK;
+}
+
 void adj_append_unique(int** array, int* array_sz, int value)
 {
   int i;
@@ -711,4 +882,57 @@ void adj_append_unique(int** array, int* array_sz, int value)
   *array = (int*) realloc(*array, *array_sz * sizeof(int));
   (*array)[*array_sz - 1] = value;
   return;
+}
+
+void adj_extend_timestep_data(adj_adjointer* adjointer, int extent)
+{
+  /* We have an array adjointer->timestep_data, of size adjointer->ntimesteps.
+     We want to realloc that to have size extent. We'll also need to zero/initialise
+     all the timestep_data's we've just allocated. */
+  int i;
+
+  assert(extent > adjointer->ntimesteps);
+  adjointer->timestep_data = (adj_timestep_data*) realloc(adjointer->timestep_data, extent * sizeof(adj_timestep_data));
+  for (i = adjointer->ntimesteps; i < extent; i++)
+  {
+    adjointer->timestep_data[i].start_equation = -1;
+    adjointer->timestep_data[i].start_time = -666; /* I wish there was an easy way to get a NaN here */
+    adjointer->timestep_data[i].end_time = -666;
+    adjointer->timestep_data[i].nfunctionals = 0;
+    adjointer->timestep_data[i].functional_data = NULL;
+  }
+  adjointer->ntimesteps = extent;
+}
+
+void adj_extend_functional_data(adj_timestep_data* timestep_data, int extent)
+{
+  int i;
+
+  assert(extent > timestep_data->nfunctionals);
+  timestep_data->functional_data = (adj_functional_data*) realloc(timestep_data->functional_data, extent * sizeof(adj_functional_data));
+  for (i = timestep_data->nfunctionals; i < extent; i++)
+  {
+    timestep_data->functional_data[i].ndepends = 0;
+    timestep_data->functional_data[i].dependencies = NULL;
+  }
+  timestep_data->nfunctionals = extent;
+}
+
+int adj_minval(int* array, int array_sz)
+{
+  int i;
+  int minval;
+
+  assert(array_sz > 0);
+
+  minval = array[0];
+  for (i = 1; i < array_sz; i++)
+  {
+    if (array[i] < minval)
+    {
+      minval = array[i];
+    }
+  }
+
+  return minval;
 }
