@@ -63,10 +63,10 @@ module libadjoint_data_structures
     type(c_ptr) :: lastnode
   end type adj_op_callback_list
 
-  type, bind(c) :: adj_func_callback_list
+  type, bind(c) :: adj_func_deriv_callback_list
     type(c_ptr) :: firstnode
     type(c_ptr) :: lastnode
-  end type adj_func_callback_list
+  end type adj_func_deriv_callback_list
 
   type, bind(c) :: adj_adjointer
     integer(kind=c_int) :: nequations
@@ -88,7 +88,7 @@ module libadjoint_data_structures
     type(adj_op_callback_list) :: nonlinear_derivative_assembly_list
     type(adj_op_callback_list) :: block_action_list
     type(adj_op_callback_list) :: block_assembly_list
-    type(adj_func_callback_list) :: functional_list
+    type(adj_func_deriv_callback_list) :: functional_derivative_list
   end type adj_adjointer
 
   type, bind(c) :: adj_vector
@@ -441,14 +441,15 @@ module libadjoint
       integer(kind=c_int) :: ierr
     end function adj_register_data_callback
 
-    function adj_register_functional_callback(adjointer, name, fnptr) result(ierr) bind(c, name='adj_register_functional_callback')
+    function adj_register_functional_derivative_callback(adjointer, name, fnptr) &
+                                                      & result(ierr) bind(c, name='adj_register_functional_callback')
       use libadjoint_data_structures
       use iso_c_binding
       type(adj_adjointer), intent(inout) :: adjointer
       character(kind=c_char), dimension(ADJ_NAME_LEN), intent(in) :: name
       type(c_funptr), intent(in), value :: fnptr
       integer(kind=c_int) :: ierr
-    end function adj_register_functional_callback
+    end function adj_register_functional_derivative_callback
 
     function adj_forget_adjoint_equation(adjointer, equation) result(ierr) bind(c, name='adj_forget_adjoint_equation')
       use libadjoint_data_structures
