@@ -38,6 +38,8 @@ int adj_create_adjointer(adj_adjointer* adjointer)
   adjointer->block_action_list.lastnode = NULL;
   adjointer->block_assembly_list.firstnode = NULL;
   adjointer->block_assembly_list.lastnode = NULL;
+  adjointer->functional_list.firstnode = NULL;
+  adjointer->functional_list.lastnode = NULL;
 
   for (i = 0; i < ADJ_NO_OPTIONS; i++)
     adjointer->options[i] = 0; /* 0 is the default for all options */
@@ -54,6 +56,8 @@ int adj_destroy_adjointer(adj_adjointer* adjointer)
   adj_variable_data* data_ptr_tmp;
   adj_op_callback* cb_ptr;
   adj_op_callback* cb_ptr_tmp;
+  adj_func_callback* func_cb_ptr;
+  adj_func_callback* func_cb_ptr_tmp;
 
   for (i = 0; i < adjointer->nequations; i++)
   {
@@ -127,6 +131,14 @@ int adj_destroy_adjointer(adj_adjointer* adjointer)
     cb_ptr_tmp = cb_ptr;
     cb_ptr = cb_ptr->next;
     free(cb_ptr_tmp);
+  }
+
+  func_cb_ptr = adjointer->functional_list.firstnode;
+  while(func_cb_ptr != NULL)
+  {
+    func_cb_ptr_tmp = func_cb_ptr;
+    func_cb_ptr = func_cb_ptr->next;
+    free(func_cb_ptr_tmp);
   }
 
   adj_create_adjointer(adjointer);
@@ -541,6 +553,35 @@ int adj_register_data_callback(adj_adjointer* adjointer, int type, void (*fn)(vo
 
   return ADJ_ERR_OK;
 }
+
+int adj_register_functional_callback(adj_adjointer* adjointer, void (*fn)(void))
+{
+  adj_func_callback_list* cb_list_ptr;
+  adj_func_callback* cb_ptr;
+
+  if (adjointer->options[ADJ_ACTIVITY] == ADJ_ACTIVITY_NOTHING) return ADJ_ERR_OK;
+
+  cb_list_ptr = &(adjointer->functional_list);
+
+  /* Tack the functional callback on to the end of the list. */
+  cb_ptr = (adj_func_callback*) malloc(sizeof(adj_func_callback));
+  cb_ptr->callback = fn;
+
+  /* Special case for the first callback */
+  if (cb_list_ptr->firstnode == NULL)
+  {
+    cb_list_ptr->firstnode = cb_ptr;
+    cb_list_ptr->lastnode = cb_ptr;
+  }
+  else
+  {
+    cb_list_ptr->lastnode->next = cb_ptr;
+    cb_list_ptr->lastnode = cb_ptr;
+  }
+
+  return ADJ_ERR_OK;
+}
+
 
 int adj_forget_adjoint_equation(adj_adjointer* adjointer, int equation)
 {

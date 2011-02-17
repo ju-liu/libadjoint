@@ -128,6 +128,18 @@ typedef struct
   adj_op_callback* lastnode;
 } adj_op_callback_list;
 
+typedef struct adj_func_callback
+{
+  void (*callback)(void);
+  struct adj_func_callback* next;
+} adj_func_callback;
+
+typedef struct
+{
+  adj_func_callback* firstnode;
+  adj_func_callback* lastnode;
+} adj_func_callback_list;
+
 typedef struct
 {
   adj_nonlinear_block nonlinear_block;
@@ -181,6 +193,7 @@ typedef struct
   adj_op_callback_list nonlinear_derivative_assembly_list;
   adj_op_callback_list block_action_list;
   adj_op_callback_list block_assembly_list;
+  adj_func_callback_list functional_list;
 } adj_adjointer;
 
 int adj_create_variable(char* name, int timestep, int iteration, int auxiliary, adj_variable* var);
