@@ -554,7 +554,7 @@ int adj_register_data_callback(adj_adjointer* adjointer, int type, void (*fn)(vo
   return ADJ_ERR_OK;
 }
 
-int adj_register_functional_callback(adj_adjointer* adjointer, void (*fn)(void))
+int adj_register_functional_callback(adj_adjointer* adjointer, char* name, void (*fn)(void))
 {
   adj_func_callback_list* cb_list_ptr;
   adj_func_callback* cb_ptr;
@@ -563,8 +563,21 @@ int adj_register_functional_callback(adj_adjointer* adjointer, void (*fn)(void))
 
   cb_list_ptr = &(adjointer->functional_list);
 
-  /* Tack the functional callback on to the end of the list. */
+  /* First, we look for an existing callback data structure that might already exist, to replace the function */
+  cb_ptr = cb_list_ptr->firstnode;
+  while (cb_ptr != NULL)
+  {
+    if (strncmp(cb_ptr->name, name, ADJ_NAME_LEN) == 0)
+    {
+      cb_ptr->callback = fn;
+      return ADJ_ERR_OK;
+    }
+    cb_ptr = cb_ptr->next;
+  }
+
+  /* If we got here, that means that we didn't find it. Tack it on to the end of the list. */
   cb_ptr = (adj_func_callback*) malloc(sizeof(adj_func_callback));
+  strncpy(cb_ptr->name, name, ADJ_NAME_LEN);
   cb_ptr->callback = fn;
 
   /* Special case for the first callback */
@@ -581,7 +594,6 @@ int adj_register_functional_callback(adj_adjointer* adjointer, void (*fn)(void))
 
   return ADJ_ERR_OK;
 }
-
 
 int adj_forget_adjoint_equation(adj_adjointer* adjointer, int equation)
 {

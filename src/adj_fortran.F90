@@ -441,10 +441,11 @@ module libadjoint
       integer(kind=c_int) :: ierr
     end function adj_register_data_callback
 
-    function adj_register_functional_callback(adjointer, fnptr) result(ierr) bind(c, name='adj_register_functional_callback')
+    function adj_register_functional_callback(adjointer, name, fnptr) result(ierr) bind(c, name='adj_register_functional_callback')
       use libadjoint_data_structures
       use iso_c_binding
       type(adj_adjointer), intent(inout) :: adjointer
+      character(kind=c_char), dimension(ADJ_NAME_LEN), intent(in) :: name
       type(c_funptr), intent(in), value :: fnptr
       integer(kind=c_int) :: ierr
     end function adj_register_functional_callback

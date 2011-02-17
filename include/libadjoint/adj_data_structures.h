@@ -130,6 +130,7 @@ typedef struct
 
 typedef struct adj_func_callback
 {
+  char name[ADJ_NAME_LEN];
   void (*callback)(void);
   struct adj_func_callback* next;
 } adj_func_callback;
