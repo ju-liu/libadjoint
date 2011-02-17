@@ -11,7 +11,7 @@ module libadjoint_data_structures
     integer(kind=c_int) :: iteration
     integer(kind=c_int) :: type
     integer(kind=c_int) :: auxiliary
-    integer(kind=c_int) :: functional
+    character(kind=c_char), dimension(ADJ_NAME_LEN) :: functional
   end type adj_variable
 
   type, bind(c) :: adj_nonlinear_block
@@ -514,21 +514,44 @@ module libadjoint
       type(adj_storage_data) :: mem
     end function adj_storage_memory
 
-    function adj_get_adjoint_equation(adjointer, equation, functional, lhs, rhs, variable) result(ierr) &
+    function adj_get_adjoint_equation_c(adjointer, equation, functional, lhs, rhs, variable) result(ierr) &
             & bind(c, name='adj_get_adjoint_equation')
       use libadjoint_data_structures
       use iso_c_binding
       type(adj_adjointer), intent(inout) :: adjointer
       integer(kind=c_int), intent(in), value :: equation
-      integer(kind=c_int), intent(in), value :: functional
+      character(kind=c_char), dimension(ADJ_NAME_LEN), intent(in) :: functional
       type(adj_matrix), intent(out) :: lhs
       type(adj_vector), intent(out) :: rhs
       type(adj_variable), intent(out) :: variable
       integer(kind=c_int) :: ierr
-    end function adj_get_adjoint_equation
+    end function adj_get_adjoint_equation_c
   end interface
 
   contains
+
+  function adj_get_adjoint_equation(adjointer, equation, functional, lhs, rhs, variable) result(ierr)
+    type(adj_adjointer), intent(inout) :: adjointer
+    integer(kind=c_int), intent(in), value :: equation
+    character(len=*), intent(in) :: functional
+    type(adj_matrix), intent(out) :: lhs
+    type(adj_vector), intent(out) :: rhs
+    type(adj_variable), intent(out) :: variable
+    integer(kind=c_int) :: ierr
+    
+    character(kind=c_char), dimension(ADJ_NAME_LEN) :: functional_c
+    integer :: j
+
+    do j=1,len_trim(functional)
+      functional_c(j) = functional(j:j)
+    end do
+    do j=len_trim(functional)+1,ADJ_NAME_LEN
+      functional_c(j) = c_null_char
+    end do
+    functional_c(ADJ_NAME_LEN) = c_null_char
+
+    ierr = adj_get_adjoint_equation_c(adjointer, equation, functional_c, lhs, rhs, variable)
+  end function adj_get_adjoint_equation
 
   function adj_create_variable(name, timestep, iteration, auxiliary, variable) result(ierr)
     character(len=*), intent(in) :: name

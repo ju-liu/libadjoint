@@ -13,7 +13,7 @@ typedef struct
   int iteration; /* what iteration inside the timestep */
   int type; /* forward, adjoint, or tlm */
   int auxiliary; /* is this a real dependency (a variable that is solved for) or auxiliary */
-  int functional; /* which functional or parameter is this associated with (adjoint/tlm variables) */
+  char functional[ADJ_NAME_LEN]; /* which functional or parameter is this associated with (adjoint/tlm variables) */
 } adj_variable;
 
 typedef struct

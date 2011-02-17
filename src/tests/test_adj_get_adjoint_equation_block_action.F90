@@ -137,16 +137,16 @@ subroutine test_adj_get_adjoint_equation_block_action
   ierr = adj_destroy_equation(equation)
   call adj_chkierr(ierr)
 
-  ierr = adj_get_adjoint_equation(adjointer, equation=2, functional=0, lhs=lhs, rhs=rhs, variable=adj_var1)
+  ierr = adj_get_adjoint_equation(adjointer, equation=2, functional="Drag", lhs=lhs, rhs=rhs, variable=adj_var1)
   call adj_test_assert(ierr == ADJ_ERR_INVALID_INPUTS, "Should not have worked")
 
-  ierr = adj_get_adjoint_equation(adjointer, equation=1, functional=0, lhs=lhs, rhs=rhs, variable=adj_var1)
+  ierr = adj_get_adjoint_equation(adjointer, equation=1, functional="Drag", lhs=lhs, rhs=rhs, variable=adj_var1)
   call adj_test_assert(ierr == ADJ_ERR_OK, "Should have worked")
   ! We don't actually need the memory for lhs and rhs, so we'll delete them now
   call petsc_vec_destroy_proc(rhs)
   call petsc_mat_destroy_proc(lhs)
 
-  ierr = adj_get_adjoint_equation(adjointer, equation=0, functional=0, lhs=lhs, rhs=rhs, variable=adj_var1)
+  ierr = adj_get_adjoint_equation(adjointer, equation=0, functional="Drag", lhs=lhs, rhs=rhs, variable=adj_var1)
   call adj_test_assert(ierr == ADJ_ERR_NEED_VALUE, "Should need the value for lambda1")
 
   ! We'll decide on a random value for lambda1 (lambda1 = dJ/du, so that's the same
@@ -162,13 +162,13 @@ subroutine test_adj_get_adjoint_equation_block_action
   ierr = adj_record_variable(adjointer, adj_var1, adj_storage_memory(lambda1_vec))
   call adj_test_assert(ierr == ADJ_ERR_OK, "Should have worked")
 
-  ierr = adj_get_adjoint_equation(adjointer, equation=0, functional=0, lhs=lhs, rhs=rhs, variable=adj_var1)
+  ierr = adj_get_adjoint_equation(adjointer, equation=0, functional="Drag", lhs=lhs, rhs=rhs, variable=adj_var1)
   call adj_test_assert(ierr == ADJ_ERR_NEED_CALLBACK, "Should need the block_action_callback")
 
   ierr = adj_register_operator_callback(adjointer, ADJ_BLOCK_ACTION_CB, "IdentityOperator", c_funloc(identity_action_callback))
   call adj_test_assert(ierr == ADJ_ERR_OK, "Should have worked")
 
-  ierr = adj_get_adjoint_equation(adjointer, equation=0, functional=0, lhs=lhs, rhs=rhs, variable=adj_var1)
+  ierr = adj_get_adjoint_equation(adjointer, equation=0, functional="Drag", lhs=lhs, rhs=rhs, variable=adj_var1)
   call adj_test_assert(ierr == ADJ_ERR_OK, "Should have worked")
 
   ! So now solve lhs . lambda0 = rhs

@@ -20,6 +20,7 @@ int adj_create_variable(char* name, int timestep, int iteration, int auxiliary, 
   var->iteration = iteration;
   var->auxiliary = auxiliary;
   var->type = ADJ_FORWARD;
+  var->functional[0] = '\0';
 
   return ADJ_ERR_OK;
 }
@@ -146,10 +147,10 @@ int adj_variable_str(adj_variable var, char* name, size_t namelen)
     snprintf(buf, 255, ":Forward%s", var.auxiliary ? ":Auxiliary" : "");
     break;
   case (ADJ_ADJOINT):
-    snprintf(buf, 255, ":Adjoint[%d]", var.functional);
+    snprintf(buf, 255, ":Adjoint[%s]", var.functional);
     break;
   case (ADJ_TLM):
-    snprintf(buf, 255, ":Sensitivity[%d]", var.functional);
+    snprintf(buf, 255, ":Sensitivity[%s]", var.functional);
     break;
   default:
     assert(0);

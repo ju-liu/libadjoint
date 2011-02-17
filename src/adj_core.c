@@ -1,6 +1,6 @@
 #include "libadjoint/adj_core.h"
 
-int adj_get_adjoint_equation(adj_adjointer* adjointer, int equation, int functional, adj_matrix* lhs, adj_vector* rhs, adj_variable* adj_var)
+int adj_get_adjoint_equation(adj_adjointer* adjointer, int equation, char* functional, adj_matrix* lhs, adj_vector* rhs, adj_variable* adj_var)
 {
   int ierr;
   adj_equation fwd_eqn;
@@ -45,7 +45,7 @@ int adj_get_adjoint_equation(adj_adjointer* adjointer, int equation, int functio
     other_fwd_eqn = adjointer->equations[fwd_data->targeting_equations[i]];
 
     /* Find the adjoint variable we want this to multiply */
-    other_adj_var = other_fwd_eqn.variable; other_adj_var.type = ADJ_ADJOINT; other_adj_var.functional = functional;
+    other_adj_var = other_fwd_eqn.variable; other_adj_var.type = ADJ_ADJOINT; strncpy(other_adj_var.functional, functional, ADJ_NAME_LEN);
     /* and now get its value */
     ierr = adj_has_variable_value(adjointer, other_adj_var);
     if (ierr != ADJ_ERR_OK)
@@ -61,7 +61,7 @@ int adj_get_adjoint_equation(adj_adjointer* adjointer, int equation, int functio
   ierr = adj_create_variable(fwd_var.name, fwd_var.timestep, fwd_var.iteration, fwd_var.auxiliary, adj_var);
   if (ierr != ADJ_ERR_OK) return ierr;
   adj_var->type = ADJ_ADJOINT;
-  adj_var->functional = functional;
+  strncpy(adj_var->functional, functional, ADJ_NAME_LEN);
 
   /* Add an entry in the hash table for this variable */
   ierr = adj_find_variable_data(&(adjointer->varhash), adj_var, &adj_data);
@@ -147,7 +147,7 @@ int adj_get_adjoint_equation(adj_adjointer* adjointer, int equation, int functio
     block.hermitian = 1;
 
     /* Find the adjoint variable we want this to multiply */
-    other_adj_var = other_fwd_eqn.variable; other_adj_var.type = ADJ_ADJOINT; other_adj_var.functional = functional;
+    other_adj_var = other_fwd_eqn.variable; other_adj_var.type = ADJ_ADJOINT; strncpy(other_adj_var.functional, functional, ADJ_NAME_LEN);
     /* and now get its value */
     ierr = adj_get_variable_value(adjointer, other_adj_var, &adj_value);
     assert(ierr == ADJ_ERR_OK); /* we should have them all, we checked for them earlier */
