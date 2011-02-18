@@ -700,6 +700,28 @@ int adj_find_operator_callback(adj_adjointer* adjointer, int type, char* name, v
   return ADJ_ERR_NEED_CALLBACK;
 }
 
+int adj_find_functional_derivative_callback(adj_adjointer* adjointer, char* name, void (**fn)(adj_variable variable, adj_variable* dependencies, adj_vector* values, char* name, double starttime, double endtime, adj_vector* output))
+{
+  adj_func_deriv_callback_list* cb_list_ptr;
+  adj_func_deriv_callback* cb_ptr;
+
+  cb_list_ptr = &(adjointer->functional_derivative_list);
+
+  cb_ptr = cb_list_ptr->firstnode;
+  while (cb_ptr != NULL)
+  {
+    if (strncmp(cb_ptr->name, name, ADJ_NAME_LEN) == 0)
+    {
+      *fn = cb_ptr->callback;
+      return ADJ_ERR_OK;
+    }
+    cb_ptr = cb_ptr->next;
+  }
+
+  snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Could not find functional derivative callback %s.", name);
+  return ADJ_ERR_NEED_CALLBACK;
+}
+
 int adj_get_variable_value(adj_adjointer* adjointer, adj_variable var, adj_vector* value)
 {
   int ierr;
