@@ -501,7 +501,7 @@ module libadjoint
       use iso_c_binding
       type(adj_adjointer), intent(inout) :: adjointer
       integer(kind=c_int), intent(in), value :: timestep
-      integer(kind=c_char), dimension(ADJ_NAME_LEN), intent(in) :: functional
+      character(kind=c_char), dimension(ADJ_NAME_LEN), intent(in) :: functional
       integer(kind=c_int), intent(in), value :: ndepends
       type(adj_variable), dimension(*), intent(in) :: dependencies
       integer(kind=c_int) :: ierr

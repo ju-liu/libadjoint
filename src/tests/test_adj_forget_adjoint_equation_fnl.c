@@ -121,7 +121,7 @@ void test_adj_forget_adjoint_equation_fnl(void)
   }
 
   /* One last spanner in the works. Claim that u20 is necessary for timestep 1's functional computation. */
-  ierr = adj_timestep_set_functional_dependencies(&adjointer, 1, 0, 1, &u[3]);
+  ierr = adj_timestep_set_functional_dependencies(&adjointer, 1, "Drag", 1, &u[3]);
   adj_test_assert(ierr == ADJ_ERR_OK, "Should have worked fine");
 
   has_val = has_values(&adjointer, 5, u);
