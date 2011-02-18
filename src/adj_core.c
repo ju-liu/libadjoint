@@ -7,6 +7,7 @@ int adj_get_adjoint_equation(adj_adjointer* adjointer, int equation, char* funct
   adj_variable fwd_var;
   adj_variable_data* adj_data;
   adj_variable_data* fwd_data;
+  adj_vector rhs_tmp;
   int i;
   int j;
 
@@ -157,6 +158,12 @@ int adj_get_adjoint_equation(adj_adjointer* adjointer, int equation, char* funct
     adjointer->callbacks.vec_axpy(rhs, (adj_scalar)-1.0, rhs_tmp);
     adjointer->callbacks.vec_destroy(&rhs_tmp);
   }
+
+  /* Now add dJ/du to the rhs */
+  ierr = adj_evaluate_functional(adjointer, fwd_var, functional, &rhs_tmp);
+  if (ierr != ADJ_ERR_OK) return ierr;
+  adjointer->callbacks.vec_axpy(rhs, (adj_scalar)1.0, rhs_tmp);
+  adjointer->callbacks.vec_destroy(&rhs_tmp);
 
   return ADJ_ERR_OK;
 }

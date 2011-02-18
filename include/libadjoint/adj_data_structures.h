@@ -131,7 +131,7 @@ typedef struct
 typedef struct adj_func_deriv_callback
 {
   char name[ADJ_NAME_LEN];
-  void (*callback)(adj_variable variable, adj_variable* dependencies, adj_vector* values, char* name, double starttime, double endtime, adj_vector* output);
+  void (*callback)(adj_variable variable, int nb_variables, adj_variable* variables, adj_vector* dependencies, char* name, adj_scalar start_time, adj_scalar end_time, adj_vector* output);
   struct adj_func_deriv_callback* next;
 } adj_func_deriv_callback;
 
@@ -156,10 +156,12 @@ typedef struct
   adj_hash_handle hh;
 } adj_variable_hash;
 
-typedef struct
+typedef struct adj_functional_data
 {
+  char name[ADJ_NAME_LEN];
   int ndepends;
   adj_variable* dependencies;
+  struct adj_functional_data* next; /* a pointer to the next one, so we can walk the list */
 } adj_functional_data;
 
 typedef struct
@@ -169,8 +171,8 @@ typedef struct
   adj_scalar start_time;
   adj_scalar end_time;
 
-  int nfunctionals;
-  adj_functional_data* functional_data;
+  adj_functional_data* functional_data_start;
+  adj_functional_data* functional_data_end;
 } adj_timestep_data;
 
 typedef struct
