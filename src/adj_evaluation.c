@@ -108,7 +108,6 @@ int adj_evaluate_functional(adj_adjointer* adjointer, adj_variable variable, cha
       variables = functional_data_ptr->dependencies;
       dependencies = (adj_vector*) malloc(nb_variables * sizeof(adj_vector));
       /* we need to set up the dependencies */
-
       for (i = 0; i < nb_variables; i++)
       {
         ierr = adj_get_variable_value(adjointer, variables[i], &dependencies[i]);

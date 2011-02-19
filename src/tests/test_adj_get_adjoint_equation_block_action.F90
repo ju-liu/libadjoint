@@ -96,8 +96,7 @@ subroutine functional_derivative_callback(variable, nb_variables, variables, dep
   type(adj_variable), intent(in) :: variable
   integer(kind=c_int), intent(in), value :: nb_variables
   type(adj_variable), dimension(nb_variables), intent(in) :: variables
-!  character(len=*), intent(in) :: name
-  integer :: name
+  character(kind=c_char), dimension(ADJ_NAME_LEN), intent(in) :: name
   type(adj_vector), dimension(nb_variables), intent(in) :: dependencies
   integer(kind=c_int), intent(in), value :: start_time, end_time
   type(adj_vector), intent(out) :: output
@@ -118,6 +117,7 @@ subroutine test_adj_get_adjoint_equation_block_action
   integer, parameter :: m = 2
   procedure(adj_block_assembly_proc), bind(c) :: identity_assembly_callback
   procedure(adj_block_action_proc), bind(c) :: identity_action_callback
+  procedure(adj_functional_derivative_proc), bind(c) :: functional_derivative_callback
 
   PetscScalar, parameter :: one = 1.0
   type(adj_matrix) :: lhs
@@ -162,7 +162,10 @@ subroutine test_adj_get_adjoint_equation_block_action
   ierr = adj_get_adjoint_equation(adjointer, equation=1, functional="Drag", lhs=lhs, rhs=rhs, variable=adj_var1)
 !  call adj_test_assert(ierr == ADJ_ERR_NEED_CALLBACK, "Need the functional callback")
   call adj_test_assert(ierr == ADJ_ERR_OK, "Need the functional callback")
-
+  
+  ierr = adj_register_functional_derivative_callback(adjointer, "Draft", c_funloc(functional_derivative_callback))  
+  call adj_test_assert(ierr == ADJ_ERR_OK, "Should have worked")
+  
   ierr = adj_timestep_set_functional_dependencies(adjointer, timestep=0, functional="Drag", dependencies=(/ adj_var1 /))
   call adj_test_assert(ierr == ADJ_ERR_OK, "Should have worked")
 

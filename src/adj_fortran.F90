@@ -255,6 +255,17 @@ module libadjoint
       type(adj_matrix), intent(out) :: output
       type(adj_vector), intent(out) :: rhs
     end subroutine adj_block_assembly_proc
+    
+    subroutine adj_functional_derivative_proc(variable, nb_variables, variables, dependencies, name, output) bind(c)
+      use iso_c_binding
+      use libadjoint_data_structures
+      type(adj_variable), intent(in) :: variable
+      integer(kind=c_int), intent(in), value :: nb_variables
+      type(adj_variable), dimension(nb_variables), intent(in) :: variables
+      type(adj_vector), dimension(nb_variables), intent(in) :: dependencies
+      character(kind=c_char), dimension(ADJ_NAME_LEN), intent(in) :: name
+      type(adj_matrix), intent(out) :: output
+    end subroutine adj_functional_derivative_proc
   end interface
 
   interface
@@ -442,7 +453,7 @@ module libadjoint
     end function adj_register_data_callback
 
     function adj_register_functional_derivative_callback(adjointer, name, fnptr) &
-                                                      & result(ierr) bind(c, name='adj_register_functional_callback')
+                                                      & result(ierr) bind(c, name='adj_register_functional_derivative_callback')
       use libadjoint_data_structures
       use iso_c_binding
       type(adj_adjointer), intent(inout) :: adjointer
@@ -708,11 +719,22 @@ module libadjoint
     use iso_c_binding
     type(adj_adjointer), intent(inout) :: adjointer
     integer, intent(in) :: timestep
-    character(len=ADJ_NAME_LEN), intent(in) :: functional
+    character(len=*), intent(in) :: functional
     type(adj_variable), dimension(:), intent(in) :: dependencies
     integer :: ierr
 
-    ierr = adj_timestep_set_functional_dependencies_c(adjointer, timestep, functional, size(dependencies), dependencies)
+    character(kind=c_char), dimension(ADJ_NAME_LEN) :: functional_c
+    integer :: j
+
+    do j=1,len_trim(functional)
+      functional_c(j) = functional(j:j)
+    end do
+    do j=len_trim(functional)+1,ADJ_NAME_LEN
+      functional_c(j) = c_null_char
+    end do
+    functional_c(ADJ_NAME_LEN) = c_null_char
+
+    ierr = adj_timestep_set_functional_dependencies_c(adjointer, timestep, functional_c, size(dependencies), dependencies)
   end function adj_timestep_set_functional_dependencies
 
   subroutine adj_chkierr_private(ierr, filename, line)

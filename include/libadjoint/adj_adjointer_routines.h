@@ -15,6 +15,7 @@ int adj_register_equation(adj_adjointer* adjointer, adj_equation equation);
 int adj_record_variable(adj_adjointer* adjointer, adj_variable var, adj_storage_data storage);
 int adj_register_operator_callback(adj_adjointer* adjointer, int type, char* name, void (*fn)(void));
 int adj_register_data_callback(adj_adjointer* adjointer, int type, void (*fn)(void));
+int adj_register_functional_derivative_callback(adj_adjointer* adjointer, char* name, void (*fn)(adj_variable variable, int nb_variables, adj_variable* variables, adj_vector* dependencies, char* name, adj_scalar start_time, adj_scalar end_time, adj_vector* output));
 int adj_forget_adjoint_equation(adj_adjointer* adjointer, int equation);
 
 int adj_timestep_count(adj_adjointer* adjointer, int* count);
