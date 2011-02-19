@@ -12,6 +12,7 @@ export PETSC_DIR=/usr/lib/petscdir/3.1
 export PETSC_ARCH=linux-gnu-c-opt
 export prefix=/usr
 export DEB_BUILD_OPTIONS=nostrip
+export FC=gfortran-4.5
 
 %:
 	dh --with=python2 $@ 
