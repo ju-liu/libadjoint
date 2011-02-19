@@ -74,6 +74,7 @@ int adj_destroy_adjointer(adj_adjointer* adjointer)
       while (functional_data_ptr != NULL)
       {
         functional_data_ptr_next = functional_data_ptr->next;
+        if (functional_data_ptr->dependencies != NULL) free(functional_data_ptr->dependencies);
         free(functional_data_ptr);
         functional_data_ptr = functional_data_ptr_next;
       }
@@ -927,6 +928,12 @@ int adj_timestep_set_times(adj_adjointer* adjointer, int timestep, adj_scalar st
     return ADJ_ERR_INVALID_INPUTS;
   }
 
+  if (end <= start)
+  {
+    strncpy(adj_error_msg, "End time cannot be less than start time.", ADJ_ERROR_MSG_BUF);
+    return ADJ_ERR_INVALID_INPUTS;
+  }
+
   if (adjointer->ntimesteps <= timestep)
     adj_extend_timestep_data(adjointer, timestep + 1);
 
@@ -950,6 +957,15 @@ int adj_timestep_set_functional_dependencies(adj_adjointer* adjointer, int times
   {
     strncpy(adj_error_msg, "Must supply a nonnegative number of dependencies.", ADJ_ERROR_MSG_BUF);
     return ADJ_ERR_INVALID_INPUTS;
+  }
+
+  for (i = 0; i < ndepends; i++)
+  {
+    if (dependencies[i].type != ADJ_FORWARD)
+    {
+      snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Functional dependencies must be forward variables.");
+      return ADJ_ERR_INVALID_INPUTS;
+    }
   }
 
   if (adjointer->ntimesteps <= timestep)

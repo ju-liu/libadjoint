@@ -10,6 +10,7 @@ int adj_get_adjoint_equation(adj_adjointer* adjointer, int equation, char* funct
   adj_vector rhs_tmp;
   int i;
   int j;
+  void (*functional_derivative_func)(adj_variable variable, int nb_variables, adj_variable* variables, adj_vector* dependencies, char* name, adj_scalar start_time, adj_scalar end_time, adj_vector* output) = NULL;
 
   if (adjointer->options[ADJ_ACTIVITY] == ADJ_ACTIVITY_NOTHING)
   {
@@ -29,6 +30,9 @@ int adj_get_adjoint_equation(adj_adjointer* adjointer, int equation, char* funct
   if (adjointer->callbacks.mat_axpy == NULL)    return ADJ_ERR_NEED_CALLBACK;
   if (adjointer->callbacks.mat_destroy == NULL) return ADJ_ERR_NEED_CALLBACK;
   strncpy(adj_error_msg, "", ADJ_ERROR_MSG_BUF);
+
+  ierr = adj_find_functional_derivative_callback(adjointer, functional, &functional_derivative_func);
+  if (ierr != ADJ_ERR_OK) return ierr;
 
   fwd_eqn = adjointer->equations[equation];
   fwd_var = fwd_eqn.variable;
@@ -116,7 +120,7 @@ int adj_get_adjoint_equation(adj_adjointer* adjointer, int equation, char* funct
         break;
       }
     }
-    block.hermitian = 1;
+    block.hermitian = ADJ_TRUE;
     ierr = adj_evaluate_block_assembly(adjointer, block, lhs, rhs);
     if (ierr != ADJ_ERR_OK) return ierr;
   }
@@ -145,7 +149,7 @@ int adj_get_adjoint_equation(adj_adjointer* adjointer, int equation, char* funct
     }
 
     /* OK. Now we've found the right block ... */
-    block.hermitian = 1;
+    block.hermitian = ADJ_TRUE;
 
     /* Find the adjoint variable we want this to multiply */
     other_adj_var = other_fwd_eqn.variable; other_adj_var.type = ADJ_ADJOINT; strncpy(other_adj_var.functional, functional, ADJ_NAME_LEN);
@@ -160,10 +164,10 @@ int adj_get_adjoint_equation(adj_adjointer* adjointer, int equation, char* funct
   }
 
   /* Now add dJ/du to the rhs */
-/*  ierr = adj_evaluate_functional(adjointer, fwd_var, functional, &rhs_tmp);
+  ierr = adj_evaluate_functional(adjointer, fwd_var, functional, &rhs_tmp);
   if (ierr != ADJ_ERR_OK) return ierr;
   adjointer->callbacks.vec_axpy(rhs, (adj_scalar)1.0, rhs_tmp);
   adjointer->callbacks.vec_destroy(&rhs_tmp);
-*/
+
   return ADJ_ERR_OK;
 }

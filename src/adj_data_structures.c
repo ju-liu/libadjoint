@@ -20,7 +20,6 @@ int adj_create_variable(char* name, int timestep, int iteration, int auxiliary, 
   var->iteration = iteration;
   var->auxiliary = auxiliary;
   var->type = ADJ_FORWARD;
-  var->functional[0] = '\0';
 
   return ADJ_ERR_OK;
 }

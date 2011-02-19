@@ -256,15 +256,17 @@ module libadjoint
       type(adj_vector), intent(out) :: rhs
     end subroutine adj_block_assembly_proc
     
-    subroutine adj_functional_derivative_proc(variable, nb_variables, variables, dependencies, name, output) bind(c)
+    subroutine adj_functional_derivative_proc(variable, ndepends, dependencies, values, name, start_time, end_time, output) bind(c)
       use iso_c_binding
       use libadjoint_data_structures
-      type(adj_variable), intent(in) :: variable
-      integer(kind=c_int), intent(in), value :: nb_variables
-      type(adj_variable), dimension(nb_variables), intent(in) :: variables
-      type(adj_vector), dimension(nb_variables), intent(in) :: dependencies
+      type(adj_variable), intent(in), value :: variable
+      integer(kind=c_int), intent(in), value :: ndepends
+      type(adj_variable), dimension(ndepends), intent(in) :: dependencies
+      type(adj_vector), dimension(ndepends), intent(in) :: values
       character(kind=c_char), dimension(ADJ_NAME_LEN), intent(in) :: name
-      type(adj_matrix), intent(out) :: output
+      adj_scalar_f, intent(in), value :: start_time
+      adj_scalar_f, intent(in), value :: end_time
+      type(adj_vector), intent(out) :: output
     end subroutine adj_functional_derivative_proc
   end interface
 
@@ -452,7 +454,7 @@ module libadjoint
       integer(kind=c_int) :: ierr
     end function adj_register_data_callback
 
-    function adj_register_functional_derivative_callback(adjointer, name, fnptr) &
+    function adj_register_functional_derivative_callback_c(adjointer, name, fnptr) &
                                                       & result(ierr) bind(c, name='adj_register_functional_derivative_callback')
       use libadjoint_data_structures
       use iso_c_binding
@@ -460,7 +462,7 @@ module libadjoint
       character(kind=c_char), dimension(ADJ_NAME_LEN), intent(in) :: name
       type(c_funptr), intent(in), value :: fnptr
       integer(kind=c_int) :: ierr
-    end function adj_register_functional_derivative_callback
+    end function adj_register_functional_derivative_callback_c
 
     function adj_forget_adjoint_equation(adjointer, equation) result(ierr) bind(c, name='adj_forget_adjoint_equation')
       use libadjoint_data_structures
@@ -736,6 +738,26 @@ module libadjoint
 
     ierr = adj_timestep_set_functional_dependencies_c(adjointer, timestep, functional_c, size(dependencies), dependencies)
   end function adj_timestep_set_functional_dependencies
+
+  function adj_register_functional_derivative_callback(adjointer, name, fnptr) result(ierr)
+    type(adj_adjointer), intent(inout) :: adjointer
+    character(len=*), intent(in) :: name
+    type(c_funptr), intent(in) :: fnptr
+    integer :: ierr
+
+    character(kind=c_char), dimension(ADJ_NAME_LEN) :: name_c
+    integer :: j
+
+    do j=1,len_trim(name)
+      name_c(j) = name(j:j)
+    end do
+    do j=len_trim(name)+1,ADJ_NAME_LEN
+      name_c(j) = c_null_char
+    end do
+    name_c(ADJ_NAME_LEN) = c_null_char
+
+    ierr = adj_register_functional_derivative_callback_c(adjointer, name_c, fnptr)
+  end function adj_register_functional_derivative_callback
 
   subroutine adj_chkierr_private(ierr, filename, line)
     integer, intent(in) :: ierr

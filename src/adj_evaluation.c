@@ -125,8 +125,7 @@ int adj_evaluate_functional(adj_adjointer* adjointer, adj_variable variable, cha
   /* We have the right callback, so let's call it already */ 
   functional_derivative_func(variable, nb_variables, variables, dependencies, functional, start_time, end_time, output);
 
-  if (nb_variables > 0)
-    free(dependencies);
+  if (dependencies != NULL) free(dependencies);
 
   return ADJ_ERR_OK;
 }
