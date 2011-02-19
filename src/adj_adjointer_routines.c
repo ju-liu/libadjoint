@@ -944,43 +944,50 @@ int adj_timestep_set_functional_dependencies(adj_adjointer* adjointer, int times
   if (adjointer->ntimesteps <= timestep)
     adj_extend_timestep_data(adjointer, timestep + 1);
 
+  /* Make sure that the dependencies for this timestep have not been set before */
   functional_data_ptr = adjointer->timestep_data[timestep].functional_data_start;
   while (functional_data_ptr != NULL)
   {
     if (strncmp(functional_data_ptr->name, functional, ADJ_NAME_LEN) == 0)
     {
-      if (functional_data_ptr->dependencies != NULL)
-      {
-        snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "The dependencies for functional %s at timestep %d were set before.", functional, timestep);
-        return ADJ_ERR_INVALID_INPUTS;
-      }
-
-      functional_data_ptr->ndepends = ndepends;
-      functional_data_ptr->dependencies = (adj_variable*) malloc(ndepends * sizeof(adj_variable));
-      memcpy(functional_data_ptr->dependencies, dependencies, ndepends * sizeof(adj_variable));
-
-      for (i = 0; i < ndepends; i++)
-      {
-        int ierr;
-        adj_variable_data* data_ptr;
-
-        ierr = adj_find_variable_data(&(adjointer->varhash), &(dependencies[i]), &data_ptr);
-        if (ierr == ADJ_ERR_HASH_FAILED)
-        {
-          ierr = adj_add_new_hash_entry(adjointer, &(dependencies[i]), &data_ptr);
-          if (ierr != ADJ_ERR_OK) return ierr;
-        }
-
-        /* Record that this variable is necessary for the functional evaluation at this point in time */
-        adj_append_unique(&(data_ptr->depending_timesteps), &(data_ptr->ndepending_timesteps), timestep);
-      }
-      /* We are done */
-      return ADJ_ERR_OK;
+      snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "The dependencies for functional %s at timestep %d have been already set.", functional, timestep);
+      return ADJ_ERR_INVALID_INPUTS;
     }
     functional_data_ptr = functional_data_ptr->next;
   }
-  snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Trying to set the dependencies for functional %s at timestep %d, but this functional is not registered.", functional, timestep);
-  return ADJ_ERR_INVALID_INPUTS;
+
+  /* append the functional information to the adjointer */  
+  functional_data_ptr = (adj_functional_data*) malloc(sizeof(adj_functional_data));
+
+  if (adjointer->timestep_data[timestep].functional_data_start == NULL)
+    adjointer->timestep_data[timestep].functional_data_start = functional_data_ptr;
+  if (adjointer->timestep_data[timestep].functional_data_end != NULL) 
+    adjointer->timestep_data[timestep].functional_data_end->next = functional_data_ptr;
+  adjointer->timestep_data[timestep].functional_data_end = functional_data_ptr;
+
+  functional_data_ptr->next = NULL;
+  strncpy(functional_data_ptr->name, functional, ADJ_NAME_LEN);
+  functional_data_ptr->ndepends = ndepends;
+  functional_data_ptr->dependencies = (adj_variable*) malloc(ndepends * sizeof(adj_variable));
+  memcpy(functional_data_ptr->dependencies, dependencies, ndepends * sizeof(adj_variable));
+
+  for (i = 0; i < ndepends; i++)
+  {
+    int ierr;
+    adj_variable_data* data_ptr;
+
+    ierr = adj_find_variable_data(&(adjointer->varhash), &(dependencies[i]), &data_ptr);
+    if (ierr == ADJ_ERR_HASH_FAILED)
+    {
+      ierr = adj_add_new_hash_entry(adjointer, &(dependencies[i]), &data_ptr);
+      if (ierr != ADJ_ERR_OK) return ierr;
+    }
+
+    /* Record that this variable is necessary for the functional evaluation at this point in time */
+    adj_append_unique(&(data_ptr->depending_timesteps), &(data_ptr->ndepending_timesteps), timestep);
+  }
+  /* We are done */
+  return ADJ_ERR_OK;
 }
 
 void adj_append_unique(int** array, int* array_sz, int value)

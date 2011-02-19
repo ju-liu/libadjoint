@@ -85,6 +85,25 @@ subroutine identity_action_callback(nvar, variables, dependencies, hermitian, co
   output = petsc_vec_to_adj_vector(output_vec)
 end subroutine identity_action_callback
 
+subroutine functional_derivative_callback(variable, nb_variables, variables, dependencies, & 
+                                        & name, start_time, end_time, output) bind(c)
+  use iso_c_binding
+  use libadjoint
+  use libadjoint_petsc_data_structures
+  implicit none
+#include "libadjoint/adj_petsc_f.h"
+
+  type(adj_variable), intent(in) :: variable
+  integer(kind=c_int), intent(in), value :: nb_variables
+  type(adj_variable), dimension(nb_variables), intent(in) :: variables
+!  character(len=*), intent(in) :: name
+  integer :: name
+  type(adj_vector), dimension(nb_variables), intent(in) :: dependencies
+  integer(kind=c_int), intent(in), value :: start_time, end_time
+  type(adj_vector), intent(out) :: output
+
+end subroutine functional_derivative_callback
+
 subroutine test_adj_get_adjoint_equation_block_action
   use libadjoint
   use libadjoint_petsc_data_structures
@@ -141,7 +160,15 @@ subroutine test_adj_get_adjoint_equation_block_action
   call adj_test_assert(ierr == ADJ_ERR_INVALID_INPUTS, "Should not have worked")
 
   ierr = adj_get_adjoint_equation(adjointer, equation=1, functional="Drag", lhs=lhs, rhs=rhs, variable=adj_var1)
+!  call adj_test_assert(ierr == ADJ_ERR_NEED_CALLBACK, "Need the functional callback")
+  call adj_test_assert(ierr == ADJ_ERR_OK, "Need the functional callback")
+
+  ierr = adj_timestep_set_functional_dependencies(adjointer, timestep=0, functional="Drag", dependencies=(/ adj_var1 /))
   call adj_test_assert(ierr == ADJ_ERR_OK, "Should have worked")
+
+  ierr = adj_get_adjoint_equation(adjointer, equation=1, functional="Drag", lhs=lhs, rhs=rhs, variable=adj_var1)
+  call adj_test_assert(ierr == ADJ_ERR_OK, "Should have worked")
+  
   ! We don't actually need the memory for lhs and rhs, so we'll delete them now
   call petsc_vec_destroy_proc(rhs)
   call petsc_mat_destroy_proc(lhs)
