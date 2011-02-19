@@ -13,7 +13,7 @@ typedef struct
   int iteration; /* what iteration inside the timestep */
   int type; /* forward, adjoint, or tlm */
   int auxiliary; /* is this a real dependency (a variable that is solved for) or auxiliary */
-  int functional; /* which functional or parameter is this associated with (adjoint/tlm variables) */
+  char functional[ADJ_NAME_LEN]; /* which functional or parameter is this associated with (adjoint/tlm variables) */
 } adj_variable;
 
 typedef struct
@@ -128,6 +128,19 @@ typedef struct
   adj_op_callback* lastnode;
 } adj_op_callback_list;
 
+typedef struct adj_func_deriv_callback
+{
+  char name[ADJ_NAME_LEN];
+  void (*callback)(adj_variable variable, int nb_variables, adj_variable* variables, adj_vector* dependencies, char* name, adj_scalar start_time, adj_scalar end_time, adj_vector* output);
+  struct adj_func_deriv_callback* next;
+} adj_func_deriv_callback;
+
+typedef struct
+{
+  adj_func_deriv_callback* firstnode;
+  adj_func_deriv_callback* lastnode;
+} adj_func_deriv_callback_list;
+
 typedef struct
 {
   adj_nonlinear_block nonlinear_block;
@@ -143,10 +156,12 @@ typedef struct
   adj_hash_handle hh;
 } adj_variable_hash;
 
-typedef struct
+typedef struct adj_functional_data
 {
+  char name[ADJ_NAME_LEN];
   int ndepends;
   adj_variable* dependencies;
+  struct adj_functional_data* next; /* a pointer to the next one, so we can walk the list */
 } adj_functional_data;
 
 typedef struct
@@ -156,8 +171,8 @@ typedef struct
   adj_scalar start_time;
   adj_scalar end_time;
 
-  int nfunctionals;
-  adj_functional_data* functional_data;
+  adj_functional_data* functional_data_start;
+  adj_functional_data* functional_data_end;
 } adj_timestep_data;
 
 typedef struct
@@ -181,6 +196,7 @@ typedef struct
   adj_op_callback_list nonlinear_derivative_assembly_list;
   adj_op_callback_list block_action_list;
   adj_op_callback_list block_assembly_list;
+  adj_func_deriv_callback_list functional_derivative_list;
 } adj_adjointer;
 
 int adj_create_variable(char* name, int timestep, int iteration, int auxiliary, adj_variable* var);

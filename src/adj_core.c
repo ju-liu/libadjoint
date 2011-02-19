@@ -1,12 +1,13 @@
 #include "libadjoint/adj_core.h"
 
-int adj_get_adjoint_equation(adj_adjointer* adjointer, int equation, int functional, adj_matrix* lhs, adj_vector* rhs, adj_variable* adj_var)
+int adj_get_adjoint_equation(adj_adjointer* adjointer, int equation, char* functional, adj_matrix* lhs, adj_vector* rhs, adj_variable* adj_var)
 {
   int ierr;
   adj_equation fwd_eqn;
   adj_variable fwd_var;
   adj_variable_data* adj_data;
   adj_variable_data* fwd_data;
+  adj_vector rhs_tmp;
   int i;
   int j;
 
@@ -40,15 +41,14 @@ int adj_get_adjoint_equation(adj_adjointer* adjointer, int equation, int functio
   {
     adj_equation other_fwd_eqn;
     adj_variable other_adj_var;
-    adj_vector adj_value;
 
     if (fwd_data->targeting_equations[i] == equation) continue; /* that term goes in the lhs, and we've already taken care of it */
     other_fwd_eqn = adjointer->equations[fwd_data->targeting_equations[i]];
 
     /* Find the adjoint variable we want this to multiply */
-    other_adj_var = other_fwd_eqn.variable; other_adj_var.type = ADJ_ADJOINT; other_adj_var.functional = functional;
+    other_adj_var = other_fwd_eqn.variable; other_adj_var.type = ADJ_ADJOINT; strncpy(other_adj_var.functional, functional, ADJ_NAME_LEN);
     /* and now get its value */
-    ierr = adj_get_variable_value(adjointer, other_adj_var, &adj_value);
+    ierr = adj_has_variable_value(adjointer, other_adj_var);
     if (ierr != ADJ_ERR_OK)
     {
       char buf[255];
@@ -62,7 +62,7 @@ int adj_get_adjoint_equation(adj_adjointer* adjointer, int equation, int functio
   ierr = adj_create_variable(fwd_var.name, fwd_var.timestep, fwd_var.iteration, fwd_var.auxiliary, adj_var);
   if (ierr != ADJ_ERR_OK) return ierr;
   adj_var->type = ADJ_ADJOINT;
-  adj_var->functional = functional;
+  strncpy(adj_var->functional, functional, ADJ_NAME_LEN);
 
   /* Add an entry in the hash table for this variable */
   ierr = adj_find_variable_data(&(adjointer->varhash), adj_var, &adj_data);
@@ -148,7 +148,7 @@ int adj_get_adjoint_equation(adj_adjointer* adjointer, int equation, int functio
     block.hermitian = 1;
 
     /* Find the adjoint variable we want this to multiply */
-    other_adj_var = other_fwd_eqn.variable; other_adj_var.type = ADJ_ADJOINT; other_adj_var.functional = functional;
+    other_adj_var = other_fwd_eqn.variable; other_adj_var.type = ADJ_ADJOINT; strncpy(other_adj_var.functional, functional, ADJ_NAME_LEN);
     /* and now get its value */
     ierr = adj_get_variable_value(adjointer, other_adj_var, &adj_value);
     assert(ierr == ADJ_ERR_OK); /* we should have them all, we checked for them earlier */
@@ -159,5 +159,11 @@ int adj_get_adjoint_equation(adj_adjointer* adjointer, int equation, int functio
     adjointer->callbacks.vec_destroy(&rhs_tmp);
   }
 
+  /* Now add dJ/du to the rhs */
+/*  ierr = adj_evaluate_functional(adjointer, fwd_var, functional, &rhs_tmp);
+  if (ierr != ADJ_ERR_OK) return ierr;
+  adjointer->callbacks.vec_axpy(rhs, (adj_scalar)1.0, rhs_tmp);
+  adjointer->callbacks.vec_destroy(&rhs_tmp);
+*/
   return ADJ_ERR_OK;
 }

@@ -85,6 +85,24 @@ subroutine identity_action_callback(nvar, variables, dependencies, hermitian, co
   output = petsc_vec_to_adj_vector(output_vec)
 end subroutine identity_action_callback
 
+subroutine functional_derivative_callback(variable, nb_variables, variables, dependencies, & 
+                                        & name, start_time, end_time, output) bind(c)
+  use iso_c_binding
+  use libadjoint
+  use libadjoint_petsc_data_structures
+  implicit none
+#include "libadjoint/adj_petsc_f.h"
+
+  type(adj_variable), intent(in) :: variable
+  integer(kind=c_int), intent(in), value :: nb_variables
+  type(adj_variable), dimension(nb_variables), intent(in) :: variables
+  character(kind=c_char), dimension(ADJ_NAME_LEN), intent(in) :: name
+  type(adj_vector), dimension(nb_variables), intent(in) :: dependencies
+  integer(kind=c_int), intent(in), value :: start_time, end_time
+  type(adj_vector), intent(out) :: output
+
+end subroutine functional_derivative_callback
+
 subroutine test_adj_get_adjoint_equation_block_action
   use libadjoint
   use libadjoint_petsc_data_structures
@@ -99,6 +117,7 @@ subroutine test_adj_get_adjoint_equation_block_action
   integer, parameter :: m = 2
   procedure(adj_block_assembly_proc), bind(c) :: identity_assembly_callback
   procedure(adj_block_action_proc), bind(c) :: identity_action_callback
+  procedure(adj_functional_derivative_proc), bind(c) :: functional_derivative_callback
 
   PetscScalar, parameter :: one = 1.0
   type(adj_matrix) :: lhs
@@ -137,16 +156,27 @@ subroutine test_adj_get_adjoint_equation_block_action
   ierr = adj_destroy_equation(equation)
   call adj_chkierr(ierr)
 
-  ierr = adj_get_adjoint_equation(adjointer, equation=2, functional=0, lhs=lhs, rhs=rhs, variable=adj_var1)
+  ierr = adj_get_adjoint_equation(adjointer, equation=2, functional="Drag", lhs=lhs, rhs=rhs, variable=adj_var1)
   call adj_test_assert(ierr == ADJ_ERR_INVALID_INPUTS, "Should not have worked")
 
-  ierr = adj_get_adjoint_equation(adjointer, equation=1, functional=0, lhs=lhs, rhs=rhs, variable=adj_var1)
+  ierr = adj_get_adjoint_equation(adjointer, equation=1, functional="Drag", lhs=lhs, rhs=rhs, variable=adj_var1)
+!  call adj_test_assert(ierr == ADJ_ERR_NEED_CALLBACK, "Need the functional callback")
+  call adj_test_assert(ierr == ADJ_ERR_OK, "Need the functional callback")
+  
+  ierr = adj_register_functional_derivative_callback(adjointer, "Draft", c_funloc(functional_derivative_callback))  
   call adj_test_assert(ierr == ADJ_ERR_OK, "Should have worked")
+  
+  ierr = adj_timestep_set_functional_dependencies(adjointer, timestep=0, functional="Drag", dependencies=(/ adj_var1 /))
+  call adj_test_assert(ierr == ADJ_ERR_OK, "Should have worked")
+
+  ierr = adj_get_adjoint_equation(adjointer, equation=1, functional="Drag", lhs=lhs, rhs=rhs, variable=adj_var1)
+  call adj_test_assert(ierr == ADJ_ERR_OK, "Should have worked")
+  
   ! We don't actually need the memory for lhs and rhs, so we'll delete them now
   call petsc_vec_destroy_proc(rhs)
   call petsc_mat_destroy_proc(lhs)
 
-  ierr = adj_get_adjoint_equation(adjointer, equation=0, functional=0, lhs=lhs, rhs=rhs, variable=adj_var1)
+  ierr = adj_get_adjoint_equation(adjointer, equation=0, functional="Drag", lhs=lhs, rhs=rhs, variable=adj_var1)
   call adj_test_assert(ierr == ADJ_ERR_NEED_VALUE, "Should need the value for lambda1")
 
   ! We'll decide on a random value for lambda1 (lambda1 = dJ/du, so that's the same
@@ -162,13 +192,13 @@ subroutine test_adj_get_adjoint_equation_block_action
   ierr = adj_record_variable(adjointer, adj_var1, adj_storage_memory(lambda1_vec))
   call adj_test_assert(ierr == ADJ_ERR_OK, "Should have worked")
 
-  ierr = adj_get_adjoint_equation(adjointer, equation=0, functional=0, lhs=lhs, rhs=rhs, variable=adj_var1)
+  ierr = adj_get_adjoint_equation(adjointer, equation=0, functional="Drag", lhs=lhs, rhs=rhs, variable=adj_var1)
   call adj_test_assert(ierr == ADJ_ERR_NEED_CALLBACK, "Should need the block_action_callback")
 
   ierr = adj_register_operator_callback(adjointer, ADJ_BLOCK_ACTION_CB, "IdentityOperator", c_funloc(identity_action_callback))
   call adj_test_assert(ierr == ADJ_ERR_OK, "Should have worked")
 
-  ierr = adj_get_adjoint_equation(adjointer, equation=0, functional=0, lhs=lhs, rhs=rhs, variable=adj_var1)
+  ierr = adj_get_adjoint_equation(adjointer, equation=0, functional="Drag", lhs=lhs, rhs=rhs, variable=adj_var1)
   call adj_test_assert(ierr == ADJ_ERR_OK, "Should have worked")
 
   ! So now solve lhs . lambda0 = rhs
