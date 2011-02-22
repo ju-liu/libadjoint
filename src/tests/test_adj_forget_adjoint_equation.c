@@ -1,6 +1,7 @@
 #include "libadjoint/adj_adjointer_routines.h"
 #include "libadjoint/adj_test_tools.h"
 #include "libadjoint/adj_test_main.h"
+#include "libadjoint/adj_adjointer_visualisation.h"
 
 #ifndef HAVE_PETSC
 void test_adj_forget_adjoint_equation(void)
@@ -114,6 +115,8 @@ void test_adj_forget_adjoint_equation(void)
   adj_destroy_block(&B[0]);
   adj_destroy_block(&B[1]);
 
+  adjointer_to_html(&adjointer, "adjointer.html");
+  
   /* OK. Now let's check the dependencies */
   ierr = adj_find_variable_data(&(adjointer.varhash), &(u[0]), &data_ptr);
   adj_test_assert(ierr == ADJ_ERR_OK, "Should have worked");
