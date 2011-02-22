@@ -539,6 +539,15 @@ module libadjoint
       type(adj_variable), intent(out) :: variable
       integer(kind=c_int) :: ierr
     end function adj_get_adjoint_equation_c
+    
+    function adj_adjointer_to_html_c(adjointer, filename) result(ierr) &
+            & bind(c, name='adj_adjointer_to_html')
+      use libadjoint_data_structures
+      use iso_c_binding
+      type(adj_adjointer), intent(inout) :: adjointer
+      character(kind=c_char), dimension(ADJ_NAME_LEN), intent(in) :: filename
+      integer(kind=c_int) :: ierr
+    end function adj_adjointer_to_html_c
   end interface
 
   contains
@@ -759,6 +768,25 @@ module libadjoint
     ierr = adj_register_functional_derivative_callback_c(adjointer, name_c, fnptr)
   end function adj_register_functional_derivative_callback
 
+  function adj_adjointer_to_html(adjointer, filename) result(ierr) 
+    type(adj_adjointer), intent(inout) :: adjointer
+    character(len=*), intent(in) :: filename
+    integer :: ierr
+    
+    character(kind=c_char), dimension(ADJ_NAME_LEN) :: filename_c
+    integer :: j
+
+    do j=1,len_trim(filename)
+      filename_c(j) = filename(j:j)
+    end do
+    do j=len_trim(filename)+1,ADJ_NAME_LEN
+      filename_c(j) = c_null_char
+    end do
+    filename_c(ADJ_NAME_LEN) = c_null_char
+
+    ierr = adj_adjointer_to_html_c(adjointer, filename_c)
+  end function adj_adjointer_to_html
+  
   subroutine adj_chkierr_private(ierr, filename, line)
     integer, intent(in) :: ierr
     character(len=*), intent(in) :: filename

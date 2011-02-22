@@ -99,7 +99,7 @@ void adj_html_row_eqn(FILE* fp, adj_adjointer* adjointer, adj_equation adj_eqn){
 
 }
 
-int adjointer_to_html(adj_adjointer* adjointer, char* filename)
+int adj_adjointer_to_html(adj_adjointer* adjointer, char* filename)
 {
 	FILE *fp;
 	int i;
