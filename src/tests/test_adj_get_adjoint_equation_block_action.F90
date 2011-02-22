@@ -139,6 +139,11 @@ subroutine test_adj_get_adjoint_equation_block_action
   KSP :: ksp
 
   ierr = adj_create_adjointer(adjointer)
+  
+  ! Test the html output
+  ierr = adj_adjointer_to_html(adjointer, "test_adj_get_adjoint_equation_block_action_0.html")
+  call adj_test_assert(ierr == ADJ_ERR_OK, "html output should have worked")
+  
   call adj_chkierr(ierr)
   ierr = adj_set_petsc_data_callbacks(adjointer)
   call adj_chkierr(ierr)
@@ -185,6 +190,10 @@ subroutine test_adj_get_adjoint_equation_block_action
 
   ierr = adj_timestep_set_functional_dependencies(adjointer, timestep=1, functional="Drag", dependencies=(/u0, u1/))
   call adj_test_assert(ierr == ADJ_ERR_INVALID_INPUTS, "We can't set the functional dependencies twice")
+
+  ! Test the html output
+  ierr = adj_adjointer_to_html(adjointer, "test_adj_get_adjoint_equation_block_action_1.html")
+  call adj_test_assert(ierr == ADJ_ERR_OK, "html output should have worked")
 
   ! Record a value for u0
   call VecCreateSeq(PETSC_COMM_SELF, m, u0_vec, ierr)
