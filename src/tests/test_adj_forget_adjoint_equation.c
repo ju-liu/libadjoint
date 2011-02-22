@@ -115,8 +115,6 @@ void test_adj_forget_adjoint_equation(void)
   adj_destroy_block(&B[0]);
   adj_destroy_block(&B[1]);
 
-  adjointer_to_html(&adjointer, "adjointer.html");
-  
   /* OK. Now let's check the dependencies */
   ierr = adj_find_variable_data(&(adjointer.varhash), &(u[0]), &data_ptr);
   adj_test_assert(ierr == ADJ_ERR_OK, "Should have worked");

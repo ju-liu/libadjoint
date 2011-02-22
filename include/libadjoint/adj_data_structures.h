@@ -156,6 +156,18 @@ typedef struct
   adj_hash_handle hh;
 } adj_variable_hash;
 
+typedef struct
+{
+  char key[ADJ_DICT_LEN];
+  char value[ADJ_DICT_LEN];
+  adj_hash_handle hh;
+} adj_dictionary_entry;
+
+typedef struct
+{
+  adj_dictionary_entry* dict;
+} adj_dictionary;
+
 typedef struct adj_functional_data
 {
   char name[ADJ_NAME_LEN];

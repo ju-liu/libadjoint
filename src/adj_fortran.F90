@@ -109,6 +109,10 @@ module libadjoint_data_structures
     type(adj_vector) :: value
     type(c_ptr) :: filename
   end type adj_storage_data
+
+  type, bind(c) :: adj_dictionary
+    type(c_ptr) :: dict = c_null_ptr
+  end type adj_dictionary
 end module libadjoint_data_structures
 
 module libadjoint
@@ -548,6 +552,38 @@ module libadjoint
       character(kind=c_char), dimension(ADJ_NAME_LEN), intent(in) :: filename
       integer(kind=c_int) :: ierr
     end function adj_adjointer_to_html_c
+
+    function adj_dict_init(dict) result(ierr) bind(c, name='adj_dict_init')
+      use libadjoint_data_structures
+      use iso_c_binding
+      type(adj_dictionary), intent(inout) :: dict
+      integer(kind=c_int) :: ierr
+    end function adj_dict_init
+
+    function adj_dict_set_c(dict, key, value) result(ierr) bind(c, name='adj_dict_set')
+      use libadjoint_data_structures
+      use iso_c_binding
+      type(adj_dictionary), intent(inout) :: dict
+      character(kind=c_char), dimension(ADJ_DICT_LEN), intent(in) :: key
+      character(kind=c_char), dimension(ADJ_DICT_LEN), intent(in) :: value
+      integer(kind=c_int) :: ierr
+    end function adj_dict_set_c
+
+    function adj_dict_find_c(dict, key, value) result(ierr) bind(c, name='adj_dict_find')
+      use libadjoint_data_structures
+      use iso_c_binding
+      type(adj_dictionary), intent(inout) :: dict
+      character(kind=c_char), dimension(ADJ_DICT_LEN), intent(in) :: key
+      type(c_ptr), intent(out) :: value
+      integer(kind=c_int) :: ierr
+    end function adj_dict_find_c
+
+    function adj_dict_destroy(dict) result(ierr) bind(c, name='adj_dict_destroy')
+      use libadjoint_data_structures
+      use iso_c_binding
+      type(adj_dictionary), intent(inout) :: dict
+      integer(kind=c_int) :: ierr
+    end function adj_dict_destroy
   end interface
 
   contains
@@ -787,6 +823,59 @@ module libadjoint
     ierr = adj_adjointer_to_html_c(adjointer, filename_c)
   end function adj_adjointer_to_html
   
+  function adj_dict_set(dict, key, value) result(ierr)
+    type(adj_dictionary), intent(inout) :: dict
+    character(len=*), intent(in) :: key, value
+    integer :: ierr
+
+    character(kind=c_char), dimension(ADJ_DICT_LEN) :: key_c
+    character(kind=c_char), dimension(ADJ_DICT_LEN) :: value_c
+
+    integer :: j
+
+    key_c = c_null_char
+    value_c = c_null_char
+    do j=1,len(key)
+      key_c(j) = key(j:j)
+    end do
+
+    do j=1,len(value)
+      value_c(j) = value(j:j)
+    end do
+
+    ierr = adj_dict_set_c(dict, key_c, value_c)
+  end function adj_dict_set
+
+  function adj_dict_find(dict, key, value) result(ierr)
+    type(adj_dictionary), intent(inout) :: dict
+    character(len=*), intent(in) :: key
+    character(len=*), intent(out) :: value
+    integer :: ierr
+
+    character(kind=c_char), dimension(ADJ_DICT_LEN) :: key_c
+    character(kind=c_char), dimension(:), pointer :: value_c
+    type(c_ptr) :: ptr
+
+    integer :: j
+
+    key_c = c_null_char
+    do j=1,len(key)
+      key_c(j) = key(j:j)
+    end do
+
+    ierr = adj_dict_find_c(dict, key_c, ptr)
+    value = " "
+
+    if (ierr == ADJ_ERR_OK) then
+      call c_f_pointer(ptr, value_c, (/ADJ_DICT_LEN/))
+      j = 1
+      do while(j <= min(ADJ_DICT_LEN, len(value)) .and. value_c(j) /= c_null_char)
+        value(j:j) = value_c(j)
+        j = j + 1
+      end do
+    end if
+  end function adj_dict_find
+
   subroutine adj_chkierr_private(ierr, filename, line)
     integer, intent(in) :: ierr
     character(len=*), intent(in) :: filename

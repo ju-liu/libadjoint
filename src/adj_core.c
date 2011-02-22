@@ -278,7 +278,6 @@ int adj_get_forward_equation(adj_adjointer* adjointer, int equation, adj_matrix*
     adjointer->callbacks.vec_axpy(rhs, (adj_scalar)-1.0, rhs_tmp);
     adjointer->callbacks.vec_destroy(&rhs_tmp);
   }
-  /* TODO: Add the rhs of the forward model to rhs!*/
   return ADJ_ERR_OK;
 
 }

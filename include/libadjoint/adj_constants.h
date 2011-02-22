@@ -2,8 +2,10 @@
 #define ADJ_CONSTANTS_H
 
 /* You cannot use comments of more than one line in this file */
-
+/* Maximum length of a name for something in libadjoint */
 #define ADJ_NAME_LEN 255
+/* Used in the string-to-string hash table */
+#define ADJ_DICT_LEN 8192
 
 #define adj_scalar double
 #define adj_scalar_f real(kind=c_double)
