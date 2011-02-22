@@ -565,7 +565,7 @@ module libadjoint
       use iso_c_binding
       type(adj_dictionary), intent(inout) :: dict
       character(kind=c_char), dimension(ADJ_DICT_LEN), intent(in) :: key
-      character(kind=c_char), dimension(ADJ_DICT_LEN), intent(out) :: value
+      type(c_ptr), intent(out) :: value
       integer(kind=c_int) :: ierr
     end function adj_dict_find_c
 
@@ -794,6 +794,59 @@ module libadjoint
 
     ierr = adj_register_functional_derivative_callback_c(adjointer, name_c, fnptr)
   end function adj_register_functional_derivative_callback
+
+  function adj_dict_set(dict, key, value) result(ierr)
+    type(adj_dictionary), intent(inout) :: dict
+    character(len=*), intent(in) :: key, value
+    integer :: ierr
+
+    character(kind=c_char), dimension(ADJ_DICT_LEN) :: key_c
+    character(kind=c_char), dimension(ADJ_DICT_LEN) :: value_c
+
+    integer :: j
+
+    key_c = c_null_char
+    value_c = c_null_char
+    do j=1,len(key)
+      key_c(j) = key(j:j)
+    end do
+
+    do j=1,len(value)
+      value_c(j) = value(j:j)
+    end do
+
+    ierr = adj_dict_set_c(dict, key_c, value_c)
+  end function adj_dict_set
+
+  function adj_dict_find(dict, key, value) result(ierr)
+    type(adj_dictionary), intent(inout) :: dict
+    character(len=*), intent(in) :: key
+    character(len=*), intent(out) :: value
+    integer :: ierr
+
+    character(kind=c_char), dimension(ADJ_DICT_LEN) :: key_c
+    character(kind=c_char), dimension(:), pointer :: value_c
+    type(c_ptr) :: ptr
+
+    integer :: j
+
+    key_c = c_null_char
+    do j=1,len(key)
+      key_c(j) = key(j:j)
+    end do
+
+    ierr = adj_dict_find_c(dict, key_c, ptr)
+    value = " "
+
+    if (ierr == ADJ_ERR_OK) then
+      call c_f_pointer(ptr, value_c, (/ADJ_DICT_LEN/))
+      j = 1
+      do while(j <= min(ADJ_DICT_LEN, len(value)) .and. value_c(j) /= c_null_char)
+        value(j:j) = value_c(j)
+        j = j + 1
+      end do
+    end if
+  end function adj_dict_find
 
   subroutine adj_chkierr_private(ierr, filename, line)
     integer, intent(in) :: ierr
