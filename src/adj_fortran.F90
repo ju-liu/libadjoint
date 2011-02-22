@@ -589,16 +589,16 @@ module libadjoint
 
   function adj_variable_get_name(variable, name) result(ierr)
     type(adj_variable), intent(in) :: variable
-    character(len=ADJ_NAME_LEN), intent(out) :: name
+    character(len=*), intent(out) :: name
     integer :: ierr
     integer :: j
 
-    do j=1,ADJ_NAME_LEN
+    name = ' '
+    do j=1,min(len(name), ADJ_NAME_LEN)
       if (variable%name(j) /= c_null_char) then
         name(j:j) = variable%name(j)
       else
         name(j:) = ' '
-        exit
       end if
     end do
 
