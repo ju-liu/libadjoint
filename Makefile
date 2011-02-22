@@ -230,4 +230,5 @@ obj/adj_fortran.o: include/libadjoint/adj_fortran.h
 obj/adj_core.o: include/libadjoint/adj_core.h include/libadjoint/adj_data_structures.h include/libadjoint/adj_constants.h include/libadjoint/uthash.h include/libadjoint/adj_error_handling.h include/libadjoint/adj_variable_lookup.h \
 	              include/libadjoint/adj_adjointer_routines.h include/libadjoint/adj_evaluation.h include/libadjoint/adj_data_structures.h include/libadjoint/adj_error_handling.h include/libadjoint/adj_adjointer_routines.h \
 	              include/libadjoint/adj_simplification.h
+obj/adj_dictionary.o: include/libadjoint/adj_dictionary.h include/libadjoint/adj_error_handling.h include/libadjoint/adj_constants.h
 

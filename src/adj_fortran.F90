@@ -109,6 +109,10 @@ module libadjoint_data_structures
     type(adj_vector) :: value
     type(c_ptr) :: filename
   end type adj_storage_data
+
+  type, bind(c) :: adj_dictionary
+    type(c_ptr) :: dict = c_null_ptr
+  end type adj_dictionary
 end module libadjoint_data_structures
 
 module libadjoint
@@ -539,6 +543,38 @@ module libadjoint
       type(adj_variable), intent(out) :: variable
       integer(kind=c_int) :: ierr
     end function adj_get_adjoint_equation_c
+
+    function adj_dict_init(dict) result(ierr) bind(c, name='adj_dict_init')
+      use libadjoint_data_structures
+      use iso_c_binding
+      type(adj_dictionary), intent(inout) :: dict
+      integer(kind=c_int) :: ierr
+    end function adj_dict_init
+
+    function adj_dict_set_c(dict, key, value) result(ierr) bind(c, name='adj_dict_set')
+      use libadjoint_data_structures
+      use iso_c_binding
+      type(adj_dictionary), intent(inout) :: dict
+      character(kind=c_char), dimension(ADJ_DICT_LEN), intent(in) :: key
+      character(kind=c_char), dimension(ADJ_DICT_LEN), intent(in) :: value
+      integer(kind=c_int) :: ierr
+    end function adj_dict_set_c
+
+    function adj_dict_find_c(dict, key, value) result(ierr) bind(c, name='adj_dict_find')
+      use libadjoint_data_structures
+      use iso_c_binding
+      type(adj_dictionary), intent(inout) :: dict
+      character(kind=c_char), dimension(ADJ_DICT_LEN), intent(in) :: key
+      character(kind=c_char), dimension(ADJ_DICT_LEN), intent(out) :: value
+      integer(kind=c_int) :: ierr
+    end function adj_dict_find_c
+
+    function adj_dict_destroy(dict) result(ierr) bind(c, name='adj_dict_destroy')
+      use libadjoint_data_structures
+      use iso_c_binding
+      type(adj_dictionary), intent(inout) :: dict
+      integer(kind=c_int) :: ierr
+    end function adj_dict_destroy
   end interface
 
   contains
