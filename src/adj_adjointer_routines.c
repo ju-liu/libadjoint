@@ -632,7 +632,7 @@ int adj_forget_adjoint_equation(adj_adjointer* adjointer, int equation)
   data = adjointer->vardata.firstnode;
   while (data != NULL)
   {
-    if (data->storage.has_value && data->nadjoint_equations > 0)
+    if (data->storage.has_value)
     {
       should_we_delete = 1;
       /* Check the adjoint equations we could explicitly compute */
