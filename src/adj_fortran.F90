@@ -512,6 +512,16 @@ module libadjoint
       integer(kind=c_int) :: ierr
     end function adj_timestep_set_times
 
+    function adj_timestep_get_times(adjointer, timestep, start, end) result(ierr) bind(c, name='adj_timestep_get_times')
+      use libadjoint_data_structures
+      use iso_c_binding
+      type(adj_adjointer), intent(inout) :: adjointer
+      integer(kind=c_int), intent(in), value :: timestep
+      adj_scalar_f, intent(out) :: start
+      adj_scalar_f, intent(out) :: end
+      integer(kind=c_int) :: ierr
+    end function adj_timestep_get_times
+
     function adj_timestep_set_functional_dependencies_c(adjointer, timestep, functional, ndepends, dependencies) result(ierr) &
                                                       & bind(c, name='adj_timestep_set_functional_dependencies')
       use libadjoint_data_structures

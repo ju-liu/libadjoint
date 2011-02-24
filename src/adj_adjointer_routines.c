@@ -945,6 +945,20 @@ int adj_timestep_set_times(adj_adjointer* adjointer, int timestep, adj_scalar st
   return ADJ_ERR_OK;
 }
 
+int adj_timestep_get_times(adj_adjointer* adjointer, int timestep, adj_scalar* start, adj_scalar* end)
+{
+  if (timestep < 0 || timestep >= adjointer->ntimesteps)
+  {
+    strncpy(adj_error_msg, "Invalid timestep supplied to adj_timestep_get_times.", ADJ_ERROR_MSG_BUF);
+    return ADJ_ERR_INVALID_INPUTS;
+  }
+
+  *start = adjointer->timestep_data[timestep].start_time;
+  *end   = adjointer->timestep_data[timestep].end_time;
+
+  return ADJ_ERR_OK;
+}
+
 int adj_timestep_set_functional_dependencies(adj_adjointer* adjointer, int timestep, char* functional, int ndepends, adj_variable* dependencies)
 {
   int i;
