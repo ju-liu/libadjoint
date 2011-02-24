@@ -511,6 +511,7 @@ int adj_register_operator_callback(adj_adjointer* adjointer, int type, char* nam
   cb_ptr = (adj_op_callback*) malloc(sizeof(adj_op_callback));
   strncpy(cb_ptr->name, name, ADJ_NAME_LEN);
   cb_ptr->callback = fn;
+  cb_ptr->next = NULL;
 
   /* Special case for the first callback */
   if (cb_list_ptr->firstnode == NULL)
@@ -595,6 +596,7 @@ int adj_register_functional_derivative_callback(adj_adjointer* adjointer, char* 
   cb_ptr = (adj_func_deriv_callback*) malloc(sizeof(adj_func_deriv_callback));
   strncpy(cb_ptr->name, name, ADJ_NAME_LEN);
   cb_ptr->callback = fn;
+  cb_ptr->next = NULL;
 
   /* Special case for the first callback */
   if (cb_list_ptr->firstnode == NULL)
