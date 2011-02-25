@@ -96,7 +96,7 @@ void adj_html_vars(FILE* fp, adj_adjointer* adjointer, int type, int backward)
 			adj_var = adjointer->equations[i].variable;
 		adj_var.type = type;
 		adj_variable_str(adj_var, adj_name, ADJ_NAME_LEN);
-		fprintf(fp, "<th><div style=\"width:%ipx;\">%s:%d:%d</div></th>\n", width, adj_name, adj_var.timestep, adj_var.iteration);
+		fprintf(fp, "<th><div style=\"width:%ipx;\">%s</div></th>\n", width, adj_name);
 	}
 	fprintf(fp, "</tr>\n");
 }
