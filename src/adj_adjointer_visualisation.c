@@ -60,7 +60,7 @@ void adj_html_write_row(FILE* fp, char** strings, char** desc, int nb_strings)
 		fprintf(fp, "<td><div title=\"%s\">%s</div></td>\n", desc[i], strings[i]);
 }
 
-int adj_html_find_column_index(adj_adjointer* adjointer, adj_variable* variable, int* col)
+int adj_html_find_column_index(adj_adjointer* adjointer, adj_variable* variable, int* col, int backward)
 {
 	int i;
 	adj_equation* adj_eqn;
@@ -69,7 +69,10 @@ int adj_html_find_column_index(adj_adjointer* adjointer, adj_variable* variable,
 		adj_eqn = &adjointer->equations[i];
 		if (adj_variable_equal(&adj_eqn->variable, variable, 1))
 		{
-			*col = i;
+			if (backward)
+				*col = adjointer->nequations-i-1;
+			else
+				*col = i;
 			return ADJ_ERR_OK;
 		}
 	}
@@ -117,7 +120,7 @@ int adj_html_eqn(FILE* fp, adj_adjointer* adjointer, adj_equation adj_eqn){
 	/* Fill in the data */
 	for (i = 0; i < adj_eqn.nblocks; i++)
 	{
-		ierr = adj_html_find_column_index(adjointer, &adj_eqn.targets[i], &col);
+		ierr = adj_html_find_column_index(adjointer, &adj_eqn.targets[i], &col, ADJ_FALSE);
 		if (ierr != ADJ_ERR_OK)
 			return ierr;
 
@@ -181,7 +184,7 @@ int adj_html_adjoint_eqn(FILE* fp, adj_adjointer* adjointer, adj_equation fwd_eq
 	ierr = adj_find_variable_data(&(adjointer->varhash), &fwd_var, &fwd_data);
 	assert(ierr == ADJ_ERR_OK);
 
-	/* Check that we have all the adjoint values we need, before we start allocating stuff */
+	/* Each targeting equation corresponds to one column in the considered row */
 	for (i = 0; i < fwd_data->ntargeting_equations; i++)
 	{
 	    adj_equation other_fwd_eqn;
@@ -196,8 +199,10 @@ int adj_html_adjoint_eqn(FILE* fp, adj_adjointer* adjointer, adj_equation fwd_eq
 	    }
 	    assert(j!=other_fwd_eqn.nblocks);
 
-
-	    col=j;
+	    /* find the column in which this blocks belongs */
+	    ierr = adj_html_find_column_index(adjointer, &other_fwd_eqn.variable, &col, ADJ_TRUE);
+	    if (ierr != ADJ_ERR_OK)
+	    	return ierr;
 
 	    //other_adj_var.type = ADJ_ADJOINT;
 
@@ -279,7 +284,7 @@ int adj_html_adjoint_system(adj_adjointer* adjointer, char* filename)
 				fprintf(fp, "<tr>\n");
 		}
 
-		ierr = adj_html_eqn(fp, adjointer, adj_eqn);
+		ierr = adj_html_adjoint_eqn(fp, adjointer, adj_eqn);
 		if (ierr != ADJ_ERR_OK)
 		{
 			fclose(fp);

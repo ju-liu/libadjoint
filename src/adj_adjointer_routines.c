@@ -632,7 +632,7 @@ int adj_forget_adjoint_equation(adj_adjointer* adjointer, int equation)
   data = adjointer->vardata.firstnode;
   while (data != NULL)
   {
-    if (data->storage.has_value && data->nadjoint_equations > 0)
+    if (data->storage.has_value)
     {
       should_we_delete = 1;
       /* Check the adjoint equations we could explicitly compute */
@@ -945,9 +945,23 @@ int adj_timestep_set_times(adj_adjointer* adjointer, int timestep, adj_scalar st
   return ADJ_ERR_OK;
 }
 
+int adj_timestep_get_times(adj_adjointer* adjointer, int timestep, adj_scalar* start, adj_scalar* end)
+{
+  if (timestep < 0 || timestep >= adjointer->ntimesteps)
+  {
+    strncpy(adj_error_msg, "Invalid timestep supplied to adj_timestep_get_times.", ADJ_ERROR_MSG_BUF);
+    return ADJ_ERR_INVALID_INPUTS;
+  }
+
+  *start = adjointer->timestep_data[timestep].start_time;
+  *end   = adjointer->timestep_data[timestep].end_time;
+
+  return ADJ_ERR_OK;
+}
+
 int adj_timestep_set_functional_dependencies(adj_adjointer* adjointer, int timestep, char* functional, int ndepends, adj_variable* dependencies)
 {
-  int i;
+  int i, j;
   adj_functional_data* functional_data_ptr = NULL;
   if (timestep < 0)
   {
@@ -1014,6 +1028,10 @@ int adj_timestep_set_functional_dependencies(adj_adjointer* adjointer, int times
 
     /* Record that this variable is necessary for the functional evaluation at this point in time */
     adj_append_unique(&(data_ptr->depending_timesteps), &(data_ptr->ndepending_timesteps), timestep);
+
+    /* Also record any implications for dJ/du at other timesteps */
+    for (j = 0; j < ndepends; j++)
+      adj_append_unique(&(data_ptr->depending_timesteps), &(data_ptr->ndepending_timesteps), dependencies[i].timestep);
   }
   /* We are done */
   return ADJ_ERR_OK;
