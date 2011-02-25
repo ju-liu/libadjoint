@@ -550,7 +550,7 @@ module libadjoint
       use iso_c_binding
       type(adj_adjointer), intent(inout) :: adjointer
       character(kind=c_char), dimension(ADJ_NAME_LEN), intent(in) :: filename
-      integer(kind=c_int), intent(in) :: type
+      integer(kind=c_int), intent(in), value :: type
       integer(kind=c_int) :: ierr
     end function adj_adjointer_to_html_c
 

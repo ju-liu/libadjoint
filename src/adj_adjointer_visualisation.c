@@ -277,8 +277,6 @@ int adj_html_forward_system(adj_adjointer* adjointer, char* filename)
 
 int adj_adjointer_to_html(adj_adjointer* adjointer, char* filename, int type)
 {
-	printf("Type is %i", type);
-	type = ADJ_ADJOINT;
 	if (type == ADJ_FORWARD)
 		return adj_html_forward_system(adjointer, filename);
 	else if(type == ADJ_ADJOINT)
