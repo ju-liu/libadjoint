@@ -84,6 +84,7 @@ int adj_html_find_column_index(adj_adjointer* adjointer, adj_variable* variable,
 void adj_html_vars(FILE* fp, adj_adjointer* adjointer, int type, int backward)
 {
 	int i;
+	int width = 400; /* in pixel */
 	char adj_name[ADJ_NAME_LEN];
 	adj_variable adj_var;
 	fprintf(fp, "<tr>\n");
@@ -95,7 +96,7 @@ void adj_html_vars(FILE* fp, adj_adjointer* adjointer, int type, int backward)
 			adj_var = adjointer->equations[i].variable;
 		adj_var.type = type;
 		adj_variable_str(adj_var, adj_name, ADJ_NAME_LEN);
-		fprintf(fp, "<th width=\"500px\">%s:%d:%d</th>\n", adj_name, adj_var.timestep, adj_var.iteration);
+		fprintf(fp, "<th><div style=\"width:%ipx;\">%s:%d:%d</div></th>\n", width, adj_name, adj_var.timestep, adj_var.iteration);
 	}
 	fprintf(fp, "</tr>\n");
 }
@@ -188,6 +189,7 @@ int adj_html_adjoint_eqn(FILE* fp, adj_adjointer* adjointer, adj_equation fwd_eq
 	for (i = 0; i < fwd_data->ntargeting_equations; i++)
 	{
 	    adj_equation other_fwd_eqn;
+	    adj_variable other_adj_var;
 
 	    other_fwd_eqn = adjointer->equations[fwd_data->targeting_equations[i]];
 
@@ -204,7 +206,8 @@ int adj_html_adjoint_eqn(FILE* fp, adj_adjointer* adjointer, adj_equation fwd_eq
 	    if (ierr != ADJ_ERR_OK)
 	    	return ierr;
 
-	    //other_adj_var.type = ADJ_ADJOINT;
+	    other_adj_var = other_fwd_eqn.targets[j];
+	    other_adj_var.type = ADJ_ADJOINT;
 
 
 		/* Fill in the data */
@@ -212,12 +215,13 @@ int adj_html_adjoint_eqn(FILE* fp, adj_adjointer* adjointer, adj_equation fwd_eq
 
 		strncpy(desc[col], other_fwd_eqn.blocks[j].name, ADJ_NAME_LEN);
 		strncat(desc[col], "\n\nTargets: ", ADJ_NAME_LEN);
-		strncat(desc[col], other_fwd_eqn.targets[j].name, ADJ_NAME_LEN);
-		strncat(desc[col], ":", ADJ_NAME_LEN);
-		snprintf(buf, ADJ_NAME_LEN, "%d", other_fwd_eqn.targets[j].timestep);
+		adj_variable_str(other_adj_var, buf, ADJ_NAME_LEN);
 		strncat(desc[col], buf, ADJ_NAME_LEN);
 		strncat(desc[col], ":", ADJ_NAME_LEN);
-		snprintf(buf, ADJ_NAME_LEN, "%d", other_fwd_eqn.targets[j].iteration);
+		snprintf(buf, ADJ_NAME_LEN, "%d", other_adj_var.timestep);
+		strncat(desc[col], buf, ADJ_NAME_LEN);
+		strncat(desc[col], ":", ADJ_NAME_LEN);
+		snprintf(buf, ADJ_NAME_LEN, "%d", other_adj_var.iteration);
 		strncat(desc[col], buf, ADJ_NAME_LEN);
 		strncat(desc[col], "\nCoefficient: ", ADJ_NAME_LEN);
 		snprintf(buf, ADJ_NAME_LEN, "%f", other_fwd_eqn.blocks[j].coefficient);
@@ -257,8 +261,7 @@ int adj_html_adjoint_system(adj_adjointer* adjointer, char* filename)
 
 	adj_html_header(fp);
 
-	fprintf(fp, "<h1>Registered equations</h1>\n");
-	fprintf(fp, "Adjoint system\n");
+	fprintf(fp, "<h1>Adjoint system</h1>\n");
 	if (adjointer->nequations==0)
 		return ADJ_ERR_OK;
 	timestep = adjointer->equations[0].variable.timestep-1;
@@ -317,8 +320,7 @@ int adj_html_forward_system(adj_adjointer* adjointer, char* filename)
 
 	adj_html_header(fp);
 
-	fprintf(fp, "<h1>Registered equations</h1>\n");
-	fprintf(fp, "Forward system\n");
+	fprintf(fp, "<h1>Forward system</h1>\n");
 	if (adjointer->nequations==0)
 		return ADJ_ERR_OK;
 	timestep = adjointer->equations[0].variable.timestep - 1;
