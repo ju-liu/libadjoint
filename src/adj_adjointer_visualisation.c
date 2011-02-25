@@ -1,7 +1,52 @@
 #include "libadjoint/adj_adjointer_visualisation.h"
 
+void adj_html_css(FILE* fp) {
+	fprintf(fp, "<head>\n"
+				"<style type=\"text/css\">\n"
+			"table.equations\n"
+			"{ font-family: monospace;\n"
+			"  font-weight: normal;\n"
+			"  font-size: 11px;\n"
+			"  color: #404040;\n"
+			"  table-layout:fixed;\n"
+			"  background-color: #fafafa;\n"
+			"  border: 1px #6699CC solid;\n"
+			"  border-collapse: collapse;\n"
+			"  border-spacing: 0px;\n"
+			"  margin-top: 0px;}\n"
+
+			"table.equations td\n"
+			"{  border-bottom: 1px #6699CC;\n"
+			"	font-weight: normal;\n"
+			"	font-size: 11px;\n"
+			"	color: #404040;\n"
+			"	background-color: white;\n"
+			"	text-align: left;\n"
+			"	padding-left: 3px;}\n"
+
+			"table.equations tr.new_iteration\n"
+			"{ border-top: 2px solid #6699CC;}\n"
+
+			"</style>\n"
+			"</head>\n"
+			);
+}
+
+void adj_html_header(FILE *fp) {
+	adj_html_css(fp);
+	fprintf(fp, "<html>\n"
+				"<body>\n"
+			);
+}
+
+void adj_html_footer(FILE *fp) {
+	fprintf(fp, "</body>\n"
+				"</html>\n"
+			);
+}
+
 void adj_html_table_begin(FILE* fp){
-	fprintf(fp, "<table border=\"1px\" style=\"border-collapse: collapse; border: solid;\">\n");
+	fprintf(fp, "<table border=\"1px\" class=\"equations\">\n");
 }
 
 void adj_html_table_end(FILE* fp){
@@ -32,16 +77,22 @@ int adj_html_find_column_index(adj_adjointer* adjointer, adj_variable* variable,
 	return ADJ_ERR_INVALID_INPUTS;
 }
 
-/* Writes a html row containing the variables in the adjointer into fp */
-void adj_html_vars(FILE* fp, adj_adjointer* adjointer)
+/* Writes a html row containing the adjoint variables into fp */
+void adj_html_vars(FILE* fp, adj_adjointer* adjointer, int type, int backward)
 {
 	int i;
-	adj_equation* adj_eqn;
+	char adj_name[ADJ_NAME_LEN];
+	adj_variable adj_var;
 	fprintf(fp, "<tr>\n");
-	for (i=0; i < adjointer->nequations; i++)
+	for (i = 0; i < adjointer->nequations; i++)
 	{
-		adj_eqn = &adjointer->equations[i];
-		fprintf(fp, "<th>%s:%d:%d</th>\n", adj_eqn->variable.name, adj_eqn->variable.timestep, adj_eqn->variable.iteration);
+		if (backward)
+			adj_var = adjointer->equations[adjointer->nequations-i-1].variable;
+		else
+			adj_var = adjointer->equations[i].variable;
+		adj_var.type = type;
+		adj_variable_str(adj_var, adj_name, ADJ_NAME_LEN);
+		fprintf(fp, "<th width=\"500px\">%s:%d:%d</th>\n", adj_name, adj_var.timestep, adj_var.iteration);
 	}
 	fprintf(fp, "</tr>\n");
 }
@@ -107,10 +158,10 @@ int adj_html_eqn(FILE* fp, adj_adjointer* adjointer, adj_equation adj_eqn){
 
 }
 
-int adj_adjointer_to_html(adj_adjointer* adjointer, char* filename)
+int adj_html_adjoint_system(adj_adjointer* adjointer, char* filename)
 {
 	FILE *fp;
-	int i, ierr;
+	int i, ierr, timestep, iteration;
 	adj_equation adj_eqn;
 
 	fp=fopen(filename, "w+");
@@ -120,13 +171,34 @@ int adj_adjointer_to_html(adj_adjointer* adjointer, char* filename)
 		return ADJ_ERR_INVALID_INPUTS;
 	}
 
-	fprintf(fp, "<h1>Registered equations</h1>");
-	adj_html_table_begin(fp);
-	adj_html_vars(fp, adjointer);
+	adj_html_header(fp);
+
+	fprintf(fp, "<h1>Registered equations</h1>\n");
+	fprintf(fp, "Adjoint system\n");
+	if (adjointer->nequations==0)
+		return ADJ_ERR_OK;
+	timestep = adjointer->equations[0].variable.timestep-1;
+	iteration = adjointer->equations[0].variable.iteration - 1 ;
+
 	for (i=0; i<adjointer->nequations; i++)
 	{
 		adj_eqn = adjointer->equations[i];
-		fprintf(fp, "<tr>\n");
+		if (timestep != adj_eqn.variable.timestep) {
+			/* New timestep, create a new table */
+			if (i!=0)
+				adj_html_table_end(fp);
+			fprintf(fp, "<h2>Timestep %d</h2>\n", adj_eqn.variable.timestep);
+			adj_html_table_begin(fp);
+			adj_html_vars(fp, adjointer, ADJ_ADJOINT, ADJ_TRUE);
+			fprintf(fp, "<tr class=\"new_iteration\">\n");
+		}
+		else {
+			if (iteration != adj_eqn.variable.iteration)
+				fprintf(fp, "<tr class=\"new_iteration\">\n");
+			else
+				fprintf(fp, "<tr>\n");
+		}
+
 		ierr = adj_html_eqn(fp, adjointer, adj_eqn);
 		if (ierr != ADJ_ERR_OK)
 		{
@@ -134,9 +206,83 @@ int adj_adjointer_to_html(adj_adjointer* adjointer, char* filename)
 			return ierr;
 		}
 		fprintf(fp, "</tr>\n");
+		timestep = adj_eqn.variable.timestep;
+		iteration = adj_eqn.variable.iteration;
 	}
 	adj_html_table_end(fp);
 
+	adj_html_footer(fp);
 	fclose(fp);
 	return ADJ_ERR_OK;
+}
+
+
+int adj_html_forward_system(adj_adjointer* adjointer, char* filename)
+{
+	FILE *fp;
+	int i, ierr, timestep, iteration;
+	adj_equation adj_eqn;
+
+	fp=fopen(filename, "w+");
+	if (fp==NULL)
+	{
+		strncpy(adj_error_msg, "File could not be opened.", ADJ_ERROR_MSG_BUF);
+		return ADJ_ERR_INVALID_INPUTS;
+	}
+
+	adj_html_header(fp);
+
+	fprintf(fp, "<h1>Registered equations</h1>\n");
+	fprintf(fp, "Forward system\n");
+	if (adjointer->nequations==0)
+		return ADJ_ERR_OK;
+	timestep = adjointer->equations[0].variable.timestep - 1;
+	iteration = adjointer->equations[0].variable.iteration - 1 ;
+
+	for (i=0; i<adjointer->nequations; i++)
+	{
+		adj_eqn = adjointer->equations[i];
+		if (timestep != adj_eqn.variable.timestep) {
+			/* New timestep, create a new table */
+			if (i!=0)
+				adj_html_table_end(fp);
+			fprintf(fp, "<h2>Timestep %d</h2>\n", adj_eqn.variable.timestep);
+			adj_html_table_begin(fp);
+			adj_html_vars(fp, adjointer, ADJ_FORWARD, ADJ_FALSE);
+			fprintf(fp, "<tr class=\"new_iteration\">\n");
+		}
+		else {
+			if (iteration != adj_eqn.variable.iteration)
+				fprintf(fp, "<tr class=\"new_iteration\">\n");
+			else
+				fprintf(fp, "<tr>\n");
+		}
+
+		ierr = adj_html_eqn(fp, adjointer, adj_eqn);
+		if (ierr != ADJ_ERR_OK)
+		{
+			fclose(fp);
+			return ierr;
+		}
+		fprintf(fp, "</tr>\n");
+		timestep = adj_eqn.variable.timestep;
+		iteration = adj_eqn.variable.iteration;
+	}
+	adj_html_table_end(fp);
+
+	adj_html_footer(fp);
+	fclose(fp);
+	return ADJ_ERR_OK;
+}
+
+int adj_adjointer_to_html(adj_adjointer* adjointer, char* filename, int type)
+{
+	printf("Type is %i", type);
+	type = ADJ_ADJOINT;
+	if (type == ADJ_FORWARD)
+		return adj_html_forward_system(adjointer, filename);
+	else if(type == ADJ_ADJOINT)
+		return adj_html_adjoint_system(adjointer, filename);
+	else
+		return ADJ_ERR_INVALID_INPUTS;
 }

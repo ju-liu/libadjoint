@@ -141,7 +141,9 @@ subroutine test_adj_get_adjoint_equation_block_action
   ierr = adj_create_adjointer(adjointer)
   
   ! Test the html output
-  ierr = adj_adjointer_to_html(adjointer, "test_adj_get_adjoint_equation_block_action_0.html")
+  ierr = adj_adjointer_to_html(adjointer, "test_adj_get_adjoint_equation_block_action_0_forward.html", ADJ_FORWARD)
+  call adj_test_assert(ierr == ADJ_ERR_OK, "html output should have worked")
+  ierr = adj_adjointer_to_html(adjointer, "test_adj_get_adjoint_equation_block_action_0_adjoint.html", ADJ_ADJOINT)
   call adj_test_assert(ierr == ADJ_ERR_OK, "html output should have worked")
   
   call adj_chkierr(ierr)
@@ -192,7 +194,10 @@ subroutine test_adj_get_adjoint_equation_block_action
   call adj_test_assert(ierr == ADJ_ERR_INVALID_INPUTS, "We can't set the functional dependencies twice")
 
   ! Test the html output
-  ierr = adj_adjointer_to_html(adjointer, "test_adj_get_adjoint_equation_block_action_1.html")
+  ierr = adj_adjointer_to_html(adjointer, "test_adj_get_adjoint_equation_block_action_1_forward.html", ADJ_FORWARD)
+  call adj_test_assert(ierr == ADJ_ERR_OK, "html output should have worked")
+  ierr = adj_adjointer_to_html(adjointer, "test_adj_get_adjoint_equation_block_action_1_adjoint.html", ADJ_ADJOINT)
+
   call adj_test_assert(ierr == ADJ_ERR_OK, "html output should have worked")
 
   ! Record a value for u0

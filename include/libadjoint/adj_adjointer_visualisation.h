@@ -7,6 +7,6 @@
 #include "adj_constants.h"
 #include "adj_error_handling.h"
 
-int adj_adjointer_to_html(adj_adjointer* adjointer, char* filename);
+int adj_adjointer_to_html(adj_adjointer* adjointer, char* filename, int type);
 
 #endif
