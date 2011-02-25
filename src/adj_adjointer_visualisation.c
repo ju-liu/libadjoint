@@ -144,7 +144,7 @@ int adj_html_eqn(FILE* fp, adj_adjointer* adjointer, adj_equation adj_eqn){
 			strncat(desc[col], adj_eqn.blocks[i].nonlinear_block.name, ADJ_NAME_LEN);
 		}
 	}
-	/* And write it to file */
+	/* Write it to file */
 	adj_html_write_row(fp, row, desc, adjointer->nequations);
 
 
@@ -155,7 +155,86 @@ int adj_html_eqn(FILE* fp, adj_adjointer* adjointer, adj_equation adj_eqn){
 		free(desc[i]);
 	}
 	return ADJ_ERR_OK;
+}
 
+/* Writes a html row containing the supplied adjoint equation into fp */
+int adj_html_adjoint_eqn(FILE* fp, adj_adjointer* adjointer, adj_equation fwd_eqn){
+	int i, j;
+	char* row[adjointer->nequations];
+	char* desc[adjointer->nequations];
+	char buf[ADJ_NAME_LEN];
+	int col, ierr;
+	adj_variable fwd_var;
+	adj_variable_data *fwd_data;
+
+
+	/* Allocate the strings for this row */
+	for (i = 0; i < adjointer->nequations; ++i)
+	{
+		row[i] = malloc(ADJ_NAME_LEN*sizeof(char));
+		row[i][0]='\0';
+		desc[i] = malloc(ADJ_NAME_LEN*sizeof(char));
+		desc[i][0]='\0';
+	}
+
+	fwd_var = fwd_eqn.variable;
+	ierr = adj_find_variable_data(&(adjointer->varhash), &fwd_var, &fwd_data);
+	assert(ierr == ADJ_ERR_OK);
+
+	/* Check that we have all the adjoint values we need, before we start allocating stuff */
+	for (i = 0; i < fwd_data->ntargeting_equations; i++)
+	{
+	    adj_equation other_fwd_eqn;
+
+	    other_fwd_eqn = adjointer->equations[fwd_data->targeting_equations[i]];
+
+	    /* Find the index in other_fwd_eqn of the block fwd_var is multiplied with */
+	    for (j=0; j<other_fwd_eqn.nblocks; j++)
+	    {
+	    	if (adj_variable_equal(&other_fwd_eqn.targets[j], &fwd_var, 1))
+	    		break;
+	    }
+	    assert(j!=other_fwd_eqn.nblocks);
+
+
+	    col=j;
+
+	    //other_adj_var.type = ADJ_ADJOINT;
+
+
+		/* Fill in the data */
+		strncpy(row[col], other_fwd_eqn.blocks[j].name, ADJ_NAME_LEN);
+
+		strncpy(desc[col], other_fwd_eqn.blocks[j].name, ADJ_NAME_LEN);
+		strncat(desc[col], "\n\nTargets: ", ADJ_NAME_LEN);
+		strncat(desc[col], other_fwd_eqn.targets[j].name, ADJ_NAME_LEN);
+		strncat(desc[col], ":", ADJ_NAME_LEN);
+		snprintf(buf, ADJ_NAME_LEN, "%d", other_fwd_eqn.targets[j].timestep);
+		strncat(desc[col], buf, ADJ_NAME_LEN);
+		strncat(desc[col], ":", ADJ_NAME_LEN);
+		snprintf(buf, ADJ_NAME_LEN, "%d", other_fwd_eqn.targets[j].iteration);
+		strncat(desc[col], buf, ADJ_NAME_LEN);
+		strncat(desc[col], "\nCoefficient: ", ADJ_NAME_LEN);
+		snprintf(buf, ADJ_NAME_LEN, "%f", other_fwd_eqn.blocks[j].coefficient);
+		strncat(desc[col], buf, ADJ_NAME_LEN);
+		if (other_fwd_eqn.blocks[j].has_nonlinear_block)
+		{
+			strncat(desc[col], "\nNonlinear Block: ", ADJ_NAME_LEN);
+			strncat(desc[col], other_fwd_eqn.blocks[j].nonlinear_block.name, ADJ_NAME_LEN);
+		}
+
+	}
+
+	/* Write it to file */
+	adj_html_write_row(fp, row, desc, adjointer->nequations);
+
+	/* Tidy up */
+	for (i = 0; i < adjointer->nequations; ++i)
+	{
+		free(row[i]);
+		free(desc[i]);
+	}
+	return ADJ_ERR_OK;
 }
 
 int adj_html_adjoint_system(adj_adjointer* adjointer, char* filename)
@@ -180,12 +259,13 @@ int adj_html_adjoint_system(adj_adjointer* adjointer, char* filename)
 	timestep = adjointer->equations[0].variable.timestep-1;
 	iteration = adjointer->equations[0].variable.iteration - 1 ;
 
-	for (i=0; i<adjointer->nequations; i++)
+	/* The adjoint equation runs backward in time */
+	for (i=adjointer->nequations-1; i>=0; i--)
 	{
 		adj_eqn = adjointer->equations[i];
 		if (timestep != adj_eqn.variable.timestep) {
 			/* New timestep, create a new table */
-			if (i!=0)
+			if (i!=adjointer->nequations-1)
 				adj_html_table_end(fp);
 			fprintf(fp, "<h2>Timestep %d</h2>\n", adj_eqn.variable.timestep);
 			adj_html_table_begin(fp);
