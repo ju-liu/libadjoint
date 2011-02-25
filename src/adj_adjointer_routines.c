@@ -961,7 +961,7 @@ int adj_timestep_get_times(adj_adjointer* adjointer, int timestep, adj_scalar* s
 
 int adj_timestep_set_functional_dependencies(adj_adjointer* adjointer, int timestep, char* functional, int ndepends, adj_variable* dependencies)
 {
-  int i;
+  int i, j;
   adj_functional_data* functional_data_ptr = NULL;
   if (timestep < 0)
   {
@@ -1028,6 +1028,10 @@ int adj_timestep_set_functional_dependencies(adj_adjointer* adjointer, int times
 
     /* Record that this variable is necessary for the functional evaluation at this point in time */
     adj_append_unique(&(data_ptr->depending_timesteps), &(data_ptr->ndepending_timesteps), timestep);
+
+    /* Also record any implications for dJ/du at other timesteps */
+    for (j = 0; j < ndepends; j++)
+      adj_append_unique(&(data_ptr->depending_timesteps), &(data_ptr->ndepending_timesteps), dependencies[i].timestep);
   }
   /* We are done */
   return ADJ_ERR_OK;
