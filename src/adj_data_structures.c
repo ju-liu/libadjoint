@@ -129,6 +129,12 @@ int adj_block_set_coefficient(adj_block* block, adj_scalar coefficient)
   return ADJ_ERR_OK;
 }
 
+int adj_block_set_hermitian(adj_block* block, int hermitian)
+{
+  block->hermitian = hermitian;
+  return ADJ_ERR_OK;
+}
+
 int adj_variable_equal(adj_variable* var1, adj_variable* var2, int nvars)
 {
   return memcmp(var1, var2, nvars * sizeof(adj_variable)) == 0 ? 1 : 0;
