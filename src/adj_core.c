@@ -120,7 +120,7 @@ int adj_get_adjoint_equation(adj_adjointer* adjointer, int equation, char* funct
         break;
       }
     }
-    block.hermitian = ADJ_TRUE;
+    block.hermitian = !block.hermitian;
     ierr = adj_evaluate_block_assembly(adjointer, block, lhs, rhs);
     if (ierr != ADJ_ERR_OK) return ierr;
   }
@@ -149,7 +149,7 @@ int adj_get_adjoint_equation(adj_adjointer* adjointer, int equation, char* funct
     }
 
     /* OK. Now we've found the right block ... */
-    block.hermitian = ADJ_TRUE;
+    block.hermitian = !block.hermitian;
 
     /* Find the adjoint variable we want this to multiply */
     other_adj_var = other_fwd_eqn.variable; other_adj_var.type = ADJ_ADJOINT; strncpy(other_adj_var.functional, functional, ADJ_NAME_LEN);
