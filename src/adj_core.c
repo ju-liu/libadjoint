@@ -7,7 +7,6 @@ int adj_get_adjoint_equation(adj_adjointer* adjointer, int equation, char* funct
   adj_variable fwd_var;
   adj_variable_data* adj_data;
   adj_variable_data* fwd_data;
-  adj_vector rhs_tmp;
   int i;
   int j;
   void (*functional_derivative_func)(adj_variable variable, int nb_variables, adj_variable* variables, adj_vector* dependencies, char* name, adj_scalar start_time, adj_scalar end_time, adj_vector* output) = NULL;
@@ -164,10 +163,13 @@ int adj_get_adjoint_equation(adj_adjointer* adjointer, int equation, char* funct
   }
 
   /* Now add dJ/du to the rhs */
-  ierr = adj_evaluate_functional(adjointer, fwd_var, functional, &rhs_tmp);
-  if (ierr != ADJ_ERR_OK) return ierr;
-  adjointer->callbacks.vec_axpy(rhs, (adj_scalar)1.0, rhs_tmp);
-  adjointer->callbacks.vec_destroy(&rhs_tmp);
+  {
+    adj_vector rhs_tmp;
+    ierr = adj_evaluate_functional(adjointer, fwd_var, functional, &rhs_tmp);
+    if (ierr != ADJ_ERR_OK) return ierr;
+    adjointer->callbacks.vec_axpy(rhs, (adj_scalar)1.0, rhs_tmp);
+    adjointer->callbacks.vec_destroy(&rhs_tmp);
+  }
 
   return ADJ_ERR_OK;
 }
