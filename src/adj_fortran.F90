@@ -561,6 +561,16 @@ module libadjoint
       type(adj_variable), intent(out) :: variable
       integer(kind=c_int) :: ierr
     end function adj_get_adjoint_equation_c
+    
+    function adj_adjointer_to_html_c(adjointer, filename, type) result(ierr) &
+            & bind(c, name='adj_adjointer_to_html')
+      use libadjoint_data_structures
+      use iso_c_binding
+      type(adj_adjointer), intent(inout) :: adjointer
+      character(kind=c_char), dimension(ADJ_NAME_LEN), intent(in) :: filename
+      integer(kind=c_int), intent(in), value :: type
+      integer(kind=c_int) :: ierr
+    end function adj_adjointer_to_html_c
 
     function adj_dict_init(dict) result(ierr) bind(c, name='adj_dict_init')
       use libadjoint_data_structures
@@ -813,6 +823,26 @@ module libadjoint
     ierr = adj_register_functional_derivative_callback_c(adjointer, name_c, fnptr)
   end function adj_register_functional_derivative_callback
 
+  function adj_adjointer_to_html(adjointer, filename, type) result(ierr) 
+    type(adj_adjointer), intent(inout) :: adjointer
+    character(len=*), intent(in) :: filename
+    integer, intent(in) :: type
+    integer :: ierr
+    
+    character(kind=c_char), dimension(ADJ_NAME_LEN) :: filename_c
+    integer :: j
+
+    do j=1,len_trim(filename)
+      filename_c(j) = filename(j:j)
+    end do
+    do j=len_trim(filename)+1,ADJ_NAME_LEN
+      filename_c(j) = c_null_char
+    end do
+    filename_c(ADJ_NAME_LEN) = c_null_char
+
+    ierr = adj_adjointer_to_html_c(adjointer, filename_c, type)
+  end function adj_adjointer_to_html
+  
   function adj_dict_set(dict, key, value) result(ierr)
     type(adj_dictionary), intent(inout) :: dict
     character(len=*), intent(in) :: key, value

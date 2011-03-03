@@ -1,6 +1,7 @@
 #include "libadjoint/adj_adjointer_routines.h"
 #include "libadjoint/adj_test_tools.h"
 #include "libadjoint/adj_test_main.h"
+#include "libadjoint/adj_adjointer_visualisation.h"
 
 #ifndef HAVE_PETSC
 void test_adj_forget_adjoint_equation(void)
@@ -139,6 +140,12 @@ void test_adj_forget_adjoint_equation(void)
   adj_test_assert(ierr == ADJ_ERR_OK, "Should have worked");
   adj_test_assert(data_ptr->nadjoint_equations == 2, "Should be {3, 4}");
   adj_test_assert(memcmp(data_ptr->adjoint_equations, adj_equations_u21, 2*sizeof(int)) == 0, "Should be {3, 4}");
+
+
+  ierr = adj_adjointer_to_html(&adjointer, "test_adj_forget_adjoint_equation_forward.html", ADJ_FORWARD);
+  adj_test_assert(ierr == ADJ_ERR_OK, "Should have worked");
+  ierr = adj_adjointer_to_html(&adjointer, "test_adj_forget_adjoint_equation_adjoint.html", ADJ_ADJOINT);
+  adj_test_assert(ierr == ADJ_ERR_OK, "Should have worked");
 
   /* Now let's record things, and then forget. */
   VecCreateSeq(PETSC_COMM_SELF, dim, &vec);
