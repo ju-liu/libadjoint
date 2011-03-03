@@ -1,6 +1,7 @@
 #include "libadjoint/adj_adjointer_visualisation.h"
 
-void adj_html_css(FILE* fp) {
+void adj_html_css(FILE* fp)
+{
   fprintf(fp, "<head>\n"
         "<style type=\"text/css\">\n"
       "table.equations\n"
@@ -32,24 +33,28 @@ void adj_html_css(FILE* fp) {
       );
 }
 
-void adj_html_header(FILE *fp) {
+void adj_html_header(FILE *fp)
+{
   adj_html_css(fp);
   fprintf(fp, "<html>\n"
         "<body>\n"
       );
 }
 
-void adj_html_footer(FILE *fp) {
+void adj_html_footer(FILE *fp)
+{
   fprintf(fp, "</body>\n"
         "</html>\n"
       );
 }
 
-void adj_html_table_begin(FILE* fp){
+void adj_html_table_begin(FILE* fp)
+{
   fprintf(fp, "<table border=\"1px\" class=\"equations\">\n");
 }
 
-void adj_html_table_end(FILE* fp){
+void adj_html_table_end(FILE* fp)
+{
   fprintf(fp, "</table>\n");
 }
 
@@ -60,7 +65,7 @@ void adj_html_write_row(FILE* fp, char** strings, char** desc, int nb_strings)
     fprintf(fp, "<td><div title=\"%s\">%s</div></td>\n", desc[i], strings[i]);
 }
 
-int adj_html_find_column_index(adj_adjointer* adjointer, adj_variable* variable, int* col, int backward)
+int adj_html_find_column_index(adj_adjointer* adjointer, adj_variable* variable, int* col)
 {
   int i;
   adj_equation* adj_eqn;
@@ -69,10 +74,7 @@ int adj_html_find_column_index(adj_adjointer* adjointer, adj_variable* variable,
     adj_eqn = &adjointer->equations[i];
     if (adj_variable_equal(&adj_eqn->variable, variable, 1))
     {
-      if (backward)
-        *col = adjointer->nequations-i-1;
-      else
-        *col = i;
+      *col = i;
       return ADJ_ERR_OK;
     }
   }
@@ -81,7 +83,7 @@ int adj_html_find_column_index(adj_adjointer* adjointer, adj_variable* variable,
 }
 
 /* Writes a html row containing the adjoint variables into fp */
-void adj_html_vars(FILE* fp, adj_adjointer* adjointer, int type, int backward)
+void adj_html_vars(FILE* fp, adj_adjointer* adjointer, int type)
 {
   int i;
   int width = 400; /* in pixel */
@@ -90,10 +92,7 @@ void adj_html_vars(FILE* fp, adj_adjointer* adjointer, int type, int backward)
   fprintf(fp, "<tr>\n");
   for (i = 0; i < adjointer->nequations; i++)
   {
-    if (backward)
-      adj_var = adjointer->equations[adjointer->nequations-i-1].variable;
-    else
-      adj_var = adjointer->equations[i].variable;
+    adj_var = adjointer->equations[i].variable;
     adj_var.type = type;
     adj_variable_str(adj_var, adj_name, ADJ_NAME_LEN);
     fprintf(fp, "<th><div style=\"width:%ipx;\">%s</div></th>\n", width, adj_name);
@@ -122,7 +121,7 @@ int adj_html_eqn(FILE* fp, adj_adjointer* adjointer, adj_equation adj_eqn)
   /* Fill in the data */
   for (i = 0; i < adj_eqn.nblocks; i++)
   {
-    ierr = adj_html_find_column_index(adjointer, &adj_eqn.targets[i], &col, ADJ_FALSE);
+    ierr = adj_html_find_column_index(adjointer, &adj_eqn.targets[i], &col);
     if (ierr != ADJ_ERR_OK)
       return ierr;
 
@@ -204,7 +203,7 @@ int adj_html_adjoint_eqn(FILE* fp, adj_adjointer* adjointer, adj_equation fwd_eq
       assert(j!=other_fwd_eqn.nblocks);
 
       /* find the column in which this blocks belongs */
-      ierr = adj_html_find_column_index(adjointer, &other_fwd_eqn.variable, &col, ADJ_TRUE);
+      ierr = adj_html_find_column_index(adjointer, &other_fwd_eqn.variable, &col);
       if (ierr != ADJ_ERR_OK)
         return ierr;
 
@@ -269,8 +268,7 @@ int adj_html_adjoint_system(adj_adjointer* adjointer, char* filename)
   timestep = adjointer->equations[0].variable.timestep-1;
   iteration = adjointer->equations[0].variable.iteration - 1 ;
 
-  /* The adjoint equation runs backward in time */
-  for (i=adjointer->nequations-1; i>=0; i--)
+  for (i=0; i<adjointer->nequations; i++)
   {
     adj_eqn = adjointer->equations[i];
     if (timestep != adj_eqn.variable.timestep) {
@@ -279,7 +277,7 @@ int adj_html_adjoint_system(adj_adjointer* adjointer, char* filename)
         adj_html_table_end(fp);
       fprintf(fp, "<h2>Timestep %d</h2>\n", adj_eqn.variable.timestep);
       adj_html_table_begin(fp);
-      adj_html_vars(fp, adjointer, ADJ_ADJOINT, ADJ_TRUE);
+      adj_html_vars(fp, adjointer, ADJ_ADJOINT);
       fprintf(fp, "<tr class=\"new_iteration\">\n");
     }
     else {
@@ -337,7 +335,7 @@ int adj_html_forward_system(adj_adjointer* adjointer, char* filename)
         adj_html_table_end(fp);
       fprintf(fp, "<h2>Timestep %d</h2>\n", adj_eqn.variable.timestep);
       adj_html_table_begin(fp);
-      adj_html_vars(fp, adjointer, ADJ_FORWARD, ADJ_FALSE);
+      adj_html_vars(fp, adjointer, ADJ_FORWARD);
       fprintf(fp, "<tr class=\"new_iteration\">\n");
     }
     else {
