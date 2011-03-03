@@ -221,6 +221,7 @@ int adj_nonlinear_block_set_coefficient(adj_nonlinear_block* nblock, adj_scalar 
 int adj_create_block(char* name, adj_nonlinear_block* nblock, void* context, adj_block* block);
 int adj_destroy_block(adj_block* block);
 int adj_block_set_coefficient(adj_block* block, adj_scalar coefficient);
+int adj_block_set_hermitian(adj_block* block, int hermitian);
 int adj_create_equation(adj_variable var, int nblocks, adj_block* blocks, adj_variable* targets, adj_equation* equation);
 int adj_set_rhs_dependencies(adj_equation* equation, int nrhsdeps, adj_variable* rhsdeps);
 int adj_destroy_equation(adj_equation* equation);

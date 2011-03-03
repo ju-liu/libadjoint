@@ -364,6 +364,14 @@ module libadjoint
       integer(kind=c_int) :: ierr
     end function adj_block_set_coefficient
 
+    function adj_block_set_hermitian(block, hermitian) result(ierr) bind(c, name='adj_block_set_hermitian')
+      use libadjoint_data_structures
+      use iso_c_binding
+      type(adj_block), intent(inout) :: block
+      integer(kind=c_int), intent(in), value :: hermitian
+      integer(kind=c_int) :: ierr
+    end function adj_block_set_hermitian
+
     function adj_create_equation_c(variable, nblocks, blocks, targets, equation) result(ierr) bind(c, name='adj_create_equation')
       use libadjoint_data_structures
       use iso_c_binding

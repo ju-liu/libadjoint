@@ -7,7 +7,6 @@ int adj_get_adjoint_equation(adj_adjointer* adjointer, int equation, char* funct
   adj_variable fwd_var;
   adj_variable_data* adj_data;
   adj_variable_data* fwd_data;
-  adj_vector rhs_tmp;
   int i;
   int j;
   void (*functional_derivative_func)(adj_variable variable, int nb_variables, adj_variable* variables, adj_vector* dependencies, char* name, adj_scalar start_time, adj_scalar end_time, adj_vector* output) = NULL;
@@ -120,7 +119,7 @@ int adj_get_adjoint_equation(adj_adjointer* adjointer, int equation, char* funct
         break;
       }
     }
-    block.hermitian = ADJ_TRUE;
+    block.hermitian = !block.hermitian;
     ierr = adj_evaluate_block_assembly(adjointer, block, lhs, rhs);
     if (ierr != ADJ_ERR_OK) return ierr;
   }
@@ -149,7 +148,7 @@ int adj_get_adjoint_equation(adj_adjointer* adjointer, int equation, char* funct
     }
 
     /* OK. Now we've found the right block ... */
-    block.hermitian = ADJ_TRUE;
+    block.hermitian = !block.hermitian;
 
     /* Find the adjoint variable we want this to multiply */
     other_adj_var = other_fwd_eqn.variable; other_adj_var.type = ADJ_ADJOINT; strncpy(other_adj_var.functional, functional, ADJ_NAME_LEN);
@@ -164,10 +163,13 @@ int adj_get_adjoint_equation(adj_adjointer* adjointer, int equation, char* funct
   }
 
   /* Now add dJ/du to the rhs */
-  ierr = adj_evaluate_functional(adjointer, fwd_var, functional, &rhs_tmp);
-  if (ierr != ADJ_ERR_OK) return ierr;
-  adjointer->callbacks.vec_axpy(rhs, (adj_scalar)1.0, rhs_tmp);
-  adjointer->callbacks.vec_destroy(&rhs_tmp);
+  {
+    adj_vector rhs_tmp;
+    ierr = adj_evaluate_functional(adjointer, fwd_var, functional, &rhs_tmp);
+    if (ierr != ADJ_ERR_OK) return ierr;
+    adjointer->callbacks.vec_axpy(rhs, (adj_scalar)1.0, rhs_tmp);
+    adjointer->callbacks.vec_destroy(&rhs_tmp);
+  }
 
   return ADJ_ERR_OK;
 }
@@ -211,9 +213,9 @@ int adj_get_forward_equation(adj_adjointer* adjointer, int equation, adj_matrix*
   {
     adj_variable other_adj_var;
 
-    /* Get the adjoint variable we want this to multiply */
+    /* Get the forward variable we want this to multiply */
     other_adj_var = fwd_eqn.targets[i];
-    if (adj_variable_equal(&fwd_eqn.variable, &other_adj_var, 1)) continue; /* that term goes in the lhs, and we've already taken care of it */
+    if (adj_variable_equal(&fwd_var, &other_adj_var, 1)) continue; /* that term goes in the lhs, and we've already taken care of it */
     /* and now get its value */
     ierr = adj_has_variable_value(adjointer, other_adj_var);
     if (ierr != ADJ_ERR_OK)
@@ -230,10 +232,7 @@ int adj_get_forward_equation(adj_adjointer* adjointer, int equation, adj_matrix*
    * -------------------------------------------------------------------------- */
 
   /* fwd_data->targeting_equations what forward equations have nonzero blocks in the column of A associated with fwd_var. */
-  /* That column of A becomes the current row of A* we want to now compute. */
 
-  /* First we find the diagonal entry and assemble that, to compute the A* of lhs. */
-  /* Find the block in fwd_eqn that targets fwd_var, and assemble that (hermitianed) */
   {
     adj_block block;
     for (i = 0; i < fwd_eqn.nblocks; i++)
@@ -245,7 +244,7 @@ int adj_get_forward_equation(adj_adjointer* adjointer, int equation, adj_matrix*
         break;
       }
     }
-    block.hermitian = ADJ_FALSE;
+    block.hermitian = !block.hermitian;
     ierr = adj_evaluate_block_assembly(adjointer, block, lhs, rhs);
     if (ierr != ADJ_ERR_OK) return ierr;
   }
@@ -253,27 +252,27 @@ int adj_get_forward_equation(adj_adjointer* adjointer, int equation, adj_matrix*
   /* Great! Now let's assemble the RHS contributions of A. */
 
   /* Now loop through the off-diagonal blocks of A. */
+  for (i = 0; i < fwd_eqn.nblocks; i++)
   {
     adj_block block;
-    adj_variable other_adj_var;
-    adj_vector adj_value;
-    for (i = 0; i < fwd_eqn.nblocks; i++)
-    {
-      /* Ignore the diagonal block */
-      if (!adj_variable_equal(&(fwd_eqn.targets[i]), &fwd_var, 1))
-    	  continue;
-    }
-    block = fwd_eqn.blocks[i];
-    block.hermitian = ADJ_FALSE;
+    adj_variable other_var;
+    adj_vector value;
 
     /* Get the forward variable we want this block to multiply with */
-    other_adj_var = fwd_eqn.targets[i];
+    other_var = fwd_eqn.targets[i];
+
+    /* Ignore the diagonal block */
+    if (adj_variable_equal(&other_var, &fwd_var, 1))
+      continue;
+
+    block = fwd_eqn.blocks[i];
+    block.hermitian = !block.hermitian;
 
     /* and now get its value */
-    ierr = adj_get_variable_value(adjointer, other_adj_var, &adj_value);
+    ierr = adj_get_variable_value(adjointer, other_var, &value);
     assert(ierr == ADJ_ERR_OK); /* we should have them all, we checked for them earlier */
 
-    ierr = adj_evaluate_block_action(adjointer, block, adj_value, &rhs_tmp);
+    ierr = adj_evaluate_block_action(adjointer, block, value, &rhs_tmp);
     if (ierr != ADJ_ERR_OK) return ierr;
     adjointer->callbacks.vec_axpy(rhs, (adj_scalar)-1.0, rhs_tmp);
     adjointer->callbacks.vec_destroy(&rhs_tmp);
