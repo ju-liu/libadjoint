@@ -151,7 +151,7 @@ void test_adj_forget_adjoint_equation(void)
   VecCreateSeq(PETSC_COMM_SELF, dim, &vec);
   VecSet(vec, 1.0);
   value = petsc_vec_to_adj_vector(&vec);
-  adj_storage_data storage = adj_storage_memory(value);
+  adj_storage_data storage = adj_storage_memory_copy(value);
   for (i = 0; i < 5; i++)
   {
     ierr = adj_record_variable(&adjointer, u[i], storage);

@@ -103,7 +103,7 @@ void adj_html_vars(FILE* fp, adj_adjointer* adjointer, int type)
 /* Writes a html row containing the supplied equation into fp */
 int adj_html_eqn(FILE* fp, adj_adjointer* adjointer, adj_equation adj_eqn)
 {
-  int i;
+  int i,k;
   char* row[adjointer->nequations];
   char* desc[adjointer->nequations];
   char buf[ADJ_NAME_LEN];
@@ -114,7 +114,7 @@ int adj_html_eqn(FILE* fp, adj_adjointer* adjointer, adj_equation adj_eqn)
   {
     row[i] = malloc(ADJ_NAME_LEN*sizeof(char));
     row[i][0]='\0';
-    desc[i] = malloc(ADJ_NAME_LEN*sizeof(char));
+    desc[i] = malloc(32*ADJ_NAME_LEN*sizeof(char));  // The description can become very long
     desc[i][0]='\0';
   }
 
@@ -146,6 +146,19 @@ int adj_html_eqn(FILE* fp, adj_adjointer* adjointer, adj_equation adj_eqn)
     {
       strncat(desc[col], "\nNonlinear Block: ", ADJ_NAME_LEN);
       strncat(desc[col], adj_eqn.blocks[i].nonlinear_block.name, ADJ_NAME_LEN);
+      for (k=0; k<adj_eqn.blocks[i].nonlinear_block.ndepends; k++)
+      {
+    	  strncat(desc[col], " (Dependency: ", ADJ_NAME_LEN);
+    	  strncat(desc[col], adj_eqn.blocks[i].nonlinear_block.depends[k].name, ADJ_NAME_LEN);
+    	  strncat(desc[col], ":", ADJ_NAME_LEN);
+    	  snprintf(buf, ADJ_NAME_LEN, "%d", adj_eqn.blocks[i].nonlinear_block.depends[k].timestep);
+    	  strncat(desc[col], buf, ADJ_NAME_LEN);
+    	  strncat(desc[col], ":", ADJ_NAME_LEN);
+    	  snprintf(buf, ADJ_NAME_LEN, "%d", adj_eqn.blocks[i].nonlinear_block.depends[k].iteration);
+    	  strncat(desc[col], buf, ADJ_NAME_LEN);
+    	  strncat(desc[col], ")", ADJ_NAME_LEN);
+      }
+
     }
   }
   /* Write it to file */
@@ -164,7 +177,7 @@ int adj_html_eqn(FILE* fp, adj_adjointer* adjointer, adj_equation adj_eqn)
 /* Writes a html row containing the supplied adjoint equation into fp */
 int adj_html_adjoint_eqn(FILE* fp, adj_adjointer* adjointer, adj_equation fwd_eqn)
 {
-  int i, j;
+  int i, j, k;
   char* row[adjointer->nequations];
   char* desc[adjointer->nequations];
   char buf[ADJ_NAME_LEN];
@@ -178,7 +191,7 @@ int adj_html_adjoint_eqn(FILE* fp, adj_adjointer* adjointer, adj_equation fwd_eq
   {
     row[i] = malloc(ADJ_NAME_LEN*sizeof(char));
     row[i][0]='\0';
-    desc[i] = malloc(ADJ_NAME_LEN*sizeof(char));
+    desc[i] = malloc(32*ADJ_NAME_LEN*sizeof(char)); // The description can become very long
     desc[i][0]='\0';
   }
 
@@ -210,28 +223,40 @@ int adj_html_adjoint_eqn(FILE* fp, adj_adjointer* adjointer, adj_equation fwd_eq
       other_adj_var = other_fwd_eqn.targets[j];
       other_adj_var.type = ADJ_ADJOINT;
 
+      /* Fill in the data */
+      strncpy(row[col], other_fwd_eqn.blocks[j].name, ADJ_NAME_LEN);
 
-    /* Fill in the data */
-    strncpy(row[col], other_fwd_eqn.blocks[j].name, ADJ_NAME_LEN);
+      strncpy(desc[col], other_fwd_eqn.blocks[j].name, ADJ_NAME_LEN);
+      strncat(desc[col], "\n\nTargets: ", ADJ_NAME_LEN);
+      adj_variable_str(other_adj_var, buf, ADJ_NAME_LEN);
+      strncat(desc[col], buf, ADJ_NAME_LEN);
+      strncat(desc[col], ":", ADJ_NAME_LEN);
+      snprintf(buf, ADJ_NAME_LEN, "%d", other_adj_var.timestep);
+      strncat(desc[col], buf, ADJ_NAME_LEN);
+      strncat(desc[col], ":", ADJ_NAME_LEN);
+      snprintf(buf, ADJ_NAME_LEN, "%d", other_adj_var.iteration);
+      strncat(desc[col], buf, ADJ_NAME_LEN);
+      strncat(desc[col], "\nCoefficient: ", ADJ_NAME_LEN);
+      snprintf(buf, ADJ_NAME_LEN, "%f", other_fwd_eqn.blocks[j].coefficient);
+      strncat(desc[col], buf, ADJ_NAME_LEN);
+      if (other_fwd_eqn.blocks[j].has_nonlinear_block)
+      {
+    	  strncat(desc[col], "\nNonlinear Block: ", ADJ_NAME_LEN);
+    	  strncat(desc[col], other_fwd_eqn.blocks[j].nonlinear_block.name, ADJ_NAME_LEN);
+    	  for (k=0; k<other_fwd_eqn.blocks[j].nonlinear_block.ndepends; k++)
+    	  {
+    		  strncat(desc[col], " (Dependency: ", ADJ_NAME_LEN);
+    		  strncat(desc[col], other_fwd_eqn.blocks[j].nonlinear_block.depends[k].name, ADJ_NAME_LEN);
+    		  strncat(desc[col], ":", ADJ_NAME_LEN);
+    		  snprintf(buf, ADJ_NAME_LEN, "%d", other_fwd_eqn.blocks[j].nonlinear_block.depends[k].timestep);
+    		  strncat(desc[col], buf, ADJ_NAME_LEN);
+    		  strncat(desc[col], ":", ADJ_NAME_LEN);
+    		  snprintf(buf, ADJ_NAME_LEN, "%d", other_fwd_eqn.blocks[j].nonlinear_block.depends[k].iteration);
+    		  strncat(desc[col], buf, ADJ_NAME_LEN);
+    		  strncat(desc[col], ")", ADJ_NAME_LEN);
+    	  }
 
-    strncpy(desc[col], other_fwd_eqn.blocks[j].name, ADJ_NAME_LEN);
-    strncat(desc[col], "\n\nTargets: ", ADJ_NAME_LEN);
-    adj_variable_str(other_adj_var, buf, ADJ_NAME_LEN);
-    strncat(desc[col], buf, ADJ_NAME_LEN);
-    strncat(desc[col], ":", ADJ_NAME_LEN);
-    snprintf(buf, ADJ_NAME_LEN, "%d", other_adj_var.timestep);
-    strncat(desc[col], buf, ADJ_NAME_LEN);
-    strncat(desc[col], ":", ADJ_NAME_LEN);
-    snprintf(buf, ADJ_NAME_LEN, "%d", other_adj_var.iteration);
-    strncat(desc[col], buf, ADJ_NAME_LEN);
-    strncat(desc[col], "\nCoefficient: ", ADJ_NAME_LEN);
-    snprintf(buf, ADJ_NAME_LEN, "%f", other_fwd_eqn.blocks[j].coefficient);
-    strncat(desc[col], buf, ADJ_NAME_LEN);
-    if (other_fwd_eqn.blocks[j].has_nonlinear_block)
-    {
-      strncat(desc[col], "\nNonlinear Block: ", ADJ_NAME_LEN);
-      strncat(desc[col], other_fwd_eqn.blocks[j].nonlinear_block.name, ADJ_NAME_LEN);
-    }
+      }
 
   }
 
