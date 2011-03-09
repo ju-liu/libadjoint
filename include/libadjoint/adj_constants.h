@@ -35,7 +35,8 @@
 #define ADJ_ISP_FIRSTORDER 1
 
 /* storage strategies */
-#define ADJ_STORAGE_MEMORY 0
+#define ADJ_STORAGE_MEMORY_COPY 0
+#define ADJ_STORAGE_MEMORY_INCREF 1
 
 /* operator callbacks */
 #define ADJ_NBLOCK_COLOURING_CB 1

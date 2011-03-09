@@ -542,12 +542,19 @@ module libadjoint
       integer(kind=c_int) :: ierr
     end function adj_timestep_set_functional_dependencies_c
 
-    function adj_storage_memory(val) result(mem) bind(c, name='adj_storage_memory')
+    function adj_storage_memory_copy(val) result(mem) bind(c, name='adj_storage_memory_copy')
       use libadjoint_data_structures
       use iso_c_binding
       type(adj_vector), intent(in), value :: val
       type(adj_storage_data) :: mem
-    end function adj_storage_memory
+    end function adj_storage_memory_copy
+    
+    function adj_storage_memory_incref(val) result(mem) bind(c, name='adj_storage_memory_incref')
+      use libadjoint_data_structures
+      use iso_c_binding
+      type(adj_vector), intent(in), value :: val
+      type(adj_storage_data) :: mem
+    end function adj_storage_memory_incref
 
     function adj_get_adjoint_equation_c(adjointer, equation, functional, lhs, rhs, variable) result(ierr) &
             & bind(c, name='adj_get_adjoint_equation')

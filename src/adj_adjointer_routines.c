@@ -447,16 +447,19 @@ int adj_record_variable(adj_adjointer* adjointer, adj_variable var, adj_storage_
 
   switch (storage.storage_type)
   {
-    case ADJ_STORAGE_MEMORY:
+    case ADJ_STORAGE_MEMORY_COPY:
       if (adjointer->callbacks.vec_duplicate == NULL) return ADJ_ERR_NEED_CALLBACK;
       if (adjointer->callbacks.vec_axpy == NULL) return ADJ_ERR_NEED_CALLBACK;
-      data_ptr->storage.storage_type = ADJ_STORAGE_MEMORY;
+      data_ptr->storage.storage_type = ADJ_STORAGE_MEMORY_COPY;
       data_ptr->storage.has_value = storage.has_value;
       adjointer->callbacks.vec_duplicate(storage.value, &(data_ptr->storage.value));
       adjointer->callbacks.vec_axpy(&(data_ptr->storage.value), (adj_scalar)1.0, storage.value);
       break;
+    case ADJ_STORAGE_MEMORY_INCREF:
+      data_ptr->storage = storage;
+      break;
     default:
-      strncpy(adj_error_msg, "Storage types other than ADJ_STORAGE_MEMORY are not implemented yet.", ADJ_ERROR_MSG_BUF);
+      strncpy(adj_error_msg, "Storage types other than ADJ_STORAGE_MEMORY_COPY and ADJ_STORAGE_MEMORY_INCREF  are not implemented yet.", ADJ_ERROR_MSG_BUF);
       return ADJ_ERR_NOT_IMPLEMENTED;
   }
 
@@ -748,10 +751,10 @@ int adj_get_variable_value(adj_adjointer* adjointer, adj_variable var, adj_vecto
   ierr = adj_find_variable_data(&(adjointer->varhash), &var, &data_ptr);
   if (ierr != ADJ_ERR_OK) return ierr;
 
-  if (data_ptr->storage.storage_type != ADJ_STORAGE_MEMORY)
+  if ((data_ptr->storage.storage_type != ADJ_STORAGE_MEMORY_COPY) && (data_ptr->storage.storage_type != ADJ_STORAGE_MEMORY_INCREF))
   {
     ierr = ADJ_ERR_NOT_IMPLEMENTED;
-    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Sorry, storage strategies other than ADJ_STORAGE_MEMORY are not implemented yet.");
+    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Sorry, storage strategies other than ADJ_STORAGE_MEMORY_COPY and ADJ_STORAGE_MEMORY_INCREF are not implemented yet.");
     return ierr;
   }
 
@@ -837,12 +840,22 @@ int adj_destroy_variable_data(adj_adjointer* adjointer, adj_variable_data* data)
   return ADJ_ERR_OK;
 }
 
-adj_storage_data adj_storage_memory(adj_vector value)
+adj_storage_data adj_storage_memory_copy(adj_vector value)
 {
   adj_storage_data data;
 
   data.has_value = 1;
-  data.storage_type = ADJ_STORAGE_MEMORY;
+  data.storage_type = ADJ_STORAGE_MEMORY_COPY;
+  data.value = value;
+  return data;
+}
+
+adj_storage_data adj_storage_memory_incref(adj_vector value)
+{
+  adj_storage_data data;
+
+  data.has_value = 1;
+  data.storage_type = ADJ_STORAGE_MEMORY_INCREF;
   data.value = value;
   return data;
 }
