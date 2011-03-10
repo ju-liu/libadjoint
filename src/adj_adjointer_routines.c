@@ -456,8 +456,7 @@ int adj_record_variable(adj_adjointer* adjointer, adj_variable var, adj_storage_
       adjointer->callbacks.vec_axpy(&(data_ptr->storage.value), (adj_scalar)1.0, storage.value);
       break;
     case ADJ_STORAGE_MEMORY_INCREF:
-      data_ptr->storage.storage_type = ADJ_STORAGE_MEMORY_INCREF;
-      data_ptr->storage.has_value = storage.has_value;
+      data_ptr->storage = storage;
       break;
     default:
       strncpy(adj_error_msg, "Storage types other than ADJ_STORAGE_MEMORY_COPY and ADJ_STORAGE_MEMORY_INCREF  are not implemented yet.", ADJ_ERROR_MSG_BUF);
@@ -752,13 +751,6 @@ int adj_get_variable_value(adj_adjointer* adjointer, adj_variable var, adj_vecto
   ierr = adj_find_variable_data(&(adjointer->varhash), &var, &data_ptr);
   if (ierr != ADJ_ERR_OK) return ierr;
 
-  if ((data_ptr->storage.storage_type != ADJ_STORAGE_MEMORY_COPY) && (data_ptr->storage.storage_type != ADJ_STORAGE_MEMORY_INCREF))
-  {
-    ierr = ADJ_ERR_NOT_IMPLEMENTED;
-    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Sorry, storage strategies other than ADJ_STORAGE_MEMORY_COPY and ADJ_STORAGE_MEMORY_INCREF are not implemented yet.");
-    return ierr;
-  }
-
   if (!data_ptr->storage.has_value)
   {
     char buf[ADJ_NAME_LEN];
@@ -766,6 +758,13 @@ int adj_get_variable_value(adj_adjointer* adjointer, adj_variable var, adj_vecto
 
     ierr = ADJ_ERR_NEED_VALUE;
     snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Need a value for %s, but don't have one recorded.", buf);
+    return ierr;
+  }
+
+  if ((data_ptr->storage.storage_type != ADJ_STORAGE_MEMORY_COPY) && (data_ptr->storage.storage_type != ADJ_STORAGE_MEMORY_INCREF))
+  {
+    ierr = ADJ_ERR_NOT_IMPLEMENTED;
+    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Sorry, storage strategies other than ADJ_STORAGE_MEMORY_COPY and ADJ_STORAGE_MEMORY_INCREF are not implemented yet.");
     return ierr;
   }
 
@@ -866,9 +865,11 @@ int adj_add_new_hash_entry(adj_adjointer* adjointer, adj_variable* var, adj_vari
   int ierr;
 
   *data = (adj_variable_data*) malloc(sizeof(adj_variable_data));
+  memset(*data, 0, sizeof(adj_variable_data));
   (*data)->equation = -1;
   (*data)->next = NULL;
   (*data)->storage.has_value = 0;
+  (*data)->storage.storage_type = -666;
   (*data)->ntargeting_equations = 0;
   (*data)->targeting_equations = NULL;
   (*data)->ndepending_equations = 0;
