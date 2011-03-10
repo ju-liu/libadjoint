@@ -492,6 +492,15 @@ module libadjoint
       integer(kind=c_int) :: ierr
     end function adj_timestep_count
 
+    function adj_iteration_count(adjointer, variable, count) result(ierr) bind(c, name='adj_iteration_count')
+      use libadjoint_data_structures
+      use iso_c_binding
+      type(adj_adjointer), intent(inout) :: adjointer
+      type(adj_variable), intent(in), value :: variable
+      integer(kind=c_int), intent(out) :: count
+      integer(kind=c_int) :: ierr
+    end function adj_iteration_count
+
     function adj_timestep_start_equation(adjointer, timestep, start) result(ierr) bind(c, name='adj_timestep_start_equation')
       use libadjoint_data_structures
       use iso_c_binding

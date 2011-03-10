@@ -63,17 +63,17 @@ void test_adj_iteration_count(void)
    adj_test_assert(count == 2, "We expect two registered timesteps");
 
   /* Let's see how many itertion the variables have */
-  adj_create_variable("Velocity", 0, -1, ADJ_NORMAL_VARIABLE, &u_tmp[0]);
+  adj_create_variable("Velocity", 0, -1, ADJ_FALSE, &u_tmp[0]);
   ierr = adj_iteration_count(&adjointer, u_tmp[0], &count); 
   adj_test_assert(ierr == ADJ_ERR_OK, "Should have worked");
   adj_test_assert(count == 1, "Velocity at timestep 0 should have 1 iteration");
   
-  adj_create_variable("Velocity", 1, -1, ADJ_NORMAL_VARIABLE, &u_tmp[0]);
+  adj_create_variable("Velocity", 1, -1, ADJ_FALSE, &u_tmp[0]);
   ierr = adj_iteration_count(&adjointer, u_tmp[0], &count); 
   adj_test_assert(ierr == ADJ_ERR_OK, "Should have worked");
   adj_test_assert(count == 2, "Velocity at timestep 0 should have 2 iteration");
 
-  adj_create_variable("Velocity", 2, -1, ADJ_NORMAL_VARIABLE, &u_tmp[0]);
+  adj_create_variable("Velocity", 2, -1, ADJ_FALSE, &u_tmp[0]);
   ierr = adj_iteration_count(&adjointer, u_tmp[0], &count); 
   adj_test_assert(ierr != ADJ_ERR_OK, "Should have not worked");
   adj_test_assert(count == 0, "Velocity at timestep 2 should have 0 iteration");
