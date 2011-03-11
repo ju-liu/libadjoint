@@ -197,11 +197,11 @@ module libadjoint
     subroutine adj_nonlinear_action_proc(nvar, variables, dependencies, input, context, output) bind(c)
       use iso_c_binding
       use libadjoint_data_structures
-      integer(kind=c_int), intent(in) :: nvar
+      integer(kind=c_int), intent(in), value :: nvar
       type(adj_variable), dimension(nvar), intent(in) :: variables
       type(adj_vector), dimension(nvar), intent(in) :: dependencies
-      type(adj_vector), intent(in) :: input
-      type(c_ptr), intent(in) :: context
+      type(adj_vector), intent(in), value :: input
+      type(c_ptr), intent(in), value :: context
       type(adj_vector), intent(out) :: output
     end subroutine adj_nonlinear_action_proc
 
@@ -209,14 +209,14 @@ module libadjoint
                                                   & input, context, output) bind(c)
       use iso_c_binding
       use libadjoint_data_structures
-      integer(kind=c_int), intent(in) :: nvar
+      integer(kind=c_int), intent(in), value :: nvar
       type(adj_variable), dimension(nvar), intent(in) :: variables
       type(adj_vector), dimension(nvar), intent(in) :: dependencies
-      type(adj_variable), intent(in) :: derivative
-      type(adj_vector), intent(in) :: contraction
-      logical(kind=c_bool), intent(in) :: hermitian
-      type(adj_vector), intent(in) :: input
-      type(c_ptr), intent(in) :: context
+      type(adj_variable), intent(in), value :: derivative
+      type(adj_vector), intent(in), value :: contraction
+      integer(kind=c_int), intent(in), value :: hermitian
+      type(adj_vector), intent(in), value :: input
+      type(c_ptr), intent(in), value :: context
       type(adj_vector), intent(out) :: output
     end subroutine adj_nonlinear_derivative_action_proc
 

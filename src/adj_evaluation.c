@@ -74,9 +74,93 @@ int adj_evaluate_block_assembly(adj_adjointer* adjointer, adj_block block, adj_m
 }
 
 
-/* int adj_evaluate_nonlinear_derivative_action(adj_adjointer* adjointer, adj_nonlinear_block_derivative* derivatives, adj_vector value, adj_vector rhs)
+int adj_evaluate_nonlinear_derivative_action(adj_adjointer* adjointer, int nderivatives, adj_nonlinear_block_derivative* derivatives, adj_vector value, adj_vector* rhs)
 {
- 
+  int ierr;
+  int deriv;
+  int rhs_allocated = 0;
+  void (*nonlinear_derivative_action_func)(int nvar, adj_variable* variables, adj_vector* dependencies, adj_variable derivative, adj_vector contraction, int hermitian, adj_vector input, void* context, adj_vector* output);
+  void (*nonlinear_action_func)(int nvar, adj_variable* variables, adj_vector* dependencies, adj_vector input, void* context, adj_vector* output) = NULL;
+
+  /* As usual, check as much as we can at the start */
+  strncpy(adj_error_msg, "Need a data callback, but it hasn't been supplied.", ADJ_ERROR_MSG_BUF);
+  if (adjointer->callbacks.vec_destroy == NULL)   return ADJ_ERR_NEED_CALLBACK;
+  if (adjointer->callbacks.vec_axpy == NULL)      return ADJ_ERR_NEED_CALLBACK;
+  if (adjointer->callbacks.vec_duplicate == NULL) return ADJ_ERR_NEED_CALLBACK;
+  strncpy(adj_error_msg, "", ADJ_ERROR_MSG_BUF);
+  assert(nderivatives > 0);
+
+  /* Let's also check we have all of the variables available */
+  for (deriv = 0; deriv < nderivatives; deriv++)
+  {
+    int i;
+    for (i = 0; i < derivatives[deriv].nonlinear_block.ndepends; i++)
+    {
+      ierr = adj_has_variable_value(adjointer, derivatives[deriv].nonlinear_block.depends[i]);
+      if (ierr != ADJ_ERR_OK) return ierr;
+    }
+  }
+
+  for (deriv = 0; deriv < nderivatives; deriv++)
+  {
+    /* First, try to find a routine supplied by the user. */
+    ierr = adj_find_operator_callback(adjointer, ADJ_NBLOCK_DERIVATIVE_ACTION_CB, derivatives[deriv].nonlinear_block.name, (void (**)(void)) &nonlinear_derivative_action_func);
+    if (ierr == ADJ_ERR_OK)
+    {
+      ierr = adj_evaluate_nonlinear_derivative_action_supplied(adjointer, nonlinear_derivative_action_func, derivatives[deriv], value, rhs, &rhs_allocated);
+      if (ierr != ADJ_ERR_OK) return ierr;
+    }
+    /* OK, if that didn't work, let's try ISP. */
+    ierr = adj_find_operator_callback(adjointer, ADJ_NBLOCK_ACTION_CB, derivatives[deriv].nonlinear_block.name, (void (**)(void)) &nonlinear_action_func);
+    if (ierr != ADJ_ERR_OK)
+    {
+      snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Could not find a nonlinear derivative action callback, nor a nonlinear action callback, for operator %s.", derivatives[deriv].nonlinear_block.name);
+      return ierr;
+    }
+/*    ierr = adj_evaluate_nonlinear_derivative_action_isp(adjointer, nonlinear_action_func, derivatives[deriv], value, rhs, &rhs_allocated); */
+    if (ierr != ADJ_ERR_OK) return ierr;
+  }
+
+  return ADJ_ERR_OK;
+}
+
+int adj_evaluate_nonlinear_derivative_action_supplied(adj_adjointer* adjointer, void (*nonlinear_derivative_action_func)(int nvar, adj_variable* variables, 
+     adj_vector* dependencies, adj_variable derivative, adj_vector contraction, int hermitian, adj_vector input, void* context, adj_vector* output),
+     adj_nonlinear_block_derivative derivative, adj_vector value, adj_vector* rhs, int* rhs_allocated)
+{
+  adj_vector* dependencies = NULL;
+  adj_vector rhs_tmp;
+  int i;
+  int ierr;
+
+  dependencies = (adj_vector*) malloc(derivative.nonlinear_block.ndepends * sizeof(adj_vector));
+  for (i = 0; i < derivative.nonlinear_block.ndepends; i++)
+  {
+    ierr = adj_get_variable_value(adjointer, derivative.nonlinear_block.depends[i], &(dependencies[i]));
+    assert(ierr == ADJ_ERR_OK); /* We checked for them earlier */
+  }
+
+  nonlinear_derivative_action_func(derivative.nonlinear_block.ndepends, derivative.nonlinear_block.depends, dependencies, derivative.variable,
+                                   derivative.contraction, derivative.hermitian, value, derivative.nonlinear_block.context, &rhs_tmp);
+
+  free(dependencies);
+
+  if (!(*rhs_allocated))
+  {
+    adjointer->callbacks.vec_duplicate(rhs_tmp, rhs);
+    *rhs_allocated = ADJ_TRUE;
+  }
+
+  adjointer->callbacks.vec_axpy(rhs, (adj_scalar) 1.0, rhs_tmp);
+  adjointer->callbacks.vec_destroy(&rhs_tmp);
+
+  return ADJ_ERR_OK;
+}
+
+/* int adj_evaluate_nonlinear_derivative_action_isp(adj_adjointer* adjointer, void (*nonlinear_action_func)(int nvar, adj_variable*
+     variables, adj_vector* dependencies, adj_vector input, void* context, adj_vector* output), adj_nonlinear_block_derivative derivative, 
+     adj_vector value, adj_vector* rhs, int* rhs_allocated)
+{
 } */
 
 int adj_evaluate_functional(adj_adjointer* adjointer, adj_variable variable, char* functional, adj_vector* output)

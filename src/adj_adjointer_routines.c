@@ -913,16 +913,16 @@ int adj_iteration_count(adj_adjointer* adjointer, adj_variable variable, int* co
   *count = -1;
   do
   {
-	  *count=*count+1;
-	  variable.iteration = *count;
-	  ierr = adj_find_variable_data(&(adjointer->varhash), &variable, &data);
+    *count=*count+1;
+    variable.iteration = *count;
+    ierr = adj_find_variable_data(&(adjointer->varhash), &variable, &data);
   }
   while (ierr == ADJ_ERR_OK);
 
   if (*count==0)
   {
-	  strncpy(adj_error_msg, "Error in adj_iteration_count: No iteration found for supplied variable.", ADJ_ERROR_MSG_BUF);
-	  return ADJ_ERR_INVALID_INPUTS;
+    strncpy(adj_error_msg, "Error in adj_iteration_count: No iteration found for supplied variable.", ADJ_ERROR_MSG_BUF);
+    return ADJ_ERR_INVALID_INPUTS;
   }
   return ADJ_ERR_OK;
 }
