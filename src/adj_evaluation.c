@@ -74,13 +74,13 @@ int adj_evaluate_block_assembly(adj_adjointer* adjointer, adj_block block, adj_m
 }
 
 
-int adj_evaluate_nonlinear_derivative_action(adj_adjointer* adjointer, int nderivatives, adj_nonlinear_block_derivative* derivatives, adj_vector value, adj_vector* rhs)
+int adj_evaluate_nonlinear_derivative_action(adj_adjointer* adjointer, int nderivatives, adj_nonlinear_block_derivative* derivatives, adj_vector value, adj_vector model_rhs, adj_vector* rhs)
 {
   int ierr;
   int deriv;
-  int rhs_allocated = 0;
   void (*nonlinear_derivative_action_func)(int nvar, adj_variable* variables, adj_vector* dependencies, adj_variable derivative, adj_vector contraction, int hermitian, adj_vector input, void* context, adj_vector* output);
   void (*nonlinear_action_func)(int nvar, adj_variable* variables, adj_vector* dependencies, adj_vector input, void* context, adj_vector* output) = NULL;
+  adj_vector rhs_tmp;
 
   /* As usual, check as much as we can at the start */
   strncpy(adj_error_msg, "Need a data callback, but it hasn't been supplied.", ADJ_ERROR_MSG_BUF);
@@ -107,18 +107,26 @@ int adj_evaluate_nonlinear_derivative_action(adj_adjointer* adjointer, int nderi
     ierr = adj_find_operator_callback(adjointer, ADJ_NBLOCK_DERIVATIVE_ACTION_CB, derivatives[deriv].nonlinear_block.name, (void (**)(void)) &nonlinear_derivative_action_func);
     if (ierr == ADJ_ERR_OK)
     {
-      ierr = adj_evaluate_nonlinear_derivative_action_supplied(adjointer, nonlinear_derivative_action_func, derivatives[deriv], value, rhs, &rhs_allocated);
+      ierr = adj_evaluate_nonlinear_derivative_action_supplied(adjointer, nonlinear_derivative_action_func, derivatives[deriv], value, &rhs_tmp);
       if (ierr != ADJ_ERR_OK) return ierr;
+      adjointer->callbacks.vec_axpy(rhs, (adj_scalar) 1.0, rhs_tmp);
+      adjointer->callbacks.vec_destroy(&rhs_tmp);
     }
-    /* OK, if that didn't work, let's try ISP. */
-    ierr = adj_find_operator_callback(adjointer, ADJ_NBLOCK_ACTION_CB, derivatives[deriv].nonlinear_block.name, (void (**)(void)) &nonlinear_action_func);
-    if (ierr != ADJ_ERR_OK)
+    else
     {
-      snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Could not find a nonlinear derivative action callback, nor a nonlinear action callback, for operator %s.", derivatives[deriv].nonlinear_block.name);
-      return ierr;
+      /* OK, if that didn't work, let's try ISP. */
+      ierr = adj_find_operator_callback(adjointer, ADJ_NBLOCK_ACTION_CB, derivatives[deriv].nonlinear_block.name, (void (**)(void)) &nonlinear_action_func);
+      if (ierr != ADJ_ERR_OK)
+      {
+        snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Could not find a nonlinear derivative action callback, nor a nonlinear action callback, for operator %s.", derivatives[deriv].nonlinear_block.name);
+        return ierr;
+      }
+      adjointer->callbacks.vec_duplicate(model_rhs, &rhs_tmp);
+      ierr = adj_evaluate_nonlinear_derivative_action_isp(adjointer, nonlinear_action_func, derivatives[deriv], value, &rhs_tmp);
+      if (ierr != ADJ_ERR_OK) return ierr;
+      adjointer->callbacks.vec_axpy(rhs, (adj_scalar) 1.0, rhs_tmp);
+      adjointer->callbacks.vec_destroy(&rhs_tmp);
     }
-/*    ierr = adj_evaluate_nonlinear_derivative_action_isp(adjointer, nonlinear_action_func, derivatives[deriv], value, rhs, &rhs_allocated); */
-    if (ierr != ADJ_ERR_OK) return ierr;
   }
 
   return ADJ_ERR_OK;
@@ -126,10 +134,9 @@ int adj_evaluate_nonlinear_derivative_action(adj_adjointer* adjointer, int nderi
 
 int adj_evaluate_nonlinear_derivative_action_supplied(adj_adjointer* adjointer, void (*nonlinear_derivative_action_func)(int nvar, adj_variable* variables, 
      adj_vector* dependencies, adj_variable derivative, adj_vector contraction, int hermitian, adj_vector input, void* context, adj_vector* output),
-     adj_nonlinear_block_derivative derivative, adj_vector value, adj_vector* rhs, int* rhs_allocated)
+     adj_nonlinear_block_derivative derivative, adj_vector value, adj_vector* rhs)
 {
   adj_vector* dependencies = NULL;
-  adj_vector rhs_tmp;
   int i;
   int ierr;
 
@@ -141,35 +148,30 @@ int adj_evaluate_nonlinear_derivative_action_supplied(adj_adjointer* adjointer, 
   }
 
   nonlinear_derivative_action_func(derivative.nonlinear_block.ndepends, derivative.nonlinear_block.depends, dependencies, derivative.variable,
-                                   derivative.contraction, derivative.hermitian, value, derivative.nonlinear_block.context, &rhs_tmp);
+                                   derivative.contraction, derivative.hermitian, value, derivative.nonlinear_block.context, rhs);
 
   free(dependencies);
-
-  if (!(*rhs_allocated))
-  {
-    adjointer->callbacks.vec_duplicate(rhs_tmp, rhs);
-    *rhs_allocated = ADJ_TRUE;
-  }
-
-  adjointer->callbacks.vec_axpy(rhs, (adj_scalar) 1.0, rhs_tmp);
-  adjointer->callbacks.vec_destroy(&rhs_tmp);
-
   return ADJ_ERR_OK;
 }
 
 int adj_evaluate_nonlinear_derivative_action_isp(adj_adjointer* adjointer, void (*nonlinear_action_func)(int nvar, adj_variable*
      variables, adj_vector* dependencies, adj_vector input, void* context, adj_vector* output), adj_nonlinear_block_derivative derivative, 
-     adj_vector value, adj_vector* rhs, int* rhs_allocated)
+     adj_vector value, adj_vector* rhs)
 {
   int ierr; 
   int sz;
   int i;
   adj_scalar* perturbation_scalars;
   adj_vector unperturbed;
+  adj_vector perturbed;
   adj_vector perturbation_vector;
   adj_vector dependency;
   void (*nonlinear_colouring_func)(int nvar, adj_variable* variables, adj_vector* dependencies, adj_variable derivative, void* context, int sz, int* colouring) = NULL;
   int* colouring;
+  int colour;
+  int ncolours;
+  int min_colours;
+  adj_scalar h;
 
   strncpy(adj_error_msg, "Need a data callback, but it hasn't been supplied.", ADJ_ERROR_MSG_BUF);
   if (adjointer->callbacks.vec_destroy == NULL)   return ADJ_ERR_NEED_CALLBACK;
@@ -203,20 +205,57 @@ int adj_evaluate_nonlinear_derivative_action_isp(adj_adjointer* adjointer, void 
     return ierr;
   }
 
+  /* Now that we have the colouring, figure out how many colours we have */
+  ncolours = colouring[0]; min_colours = ncolours;
+  for (i = 1; i < sz; i++)
+  {
+    if (colouring[i] > ncolours) ncolours = colouring[i];
+    if (colouring[i] < min_colours) min_colours = colouring[i];
+  }
+
+  if (min_colours != 1)
+  {
+    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "The colouring function for %s must return integers in the range 1 to n.", derivative.nonlinear_block.name);
+    return ADJ_ERR_INVALID_INPUTS;
+  }
+
   /* Step 3. We'll also duplicate perturbation_vector, as we'll need it in a little bit. */
   adjointer->callbacks.vec_duplicate(dependency, &perturbation_vector);
   perturbation_scalars = (adj_scalar*) malloc(sz * sizeof(adj_scalar));
 
   /* Step 4. Loop over colours. */
-  /* Step 4a. Build the perturbation for this colour. */
-  /* Step 4b. Compute the action at the perturbed state. */
-  /* Step 4c. Subtract off the unperturbed result. */
-  /* Step 4d. Divide by the perturbation. */
-  /* Step 4e. Now use it to dot product with value and to compute the rhs. */
+  for (colour = 1; colour <= ncolours; colour++)
+  {
+    /* Step 4a. Build the perturbation for this colour. */
+    /* Eventually we will be a lot smarter about this, but for now ... */
+    h = 1.0e-6;
+    for (i = 0; i < sz; i++)
+    {
+      if (colouring[i] == colour)
+        perturbation_scalars[i] = (adj_scalar) h;
+      else
+        perturbation_scalars[i] = (adj_scalar) 0.0;
+    }
+    adjointer->callbacks.vec_setvalues(&perturbation_vector, perturbation_scalars);
+
+    /* Step 4b. Compute the action at the perturbed state. */
+    ierr = adj_evaluate_nonlinear_action(adjointer, nonlinear_action_func, derivative.nonlinear_block, derivative.contraction, &derivative.variable, &perturbation_vector, &perturbed);
+    if (ierr != ADJ_ERR_OK) return ierr;
+
+    /* Step 4c. Subtract off the unperturbed result. */
+    adjointer->callbacks.vec_axpy(&perturbed, (adj_scalar) -1.0, unperturbed);
+
+    /* Step 4d. Divide by the perturbation. */
+    for (i = 0; i < sz; i++)
+      perturbation_scalars[i] = (adj_scalar) h;
+    adjointer->callbacks.vec_setvalues(&perturbation_vector, perturbation_scalars);
+    adjointer->callbacks.vec_divide(&perturbed, perturbation_vector);
+
+    /* Step 4e. Now use it to dot product with value and to compute the rhs. */
+  }
 
   (void) value;
-  (void) rhs; 
-  (void) rhs_allocated;
+  (void) rhs;
 
   adjointer->callbacks.vec_destroy(&unperturbed);
   adjointer->callbacks.vec_destroy(&perturbation_vector);
