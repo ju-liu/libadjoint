@@ -162,11 +162,14 @@ int adj_evaluate_nonlinear_derivative_action_isp(adj_adjointer* adjointer, void 
      adj_vector value, adj_vector* rhs, int* rhs_allocated)
 {
   int ierr; 
-  adj_vector unperturbed;
   int sz;
+  int i;
   adj_scalar* perturbation_scalars;
+  adj_vector unperturbed;
   adj_vector perturbation_vector;
   adj_vector dependency;
+  void (*nonlinear_colouring_func)(int nvar, adj_variable* variables, adj_vector* dependencies, adj_variable derivative, void* context, int sz, int* colouring) = NULL;
+  int* colouring;
 
   strncpy(adj_error_msg, "Need a data callback, but it hasn't been supplied.", ADJ_ERROR_MSG_BUF);
   if (adjointer->callbacks.vec_destroy == NULL)   return ADJ_ERR_NEED_CALLBACK;
@@ -189,11 +192,20 @@ int adj_evaluate_nonlinear_derivative_action_isp(adj_adjointer* adjointer, void 
   ierr = adj_get_variable_value(adjointer, derivative.variable, &dependency);
   assert(ierr == ADJ_ERR_OK); /* we checked for it earlier */
   adjointer->callbacks.vec_getsize(dependency, &sz);
-  /* We'll also duplicate perturbation_vector, as we'll need it in a little bit. */
+
+  ierr = adj_find_operator_callback(adjointer, ADJ_NBLOCK_COLOURING_CB, derivative.nonlinear_block.name, (void (**)(void)) &nonlinear_colouring_func);
+  if (ierr != ADJ_ERR_OK) return ierr;
+  colouring = (int*) malloc(sz * sizeof(int));
+  ierr = adj_evaluate_nonlinear_colouring(adjointer, derivative.nonlinear_block, derivative.variable, nonlinear_colouring_func, sz, colouring);
+  if (ierr != ADJ_ERR_OK)
+  {
+    free(colouring);
+    return ierr;
+  }
+
+  /* Step 3. We'll also duplicate perturbation_vector, as we'll need it in a little bit. */
   adjointer->callbacks.vec_duplicate(dependency, &perturbation_vector);
   perturbation_scalars = (adj_scalar*) malloc(sz * sizeof(adj_scalar));
-
-  /* Step 3. Get perturbation. At the moment, this is dumb. We'll want to do something smarter, for sure. */
 
   /* Step 4. Loop over colours. */
   /* Step 4a. Build the perturbation for this colour. */
@@ -209,6 +221,27 @@ int adj_evaluate_nonlinear_derivative_action_isp(adj_adjointer* adjointer, void 
   adjointer->callbacks.vec_destroy(&unperturbed);
   adjointer->callbacks.vec_destroy(&perturbation_vector);
   free(perturbation_scalars);
+  return ADJ_ERR_OK;
+}
+
+int adj_evaluate_nonlinear_colouring(adj_adjointer* adjointer, adj_nonlinear_block nonlinear_block, adj_variable derivative,
+    void (*nonlinear_colouring_func)(int nvar, adj_variable* variables, adj_vector* dependencies, adj_variable derivative, void* context, int sz, int* colouring),
+    int sz, int* colouring)
+{
+  int ierr;
+  int i;
+  adj_vector* dependencies;
+
+  dependencies = (adj_vector*) malloc(nonlinear_block.ndepends * sizeof(adj_vector));
+  for (i = 0; i < nonlinear_block.ndepends; i++)
+  {
+    ierr = adj_get_variable_value(adjointer, nonlinear_block.depends[i], &(dependencies[i]));
+    assert(ierr == ADJ_ERR_OK); /* We checked for them earlier */
+  }
+
+  nonlinear_colouring_func(nonlinear_block.ndepends, nonlinear_block.depends, dependencies, derivative, nonlinear_block.context, sz, colouring);
+
+  free(dependencies);
   return ADJ_ERR_OK;
 }
 

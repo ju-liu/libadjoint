@@ -183,14 +183,15 @@ module libadjoint
       type(adj_matrix), intent(inout) :: mat
     end subroutine adj_mat_destroy_proc
 
-    subroutine adj_nonlinear_colouring_proc(nvar, variables, dependencies, derivative, sz, colouring) bind(c)
+    subroutine adj_nonlinear_colouring_proc(nvar, variables, dependencies, derivative, context, sz, colouring) bind(c)
       use iso_c_binding
       use libadjoint_data_structures
-      integer(kind=c_int), intent(in) :: nvar
+      integer(kind=c_int), intent(in), value :: nvar
       type(adj_variable), dimension(nvar), intent(in) :: variables
       type(adj_vector), dimension(nvar), intent(in) :: dependencies
-      type(adj_variable), intent(in) :: derivative
-      integer(kind=c_int), intent(in) :: sz
+      type(adj_variable), intent(in), value :: derivative
+      type(c_ptr), intent(in), value :: context
+      integer(kind=c_int), intent(in), value :: sz
       integer(kind=c_int), dimension(sz), intent(out) :: colouring
     end subroutine adj_nonlinear_colouring_proc
 
