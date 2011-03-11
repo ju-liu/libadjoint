@@ -157,11 +157,128 @@ int adj_evaluate_nonlinear_derivative_action_supplied(adj_adjointer* adjointer, 
   return ADJ_ERR_OK;
 }
 
-/* int adj_evaluate_nonlinear_derivative_action_isp(adj_adjointer* adjointer, void (*nonlinear_action_func)(int nvar, adj_variable*
+int adj_evaluate_nonlinear_derivative_action_isp(adj_adjointer* adjointer, void (*nonlinear_action_func)(int nvar, adj_variable*
      variables, adj_vector* dependencies, adj_vector input, void* context, adj_vector* output), adj_nonlinear_block_derivative derivative, 
      adj_vector value, adj_vector* rhs, int* rhs_allocated)
 {
-} */
+  int ierr; 
+  adj_vector unperturbed;
+  int sz;
+  adj_scalar* perturbation_scalars;
+  adj_vector perturbation_vector;
+  adj_vector dependency;
+
+  strncpy(adj_error_msg, "Need a data callback, but it hasn't been supplied.", ADJ_ERROR_MSG_BUF);
+  if (adjointer->callbacks.vec_destroy == NULL)   return ADJ_ERR_NEED_CALLBACK;
+  if (adjointer->callbacks.vec_axpy == NULL)      return ADJ_ERR_NEED_CALLBACK;
+  if (adjointer->callbacks.vec_duplicate == NULL) return ADJ_ERR_NEED_CALLBACK;
+  if (adjointer->callbacks.vec_setvalues == NULL) return ADJ_ERR_NEED_CALLBACK;
+  if (adjointer->callbacks.vec_divide == NULL)    return ADJ_ERR_NEED_CALLBACK;
+  if (adjointer->callbacks.vec_getsize == NULL)    return ADJ_ERR_NEED_CALLBACK;
+  strncpy(adj_error_msg, "", ADJ_ERROR_MSG_BUF);
+
+  ierr = adj_has_variable_value(adjointer, derivative.variable);
+  if (ierr != ADJ_ERR_OK) return ierr;
+
+  /* Step 1. Compute the action at the unperturbed state. */
+  ierr = adj_evaluate_nonlinear_action(adjointer, nonlinear_action_func, derivative.nonlinear_block, derivative.contraction, NULL, NULL, &unperturbed);
+  if (ierr != ADJ_ERR_OK) return ierr;
+
+  /* Step 2. Colour the graph. */
+  /* Firstly, get the value associated with the variable to be perturbed, and then fetch its size. */
+  ierr = adj_get_variable_value(adjointer, derivative.variable, &dependency);
+  assert(ierr == ADJ_ERR_OK); /* we checked for it earlier */
+  adjointer->callbacks.vec_getsize(dependency, &sz);
+  /* We'll also duplicate perturbation_vector, as we'll need it in a little bit. */
+  adjointer->callbacks.vec_duplicate(dependency, &perturbation_vector);
+  perturbation_scalars = (adj_scalar*) malloc(sz * sizeof(adj_scalar));
+
+  /* Step 3. Get perturbation. At the moment, this is dumb. We'll want to do something smarter, for sure. */
+
+  /* Step 4. Loop over colours. */
+  /* Step 4a. Build the perturbation for this colour. */
+  /* Step 4b. Compute the action at the perturbed state. */
+  /* Step 4c. Subtract off the unperturbed result. */
+  /* Step 4d. Divide by the perturbation. */
+  /* Step 4e. Now use it to dot product with value and to compute the rhs. */
+
+  (void) value;
+  (void) rhs; 
+  (void) rhs_allocated;
+
+  adjointer->callbacks.vec_destroy(&unperturbed);
+  adjointer->callbacks.vec_destroy(&perturbation_vector);
+  free(perturbation_scalars);
+  return ADJ_ERR_OK;
+}
+
+int adj_evaluate_nonlinear_action(adj_adjointer* adjointer, void (*nonlinear_action_func)(int nvar, adj_variable* variables, adj_vector* dependencies,
+                                  adj_vector input, void* context, adj_vector* output), adj_nonlinear_block nonlinear_block, adj_vector input,
+                                  adj_variable* perturbed_var, adj_vector* perturbation, adj_vector* output)
+{
+  int ierr;
+  int i;
+  int perturbed_idx;
+  adj_vector* dependencies;
+  adj_vector perturbed_dependency;
+
+  strncpy(adj_error_msg, "Need a data callback, but it hasn't been supplied.", ADJ_ERROR_MSG_BUF);
+  if (adjointer->callbacks.vec_destroy == NULL)   return ADJ_ERR_NEED_CALLBACK;
+  if (adjointer->callbacks.vec_axpy == NULL)      return ADJ_ERR_NEED_CALLBACK;
+  if (adjointer->callbacks.vec_duplicate == NULL) return ADJ_ERR_NEED_CALLBACK;
+  if (adjointer->callbacks.vec_setvalues == NULL) return ADJ_ERR_NEED_CALLBACK;
+  strncpy(adj_error_msg, "", ADJ_ERROR_MSG_BUF);
+
+  /* If you want to compute at a perturbed state, you need to give me both perturbed_var
+     and perturbation */
+  if (perturbed_var != NULL || perturbation != NULL)
+  {
+    assert(perturbed_var != NULL && perturbation != NULL);
+    perturbed_idx = -1;
+  }
+
+  dependencies = (adj_vector*) malloc(nonlinear_block.ndepends * sizeof(adj_vector));
+  for (i = 0; i < nonlinear_block.ndepends; i++)
+  {
+    ierr = adj_get_variable_value(adjointer, nonlinear_block.depends[i], &(dependencies[i]));
+    assert(ierr == ADJ_ERR_OK); /* We checked for them earlier */
+
+    /* Check if this is the variable we want to perturb */
+    if (perturbed_var != NULL)
+    {
+      if (adj_variable_equal(perturbed_var, &(nonlinear_block.depends[i]), 1))
+      {
+        /* Check we don't perturb twice */
+        if (perturbed_idx != -1)
+        {
+          snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Dependencies %d and %d of nonlinear block %s are equal, which is invalid.", perturbed_idx, i, nonlinear_block.name);
+          free(dependencies);
+          return ADJ_ERR_INVALID_INPUTS;
+        }
+
+        adjointer->callbacks.vec_duplicate(dependencies[i], &perturbed_dependency);
+        adjointer->callbacks.vec_axpy(&perturbed_dependency, (adj_scalar) 1.0, dependencies[i]);
+        adjointer->callbacks.vec_axpy(&perturbed_dependency, (adj_scalar) 1.0, *perturbation);
+        dependencies[i] = perturbed_dependency;
+        perturbed_idx = i;
+      }
+    }
+  }
+
+  /* Check we perturbed something */
+  if (perturbed_var != NULL)
+    assert(perturbed_idx != -1);
+
+  /* Now evaluate the function */
+  nonlinear_action_func(nonlinear_block.ndepends, nonlinear_block.depends, dependencies, input, nonlinear_block.context, output);
+
+  /* If we perturbed something, we allocated it, so we have to destroy it */
+  if (perturbed_var != NULL)
+    adjointer->callbacks.vec_destroy(&perturbed_dependency);
+
+  free(dependencies);
+  return ADJ_ERR_OK;
+}
 
 int adj_evaluate_functional(adj_adjointer* adjointer, adj_variable variable, char* functional, adj_vector* output)
 {
