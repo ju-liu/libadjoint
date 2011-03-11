@@ -19,6 +19,7 @@ int adj_register_functional_derivative_callback(adj_adjointer* adjointer, char* 
 int adj_forget_adjoint_equation(adj_adjointer* adjointer, int equation);
 
 int adj_timestep_count(adj_adjointer* adjointer, int* count);
+int adj_iteration_count(adj_adjointer* adjointer, adj_variable variable, int* count);
 int adj_timestep_start_equation(adj_adjointer* adjointer, int timestep, int* start);
 int adj_timestep_end_equation(adj_adjointer* adjointer, int timestep, int* end);
 int adj_timestep_set_times(adj_adjointer* adjointer, int timestep, adj_scalar start, adj_scalar end);
