@@ -552,6 +552,29 @@ module libadjoint
       integer(kind=c_int) :: ierr
     end function adj_timestep_set_functional_dependencies_c
 
+    function adj_variable_get_ndepending_timesteps_c(adjointer, variable, functional, ntimesteps) result(ierr) &
+                                                      & bind(c, name='adj_variable_get_ndepending_timesteps')
+      use libadjoint_data_structures
+      use iso_c_binding
+      type(adj_adjointer), intent(inout) :: adjointer
+      type(adj_variable), intent(in), value :: variable
+      character(kind=c_char), dimension(ADJ_NAME_LEN), intent(in) :: functional
+      integer(kind=c_int), intent(out) :: ntimesteps
+      integer(kind=c_int) :: ierr
+    end function adj_variable_get_ndepending_timesteps_c
+
+    function adj_variable_get_depending_timestep_c(adjointer, variable, functional, i, timesteps) result(ierr) &
+                                                      & bind(c, name='adj_variable_get_depending_timestep')
+      use libadjoint_data_structures
+      use iso_c_binding
+      type(adj_adjointer), intent(inout) :: adjointer
+      type(adj_variable), intent(in), value :: variable
+      character(kind=c_char), dimension(ADJ_NAME_LEN), intent(in) :: functional
+      integer(kind=c_int), intent(in), value :: i
+      integer(kind=c_int), intent(out) :: timesteps
+      integer(kind=c_int) :: ierr
+    end function adj_variable_get_depending_timestep_c
+
     function adj_storage_memory_copy(val) result(mem) bind(c, name='adj_storage_memory_copy')
       use libadjoint_data_structures
       use iso_c_binding
@@ -830,6 +853,49 @@ module libadjoint
 
     ierr = adj_timestep_set_functional_dependencies_c(adjointer, timestep, functional_c, size(dependencies), dependencies)
   end function adj_timestep_set_functional_dependencies
+
+  function adj_variable_get_ndepending_timesteps(adjointer, variable, functional, ntimesteps) result(ierr)
+    type(adj_adjointer), intent(inout) :: adjointer
+    type(adj_variable), intent(in), value :: variable
+    character(len=*), intent(in) :: functional
+    integer, intent(out) :: ntimesteps
+    integer :: ierr
+
+    character(kind=c_char), dimension(ADJ_NAME_LEN) :: functional_c
+    integer :: j
+
+    do j=1,len_trim(functional)
+      functional_c(j) = functional(j:j)
+    end do
+    do j=len_trim(functional)+1,ADJ_NAME_LEN
+      functional_c(j) = c_null_char
+    end do
+    functional_c(ADJ_NAME_LEN) = c_null_char
+
+    ierr = adj_variable_get_ndepending_timesteps_c(adjointer, variable, functional_c, ntimesteps)
+  end function adj_variable_get_ndepending_timesteps
+
+  function adj_variable_get_depending_timestep(adjointer, variable, functional, i, timestep) result(ierr)
+    type(adj_adjointer), intent(inout) :: adjointer
+    type(adj_variable), intent(in), value :: variable
+    character(len=*), intent(in) :: functional
+    integer, intent(in), value :: i
+    integer, intent(out) :: timestep
+    integer :: ierr
+
+    character(kind=c_char), dimension(ADJ_NAME_LEN) :: functional_c
+    integer :: j
+
+    do j=1,len_trim(functional)
+      functional_c(j) = functional(j:j)
+    end do
+    do j=len_trim(functional)+1,ADJ_NAME_LEN
+      functional_c(j) = c_null_char
+    end do
+    functional_c(ADJ_NAME_LEN) = c_null_char
+
+    ierr = adj_variable_get_depending_timestep_c(adjointer, variable, functional_c, i, timestep)
+  end function adj_variable_get_depending_timestep
 
   function adj_register_functional_derivative_callback(adjointer, name, fnptr) result(ierr)
     type(adj_adjointer), intent(inout) :: adjointer

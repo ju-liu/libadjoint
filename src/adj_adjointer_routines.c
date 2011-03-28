@@ -1126,3 +1126,72 @@ int adj_minval(int* array, int array_sz)
 
   return minval;
 }
+
+int adj_variable_get_ndepending_timesteps(adj_adjointer* adjointer, adj_variable variable, char* functional, int* ntimesteps)
+{
+  int ierr;
+  adj_variable_data* data_ptr;
+  int k;
+
+  ierr = adj_find_variable_data(&(adjointer->varhash), &variable, &data_ptr);
+  if (ierr != ADJ_ERR_OK) return ierr;
+
+  *ntimesteps = 0;
+  for (k = 0; k < data_ptr->ndepending_timesteps; k++)
+  {
+    adj_functional_data* func_ptr;
+    func_ptr = adjointer->timestep_data[k].functional_data_start;
+    while (func_ptr != NULL)
+    {
+      if (strncmp(func_ptr->name, functional, ADJ_NAME_LEN) == 0)
+      {
+        *ntimesteps = *ntimesteps + 1;
+        break;
+      }
+      else
+      {
+        func_ptr = func_ptr->next;
+      }
+    }
+  }
+
+  return ADJ_ERR_OK;
+}
+
+int adj_variable_get_depending_timestep(adj_adjointer* adjointer, adj_variable variable, char* functional, int i, int* timestep)
+{
+  int ierr;
+  adj_variable_data* data_ptr;
+  int k;
+  int ntimesteps;
+
+  ierr = adj_find_variable_data(&(adjointer->varhash), &variable, &data_ptr);
+  if (ierr != ADJ_ERR_OK) return ierr;
+
+  ntimesteps = 0;
+  for (k = 0; k < data_ptr->ndepending_timesteps; k++)
+  {
+    adj_functional_data* func_ptr;
+    func_ptr = adjointer->timestep_data[k].functional_data_start;
+    while (func_ptr != NULL)
+    {
+      if (strncmp(func_ptr->name, functional, ADJ_NAME_LEN) == 0)
+      {
+        ntimesteps++;
+        break;
+      }
+      else
+      {
+        func_ptr = func_ptr->next;
+      }
+    }
+
+    if (i == ntimesteps)
+    {
+      *timestep = k;
+      return ADJ_ERR_OK;
+    }
+  }
+
+  return ADJ_ERR_INVALID_INPUTS;
+}

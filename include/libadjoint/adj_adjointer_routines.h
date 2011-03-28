@@ -26,6 +26,9 @@ int adj_timestep_set_times(adj_adjointer* adjointer, int timestep, adj_scalar st
 int adj_timestep_get_times(adj_adjointer* adjointer, int timestep, adj_scalar* start, adj_scalar* end);
 int adj_timestep_set_functional_dependencies(adj_adjointer* adjointer, int timestep, char* functional, int ndepends, adj_variable* dependencies);
 
+int adj_variable_get_ndepending_timesteps(adj_adjointer* adjointer, adj_variable variable, char* functional, int* ntimesteps);
+int adj_variable_get_depending_timestep(adj_adjointer* adjointer, adj_variable variable, char* functional, int k, int* timestep);
+
 adj_storage_data adj_storage_memory_copy(adj_vector value);
 adj_storage_data adj_storage_memory_incref(adj_vector value);
 
