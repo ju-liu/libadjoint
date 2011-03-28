@@ -1177,19 +1177,21 @@ int adj_variable_get_depending_timestep(adj_adjointer* adjointer, adj_variable v
     {
       if (strncmp(func_ptr->name, functional, ADJ_NAME_LEN) == 0)
       {
-        ntimesteps++;
-        break;
+        if (i == ntimesteps)
+        {
+          *timestep = data_ptr->depending_timesteps[k];
+          return ADJ_ERR_OK;
+        }
+        else
+        {
+          ntimesteps++;
+          break;
+        }
       }
       else
       {
         func_ptr = func_ptr->next;
       }
-    }
-
-    if (i == ntimesteps)
-    {
-      *timestep = k;
-      return ADJ_ERR_OK;
     }
   }
 
