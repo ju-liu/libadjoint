@@ -415,24 +415,19 @@ int adj_record_variable(adj_adjointer* adjointer, adj_variable var, adj_storage_
   if (adjointer->options[ADJ_ACTIVITY] == ADJ_ACTIVITY_NOTHING) return ADJ_ERR_OK;
 
   ierr = adj_find_variable_data(&(adjointer->varhash), &var, &data_ptr);
-  if (ierr != ADJ_ERR_OK && !var.auxiliary)
-  {
-    char buf[255];
-    adj_variable_str(var, buf, 255);
-    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, \
-        "Tried to record a value for variable %s, but couldn't look it up in the hash table.", buf);
-    return ierr;
-  }
+  if (ierr != ADJ_ERR_OK && ierr != ADJ_ERR_HASH_FAILED) return ierr;
 
-  if (ierr != ADJ_ERR_OK && var.auxiliary)
+  if (ierr == ADJ_ERR_HASH_FAILED)
   {
-    /* If the variable is auxiliary, it's alright that this is the first time we've ever seen it */
+    /* it's alright that this is the first time we've ever seen it */
     adj_variable_data* new_data;
     ierr = adj_add_new_hash_entry(adjointer, &var, &new_data);
     if (ierr != ADJ_ERR_OK) return ierr;
     new_data->equation = -1; /* it doesn't have an equation */
     data_ptr = new_data;
   }
+
+  assert(data_ptr != NULL);
 
   if (data_ptr->storage.has_value)
   {
