@@ -352,7 +352,7 @@ int adj_evaluate_nonlinear_action(adj_adjointer* adjointer, void (*nonlinear_act
   return ADJ_ERR_OK;
 }
 
-int adj_evaluate_functional(adj_adjointer* adjointer, adj_variable variable, char* functional, adj_vector* output)
+int adj_evaluate_functional(adj_adjointer* adjointer, adj_variable variable, char* functional, adj_vector* output, int* has_output)
 {
   int i, ierr;
   void (*functional_derivative_func)(adj_variable variable, int nb_variables, adj_variable* variables, adj_vector* dependencies, char* name, adj_scalar start_time, adj_scalar end_time, adj_vector* output) = NULL;
@@ -363,6 +363,20 @@ int adj_evaluate_functional(adj_adjointer* adjointer, adj_variable variable, cha
   adj_scalar start_time, end_time;
   adj_variable_data* data_ptr = NULL;
   adj_variable_hash* hash = NULL;
+  int ntimesteps;
+
+  ierr = adj_variable_get_ndepending_timesteps(adjointer, variable, functional, &ntimesteps);
+  if (ierr != ADJ_ERR_OK)
+    return ierr;
+  if (ntimesteps == 0)
+  {
+    *has_output = ADJ_FALSE;
+    return ADJ_ERR_OK;
+  }
+  else
+  {
+    *has_output = ADJ_TRUE;
+  }
 
   ierr = adj_find_functional_derivative_callback(adjointer, functional, &functional_derivative_func);
   if (ierr != ADJ_ERR_OK)

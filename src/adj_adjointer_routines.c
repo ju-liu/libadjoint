@@ -864,7 +864,7 @@ int adj_add_new_hash_entry(adj_adjointer* adjointer, adj_variable* var, adj_vari
   (*data)->equation = -1;
   (*data)->next = NULL;
   (*data)->storage.has_value = 0;
-  (*data)->storage.storage_type = -666;
+  (*data)->storage.storage_type = ADJ_UNSET;
   (*data)->ntargeting_equations = 0;
   (*data)->targeting_equations = NULL;
   (*data)->ndepending_equations = 0;
@@ -987,12 +987,24 @@ int adj_timestep_get_times(adj_adjointer* adjointer, int timestep, adj_scalar* s
   *start = adjointer->timestep_data[timestep].start_time;
   *end   = adjointer->timestep_data[timestep].end_time;
 
+  /* A special exception for the last timestep, as it may not be a real
+     timestep; it might only be introduced internally to be a container
+     for the very last equation. In that case, we want to give it a sensible
+     time, so that the user is not confused. */
+  if (*start == ADJ_UNSET && *end == ADJ_UNSET 
+      && timestep == adjointer->ntimesteps - 1
+      && timestep - 1 >= 0)
+  {
+    *start = adjointer->timestep_data[timestep-1].end_time;
+    *end   = adjointer->timestep_data[timestep-1].end_time;
+  }
+
   return ADJ_ERR_OK;
 }
 
 int adj_timestep_set_functional_dependencies(adj_adjointer* adjointer, int timestep, char* functional, int ndepends, adj_variable* dependencies)
 {
-  int i, j;
+  int i;
   adj_functional_data* functional_data_ptr = NULL;
   if (timestep < 0)
   {
@@ -1059,10 +1071,6 @@ int adj_timestep_set_functional_dependencies(adj_adjointer* adjointer, int times
 
     /* Record that this variable is necessary for the functional evaluation at this point in time */
     adj_append_unique(&(data_ptr->depending_timesteps), &(data_ptr->ndepending_timesteps), timestep);
-
-    /* Also record any implications for dJ/du at other timesteps */
-    for (j = 0; j < ndepends; j++)
-      adj_append_unique(&(data_ptr->depending_timesteps), &(data_ptr->ndepending_timesteps), dependencies[j].timestep);
   }
   /* We are done */
   return ADJ_ERR_OK;
@@ -1095,8 +1103,8 @@ void adj_extend_timestep_data(adj_adjointer* adjointer, int extent)
   for (i = adjointer->ntimesteps; i < extent; i++)
   {
     adjointer->timestep_data[i].start_equation = -1;
-    adjointer->timestep_data[i].start_time = -666; /* I wish there was an easy way to get a NaN here */
-    adjointer->timestep_data[i].end_time = -666;
+    adjointer->timestep_data[i].start_time = ADJ_UNSET;
+    adjointer->timestep_data[i].end_time = ADJ_UNSET;
     adjointer->timestep_data[i].functional_data_start = NULL;
     adjointer->timestep_data[i].functional_data_end = NULL;
   }
