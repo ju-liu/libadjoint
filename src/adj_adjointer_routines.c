@@ -999,7 +999,13 @@ int adj_timestep_get_times(adj_adjointer* adjointer, int timestep, adj_scalar* s
     *end   = adjointer->timestep_data[timestep-1].end_time;
   }
 
-  return ADJ_ERR_OK;
+  if (*start == ADJ_UNSET && *end == ADJ_UNSET)
+  {
+    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "You have asked for the times for timestep %d, but they have not been set.", timestep);
+    return ADJ_ERR_INVALID_INPUTS;
+  }
+  else
+    return ADJ_ERR_OK;
 }
 
 int adj_timestep_set_functional_dependencies(adj_adjointer* adjointer, int timestep, char* functional, int ndepends, adj_variable* dependencies)
