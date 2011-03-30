@@ -1062,7 +1062,7 @@ int adj_timestep_set_functional_dependencies(adj_adjointer* adjointer, int times
 
     /* Also record any implications for dJ/du at other timesteps */
     for (j = 0; j < ndepends; j++)
-      adj_append_unique(&(data_ptr->depending_timesteps), &(data_ptr->ndepending_timesteps), dependencies[i].timestep);
+      adj_append_unique(&(data_ptr->depending_timesteps), &(data_ptr->ndepending_timesteps), dependencies[j].timestep);
   }
   /* We are done */
   return ADJ_ERR_OK;

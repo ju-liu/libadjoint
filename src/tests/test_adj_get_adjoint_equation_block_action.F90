@@ -106,7 +106,11 @@ subroutine functional_derivative_callback(variable, ndepends, dependencies, valu
   integer, parameter :: m = 2
   integer :: ierr
 
-  call adj_test_assert(ndepends == 1, "We depend on one variable")
+  if (variable%timestep == 0) then
+    call adj_test_assert(ndepends == 1, "We depend on one variable")
+  else
+    call adj_test_assert(ndepends == 0, "We don't depend on any variables")
+  end if
   call VecCreateSeq(PETSC_COMM_SELF, m, output_vec, ierr)
   call VecZeroEntries(output_vec, ierr)
   output = petsc_vec_to_adj_vector(output_vec)
@@ -187,7 +191,7 @@ subroutine test_adj_get_adjoint_equation_block_action
   ierr = adj_timestep_set_functional_dependencies(adjointer, timestep=1, functional="Drag", dependencies=(/u0/))
   call adj_test_assert(ierr == ADJ_ERR_OK, "Should have worked")
 
-  ierr = adj_get_adjoint_equation(adjointer, equation=1, functional="Drag", lhs=lhs, rhs=rhs, variable=adj_var1)
+  ierr = adj_get_adjoint_equation(adjointer, equation=0, functional="Drag", lhs=lhs, rhs=rhs, variable=adj_var1)
   call adj_test_assert(ierr == ADJ_ERR_NEED_VALUE, "We should need the value for u0")
 
   ierr = adj_timestep_set_functional_dependencies(adjointer, timestep=1, functional="Drag", dependencies=(/u0, u1/))
