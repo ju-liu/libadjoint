@@ -363,6 +363,8 @@ int adj_evaluate_functional_derivative(adj_adjointer* adjointer, adj_variable va
   adj_variable_data* data_ptr = NULL;
   adj_variable_hash* hash = NULL;
   int ntimesteps;
+  int ntimesteps_to_consider;
+  int* timesteps_to_consider;
 
   ierr = adj_variable_get_ndepending_timesteps(adjointer, variable, functional, &ntimesteps);
   if (ierr != ADJ_ERR_OK)
@@ -391,9 +393,15 @@ int adj_evaluate_functional_derivative(adj_adjointer* adjointer, adj_variable va
   if (ierr != ADJ_ERR_OK)
     return ierr;
 
+  ntimesteps_to_consider = data_ptr->ndepending_timesteps + 1;
+  timesteps_to_consider = (int*) malloc(ntimesteps_to_consider * sizeof(int));
   for (i = 0; i < data_ptr->ndepending_timesteps; i++)
+    timesteps_to_consider[i] = data_ptr->depending_timesteps[i];
+  timesteps_to_consider[i] = variable.timestep;
+
+  for (i = 0; i < ntimesteps_to_consider; i++)
   {
-    int timestep = data_ptr->depending_timesteps[i];
+    int timestep = timesteps_to_consider[i];
     functional_data_ptr = adjointer->timestep_data[timestep].functional_data_start;
     while (functional_data_ptr != NULL)
     {
@@ -424,9 +432,9 @@ int adj_evaluate_functional_derivative(adj_adjointer* adjointer, adj_variable va
   ierr = adj_destroy_hash(&hash);
   if (ierr != ADJ_ERR_OK) return ierr;
 
-  for (i = 0; i < data_ptr->ndepending_timesteps; i++)
+  for (i = 0; i < ntimesteps_to_consider; i++)
   {
-    int timestep = data_ptr->depending_timesteps[i];
+    int timestep = timesteps_to_consider[i];
     functional_data_ptr = adjointer->timestep_data[timestep].functional_data_start;
     while (functional_data_ptr != NULL)
     {
@@ -453,6 +461,7 @@ int adj_evaluate_functional_derivative(adj_adjointer* adjointer, adj_variable va
   }
 
   ierr = adj_destroy_hash(&hash);
+  free(timesteps_to_consider);
   if (ierr != ADJ_ERR_OK) return ierr;
 
   /* We have the right callback, so let's call it already */ 
