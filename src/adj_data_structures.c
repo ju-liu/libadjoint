@@ -15,6 +15,18 @@ int adj_create_variable(char* name, int timestep, int iteration, int auxiliary, 
     return ADJ_ERR_INVALID_INPUTS;
   }
 
+  if (timestep < 0)
+  {
+    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Cannot have a negative timestep %d.", timestep);
+    return ADJ_ERR_INVALID_INPUTS;
+  }
+
+  if (iteration < 0)
+  {
+    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Cannot have a negative iteration %d.", iteration);
+    return ADJ_ERR_INVALID_INPUTS;
+  }
+
   strncpy(var->name, name, ADJ_NAME_LEN);
   var->timestep = timestep;
   var->iteration = iteration;
