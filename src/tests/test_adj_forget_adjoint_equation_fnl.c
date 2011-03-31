@@ -29,6 +29,7 @@ void test_adj_forget_adjoint_equation_fnl(void)
   adj_vector value;
   int i, dim=2;
   int* has_val;
+  adj_storage_data storage;
 
 
   adj_create_adjointer(&adjointer);
@@ -113,7 +114,7 @@ void test_adj_forget_adjoint_equation_fnl(void)
   VecCreateSeq(PETSC_COMM_SELF, dim, &vec);
   VecSet(vec, 1.0);
   value = petsc_vec_to_adj_vector(&vec);
-  adj_storage_data storage = adj_storage_memory_copy(value);
+  ierr = adj_storage_memory_copy(value, &storage);
   for (i = 0; i < 5; i++)
   {
     ierr = adj_record_variable(&adjointer, u[i], storage);

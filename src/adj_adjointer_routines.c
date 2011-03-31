@@ -569,7 +569,7 @@ int adj_register_data_callback(adj_adjointer* adjointer, int type, void (*fn)(vo
   return ADJ_ERR_OK;
 }
 
-int adj_register_functional_derivative_callback(adj_adjointer* adjointer, char* name, void (*fn)(adj_variable variable, int nb_variables, adj_variable* variables, adj_vector* dependencies, char* name, adj_scalar start_time, adj_scalar end_time, adj_vector* output))
+int adj_register_functional_derivative_callback(adj_adjointer* adjointer, char* name, void (*fn)(adj_adjointer* adjointer, adj_variable variable, int nb_variables, adj_variable* variables, adj_vector* dependencies, char* name, adj_vector* output))
 {
   adj_func_deriv_callback_list* cb_list_ptr;
   adj_func_deriv_callback* cb_ptr;
@@ -584,7 +584,7 @@ int adj_register_functional_derivative_callback(adj_adjointer* adjointer, char* 
   {
     if (strncmp(cb_ptr->name, name, ADJ_NAME_LEN) == 0)
     {
-      cb_ptr->callback = fn;
+      cb_ptr->callback = (void (*)(void* adjointer, adj_variable variable, int nb_variables, adj_variable* variables, adj_vector* dependencies, char* name, adj_vector* output)) fn;
       return ADJ_ERR_OK;
     }
     cb_ptr = cb_ptr->next;
@@ -593,7 +593,7 @@ int adj_register_functional_derivative_callback(adj_adjointer* adjointer, char* 
   /* If we got here, that means that we didn't find it. Tack it on to the end of the list. */
   cb_ptr = (adj_func_deriv_callback*) malloc(sizeof(adj_func_deriv_callback));
   strncpy(cb_ptr->name, name, ADJ_NAME_LEN);
-  cb_ptr->callback = fn;
+  cb_ptr->callback = (void (*)(void* adjointer, adj_variable variable, int nb_variables, adj_variable* variables, adj_vector* dependencies, char* name, adj_vector* output)) fn;
   cb_ptr->next = NULL;
 
   /* Special case for the first callback */
@@ -728,7 +728,7 @@ int adj_find_functional_derivative_callback(adj_adjointer* adjointer, char* name
   {
     if (strncmp(cb_ptr->name, name, ADJ_NAME_LEN) == 0)
     {
-      *fn = cb_ptr->callback;
+      *fn = (void (*)(adj_adjointer* adjointer, adj_variable variable, int nb_variables, adj_variable* variables, adj_vector* dependencies, char* name, adj_vector* output)) cb_ptr->callback;
       return ADJ_ERR_OK;
     }
     cb_ptr = cb_ptr->next;
@@ -835,24 +835,20 @@ int adj_destroy_variable_data(adj_adjointer* adjointer, adj_variable_data* data)
   return ADJ_ERR_OK;
 }
 
-adj_storage_data adj_storage_memory_copy(adj_vector value)
+int adj_storage_memory_copy(adj_vector value, adj_storage_data* data)
 {
-  adj_storage_data data;
-
-  data.has_value = 1;
-  data.storage_type = ADJ_STORAGE_MEMORY_COPY;
-  data.value = value;
-  return data;
+  data->has_value = 1;
+  data->storage_type = ADJ_STORAGE_MEMORY_COPY;
+  data->value = value;
+  return ADJ_ERR_OK;
 }
 
-adj_storage_data adj_storage_memory_incref(adj_vector value)
+int adj_storage_memory_incref(adj_vector value, adj_storage_data* data)
 {
-  adj_storage_data data;
-
-  data.has_value = 1;
-  data.storage_type = ADJ_STORAGE_MEMORY_INCREF;
-  data.value = value;
-  return data;
+  data->has_value = 1;
+  data->storage_type = ADJ_STORAGE_MEMORY_INCREF;
+  data->value = value;
+  return ADJ_ERR_OK;
 }
 
 int adj_add_new_hash_entry(adj_adjointer* adjointer, adj_variable* var, adj_variable_data** data)

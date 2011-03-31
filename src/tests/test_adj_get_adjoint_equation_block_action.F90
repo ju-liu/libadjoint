@@ -140,6 +140,7 @@ subroutine test_adj_get_adjoint_equation_block_action
   PetscScalar :: norm
   PetscRandom :: rctx
   KSP :: ksp
+  type(adj_storage_data) :: storage
 
   ierr = adj_create_adjointer(adjointer)
   
@@ -206,7 +207,8 @@ subroutine test_adj_get_adjoint_equation_block_action
   ! Record a value for u0
   call VecCreateSeq(PETSC_COMM_SELF, m, u0_vec, ierr)
   call VecZeroEntries(u0_vec, ierr)
-  ierr = adj_record_variable(adjointer, u0, adj_storage_memory_copy(petsc_vec_to_adj_vector(u0_vec)))
+  ierr = adj_storage_memory_copy(petsc_vec_to_adj_vector(u0_vec), storage)
+  ierr = adj_record_variable(adjointer, u0, storage)
   call adj_test_assert(ierr == ADJ_ERR_OK, "Should have worked")
 
   ierr = adj_get_adjoint_equation(adjointer, equation=1, functional="Drag", lhs=lhs, rhs=rhs, variable=adj_var1)
@@ -229,7 +231,8 @@ subroutine test_adj_get_adjoint_equation_block_action
 
   lambda1_vec%klass = 0
   lambda1_vec%ptr = c_loc(lambda1)
-  ierr = adj_record_variable(adjointer, adj_var1, adj_storage_memory_copy(lambda1_vec))
+  ierr = adj_storage_memory_copy(lambda1_vec, storage)
+  ierr = adj_record_variable(adjointer, adj_var1, storage)
   call adj_test_assert(ierr == ADJ_ERR_OK, "Should have worked")
 
   ierr = adj_get_adjoint_equation(adjointer, equation=0, functional="Drag", lhs=lhs, rhs=rhs, variable=adj_var1)
