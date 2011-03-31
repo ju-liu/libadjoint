@@ -59,4 +59,7 @@
 
 /* prealloc constant */
 #define ADJ_PREALLOC_SIZE 255
+
+/* value for unset variables */
+#define ADJ_UNSET -666
 #endif

@@ -63,19 +63,19 @@ subroutine test_adj_timestep_count
 
 
   ! Check iteration counts
-  ierr = adj_create_variable("Velocity", timestep=0, iteration=-1, auxiliary=0, variable=u)
+  ierr = adj_create_variable("Velocity", timestep=0, iteration=0, auxiliary=0, variable=u)
   call adj_chkierr(ierr)
   ierr = adj_iteration_count(adjointer, u, count)
   call adj_chkierr(ierr)
   call adj_test_assert(count == 2, "Should be 2")
   
-  ierr = adj_create_variable("Velocity", timestep=1, iteration=-1, auxiliary=0, variable=u)
+  ierr = adj_create_variable("Velocity", timestep=1, iteration=0, auxiliary=0, variable=u)
   call adj_chkierr(ierr)
   ierr = adj_iteration_count(adjointer, u, count)
   call adj_chkierr(ierr)
   call adj_test_assert(count == 1, "Should be 1")
   
-  ierr = adj_create_variable("Velocity", timestep=2, iteration=-1, auxiliary=0, variable=u)
+  ierr = adj_create_variable("Velocity", timestep=2, iteration=0, auxiliary=0, variable=u)
   call adj_chkierr(ierr)
   ierr = adj_iteration_count(adjointer, u, count)
   call adj_test_assert(ierr == ADJ_ERR_INVALID_INPUTS, "Should not have worked")

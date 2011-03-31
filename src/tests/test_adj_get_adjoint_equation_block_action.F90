@@ -85,28 +85,31 @@ subroutine identity_action_callback(nvar, variables, dependencies, hermitian, co
   output = petsc_vec_to_adj_vector(output_vec)
 end subroutine identity_action_callback
 
-subroutine functional_derivative_callback(variable, ndepends, dependencies, values, &
-                                        & name, start_time, end_time, output) bind(c)
+subroutine functional_derivative_callback(adjointer, variable, ndepends, dependencies, values, &
+                                        & name, output) bind(c)
   use iso_c_binding
   use libadjoint
   use libadjoint_petsc_data_structures
   implicit none
 #include "libadjoint/adj_petsc_f.h"
 
+  type(adj_adjointer), intent(in) :: adjointer
   type(adj_variable), intent(in), value :: variable
   integer(kind=c_int), intent(in), value :: ndepends
   type(adj_variable), dimension(ndepends), intent(in) :: dependencies
   type(adj_vector), dimension(ndepends), intent(in) :: values
   character(kind=c_char), dimension(ADJ_NAME_LEN), intent(in) :: name
-  adj_scalar_f, intent(in), value :: start_time
-  adj_scalar_f, intent(in), value :: end_time
   type(adj_vector), intent(out) :: output
 
   Vec :: output_vec
   integer, parameter :: m = 2
   integer :: ierr
 
-  call adj_test_assert(ndepends == 1, "We depend on one variable")
+  if (variable%timestep == 0) then
+    call adj_test_assert(ndepends == 1, "We depend on one variable")
+  else
+    call adj_test_assert(ndepends == 0, "We don't depend on any variables")
+  end if
   call VecCreateSeq(PETSC_COMM_SELF, m, output_vec, ierr)
   call VecZeroEntries(output_vec, ierr)
   output = petsc_vec_to_adj_vector(output_vec)
@@ -137,6 +140,7 @@ subroutine test_adj_get_adjoint_equation_block_action
   PetscScalar :: norm
   PetscRandom :: rctx
   KSP :: ksp
+  type(adj_storage_data) :: storage
 
   ierr = adj_create_adjointer(adjointer)
   
@@ -187,7 +191,7 @@ subroutine test_adj_get_adjoint_equation_block_action
   ierr = adj_timestep_set_functional_dependencies(adjointer, timestep=1, functional="Drag", dependencies=(/u0/))
   call adj_test_assert(ierr == ADJ_ERR_OK, "Should have worked")
 
-  ierr = adj_get_adjoint_equation(adjointer, equation=1, functional="Drag", lhs=lhs, rhs=rhs, variable=adj_var1)
+  ierr = adj_get_adjoint_equation(adjointer, equation=0, functional="Drag", lhs=lhs, rhs=rhs, variable=adj_var1)
   call adj_test_assert(ierr == ADJ_ERR_NEED_VALUE, "We should need the value for u0")
 
   ierr = adj_timestep_set_functional_dependencies(adjointer, timestep=1, functional="Drag", dependencies=(/u0, u1/))
@@ -203,7 +207,8 @@ subroutine test_adj_get_adjoint_equation_block_action
   ! Record a value for u0
   call VecCreateSeq(PETSC_COMM_SELF, m, u0_vec, ierr)
   call VecZeroEntries(u0_vec, ierr)
-  ierr = adj_record_variable(adjointer, u0, adj_storage_memory_copy(petsc_vec_to_adj_vector(u0_vec)))
+  ierr = adj_storage_memory_copy(petsc_vec_to_adj_vector(u0_vec), storage)
+  ierr = adj_record_variable(adjointer, u0, storage)
   call adj_test_assert(ierr == ADJ_ERR_OK, "Should have worked")
 
   ierr = adj_get_adjoint_equation(adjointer, equation=1, functional="Drag", lhs=lhs, rhs=rhs, variable=adj_var1)
@@ -226,7 +231,8 @@ subroutine test_adj_get_adjoint_equation_block_action
 
   lambda1_vec%klass = 0
   lambda1_vec%ptr = c_loc(lambda1)
-  ierr = adj_record_variable(adjointer, adj_var1, adj_storage_memory_copy(lambda1_vec))
+  ierr = adj_storage_memory_copy(lambda1_vec, storage)
+  ierr = adj_record_variable(adjointer, adj_var1, storage)
   call adj_test_assert(ierr == ADJ_ERR_OK, "Should have worked")
 
   ierr = adj_get_adjoint_equation(adjointer, equation=0, functional="Drag", lhs=lhs, rhs=rhs, variable=adj_var1)

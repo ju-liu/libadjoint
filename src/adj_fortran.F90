@@ -261,16 +261,15 @@ module libadjoint
       type(adj_vector), intent(out) :: rhs
     end subroutine adj_block_assembly_proc
     
-    subroutine adj_functional_derivative_proc(variable, ndepends, dependencies, values, name, start_time, end_time, output) bind(c)
+    subroutine adj_functional_derivative_proc(adjointer, variable, ndepends, dependencies, values, name, output) bind(c)
       use iso_c_binding
       use libadjoint_data_structures
+      type(adj_adjointer), intent(in) :: adjointer
       type(adj_variable), intent(in), value :: variable
       integer(kind=c_int), intent(in), value :: ndepends
       type(adj_variable), dimension(ndepends), intent(in) :: dependencies
       type(adj_vector), dimension(ndepends), intent(in) :: values
       character(kind=c_char), dimension(ADJ_NAME_LEN), intent(in) :: name
-      adj_scalar_f, intent(in), value :: start_time
-      adj_scalar_f, intent(in), value :: end_time
       type(adj_vector), intent(out) :: output
     end subroutine adj_functional_derivative_proc
   end interface
@@ -425,7 +424,7 @@ module libadjoint
     function adj_equation_count(adjointer, count) result(ierr) bind(c, name='adj_equation_count')
       use libadjoint_data_structures
       use iso_c_binding
-      type(adj_adjointer), intent(inout) :: adjointer
+      type(adj_adjointer), intent(in) :: adjointer
       integer(kind=c_int), intent(inout) :: count
       integer(kind=c_int) :: ierr
     end function adj_equation_count
@@ -488,7 +487,7 @@ module libadjoint
     function adj_timestep_count(adjointer, count) result(ierr) bind(c, name='adj_timestep_count')
       use libadjoint_data_structures
       use iso_c_binding
-      type(adj_adjointer), intent(inout) :: adjointer
+      type(adj_adjointer), intent(in) :: adjointer
       integer(kind=c_int), intent(out) :: count
       integer(kind=c_int) :: ierr
     end function adj_timestep_count
@@ -496,7 +495,7 @@ module libadjoint
     function adj_iteration_count(adjointer, variable, count) result(ierr) bind(c, name='adj_iteration_count')
       use libadjoint_data_structures
       use iso_c_binding
-      type(adj_adjointer), intent(inout) :: adjointer
+      type(adj_adjointer), intent(in) :: adjointer
       type(adj_variable), intent(in), value :: variable
       integer(kind=c_int), intent(out) :: count
       integer(kind=c_int) :: ierr
@@ -505,7 +504,7 @@ module libadjoint
     function adj_timestep_start_equation(adjointer, timestep, start) result(ierr) bind(c, name='adj_timestep_start_equation')
       use libadjoint_data_structures
       use iso_c_binding
-      type(adj_adjointer), intent(inout) :: adjointer
+      type(adj_adjointer), intent(in) :: adjointer
       integer(kind=c_int), intent(in), value :: timestep
       integer(kind=c_int), intent(out) :: start
       integer(kind=c_int) :: ierr
@@ -514,7 +513,7 @@ module libadjoint
     function adj_timestep_end_equation(adjointer, timestep, end) result(ierr) bind(c, name='adj_timestep_end_equation')
       use libadjoint_data_structures
       use iso_c_binding
-      type(adj_adjointer), intent(inout) :: adjointer
+      type(adj_adjointer), intent(in) :: adjointer
       integer(kind=c_int), intent(in), value :: timestep
       integer(kind=c_int), intent(out) :: end
       integer(kind=c_int) :: ierr
@@ -533,7 +532,7 @@ module libadjoint
     function adj_timestep_get_times(adjointer, timestep, start, end) result(ierr) bind(c, name='adj_timestep_get_times')
       use libadjoint_data_structures
       use iso_c_binding
-      type(adj_adjointer), intent(inout) :: adjointer
+      type(adj_adjointer), intent(in) :: adjointer
       integer(kind=c_int), intent(in), value :: timestep
       adj_scalar_f, intent(out) :: start
       adj_scalar_f, intent(out) :: end
@@ -556,7 +555,7 @@ module libadjoint
                                                       & bind(c, name='adj_variable_get_ndepending_timesteps')
       use libadjoint_data_structures
       use iso_c_binding
-      type(adj_adjointer), intent(inout) :: adjointer
+      type(adj_adjointer), intent(in) :: adjointer
       type(adj_variable), intent(in), value :: variable
       character(kind=c_char), dimension(ADJ_NAME_LEN), intent(in) :: functional
       integer(kind=c_int), intent(out) :: ntimesteps
@@ -567,7 +566,7 @@ module libadjoint
                                                       & bind(c, name='adj_variable_get_depending_timestep')
       use libadjoint_data_structures
       use iso_c_binding
-      type(adj_adjointer), intent(inout) :: adjointer
+      type(adj_adjointer), intent(in) :: adjointer
       type(adj_variable), intent(in), value :: variable
       character(kind=c_char), dimension(ADJ_NAME_LEN), intent(in) :: functional
       integer(kind=c_int), intent(in), value :: i
@@ -575,18 +574,20 @@ module libadjoint
       integer(kind=c_int) :: ierr
     end function adj_variable_get_depending_timestep_c
 
-    function adj_storage_memory_copy(val) result(mem) bind(c, name='adj_storage_memory_copy')
+    function adj_storage_memory_copy(val, mem) result(ierr) bind(c, name='adj_storage_memory_copy')
       use libadjoint_data_structures
       use iso_c_binding
       type(adj_vector), intent(in), value :: val
-      type(adj_storage_data) :: mem
+      type(adj_storage_data), intent(inout) :: mem
+      integer(kind=c_int) :: ierr
     end function adj_storage_memory_copy
     
-    function adj_storage_memory_incref(val) result(mem) bind(c, name='adj_storage_memory_incref')
+    function adj_storage_memory_incref(val, mem) result(ierr) bind(c, name='adj_storage_memory_incref')
       use libadjoint_data_structures
       use iso_c_binding
       type(adj_vector), intent(in), value :: val
-      type(adj_storage_data) :: mem
+      type(adj_storage_data), intent(inout) :: mem
+      integer(kind=c_int) :: ierr
     end function adj_storage_memory_incref
 
     function adj_get_adjoint_equation_c(adjointer, equation, functional, lhs, rhs, variable) result(ierr) &
@@ -617,7 +618,7 @@ module libadjoint
             & bind(c, name='adj_adjointer_to_html')
       use libadjoint_data_structures
       use iso_c_binding
-      type(adj_adjointer), intent(inout) :: adjointer
+      type(adj_adjointer), intent(in) :: adjointer
       character(kind=c_char), dimension(ADJ_NAME_LEN), intent(in) :: filename
       integer(kind=c_int), intent(in), value :: type
       integer(kind=c_int) :: ierr
@@ -642,7 +643,7 @@ module libadjoint
     function adj_dict_find_c(dict, key, value) result(ierr) bind(c, name='adj_dict_find')
       use libadjoint_data_structures
       use iso_c_binding
-      type(adj_dictionary), intent(inout) :: dict
+      type(adj_dictionary), intent(in) :: dict
       character(kind=c_char), dimension(ADJ_DICT_LEN), intent(in) :: key
       type(c_ptr), intent(out) :: value
       integer(kind=c_int) :: ierr
@@ -862,7 +863,7 @@ module libadjoint
   end function adj_timestep_set_functional_dependencies
 
   function adj_variable_get_ndepending_timesteps(adjointer, variable, functional, ntimesteps) result(ierr)
-    type(adj_adjointer), intent(inout) :: adjointer
+    type(adj_adjointer), intent(in) :: adjointer
     type(adj_variable), intent(in), value :: variable
     character(len=*), intent(in) :: functional
     integer, intent(out) :: ntimesteps
@@ -883,7 +884,7 @@ module libadjoint
   end function adj_variable_get_ndepending_timesteps
 
   function adj_variable_get_depending_timestep(adjointer, variable, functional, i, timestep) result(ierr)
-    type(adj_adjointer), intent(inout) :: adjointer
+    type(adj_adjointer), intent(in) :: adjointer
     type(adj_variable), intent(in), value :: variable
     character(len=*), intent(in) :: functional
     integer, intent(in), value :: i

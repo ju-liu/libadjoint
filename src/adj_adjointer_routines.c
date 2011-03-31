@@ -569,7 +569,7 @@ int adj_register_data_callback(adj_adjointer* adjointer, int type, void (*fn)(vo
   return ADJ_ERR_OK;
 }
 
-int adj_register_functional_derivative_callback(adj_adjointer* adjointer, char* name, void (*fn)(adj_variable variable, int nb_variables, adj_variable* variables, adj_vector* dependencies, char* name, adj_scalar start_time, adj_scalar end_time, adj_vector* output))
+int adj_register_functional_derivative_callback(adj_adjointer* adjointer, char* name, void (*fn)(adj_adjointer* adjointer, adj_variable variable, int nb_variables, adj_variable* variables, adj_vector* dependencies, char* name, adj_vector* output))
 {
   adj_func_deriv_callback_list* cb_list_ptr;
   adj_func_deriv_callback* cb_ptr;
@@ -584,7 +584,7 @@ int adj_register_functional_derivative_callback(adj_adjointer* adjointer, char* 
   {
     if (strncmp(cb_ptr->name, name, ADJ_NAME_LEN) == 0)
     {
-      cb_ptr->callback = fn;
+      cb_ptr->callback = (void (*)(void* adjointer, adj_variable variable, int nb_variables, adj_variable* variables, adj_vector* dependencies, char* name, adj_vector* output)) fn;
       return ADJ_ERR_OK;
     }
     cb_ptr = cb_ptr->next;
@@ -593,7 +593,7 @@ int adj_register_functional_derivative_callback(adj_adjointer* adjointer, char* 
   /* If we got here, that means that we didn't find it. Tack it on to the end of the list. */
   cb_ptr = (adj_func_deriv_callback*) malloc(sizeof(adj_func_deriv_callback));
   strncpy(cb_ptr->name, name, ADJ_NAME_LEN);
-  cb_ptr->callback = fn;
+  cb_ptr->callback = (void (*)(void* adjointer, adj_variable variable, int nb_variables, adj_variable* variables, adj_vector* dependencies, char* name, adj_vector* output)) fn;
   cb_ptr->next = NULL;
 
   /* Special case for the first callback */
@@ -716,7 +716,7 @@ int adj_find_operator_callback(adj_adjointer* adjointer, int type, char* name, v
   return ADJ_ERR_NEED_CALLBACK;
 }
 
-int adj_find_functional_derivative_callback(adj_adjointer* adjointer, char* name, void (**fn)(adj_variable variable, int nb_variables, adj_variable* variables, adj_vector* dependencies, char* name, adj_scalar starttime, adj_scalar endtime, adj_vector* output))
+int adj_find_functional_derivative_callback(adj_adjointer* adjointer, char* name, void (**fn)(adj_adjointer* adjointer, adj_variable variable, int nb_variables, adj_variable* variables, adj_vector* dependencies, char* name, adj_vector* output))
 {
   adj_func_deriv_callback_list* cb_list_ptr;
   adj_func_deriv_callback* cb_ptr;
@@ -728,7 +728,7 @@ int adj_find_functional_derivative_callback(adj_adjointer* adjointer, char* name
   {
     if (strncmp(cb_ptr->name, name, ADJ_NAME_LEN) == 0)
     {
-      *fn = cb_ptr->callback;
+      *fn = (void (*)(adj_adjointer* adjointer, adj_variable variable, int nb_variables, adj_variable* variables, adj_vector* dependencies, char* name, adj_vector* output)) cb_ptr->callback;
       return ADJ_ERR_OK;
     }
     cb_ptr = cb_ptr->next;
@@ -835,24 +835,20 @@ int adj_destroy_variable_data(adj_adjointer* adjointer, adj_variable_data* data)
   return ADJ_ERR_OK;
 }
 
-adj_storage_data adj_storage_memory_copy(adj_vector value)
+int adj_storage_memory_copy(adj_vector value, adj_storage_data* data)
 {
-  adj_storage_data data;
-
-  data.has_value = 1;
-  data.storage_type = ADJ_STORAGE_MEMORY_COPY;
-  data.value = value;
-  return data;
+  data->has_value = 1;
+  data->storage_type = ADJ_STORAGE_MEMORY_COPY;
+  data->value = value;
+  return ADJ_ERR_OK;
 }
 
-adj_storage_data adj_storage_memory_incref(adj_vector value)
+int adj_storage_memory_incref(adj_vector value, adj_storage_data* data)
 {
-  adj_storage_data data;
-
-  data.has_value = 1;
-  data.storage_type = ADJ_STORAGE_MEMORY_INCREF;
-  data.value = value;
-  return data;
+  data->has_value = 1;
+  data->storage_type = ADJ_STORAGE_MEMORY_INCREF;
+  data->value = value;
+  return ADJ_ERR_OK;
 }
 
 int adj_add_new_hash_entry(adj_adjointer* adjointer, adj_variable* var, adj_variable_data** data)
@@ -864,7 +860,7 @@ int adj_add_new_hash_entry(adj_adjointer* adjointer, adj_variable* var, adj_vari
   (*data)->equation = -1;
   (*data)->next = NULL;
   (*data)->storage.has_value = 0;
-  (*data)->storage.storage_type = -666;
+  (*data)->storage.storage_type = ADJ_UNSET;
   (*data)->ntargeting_equations = 0;
   (*data)->targeting_equations = NULL;
   (*data)->ndepending_equations = 0;
@@ -987,12 +983,30 @@ int adj_timestep_get_times(adj_adjointer* adjointer, int timestep, adj_scalar* s
   *start = adjointer->timestep_data[timestep].start_time;
   *end   = adjointer->timestep_data[timestep].end_time;
 
-  return ADJ_ERR_OK;
+  /* A special exception for the last timestep, as it may not be a real
+     timestep; it might only be introduced internally to be a container
+     for the very last equation. In that case, we want to give it a sensible
+     time, so that the user is not confused. */
+  if (*start == ADJ_UNSET && *end == ADJ_UNSET 
+      && timestep == adjointer->ntimesteps - 1
+      && timestep - 1 >= 0)
+  {
+    *start = adjointer->timestep_data[timestep-1].end_time;
+    *end   = adjointer->timestep_data[timestep-1].end_time;
+  }
+
+  if (*start == ADJ_UNSET && *end == ADJ_UNSET)
+  {
+    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "You have asked for the times for timestep %d, but they have not been set.", timestep);
+    return ADJ_ERR_INVALID_INPUTS;
+  }
+  else
+    return ADJ_ERR_OK;
 }
 
 int adj_timestep_set_functional_dependencies(adj_adjointer* adjointer, int timestep, char* functional, int ndepends, adj_variable* dependencies)
 {
-  int i, j;
+  int i;
   adj_functional_data* functional_data_ptr = NULL;
   if (timestep < 0)
   {
@@ -1059,10 +1073,6 @@ int adj_timestep_set_functional_dependencies(adj_adjointer* adjointer, int times
 
     /* Record that this variable is necessary for the functional evaluation at this point in time */
     adj_append_unique(&(data_ptr->depending_timesteps), &(data_ptr->ndepending_timesteps), timestep);
-
-    /* Also record any implications for dJ/du at other timesteps */
-    for (j = 0; j < ndepends; j++)
-      adj_append_unique(&(data_ptr->depending_timesteps), &(data_ptr->ndepending_timesteps), dependencies[i].timestep);
   }
   /* We are done */
   return ADJ_ERR_OK;
@@ -1095,8 +1105,8 @@ void adj_extend_timestep_data(adj_adjointer* adjointer, int extent)
   for (i = adjointer->ntimesteps; i < extent; i++)
   {
     adjointer->timestep_data[i].start_equation = -1;
-    adjointer->timestep_data[i].start_time = -666; /* I wish there was an easy way to get a NaN here */
-    adjointer->timestep_data[i].end_time = -666;
+    adjointer->timestep_data[i].start_time = ADJ_UNSET;
+    adjointer->timestep_data[i].end_time = ADJ_UNSET;
     adjointer->timestep_data[i].functional_data_start = NULL;
     adjointer->timestep_data[i].functional_data_end = NULL;
   }

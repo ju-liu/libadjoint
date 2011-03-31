@@ -131,7 +131,8 @@ typedef struct
 typedef struct adj_func_deriv_callback
 {
   char name[ADJ_NAME_LEN];
-  void (*callback)(adj_variable variable, int nb_variables, adj_variable* variables, adj_vector* dependencies, char* name, adj_scalar start_time, adj_scalar end_time, adj_vector* output);
+  /* we want this to be adj_adjointer* adjointer, but we haven't defined adj_adjointer yet */
+  void (*callback)(void* adjointer, adj_variable variable, int nb_variables, adj_variable* variables, adj_vector* dependencies, char* name, adj_vector* output);
   struct adj_func_deriv_callback* next;
 } adj_func_deriv_callback;
 
