@@ -9,7 +9,7 @@ int adj_get_adjoint_equation(adj_adjointer* adjointer, int equation, char* funct
   adj_variable_data* fwd_data;
   int i;
   int j;
-  void (*functional_derivative_func)(adj_variable variable, int nb_variables, adj_variable* variables, adj_vector* dependencies, char* name, adj_scalar start_time, adj_scalar end_time, adj_vector* output) = NULL;
+  void (*functional_derivative_func)(adj_adjointer* adjointer, adj_variable variable, int nb_variables, adj_variable* variables, adj_vector* dependencies, char* name, adj_vector* output) = NULL;
 
   if (adjointer->options[ADJ_ACTIVITY] == ADJ_ACTIVITY_NOTHING)
   {
@@ -166,7 +166,7 @@ int adj_get_adjoint_equation(adj_adjointer* adjointer, int equation, char* funct
   {
     adj_vector rhs_tmp;
     int has_djdu;
-    ierr = adj_evaluate_functional(adjointer, fwd_var, functional, &rhs_tmp, &has_djdu);
+    ierr = adj_evaluate_functional_derivative(adjointer, fwd_var, functional, &rhs_tmp, &has_djdu);
     if (ierr != ADJ_ERR_OK) return ierr;
     if (has_djdu)
     {

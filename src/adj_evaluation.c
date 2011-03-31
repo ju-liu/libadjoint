@@ -352,15 +352,14 @@ int adj_evaluate_nonlinear_action(adj_adjointer* adjointer, void (*nonlinear_act
   return ADJ_ERR_OK;
 }
 
-int adj_evaluate_functional(adj_adjointer* adjointer, adj_variable variable, char* functional, adj_vector* output, int* has_output)
+int adj_evaluate_functional_derivative(adj_adjointer* adjointer, adj_variable variable, char* functional, adj_vector* output, int* has_output)
 {
   int i, ierr;
-  void (*functional_derivative_func)(adj_variable variable, int nb_variables, adj_variable* variables, adj_vector* dependencies, char* name, adj_scalar start_time, adj_scalar end_time, adj_vector* output) = NULL;
+  void (*functional_derivative_func)(adj_adjointer* adjointer, adj_variable variable, int nb_variables, adj_variable* variables, adj_vector* dependencies, char* name, adj_vector* output) = NULL;
   adj_vector* dependencies = NULL;
   int nb_variables = 0;
   adj_variable* variables = NULL;
   adj_functional_data* functional_data_ptr = NULL;
-  adj_scalar start_time, end_time;
   adj_variable_data* data_ptr = NULL;
   adj_variable_hash* hash = NULL;
   int ntimesteps;
@@ -456,11 +455,8 @@ int adj_evaluate_functional(adj_adjointer* adjointer, adj_variable variable, cha
   ierr = adj_destroy_hash(&hash);
   if (ierr != ADJ_ERR_OK) return ierr;
 
-  start_time = adjointer->timestep_data[variable.timestep].start_time;
-  end_time = adjointer->timestep_data[variable.timestep].end_time;
-
   /* We have the right callback, so let's call it already */ 
-  functional_derivative_func(variable, nb_variables, variables, dependencies, functional, start_time, end_time, output);
+  functional_derivative_func(adjointer, variable, nb_variables, variables, dependencies, functional, output);
 
   free(dependencies);
   free(variables);

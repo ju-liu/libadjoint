@@ -85,21 +85,20 @@ subroutine identity_action_callback(nvar, variables, dependencies, hermitian, co
   output = petsc_vec_to_adj_vector(output_vec)
 end subroutine identity_action_callback
 
-subroutine functional_derivative_callback(variable, ndepends, dependencies, values, &
-                                        & name, start_time, end_time, output) bind(c)
+subroutine functional_derivative_callback(adjointer, variable, ndepends, dependencies, values, &
+                                        & name, output) bind(c)
   use iso_c_binding
   use libadjoint
   use libadjoint_petsc_data_structures
   implicit none
 #include "libadjoint/adj_petsc_f.h"
 
+  type(adj_adjointer), intent(in) :: adjointer
   type(adj_variable), intent(in), value :: variable
   integer(kind=c_int), intent(in), value :: ndepends
   type(adj_variable), dimension(ndepends), intent(in) :: dependencies
   type(adj_vector), dimension(ndepends), intent(in) :: values
   character(kind=c_char), dimension(ADJ_NAME_LEN), intent(in) :: name
-  adj_scalar_f, intent(in), value :: start_time
-  adj_scalar_f, intent(in), value :: end_time
   type(adj_vector), intent(out) :: output
 
   Vec :: output_vec
