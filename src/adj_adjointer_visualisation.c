@@ -11,22 +11,21 @@ void adj_html_css(FILE* fp)
       "  color: #404040;\n"
       "  table-layout:fixed;\n"
       "  background-color: #fafafa;\n"
-      "  border: 1px #6699CC solid;\n"
-      "  border-collapse: collapse;\n"
+      "  border: 0px;\n"
+      "  empty-cells: hide;\n"
       "  border-spacing: 0px;\n"
       "  margin-top: 0px;}\n"
 
       "table.equations td\n"
-      "{  border-bottom: 1px #6699CC;\n"
-      "  font-weight: normal;\n"
+      "{ font-weight: normal;\n"
       "  font-size: 11px;\n"
       "  color: #404040;\n"
-      "  background-color: white;\n"
+      "  background-color: lightgray;\n"
       "  text-align: left;\n"
       "  padding-left: 3px;}\n"
 
       "table.equations tr.new_iteration\n"
-      "{ border-top: 2px solid #6699CC;}\n"
+      "{ border-top: 2px solid gray;}\n"
 
       "</style>\n"
       "</head>\n"
@@ -62,7 +61,12 @@ void adj_html_write_row(FILE* fp, char** strings, char** desc, int nb_strings)
 {
   int i;
   for (i = 0; i < nb_strings; i++)
-    fprintf(fp, "<td><div title=\"%s\">%s</div></td>\n", desc[i], strings[i]);
+  {
+    if (strlen(desc[i]))
+      fprintf(fp, "<td><div title=\"%s\">%s</div></td>\n", desc[i], strings[i]);
+    else
+      fprintf(fp, "<td></div></td>\n");
+  }
 }
 
 int adj_html_find_column_index(adj_adjointer* adjointer, adj_variable* variable, int* col)

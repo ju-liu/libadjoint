@@ -670,6 +670,13 @@ module libadjoint
       type(adj_dictionary), intent(inout) :: dict
       integer(kind=c_int) :: ierr
     end function adj_dict_destroy
+
+    subroutine adj_dict_print(dict) bind(c, name='adj_dict_print')
+      use libadjoint_data_structures
+      use iso_c_binding
+      type(adj_dictionary), intent(inout) :: dict
+    end subroutine adj_dict_print
+
   end interface
 
   contains
