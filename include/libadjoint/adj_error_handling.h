@@ -16,6 +16,8 @@ char adj_error_msg[ADJ_ERROR_MSG_BUF];
 #define ADJ_ERR_NEED_VALUE 4
 #define ADJ_ERR_NOT_IMPLEMENTED 5
 #define ADJ_ERR_DICT_FAILED 6
+
+#define ADJ_WARN_ALREADY_RECORDED -1
 /* if you add a new one, make sure to add it into adj_error_codes in src/adj_error_handling.c */
 
 #define adj_chkierr(ierr) adj_chkierr_private(ierr, __FILE__, __LINE__)

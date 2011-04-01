@@ -434,7 +434,7 @@ int adj_record_variable(adj_adjointer* adjointer, adj_variable var, adj_storage_
     char buf[ADJ_NAME_LEN];
     adj_variable_str(var, buf, ADJ_NAME_LEN);
     snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Variable %s already has a value.", buf);
-    return ADJ_ERR_INVALID_INPUTS;
+    return ADJ_WARN_ALREADY_RECORDED;
   }
 
   /* Just in case */
@@ -854,6 +854,23 @@ int adj_storage_memory_incref(adj_vector value, adj_storage_data* data)
 int adj_add_new_hash_entry(adj_adjointer* adjointer, adj_variable* var, adj_variable_data** data)
 {
   int ierr;
+  adj_variable auxvar;
+  adj_variable_data* aux_data;
+
+  /* First, check that we don't have a corresponding variable with the opposite sense
+     of auxiliary-ness already registered -- if so, the user has probably made a mistake */
+  auxvar = *var;
+  auxvar.auxiliary = !auxvar.auxiliary;
+  ierr = adj_find_variable_data(&(adjointer->varhash), &auxvar, &aux_data);
+  if (ierr != ADJ_ERR_HASH_FAILED)
+  {
+    char buf[ADJ_NAME_LEN];
+    char auxbuf[ADJ_NAME_LEN];
+    adj_variable_str(*var, buf, ADJ_NAME_LEN);
+    adj_variable_str(auxvar, auxbuf, ADJ_NAME_LEN);
+    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Tried to add a hash entry for %s, but already have a hash entry for %s.", buf, auxbuf);
+    return ADJ_ERR_INVALID_INPUTS;
+  }
 
   *data = (adj_variable_data*) malloc(sizeof(adj_variable_data));
   memset(*data, 0, sizeof(adj_variable_data));
