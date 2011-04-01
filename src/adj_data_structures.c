@@ -262,3 +262,9 @@ int adj_destroy_equation(adj_equation* equation)
 
   return ADJ_ERR_OK;
 }
+
+int adj_variable_set_auxiliary(adj_variable* var, int auxiliary)
+{
+  var->auxiliary = auxiliary;
+  return ADJ_ERR_OK;
+}

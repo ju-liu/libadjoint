@@ -300,6 +300,14 @@ module libadjoint
       integer(kind=c_int) :: ierr
     end function adj_variable_get_iteration
 
+    function adj_variable_set_auxiliary_c(var, auxiliary) result(ierr) bind(c, name='adj_variable_set_auxiliary')
+      use libadjoint_data_structures
+      use iso_c_binding
+      type(adj_variable), intent(inout) :: var
+      integer(kind=c_int), intent(in), value :: auxiliary
+      integer(kind=c_int) :: ierr
+    end function adj_variable_set_auxiliary_c
+
     subroutine adj_chkierr_private_c(ierr, filename, line) bind(c, name='adj_chkierr_private')
       use iso_c_binding
       integer(kind=c_int), intent(in), value :: ierr
@@ -1023,6 +1031,21 @@ module libadjoint
       print *, "  pass"
     end if
   end subroutine adj_test_assert
+
+  function adj_variable_set_auxiliary(var, auxiliary) result(ierr)
+    type(adj_variable), intent(inout) :: var
+    logical, intent(in) :: auxiliary
+    integer(kind=c_int) :: auxiliary_c
+    integer(kind=c_int) :: ierr
+
+    if (auxiliary) then
+      auxiliary_c = ADJ_TRUE
+    else
+      auxiliary_c = ADJ_FALSE
+    end if
+
+    ierr = adj_variable_set_auxiliary_c(var, auxiliary_c)
+  end function adj_variable_set_auxiliary
 
 end module libadjoint
 
