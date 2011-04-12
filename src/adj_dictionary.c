@@ -33,7 +33,11 @@ int adj_dict_find(adj_dictionary* dict, char* key, char** value)
   adj_dictionary_entry* check;
   HASH_FIND(hh, dict->dict, key, ADJ_DICT_LEN * sizeof(char), check);
 
-  if (check == NULL) return ADJ_ERR_DICT_FAILED;
+  if (check == NULL)
+  {
+    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Could not find key %s.", key);
+    return ADJ_ERR_DICT_FAILED;
+  }
 
   *value = check->value;
   return ADJ_ERR_OK;
