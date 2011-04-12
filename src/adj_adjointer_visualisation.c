@@ -254,10 +254,11 @@ int adj_html_adjoint_eqn(FILE* fp, adj_adjointer* adjointer, adj_equation fwd_eq
       snprintf(buf, ADJ_NAME_LEN, "%f", other_fwd_eqn.blocks[j].coefficient);
       strncat(desc[col], buf, ADJ_NAME_LEN);
       strncat(desc[col], "\nHermitian: ", ADJ_NAME_LEN);
+      // We are printing the adjoint equation, therefore hermition has to be NOT'ed
       if (other_fwd_eqn.blocks[j].hermitian==ADJ_TRUE)
-    	  snprintf(buf, ADJ_NAME_LEN, "true");
-      else
     	  snprintf(buf, ADJ_NAME_LEN, "false");
+      else
+    	  snprintf(buf, ADJ_NAME_LEN, "true");
       strncat(desc[col], buf, ADJ_NAME_LEN);
       if (other_fwd_eqn.blocks[j].has_nonlinear_block)
       {
