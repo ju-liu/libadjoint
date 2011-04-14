@@ -219,8 +219,8 @@ int adj_get_forward_equation(adj_adjointer* adjointer, int equation, adj_matrix*
 
     /* Get the forward variable we want this to multiply */
     other_adj_var = fwd_eqn.targets[i];
-    if (adj_variable_equal(&fwd_var, &other_adj_var, 1)) continue; /* that term goes in the lhs, and we've already taken care of it */
-    /* and now get its value */
+    if (adj_variable_equal(&fwd_var, &other_adj_var, 1)) continue; /* that term goes in the lhs */
+    /* and now check it has a value */
     ierr = adj_has_variable_value(adjointer, other_adj_var);
     if (ierr != ADJ_ERR_OK)
     {
