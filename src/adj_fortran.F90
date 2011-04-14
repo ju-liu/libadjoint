@@ -38,6 +38,7 @@ module libadjoint_data_structures
     type(c_ptr) :: targets
     integer(kind=c_int) :: nrhsdeps
     type(c_ptr) :: rhsdeps
+    type(c_ptr) :: rhs_context
   end type adj_equation
 
   type, bind(c) :: adj_data_callbacks
@@ -403,12 +404,13 @@ module libadjoint
       integer(kind=c_int) :: ierr
     end function adj_create_equation_c
 
-    function adj_set_rhs_dependencies(equation, nrhsdeps, rhsdeps) result(ierr) bind(c, name='adj_set_rhs_dependencies')
+    function adj_set_rhs_dependencies(equation, nrhsdeps, rhsdeps, context) result(ierr) bind(c, name='adj_set_rhs_dependencies')
       use libadjoint_data_structures
       use iso_c_binding
       type(adj_equation), intent(inout) :: equation
       integer(kind=c_int), intent(in), value :: nrhsdeps
       type(adj_variable), dimension(nrhsdeps), intent(in) :: rhsdeps
+      type(c_ptr), intent(in), value :: context
       integer(kind=c_int) :: ierr
     end function adj_set_rhs_dependencies
 

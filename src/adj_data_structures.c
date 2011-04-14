@@ -237,7 +237,7 @@ int adj_create_equation(adj_variable var, int nblocks, adj_block* blocks, adj_va
   return ADJ_ERR_OK;
 }
 
-int adj_set_rhs_dependencies(adj_equation* equation, int nrhsdeps, adj_variable* rhsdeps)
+int adj_set_rhs_dependencies(adj_equation* equation, int nrhsdeps, adj_variable* rhsdeps, void* context)
 {
   if (nrhsdeps < 1)
   {
@@ -248,6 +248,7 @@ int adj_set_rhs_dependencies(adj_equation* equation, int nrhsdeps, adj_variable*
   equation->nrhsdeps = nrhsdeps;
   equation->rhsdeps = (adj_variable*) malloc(nrhsdeps * sizeof(adj_variable));
   memcpy(equation->rhsdeps, rhsdeps, nrhsdeps * sizeof(adj_variable));
+  equation->rhs_context = context;
   return ADJ_ERR_OK;
 }
 

@@ -205,6 +205,12 @@ int adj_get_forward_equation(adj_adjointer* adjointer, int equation, adj_matrix*
   if (adjointer->callbacks.mat_destroy == NULL) return ADJ_ERR_NEED_CALLBACK;
   strncpy(adj_error_msg, "", ADJ_ERROR_MSG_BUF);
 
+  if (adjointer->forward_source_callback == NULL)
+  {
+    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "You have asked for a forward equation, but without a source term, all fields will be zero.");
+    return ADJ_ERR_INVALID_INPUTS;
+  }
+
   fwd_eqn = adjointer->equations[equation];
   *fwd_var = fwd_eqn.variable;
 
@@ -278,6 +284,14 @@ int adj_get_forward_equation(adj_adjointer* adjointer, int equation, adj_matrix*
     adjointer->callbacks.vec_axpy(rhs, (adj_scalar)-1.0, rhs_tmp);
     adjointer->callbacks.vec_destroy(&rhs_tmp);
   }
+
+  /* And any forward source terms */
+  ierr = adj_evaluate_forward_source(adjointer, equation, &rhs_tmp);
+  if (ierr != ADJ_ERR_OK) return ierr;
+
+  adjointer->callbacks.vec_axpy(rhs, (adj_scalar)1.0, rhs_tmp);
+  adjointer->callbacks.vec_destroy(&rhs_tmp);
+
   return ADJ_ERR_OK;
 
 }

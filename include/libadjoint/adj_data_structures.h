@@ -57,6 +57,7 @@ typedef struct
   adj_variable* targets;
   int nrhsdeps;
   adj_variable* rhsdeps;
+  void* rhs_context;
 } adj_equation;
 
 typedef struct
@@ -210,7 +211,7 @@ typedef struct adj_adjointer
   adj_op_callback_list block_action_list;
   adj_op_callback_list block_assembly_list;
   adj_func_deriv_callback_list functional_derivative_list;
-  void (*forward_source_callback)(struct adj_adjointer* adjointer, adj_variable variable, int nb_variables, adj_variable* variables, adj_vector* dependencies, adj_vector* output);
+  void (*forward_source_callback)(struct adj_adjointer* adjointer, adj_variable variable, int nb_variables, adj_variable* variables, adj_vector* dependencies, void* context, adj_vector* output);
 } adj_adjointer;
 
 int adj_create_variable(char* name, int timestep, int iteration, int auxiliary, adj_variable* var);
@@ -226,7 +227,7 @@ int adj_destroy_block(adj_block* block);
 int adj_block_set_coefficient(adj_block* block, adj_scalar coefficient);
 int adj_block_set_hermitian(adj_block* block, int hermitian);
 int adj_create_equation(adj_variable var, int nblocks, adj_block* blocks, adj_variable* targets, adj_equation* equation);
-int adj_set_rhs_dependencies(adj_equation* equation, int nrhsdeps, adj_variable* rhsdeps);
+int adj_set_rhs_dependencies(adj_equation* equation, int nrhsdeps, adj_variable* rhsdeps, void* context);
 int adj_destroy_equation(adj_equation* equation);
 
 #ifndef ADJ_HIDE_FROM_USER
