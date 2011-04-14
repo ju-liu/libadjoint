@@ -17,7 +17,7 @@ void adj_chkierr_private(int ierr, char* file, int line)
   else if (ierr < 0)
   {
     fprintf(stderr, "Warning: file %s:%d\n", file, line);
-    fprintf(stderr, "Warning: got error code %s\n", adj_warn_codes[abs(ierr)]);
+    fprintf(stderr, "Warning: got error code %s\n", adj_warn_codes[abs(ierr)-1]);
     fprintf(stderr, "Warning: %s\n", strlen(adj_error_msg) == 0 ? "(no error message)" : adj_error_msg);
   }
 }
