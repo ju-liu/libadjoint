@@ -40,6 +40,7 @@ int adj_create_adjointer(adj_adjointer* adjointer)
   adjointer->block_assembly_list.lastnode = NULL;
   adjointer->functional_derivative_list.firstnode = NULL;
   adjointer->functional_derivative_list.lastnode = NULL;
+  adjointer->forward_source_callback = NULL;
 
   for (i = 0; i < ADJ_NO_OPTIONS; i++)
     adjointer->options[i] = 0; /* 0 is the default for all options */
@@ -608,6 +609,13 @@ int adj_register_functional_derivative_callback(adj_adjointer* adjointer, char* 
     cb_list_ptr->lastnode = cb_ptr;
   }
 
+  return ADJ_ERR_OK;
+}
+
+int adj_register_forward_source_callback(adj_adjointer* adjointer, void (*fn)(adj_adjointer* adjointer, adj_variable variable, int nb_variables, adj_variable* variables, adj_vector* dependencies, adj_vector* output))
+{
+  if (adjointer->options[ADJ_ACTIVITY] == ADJ_ACTIVITY_NOTHING) return ADJ_ERR_OK;
+  adjointer->forward_source_callback = fn;
   return ADJ_ERR_OK;
 }
 

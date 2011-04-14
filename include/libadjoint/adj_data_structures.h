@@ -188,7 +188,7 @@ typedef struct
   adj_functional_data* functional_data_end;
 } adj_timestep_data;
 
-typedef struct
+typedef struct adj_adjointer
 {
   int nequations; /* Number of equations we have registered */
   int equations_sz; /* Number of equations we can store without mallocing -- not the same! */
@@ -210,6 +210,7 @@ typedef struct
   adj_op_callback_list block_action_list;
   adj_op_callback_list block_assembly_list;
   adj_func_deriv_callback_list functional_derivative_list;
+  void (*forward_source_callback)(struct adj_adjointer* adjointer, adj_variable variable, int nb_variables, adj_variable* variables, adj_vector* dependencies, adj_vector* output);
 } adj_adjointer;
 
 int adj_create_variable(char* name, int timestep, int iteration, int auxiliary, adj_variable* var);
