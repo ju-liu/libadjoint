@@ -211,7 +211,7 @@ typedef struct adj_adjointer
   adj_op_callback_list block_action_list;
   adj_op_callback_list block_assembly_list;
   adj_func_deriv_callback_list functional_derivative_list;
-  void (*forward_source_callback)(struct adj_adjointer* adjointer, adj_variable variable, int nb_variables, adj_variable* variables, adj_vector* dependencies, void* context, adj_vector* output);
+  void (*forward_source_callback)(struct adj_adjointer* adjointer, adj_variable variable, int nb_variables, adj_variable* variables, adj_vector* dependencies, void* context, adj_vector* output, int* has_output);
 } adj_adjointer;
 
 int adj_create_variable(char* name, int timestep, int iteration, int auxiliary, adj_variable* var);

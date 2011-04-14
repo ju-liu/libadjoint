@@ -473,7 +473,7 @@ int adj_evaluate_functional_derivative(adj_adjointer* adjointer, adj_variable va
   return ADJ_ERR_OK;
 }
 
-int adj_evaluate_forward_source(adj_adjointer* adjointer, int equation, adj_vector* output)
+int adj_evaluate_forward_source(adj_adjointer* adjointer, int equation, adj_vector* output, int* has_output)
 {
   assert(adjointer->forward_source_callback != NULL);
   adj_variable* variables;
@@ -492,7 +492,7 @@ int adj_evaluate_forward_source(adj_adjointer* adjointer, int equation, adj_vect
     if (ierr != ADJ_ERR_OK) return ierr;
   }
 
-  adjointer->forward_source_callback(adjointer, adjointer->equations[equation].variable, nrhsdeps, variables, dependencies, adjointer->equations[equation].rhs_context, output);
+  adjointer->forward_source_callback(adjointer, adjointer->equations[equation].variable, nrhsdeps, variables, dependencies, adjointer->equations[equation].rhs_context, output, has_output);
 
   free(dependencies);
   return ADJ_ERR_OK;
