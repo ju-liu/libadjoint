@@ -27,6 +27,8 @@ void adj_html_css(FILE* fp)
       "table.equations tr.new_iteration\n"
       "{ border-top: 2px solid gray;}\n"
 
+	  "table.equations td.diagonal\n"
+	  "{ background-color: lightgreen;}\n"
       "</style>\n"
       "</head>\n"
       );
@@ -57,13 +59,16 @@ void adj_html_table_end(FILE* fp)
   fprintf(fp, "</table>\n");
 }
 
-void adj_html_write_row(FILE* fp, char** strings, char** desc, int nb_strings)
+void adj_html_write_row(FILE* fp, char** strings, char** desc, int nb_strings, int diag_index)
 {
   int i;
   for (i = 0; i < nb_strings; i++)
   {
     if (strlen(desc[i]))
-      fprintf(fp, "<td><div title=\"%s\">%s</div></td>\n", desc[i], strings[i]);
+      if (diag_index == i)
+    	  fprintf(fp, "<td class=\"diagonal\"><div title=\"%s\">%s</div></td>\n", desc[i], strings[i]);
+      else
+    	  fprintf(fp, "<td><div title=\"%s\">%s</div></td>\n", desc[i], strings[i]);
     else
       fprintf(fp, "<td></div></td>\n");
   }
@@ -105,7 +110,7 @@ void adj_html_vars(FILE* fp, adj_adjointer* adjointer, int type)
 }
 
 /* Writes a html row containing the supplied equation into fp */
-int adj_html_eqn(FILE* fp, adj_adjointer* adjointer, adj_equation adj_eqn)
+int adj_html_eqn(FILE* fp, adj_adjointer* adjointer, adj_equation adj_eqn, int diag_index)
 {
   int i,k;
   char* row[adjointer->nequations];
@@ -141,9 +146,14 @@ int adj_html_eqn(FILE* fp, adj_adjointer* adjointer, adj_equation adj_eqn)
     strncat(desc[col], ":", ADJ_NAME_LEN);
     snprintf(buf, ADJ_NAME_LEN, "%d", adj_eqn.targets[i].iteration);
     strncat(desc[col], buf, ADJ_NAME_LEN);
-
     strncat(desc[col], "\nCoefficient: ", ADJ_NAME_LEN);
     snprintf(buf, ADJ_NAME_LEN, "%f", adj_eqn.blocks[i].coefficient);
+    strncat(desc[col], buf, ADJ_NAME_LEN);
+    strncat(desc[col], "\nHermitian: ", ADJ_NAME_LEN);
+    if (adj_eqn.blocks[i].hermitian==ADJ_TRUE)
+  	  snprintf(buf, ADJ_NAME_LEN, "true");
+    else
+  	  snprintf(buf, ADJ_NAME_LEN, "false");
     strncat(desc[col], buf, ADJ_NAME_LEN);
 
     if (adj_eqn.blocks[i].has_nonlinear_block)
@@ -166,7 +176,7 @@ int adj_html_eqn(FILE* fp, adj_adjointer* adjointer, adj_equation adj_eqn)
     }
   }
   /* Write it to file */
-  adj_html_write_row(fp, row, desc, adjointer->nequations);
+  adj_html_write_row(fp, row, desc, adjointer->nequations, diag_index);
 
 
   /* Tidy up */
@@ -179,7 +189,7 @@ int adj_html_eqn(FILE* fp, adj_adjointer* adjointer, adj_equation adj_eqn)
 }
 
 /* Writes a html row containing the supplied adjoint equation into fp */
-int adj_html_adjoint_eqn(FILE* fp, adj_adjointer* adjointer, adj_equation fwd_eqn)
+int adj_html_adjoint_eqn(FILE* fp, adj_adjointer* adjointer, adj_equation fwd_eqn, int diag_index)
 {
   int i, j, k;
   char* row[adjointer->nequations];
@@ -243,6 +253,13 @@ int adj_html_adjoint_eqn(FILE* fp, adj_adjointer* adjointer, adj_equation fwd_eq
       strncat(desc[col], "\nCoefficient: ", ADJ_NAME_LEN);
       snprintf(buf, ADJ_NAME_LEN, "%f", other_fwd_eqn.blocks[j].coefficient);
       strncat(desc[col], buf, ADJ_NAME_LEN);
+      strncat(desc[col], "\nHermitian: ", ADJ_NAME_LEN);
+      // We are printing the adjoint equation, therefore hermition has to be NOT'ed
+      if (other_fwd_eqn.blocks[j].hermitian==ADJ_TRUE)
+    	  snprintf(buf, ADJ_NAME_LEN, "false");
+      else
+    	  snprintf(buf, ADJ_NAME_LEN, "true");
+      strncat(desc[col], buf, ADJ_NAME_LEN);
       if (other_fwd_eqn.blocks[j].has_nonlinear_block)
       {
     	  strncat(desc[col], "\nNonlinear Block: ", ADJ_NAME_LEN);
@@ -265,7 +282,7 @@ int adj_html_adjoint_eqn(FILE* fp, adj_adjointer* adjointer, adj_equation fwd_eq
   }
 
   /* Write it to file */
-  adj_html_write_row(fp, row, desc, adjointer->nequations);
+  adj_html_write_row(fp, row, desc, adjointer->nequations, diag_index);
 
   /* Tidy up */
   for (i = 0; i < adjointer->nequations; ++i)
@@ -316,7 +333,7 @@ int adj_html_adjoint_system(adj_adjointer* adjointer, char* filename)
         fprintf(fp, "<tr>\n");
     }
 
-    ierr = adj_html_adjoint_eqn(fp, adjointer, adj_eqn);
+    ierr = adj_html_adjoint_eqn(fp, adjointer, adj_eqn, i);
     if (ierr != ADJ_ERR_OK)
     {
       fclose(fp);
@@ -374,7 +391,7 @@ int adj_html_forward_system(adj_adjointer* adjointer, char* filename)
         fprintf(fp, "<tr>\n");
     }
 
-    ierr = adj_html_eqn(fp, adjointer, adj_eqn);
+    ierr = adj_html_eqn(fp, adjointer, adj_eqn, i);
     if (ierr != ADJ_ERR_OK)
     {
       fclose(fp);
