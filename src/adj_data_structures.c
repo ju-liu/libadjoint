@@ -237,7 +237,7 @@ int adj_create_equation(adj_variable var, int nblocks, adj_block* blocks, adj_va
   return ADJ_ERR_OK;
 }
 
-int adj_set_rhs_dependencies(adj_equation* equation, int nrhsdeps, adj_variable* rhsdeps, void* context)
+int adj_equation_set_rhs_dependencies(adj_equation* equation, int nrhsdeps, adj_variable* rhsdeps, void* context)
 {
   if (nrhsdeps < 1)
   {

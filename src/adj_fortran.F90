@@ -405,7 +405,8 @@ module libadjoint
       integer(kind=c_int) :: ierr
     end function adj_create_equation_c
 
-    function adj_set_rhs_dependencies(equation, nrhsdeps, rhsdeps, context) result(ierr) bind(c, name='adj_set_rhs_dependencies')
+    function adj_equation_set_rhs_dependencies_c(equation, nrhsdeps, rhsdeps, context) result(ierr) &
+                                              & bind(c, name='adj_equation_set_rhs_dependencies')
       use libadjoint_data_structures
       use iso_c_binding
       type(adj_equation), intent(inout) :: equation
@@ -413,7 +414,7 @@ module libadjoint
       type(adj_variable), dimension(nrhsdeps), intent(in) :: rhsdeps
       type(c_ptr), intent(in), value :: context
       integer(kind=c_int) :: ierr
-    end function adj_set_rhs_dependencies
+    end function adj_equation_set_rhs_dependencies_c
 
     function adj_destroy_equation(equation) result(ierr) bind(c, name='adj_destroy_equation')
       use libadjoint_data_structures
@@ -1078,6 +1079,29 @@ module libadjoint
 
     ierr = adj_variable_set_auxiliary_c(var, auxiliary_c)
   end function adj_variable_set_auxiliary
+
+  function adj_equation_set_rhs_dependencies(equation, rhsdeps, context) result(ierr)
+    type(adj_equation), intent(inout) :: equation
+    type(adj_variable), dimension(:), intent(in), optional :: rhsdeps
+    type(c_ptr), intent(in), value, optional :: context
+    integer(kind=c_int) :: ierr
+
+    type(c_ptr) :: context_c
+    type(adj_variable), dimension(0) :: dummy_rhsdeps
+    integer :: nrhsdeps
+
+    if (present(context)) then
+      context_c = context
+    else
+      context_c = c_null_ptr
+    end if
+
+    if (present(rhsdeps)) then
+      ierr = adj_equation_set_rhs_dependencies_c(equation, size(rhsdeps), rhsdeps, context_c)
+    else
+      ierr = adj_equation_set_rhs_dependencies_c(equation, 0, dummy_rhsdeps, context_c)
+    end if
+  end function adj_equation_set_rhs_dependencies
 
 end module libadjoint
 
