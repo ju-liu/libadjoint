@@ -178,11 +178,10 @@ int adj_get_adjoint_equation(adj_adjointer* adjointer, int equation, char* funct
   return ADJ_ERR_OK;
 }
 
-int adj_get_forward_equation(adj_adjointer* adjointer, int equation, adj_matrix* lhs, adj_vector* rhs)
+int adj_get_forward_equation(adj_adjointer* adjointer, int equation, adj_matrix* lhs, adj_vector* rhs, adj_variable* fwd_var)
 {
   int ierr;
   adj_equation fwd_eqn;
-  adj_variable fwd_var;
   adj_variable_data* fwd_data;
   adj_vector rhs_tmp;
   int i;
@@ -207,9 +206,9 @@ int adj_get_forward_equation(adj_adjointer* adjointer, int equation, adj_matrix*
   strncpy(adj_error_msg, "", ADJ_ERROR_MSG_BUF);
 
   fwd_eqn = adjointer->equations[equation];
-  fwd_var = fwd_eqn.variable;
+  *fwd_var = fwd_eqn.variable;
 
-  ierr = adj_find_variable_data(&(adjointer->varhash), &fwd_var, &fwd_data);
+  ierr = adj_find_variable_data(&(adjointer->varhash), fwd_var, &fwd_data);
   assert(ierr == ADJ_ERR_OK);
 
   /* Check that we have all the forward values we need, before we start allocating stuff */
@@ -219,7 +218,7 @@ int adj_get_forward_equation(adj_adjointer* adjointer, int equation, adj_matrix*
 
     /* Get the forward variable we want this to multiply */
     other_adj_var = fwd_eqn.targets[i];
-    if (adj_variable_equal(&fwd_var, &other_adj_var, 1)) continue; /* that term goes in the lhs */
+    if (adj_variable_equal(fwd_var, &other_adj_var, 1)) continue; /* that term goes in the lhs */
     /* and now check it has a value */
     ierr = adj_has_variable_value(adjointer, other_adj_var);
     if (ierr != ADJ_ERR_OK)
@@ -241,7 +240,7 @@ int adj_get_forward_equation(adj_adjointer* adjointer, int equation, adj_matrix*
     adj_block block;
     for (i = 0; i < fwd_eqn.nblocks; i++)
     {
-      if (adj_variable_equal(&(fwd_eqn.targets[i]), &fwd_var, 1))
+      if (adj_variable_equal(&(fwd_eqn.targets[i]), fwd_var, 1))
       {
         /* this is the right block */
         block = fwd_eqn.blocks[i];
@@ -266,7 +265,7 @@ int adj_get_forward_equation(adj_adjointer* adjointer, int equation, adj_matrix*
     other_var = fwd_eqn.targets[i];
 
     /* Ignore the diagonal block */
-    if (adj_variable_equal(&other_var, &fwd_var, 1))
+    if (adj_variable_equal(&other_var, fwd_var, 1))
       continue;
 
     block = fwd_eqn.blocks[i];

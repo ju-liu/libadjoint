@@ -618,7 +618,7 @@ module libadjoint
       integer(kind=c_int) :: ierr
     end function adj_get_adjoint_equation_c
     
-    function adj_get_forward_equation(adjointer, equation, lhs, rhs) result(ierr) &
+    function adj_get_forward_equation(adjointer, equation, lhs, rhs, variable) result(ierr) &
             & bind(c, name='adj_get_forward_equation')
       use libadjoint_data_structures
       use iso_c_binding
@@ -626,6 +626,7 @@ module libadjoint
       integer(kind=c_int), intent(in), value :: equation
       type(adj_matrix), intent(out) :: lhs
       type(adj_vector), intent(out) :: rhs
+      type(adj_variable), intent(out) :: variable
       integer(kind=c_int) :: ierr
     end function adj_get_forward_equation
     
