@@ -247,7 +247,6 @@ int adj_get_forward_equation(adj_adjointer* adjointer, int equation, adj_matrix*
         break;
       }
     }
-    block.hermitian = !block.hermitian;
     ierr = adj_evaluate_block_assembly(adjointer, block, lhs, rhs);
     if (ierr != ADJ_ERR_OK) return ierr;
   }
@@ -269,7 +268,6 @@ int adj_get_forward_equation(adj_adjointer* adjointer, int equation, adj_matrix*
       continue;
 
     block = fwd_eqn.blocks[i];
-    block.hermitian = !block.hermitian;
 
     /* and now get its value */
     ierr = adj_get_variable_value(adjointer, other_var, &value);
