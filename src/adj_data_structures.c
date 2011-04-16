@@ -239,9 +239,9 @@ int adj_create_equation(adj_variable var, int nblocks, adj_block* blocks, adj_va
 
 int adj_equation_set_rhs_dependencies(adj_equation* equation, int nrhsdeps, adj_variable* rhsdeps, void* context)
 {
-  if (nrhsdeps < 1)
+  if (nrhsdeps < 0)
   {
-    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "If you are registering rhs dependencies, you must have at least one dependency.");
+    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "You can't have a negative number of dependencies.");
     return ADJ_ERR_INVALID_INPUTS;
   }
 
