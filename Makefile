@@ -186,6 +186,7 @@ lib/libadjoint.py: lib/libadjoint.so
 	@echo "  XML2PY lib/libadjoint.py"
 	@$(XML2PY) -r '^adj.*' -l lib/libadjoint.so lib/libadjoint.xml -o lib/libadjoint.py
 	@rm -f lib/libadjoint.xml
+	@chmod a-x lib/libadjoint.py
 endif
 
 install: lib/libadjoint.a lib/libadjoint.so
@@ -196,7 +197,7 @@ install: lib/libadjoint.a lib/libadjoint.so
 ifneq (,$(H2XML))
 	@echo "  INSTALL $(PYDIR)"
 	@install -d $(PYDIR)
-	@install lib/libadjoint.py $(PYDIR)
+	@install -m 644 lib/libadjoint.py $(PYDIR)
 	@sed -i "s@CDLL('lib/libadjoint.so')@CDLL('/$(prefix)/lib/libadjoint.so')@" $(PYDIR)/libadjoint.py
 endif
 	@echo "  INSTALL $(DESTDIR)/$(prefix)/include/libadjoint"

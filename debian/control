@@ -10,14 +10,14 @@ Homepage: http://amcg.ese.ic.ac.uk/pfarrell
 Package: libadjoint-dev
 Section: libdevel
 Architecture: any
-Depends: libadjoint (= ${binary:Version})
+Depends: libadjoint (= ${binary:Version}), ${misc:Depends}
 Description: A library for adjointing computational models (development headers)
  A library for adjointing computational models (development headers)
 
 Package: libadjoint
 Section: libs
 Architecture: any
-Depends: libadjoint, ${shlibs:Depends}, ${misc:Depends}
+Depends: ${shlibs:Depends}, ${misc:Depends}
 Description: A library for adjointing computational models
  A library for adjointing computational models
 
@@ -25,6 +25,6 @@ Package: python-libadjoint
 Section: python
 Architecture: any
 XB-Python-Version: ${python:Versions}
-Depends: libadjoint (= ${binary:Version}), ${python:Depends}
+Depends: libadjoint (= ${binary:Version}), ${python:Depends}, ${misc:Depends}
 Description: A library for adjointing computational models (python interface)
  A library for adjointing computational models (python interface)
