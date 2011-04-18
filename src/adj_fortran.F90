@@ -637,6 +637,15 @@ module libadjoint
       integer(kind=c_int) :: ierr
     end function adj_storage_memory_incref
 
+    function adj_storage_set_compare_c(mem, compare, comparison_tolerance) result(ierr) bind(c, name='adj_storage_set_compare')
+      use libadjoint_data_structures
+      use iso_c_binding
+      type(adj_storage_data), intent(inout) :: mem
+      integer(kind=c_int), intent(in), value :: compare
+      adj_scalar_f, intent(in) :: comparison_tolerance
+      integer(kind=c_int) :: ierr
+    end function adj_storage_set_compare_c
+
     function adj_get_adjoint_equation_c(adjointer, equation, functional, lhs, rhs, variable) result(ierr) &
             & bind(c, name='adj_get_adjoint_equation')
       use libadjoint_data_structures
@@ -1109,6 +1118,23 @@ module libadjoint
       ierr = adj_equation_set_rhs_dependencies_c(equation, 0, dummy_rhsdeps, context_c)
     end if
   end function adj_equation_set_rhs_dependencies
+
+  function adj_storage_set_compare(mem, compare, comparison_tolerance) result(ierr)
+    type(adj_storage_data), intent(inout) :: mem
+    logical, intent(in) :: compare
+    adj_scalar_f, intent(in) :: comparison_tolerance
+    integer(kind=c_int) :: ierr
+
+    integer(kind=c_int) :: compare_c
+
+    if (compare) then
+      compare_c = ADJ_TRUE
+    else
+      compare_c = ADJ_FALSE
+    end if
+
+    ierr = adj_storage_set_compare_c(mem, compare_c, comparison_tolerance)
+  end function adj_storage_set_compare
 
 end module libadjoint
 
