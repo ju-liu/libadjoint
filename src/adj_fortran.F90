@@ -48,6 +48,7 @@ module libadjoint_data_structures
     type(c_funptr) :: vec_setvalues
     type(c_funptr) :: vec_getsize
     type(c_funptr) :: vec_divide
+    type(c_funptr) :: vec_getnorm
 
     type(c_funptr) :: mat_duplicate
     type(c_funptr) :: mat_axpy
@@ -160,6 +161,12 @@ module libadjoint
       type(adj_vector), intent(inout) :: numerator
       type(adj_vector), intent(in), value :: denominator
     end subroutine adj_vec_pointwisedivide_proc
+
+    subroutine adj_vec_norm_proc(x, norm) bind(c)
+      use libadjoint_data_structures
+      type(adj_vector), intent(in) :: x
+      adj_scalar_f, intent(out) :: norm
+    end subroutine adj_vec_norm_proc
 
     subroutine adj_mat_duplicate_proc(matin, matout) bind(c)
       ! Allocate a new matrix, using a given matrix as the model
@@ -629,6 +636,15 @@ module libadjoint
       type(adj_storage_data), intent(inout) :: mem
       integer(kind=c_int) :: ierr
     end function adj_storage_memory_incref
+
+    function adj_storage_set_compare_c(mem, compare, comparison_tolerance) result(ierr) bind(c, name='adj_storage_set_compare')
+      use libadjoint_data_structures
+      use iso_c_binding
+      type(adj_storage_data), intent(inout) :: mem
+      integer(kind=c_int), intent(in), value :: compare
+      adj_scalar_f, intent(in) :: comparison_tolerance
+      integer(kind=c_int) :: ierr
+    end function adj_storage_set_compare_c
 
     function adj_get_adjoint_equation_c(adjointer, equation, functional, lhs, rhs, variable) result(ierr) &
             & bind(c, name='adj_get_adjoint_equation')
@@ -1102,6 +1118,23 @@ module libadjoint
       ierr = adj_equation_set_rhs_dependencies_c(equation, 0, dummy_rhsdeps, context_c)
     end if
   end function adj_equation_set_rhs_dependencies
+
+  function adj_storage_set_compare(mem, compare, comparison_tolerance) result(ierr)
+    type(adj_storage_data), intent(inout) :: mem
+    logical, intent(in) :: compare
+    adj_scalar_f, intent(in) :: comparison_tolerance
+    integer(kind=c_int) :: ierr
+
+    integer(kind=c_int) :: compare_c
+
+    if (compare) then
+      compare_c = ADJ_TRUE
+    else
+      compare_c = ADJ_FALSE
+    end if
+
+    ierr = adj_storage_set_compare_c(mem, compare_c, comparison_tolerance)
+  end function adj_storage_set_compare
 
 end module libadjoint
 

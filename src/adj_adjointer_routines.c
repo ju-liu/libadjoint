@@ -21,6 +21,7 @@ int adj_create_adjointer(adj_adjointer* adjointer)
   adjointer->callbacks.vec_setvalues = NULL;
   adjointer->callbacks.vec_getsize = NULL;
   adjointer->callbacks.vec_divide = NULL;
+  adjointer->callbacks.vec_getnorm = NULL;
 
   adjointer->callbacks.mat_duplicate = NULL;
   adjointer->callbacks.mat_axpy = NULL;
@@ -430,6 +431,51 @@ int adj_record_variable(adj_adjointer* adjointer, adj_variable var, adj_storage_
 
   assert(data_ptr != NULL);
 
+  if (data_ptr->storage.has_value && storage.compare)
+  {
+    adj_vector tmp;
+    adj_scalar norm;
+
+    if (adjointer->callbacks.vec_getnorm == NULL)
+    {
+      snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "You have asked to compare a value against one already recorded, but no ADJ_VEC_GETNORM_CB callback has been provided.");
+      return ADJ_ERR_NEED_CALLBACK;
+    }
+    if (adjointer->callbacks.vec_duplicate == NULL)
+    {
+      snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "You have asked to compare a value against one already recorded, but no ADJ_VEC_DUPLICATE_CB callback has been provided.");
+      return ADJ_ERR_NEED_CALLBACK;
+    }
+    if (adjointer->callbacks.vec_axpy == NULL)
+    {
+      snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "You have asked to compare a value against one already recorded, but no ADJ_VEC_AXPY_CB callback has been provided.");
+      return ADJ_ERR_NEED_CALLBACK;
+    }
+    if (adjointer->callbacks.vec_destroy == NULL)
+    {
+      snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "You have asked to compare a value against one already recorded, but no ADJ_VEC_DESTROY_CB callback has been provided.");
+      return ADJ_ERR_NEED_CALLBACK;
+    }
+
+    adjointer->callbacks.vec_duplicate(data_ptr->storage.value, &tmp);
+    adjointer->callbacks.vec_axpy(&tmp, (adj_scalar)1.0, data_ptr->storage.value);
+    assert(storage.storage_type == ADJ_STORAGE_MEMORY_COPY || storage.storage_type == ADJ_STORAGE_MEMORY_INCREF); /* Should be generalised in future when we have other storage backends: storage.value used below might not exist */
+    adjointer->callbacks.vec_axpy(&tmp, (adj_scalar)-1.0, storage.value);
+    adjointer->callbacks.vec_getnorm(tmp, &norm);
+
+    if (norm > storage.comparison_tolerance) /* Greater than, so that we can use a comparison tolerance of 0.0 */
+    {
+      char buf[ADJ_NAME_LEN];
+      adj_variable_str(var, buf, ADJ_NAME_LEN);
+      snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Comparing %s against previously recorded value: norm of the difference is %f (> tolerance of %f)", buf, norm, storage.comparison_tolerance);
+      return ADJ_WARN_COMPARISON_FAILED;
+    }
+    else
+    {
+      return ADJ_ERR_OK;
+    }
+  }
+
   if (data_ptr->storage.has_value)
   {
     char buf[ADJ_NAME_LEN];
@@ -550,6 +596,9 @@ int adj_register_data_callback(adj_adjointer* adjointer, int type, void (*fn)(vo
       break;
     case ADJ_VEC_GETSIZE_CB:
       adjointer->callbacks.vec_getsize = (void(*)(adj_vector vec, int *sz)) fn;
+      break;
+    case ADJ_VEC_GETNORM_CB:
+      adjointer->callbacks.vec_getnorm = (void(*)(adj_vector vec, adj_scalar *norm)) fn;
       break;
 
     case ADJ_MAT_DUPLICATE_CB:
@@ -845,17 +894,40 @@ int adj_destroy_variable_data(adj_adjointer* adjointer, adj_variable_data* data)
 
 int adj_storage_memory_copy(adj_vector value, adj_storage_data* data)
 {
-  data->has_value = 1;
+  data->has_value = ADJ_TRUE;
   data->storage_type = ADJ_STORAGE_MEMORY_COPY;
   data->value = value;
+  data->compare = ADJ_FALSE;
+  data->comparison_tolerance = (adj_scalar)0.0;
   return ADJ_ERR_OK;
 }
 
 int adj_storage_memory_incref(adj_vector value, adj_storage_data* data)
 {
-  data->has_value = 1;
+  data->has_value = ADJ_TRUE;
   data->storage_type = ADJ_STORAGE_MEMORY_INCREF;
   data->value = value;
+  data->compare = ADJ_FALSE;
+  data->comparison_tolerance = (adj_scalar)0.0;
+  return ADJ_ERR_OK;
+}
+
+int adj_storage_set_compare(adj_storage_data* data, int compare, adj_scalar comparison_tolerance)
+{
+  if (compare != ADJ_TRUE && compare != ADJ_FALSE)
+  {
+    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "compare must either be ADJ_TRUE or ADJ_FALSE.");
+    return ADJ_ERR_INVALID_INPUTS;
+  }
+
+  if ((float) comparison_tolerance < 0.0)
+  {
+    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "comparison_tolerance must be >= 0.0.");
+    return ADJ_ERR_INVALID_INPUTS;
+  }
+
+  data->compare = compare;
+  data->comparison_tolerance = comparison_tolerance;
   return ADJ_ERR_OK;
 }
 

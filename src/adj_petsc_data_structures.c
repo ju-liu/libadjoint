@@ -16,6 +16,8 @@ int adj_set_petsc_data_callbacks(adj_adjointer* adjointer)
   adj_chkierr(ierr);
   ierr = adj_register_data_callback(adjointer, ADJ_VEC_DIVIDE_CB,(void (*)(void)) petsc_vec_divide_proc);
   adj_chkierr(ierr);
+  ierr = adj_register_data_callback(adjointer, ADJ_VEC_GETNORM_CB,(void (*)(void)) petsc_vec_getnorm_proc);
+  adj_chkierr(ierr);
   ierr = adj_register_data_callback(adjointer, ADJ_MAT_AXPY_CB,(void (*)(void)) petsc_mat_axpy_proc);
   adj_chkierr(ierr);
   ierr = adj_register_data_callback(adjointer, ADJ_MAT_DESTROY_CB,(void (*)(void)) petsc_mat_destroy_proc);
@@ -57,6 +59,18 @@ void petsc_vec_destroy_proc(adj_vector *x)
     free(x->ptr);
 #else
     (void) x;
+#endif
+}
+
+void petsc_vec_getnorm_proc(adj_vector x, adj_scalar* norm)
+{
+#ifdef HAVE_PETSC
+    PetscScalar petsc_norm;
+    VecNorm(*(Vec*) x.ptr, NORM_2, &petsc_norm);
+    *norm = (adj_scalar) petsc_norm;
+#else
+    (void) x;
+    (void) norm;
 #endif
 }
 
