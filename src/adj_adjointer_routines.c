@@ -1332,7 +1332,7 @@ int adj_variable_get_ndepending_timesteps(adj_adjointer* adjointer, adj_variable
   for (k = 0; k < data_ptr->ndepending_timesteps; k++)
   {
     adj_functional_data* func_ptr;
-    func_ptr = adjointer->timestep_data[k].functional_data_start;
+    func_ptr = adjointer->timestep_data[data_ptr->depending_timesteps[k]].functional_data_start;
     while (func_ptr != NULL)
     {
       if (strncmp(func_ptr->name, functional, ADJ_NAME_LEN) == 0)
@@ -1374,21 +1374,31 @@ int adj_variable_get_depending_timestep(adj_adjointer* adjointer, adj_variable v
   for (k = 0; k < data_ptr->ndepending_timesteps; k++)
   {
     adj_functional_data* func_ptr;
-    func_ptr = adjointer->timestep_data[k].functional_data_start;
+    func_ptr = adjointer->timestep_data[data_ptr->depending_timesteps[k]].functional_data_start;
     while (func_ptr != NULL)
     {
       if (strncmp(func_ptr->name, functional, ADJ_NAME_LEN) == 0)
       {
-        if (i == ntimesteps)
+        /* OK, we've found the functional data for this timestep. Now, we loop through the dependencies of this
+           functional at this timestep, to see if we need to add it */
+        int l;
+        for (l = 0; l < func_ptr->ndepends; l++)
         {
-          *timestep = data_ptr->depending_timesteps[k];
-          return ADJ_ERR_OK;
+          if (adj_variable_equal(&variable, &func_ptr->dependencies[l], 1))
+          {
+            if (i == ntimesteps)
+            {
+              *timestep = data_ptr->depending_timesteps[k];
+              return ADJ_ERR_OK;
+            }
+            else
+            {
+              ntimesteps = ntimesteps + 1;
+              break;
+            }
+          }
         }
-        else
-        {
-          ntimesteps++;
-          break;
-        }
+        break;
       }
       else
       {
