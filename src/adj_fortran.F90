@@ -109,6 +109,9 @@ module libadjoint_data_structures
   type, bind(c) :: adj_storage_data
     integer(kind=c_int) :: storage_type
     integer(kind=c_int) :: has_value
+    integer(kind=c_int) :: compare
+    adj_scalar_f :: comparison_tolerance
+    integer(kind=c_int) :: overwrite
     type(adj_vector) :: value
     type(c_ptr) :: filename
   end type adj_storage_data
@@ -646,6 +649,14 @@ module libadjoint
       integer(kind=c_int) :: ierr
     end function adj_storage_set_compare_c
 
+    function adj_storage_set_overwrite_c(mem, overwrite) result(ierr) bind(c, name='adj_storage_set_overwrite')
+      use libadjoint_data_structures
+      use iso_c_binding
+      type(adj_storage_data), intent(inout) :: mem
+      integer(kind=c_int), intent(in), value :: overwrite
+      integer(kind=c_int) :: ierr
+    end function adj_storage_set_overwrite_c
+
     function adj_get_adjoint_equation_c(adjointer, equation, functional, lhs, rhs, variable) result(ierr) &
             & bind(c, name='adj_get_adjoint_equation')
       use libadjoint_data_structures
@@ -1135,6 +1146,22 @@ module libadjoint
 
     ierr = adj_storage_set_compare_c(mem, compare_c, comparison_tolerance)
   end function adj_storage_set_compare
+
+  function adj_storage_set_overwrite(mem, overwrite) result(ierr)
+    type(adj_storage_data), intent(inout) :: mem
+    logical, intent(in) :: overwrite
+    integer(kind=c_int) :: ierr
+
+    integer(kind=c_int) :: overwrite_c
+
+    if (overwrite) then
+      overwrite_c = ADJ_TRUE
+    else
+      overwrite_c = ADJ_FALSE
+    end if
+
+    ierr = adj_storage_set_overwrite_c(mem, overwrite_c)
+  end function adj_storage_set_overwrite
 
 end module libadjoint
 

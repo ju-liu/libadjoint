@@ -899,6 +899,7 @@ int adj_storage_memory_copy(adj_vector value, adj_storage_data* data)
   data->value = value;
   data->compare = ADJ_FALSE;
   data->comparison_tolerance = (adj_scalar)0.0;
+  data->overwrite = ADJ_FALSE;
   return ADJ_ERR_OK;
 }
 
@@ -909,6 +910,7 @@ int adj_storage_memory_incref(adj_vector value, adj_storage_data* data)
   data->value = value;
   data->compare = ADJ_FALSE;
   data->comparison_tolerance = (adj_scalar)0.0;
+  data->overwrite = ADJ_FALSE;
   return ADJ_ERR_OK;
 }
 
@@ -928,6 +930,18 @@ int adj_storage_set_compare(adj_storage_data* data, int compare, adj_scalar comp
 
   data->compare = compare;
   data->comparison_tolerance = comparison_tolerance;
+  return ADJ_ERR_OK;
+}
+
+int adj_storage_set_overwrite(adj_storage_data* data, int overwrite)
+{
+  if (overwrite != ADJ_TRUE && overwrite != ADJ_FALSE)
+  {
+    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "overwrite must either be ADJ_TRUE or ADJ_FALSE.");
+    return ADJ_ERR_INVALID_INPUTS;
+  }
+
+  data->overwrite = overwrite;
   return ADJ_ERR_OK;
 }
 

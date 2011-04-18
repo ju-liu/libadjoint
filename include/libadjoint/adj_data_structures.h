@@ -69,6 +69,9 @@ typedef struct
   int compare;
   adj_scalar comparison_tolerance;
 
+  /* Should we overwrite something that's already recorded? */
+  int overwrite;
+
   /* for ADJ_STORAGE_MEMORY */
   adj_vector value;
 
