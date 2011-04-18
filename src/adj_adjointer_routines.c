@@ -1337,7 +1337,17 @@ int adj_variable_get_ndepending_timesteps(adj_adjointer* adjointer, adj_variable
     {
       if (strncmp(func_ptr->name, functional, ADJ_NAME_LEN) == 0)
       {
-        *ntimesteps = *ntimesteps + 1;
+        /* OK, we've found the functional data for this timestep. Now, we loop through the dependencies of this
+           functional at this timestep, to see if we need to add it */
+        int l;
+        for (l = 0; l < func_ptr->ndepends; l++)
+        {
+          if (adj_variable_equal(&variable, &func_ptr->dependencies[l], 1))
+          {
+            *ntimesteps = *ntimesteps + 1;
+            break;
+          }
+        }
         break;
       }
       else
