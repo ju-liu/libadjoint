@@ -33,6 +33,7 @@ int adj_variable_get_depending_timestep(adj_adjointer* adjointer, adj_variable v
 
 int adj_storage_memory_copy(adj_vector value, adj_storage_data* data);
 int adj_storage_memory_incref(adj_vector value, adj_storage_data* data);
+int adj_storage_set_compare(adj_storage_data* data, int compare, adj_scalar comparison_tolerance);
 
 #ifndef ADJ_HIDE_FROM_USER
 int adj_find_operator_callback(adj_adjointer* adjointer, int type, char* name, void (**fn)(void));

@@ -65,6 +65,10 @@ typedef struct
   int storage_type;
   int has_value;
 
+  /* Should we compare against something we already have? */
+  int compare;
+  adj_scalar comparison_tolerance;
+
   /* for ADJ_STORAGE_MEMORY */
   adj_vector value;
 
@@ -110,6 +114,7 @@ typedef struct
   void (*vec_setvalues)(adj_vector *vec, adj_scalar scalars[]);
   void (*vec_getsize)(adj_vector vec, int *sz);
   void (*vec_divide)(adj_vector *numerator, adj_vector denominator);
+  void (*vec_getnorm)(adj_vector x, adj_scalar* norm);
 
   void (*mat_duplicate)(adj_matrix matin, adj_matrix *matout);
   void (*mat_axpy)(adj_matrix *Y, adj_scalar alpha, adj_matrix X);

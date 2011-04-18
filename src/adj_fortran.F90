@@ -48,6 +48,7 @@ module libadjoint_data_structures
     type(c_funptr) :: vec_setvalues
     type(c_funptr) :: vec_getsize
     type(c_funptr) :: vec_divide
+    type(c_funptr) :: vec_getnorm
 
     type(c_funptr) :: mat_duplicate
     type(c_funptr) :: mat_axpy
@@ -160,6 +161,12 @@ module libadjoint
       type(adj_vector), intent(inout) :: numerator
       type(adj_vector), intent(in), value :: denominator
     end subroutine adj_vec_pointwisedivide_proc
+
+    subroutine adj_vec_norm_proc(x, norm) bind(c)
+      use libadjoint_data_structures
+      type(adj_vector), intent(in) :: x
+      adj_scalar_f, intent(out) :: norm
+    end subroutine adj_vec_norm_proc
 
     subroutine adj_mat_duplicate_proc(matin, matout) bind(c)
       ! Allocate a new matrix, using a given matrix as the model
