@@ -21,6 +21,7 @@ int adj_create_adjointer(adj_adjointer* adjointer)
   adjointer->callbacks.vec_setvalues = NULL;
   adjointer->callbacks.vec_getsize = NULL;
   adjointer->callbacks.vec_divide = NULL;
+  adjointer->callbacks.vec_getnorm = NULL;
 
   adjointer->callbacks.mat_duplicate = NULL;
   adjointer->callbacks.mat_axpy = NULL;
@@ -430,21 +431,86 @@ int adj_record_variable(adj_adjointer* adjointer, adj_variable var, adj_storage_
 
   assert(data_ptr != NULL);
 
-  if (data_ptr->storage.has_value)
+  if (!data_ptr->storage.has_value) /* If we don't have a value recorded, any compare or overwrite flags can be ignored */
   {
-    char buf[ADJ_NAME_LEN];
-    adj_variable_str(var, buf, ADJ_NAME_LEN);
-    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Variable %s already has a value.", buf);
-    return ADJ_WARN_ALREADY_RECORDED;
+    return adj_record_variable_core(adjointer, data_ptr, storage);
+  }
+  else
+  /* Sorry for the slight mess. The easiest way to understand this block is to build a 2x2 graph of
+     compare and overwrite:
+
+    |------------------|------------------|------------------|
+    |                  |   Overwrite on   |  Overwrite off   |
+    |------------------|------------------|------------------|
+    |   Compare on     | Compare, then    | Just compare,    |
+    |                  | overwrite; if the| and return the   |
+    |                  | overwriting went | result of the    |
+    |                  | OK, return the   | comparison       |
+    |                  | result of the    |                  |
+    |                  | comparison       |                  |
+    |------------------|------------------|------------------|
+    |   Compare off    | Just overwrite   | Return           |
+    |                  |                  | ADJ_WARN_ALREA   |
+    |                  |                  | DY_RECORDED      |
+    |------------------|------------------|------------------| */
+  {
+    if (storage.compare)
+    {
+      ierr = adj_record_variable_compare(adjointer, data_ptr, var, storage);
+      if (storage.overwrite)
+      {
+        if (ierr == ADJ_WARN_COMPARISON_FAILED) /* If the comparison failed, then ... */
+        {
+          int record_ierr;
+          record_ierr = adj_record_variable_core(adjointer, data_ptr, storage); /* Overwrite the result anyway */
+          /* If no error happened from the recording, return the warning that the comparison failed;
+             otherwise, return the (presumably more serious) error from the recording */
+          if (record_ierr == ADJ_ERR_OK)
+            return ADJ_WARN_COMPARISON_FAILED;
+          else
+            return record_ierr;
+        }
+      }
+      else /* We don't have the overwrite flag */
+      {
+        return ierr; /* Return the output of the comparison straight away */
+      }
+    }
+    else /* We don't have the compare flag */
+    {
+      if (storage.overwrite)
+      {
+        return adj_record_variable_core(adjointer, data_ptr, storage);
+      }
+      else /* We don't have the overwrite flag */
+      {
+        char buf[ADJ_NAME_LEN];
+        adj_variable_str(var, buf, ADJ_NAME_LEN);
+        snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Variable %s already has a value.", buf);
+        return ADJ_WARN_ALREADY_RECORDED;
+      }
+    }
   }
 
-  /* Just in case */
-  strncpy(adj_error_msg, "Need data callback.", ADJ_ERROR_MSG_BUF);
+  return ADJ_ERR_OK; /* Should never get here, but keep the compiler quiet */
+}
+
+int adj_record_variable_core(adj_adjointer* adjointer, adj_variable_data* data_ptr, adj_storage_data storage)
+{
+  if (adjointer->callbacks.vec_duplicate == NULL)
+  {
+    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "You have asked to compare a value against one already recorded, but no ADJ_VEC_DUPLICATE_CB callback has been provided.");
+    return ADJ_ERR_NEED_CALLBACK;
+  }
+  if (adjointer->callbacks.vec_axpy == NULL)
+  {
+    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "You have asked to compare a value against one already recorded, but no ADJ_VEC_AXPY_CB callback has been provided.");
+    return ADJ_ERR_NEED_CALLBACK;
+  }
 
   switch (storage.storage_type)
   {
     case ADJ_STORAGE_MEMORY_COPY:
-      if (adjointer->callbacks.vec_duplicate == NULL) return ADJ_ERR_NEED_CALLBACK;
       if (adjointer->callbacks.vec_axpy == NULL) return ADJ_ERR_NEED_CALLBACK;
       data_ptr->storage.storage_type = ADJ_STORAGE_MEMORY_COPY;
       data_ptr->storage.has_value = storage.has_value;
@@ -462,6 +528,62 @@ int adj_record_variable(adj_adjointer* adjointer, adj_variable var, adj_storage_
   return ADJ_ERR_OK;
 }
 
+int adj_record_variable_compare(adj_adjointer* adjointer, adj_variable_data* data_ptr, adj_variable var, adj_storage_data storage)
+{
+  if (data_ptr->storage.has_value && storage.compare)
+  {
+    adj_vector tmp;
+    adj_scalar norm;
+
+    if (adjointer->callbacks.vec_getnorm == NULL)
+    {
+      snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "You have asked to compare a value against one already recorded, but no ADJ_VEC_GETNORM_CB callback has been provided.");
+      return ADJ_ERR_NEED_CALLBACK;
+    }
+    if (adjointer->callbacks.vec_duplicate == NULL)
+    {
+      snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "You have asked to compare a value against one already recorded, but no ADJ_VEC_DUPLICATE_CB callback has been provided.");
+      return ADJ_ERR_NEED_CALLBACK;
+    }
+    if (adjointer->callbacks.vec_axpy == NULL)
+    {
+      snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "You have asked to compare a value against one already recorded, but no ADJ_VEC_AXPY_CB callback has been provided.");
+      return ADJ_ERR_NEED_CALLBACK;
+    }
+    if (adjointer->callbacks.vec_destroy == NULL)
+    {
+      snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "You have asked to compare a value against one already recorded, but no ADJ_VEC_DESTROY_CB callback has been provided.");
+      return ADJ_ERR_NEED_CALLBACK;
+    }
+    if (storage.storage_type != ADJ_STORAGE_MEMORY_COPY && storage.storage_type != ADJ_STORAGE_MEMORY_INCREF)
+    {
+      snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Sorry, comparison of values hasn't been generalised to storage types other than ADJ_STORAGE_MEMORY_COPY and ADJ_STORAGE_MEMORY_INCREF yet.");
+      return ADJ_ERR_NOT_IMPLEMENTED;
+      /* For future developers: the reason is that storage.value (used a few lines below) might not exist */
+    }
+
+    adjointer->callbacks.vec_duplicate(data_ptr->storage.value, &tmp);
+    adjointer->callbacks.vec_axpy(&tmp, (adj_scalar)1.0, data_ptr->storage.value);
+    adjointer->callbacks.vec_axpy(&tmp, (adj_scalar)-1.0, storage.value);
+    adjointer->callbacks.vec_getnorm(tmp, &norm);
+
+    if (norm > storage.comparison_tolerance) /* Greater than, so that we can use a comparison tolerance of 0.0 */
+    {
+      char buf[ADJ_NAME_LEN];
+      adj_variable_str(var, buf, ADJ_NAME_LEN);
+      snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Comparing %s against previously recorded value: norm of the difference is %f (> tolerance of %f)", buf, norm, storage.comparison_tolerance);
+      return ADJ_WARN_COMPARISON_FAILED;
+    }
+    else
+    {
+      return ADJ_ERR_OK;
+    }
+  }
+  else
+  {
+    return ADJ_ERR_OK;
+  }
+}
 
 int adj_register_operator_callback(adj_adjointer* adjointer, int type, char* name, void (*fn)(void))
 {
@@ -550,6 +672,9 @@ int adj_register_data_callback(adj_adjointer* adjointer, int type, void (*fn)(vo
       break;
     case ADJ_VEC_GETSIZE_CB:
       adjointer->callbacks.vec_getsize = (void(*)(adj_vector vec, int *sz)) fn;
+      break;
+    case ADJ_VEC_GETNORM_CB:
+      adjointer->callbacks.vec_getnorm = (void(*)(adj_vector vec, adj_scalar *norm)) fn;
       break;
 
     case ADJ_MAT_DUPLICATE_CB:
@@ -845,17 +970,54 @@ int adj_destroy_variable_data(adj_adjointer* adjointer, adj_variable_data* data)
 
 int adj_storage_memory_copy(adj_vector value, adj_storage_data* data)
 {
-  data->has_value = 1;
+  data->has_value = ADJ_TRUE;
   data->storage_type = ADJ_STORAGE_MEMORY_COPY;
   data->value = value;
+  data->compare = ADJ_FALSE;
+  data->comparison_tolerance = (adj_scalar)0.0;
+  data->overwrite = ADJ_FALSE;
   return ADJ_ERR_OK;
 }
 
 int adj_storage_memory_incref(adj_vector value, adj_storage_data* data)
 {
-  data->has_value = 1;
+  data->has_value = ADJ_TRUE;
   data->storage_type = ADJ_STORAGE_MEMORY_INCREF;
   data->value = value;
+  data->compare = ADJ_FALSE;
+  data->comparison_tolerance = (adj_scalar)0.0;
+  data->overwrite = ADJ_FALSE;
+  return ADJ_ERR_OK;
+}
+
+int adj_storage_set_compare(adj_storage_data* data, int compare, adj_scalar comparison_tolerance)
+{
+  if (compare != ADJ_TRUE && compare != ADJ_FALSE)
+  {
+    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "compare must either be ADJ_TRUE or ADJ_FALSE.");
+    return ADJ_ERR_INVALID_INPUTS;
+  }
+
+  if ((float) comparison_tolerance < 0.0)
+  {
+    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "comparison_tolerance must be >= 0.0.");
+    return ADJ_ERR_INVALID_INPUTS;
+  }
+
+  data->compare = compare;
+  data->comparison_tolerance = comparison_tolerance;
+  return ADJ_ERR_OK;
+}
+
+int adj_storage_set_overwrite(adj_storage_data* data, int overwrite)
+{
+  if (overwrite != ADJ_TRUE && overwrite != ADJ_FALSE)
+  {
+    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "overwrite must either be ADJ_TRUE or ADJ_FALSE.");
+    return ADJ_ERR_INVALID_INPUTS;
+  }
+
+  data->overwrite = overwrite;
   return ADJ_ERR_OK;
 }
 
