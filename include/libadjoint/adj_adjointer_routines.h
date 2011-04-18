@@ -44,6 +44,8 @@ int adj_has_variable_value(adj_adjointer* adjointer, adj_variable var);
 int adj_forget_variable_value(adj_adjointer* adjointer, adj_variable_data* data);
 int adj_destroy_variable_data(adj_adjointer* adjointer, adj_variable_data* data);
 int adj_add_new_hash_entry(adj_adjointer* adjointer, adj_variable* var, adj_variable_data** data);
+int adj_record_variable_core(adj_adjointer* adjointer, adj_variable_data* data_ptr, adj_storage_data storage);
+int adj_record_variable_compare(adj_adjointer* adjointer, adj_variable_data* data_ptr, adj_variable var, adj_storage_data storage);
 
 void adj_append_unique(int** array, int* array_sz, int value);
 void adj_extend_timestep_data(adj_adjointer* adjointer, int extent);

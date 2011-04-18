@@ -431,6 +431,105 @@ int adj_record_variable(adj_adjointer* adjointer, adj_variable var, adj_storage_
 
   assert(data_ptr != NULL);
 
+  if (!data_ptr->storage.has_value) /* If we don't have a value recorded, any compare or overwrite flags can be ignored */
+  {
+    return adj_record_variable_core(adjointer, data_ptr, storage);
+  }
+  else
+  /* Sorry for the slight mess. The easiest way to understand this block is to build a 2x2 graph of
+     compare and overwrite:
+
+    |------------------|------------------|------------------|
+    |                  |   Overwrite on   |  Overwrite off   |
+    |------------------|------------------|------------------|
+    |   Compare on     | Compare, then    | Just compare,    |
+    |                  | overwrite; if the| and return the   |
+    |                  | overwriting went | result of the    |
+    |                  | OK, return the   | comparison       |
+    |                  | result of the    |                  |
+    |                  | comparison       |                  |
+    |------------------|------------------|------------------|
+    |   Compare off    | Just overwrite   | Return           |
+    |                  |                  | ADJ_WARN_ALREA   |
+    |                  |                  | DY_RECORDED      |
+    |------------------|------------------|------------------| */
+  {
+    if (storage.compare)
+    {
+      ierr = adj_record_variable_compare(adjointer, data_ptr, var, storage);
+      if (storage.overwrite)
+      {
+        if (ierr == ADJ_WARN_COMPARISON_FAILED) /* If the comparison failed, then ... */
+        {
+          int record_ierr;
+          record_ierr = adj_record_variable_core(adjointer, data_ptr, storage); /* Overwrite the result anyway */
+          /* If no error happened from the recording, return the warning that the comparison failed;
+             otherwise, return the (presumably more serious) error from the recording */
+          if (record_ierr == ADJ_ERR_OK)
+            return ADJ_WARN_COMPARISON_FAILED;
+          else
+            return record_ierr;
+        }
+      }
+      else /* We don't have the overwrite flag */
+      {
+        return ierr; /* Return the output of the comparison straight away */
+      }
+    }
+    else /* We don't have the compare flag */
+    {
+      if (storage.overwrite)
+      {
+        return adj_record_variable_core(adjointer, data_ptr, storage);
+      }
+      else /* We don't have the overwrite flag */
+      {
+        char buf[ADJ_NAME_LEN];
+        adj_variable_str(var, buf, ADJ_NAME_LEN);
+        snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Variable %s already has a value.", buf);
+        return ADJ_WARN_ALREADY_RECORDED;
+      }
+    }
+  }
+
+  return ADJ_ERR_OK; /* Should never get here, but keep the compiler quiet */
+}
+
+int adj_record_variable_core(adj_adjointer* adjointer, adj_variable_data* data_ptr, adj_storage_data storage)
+{
+  if (adjointer->callbacks.vec_duplicate == NULL)
+  {
+    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "You have asked to compare a value against one already recorded, but no ADJ_VEC_DUPLICATE_CB callback has been provided.");
+    return ADJ_ERR_NEED_CALLBACK;
+  }
+  if (adjointer->callbacks.vec_axpy == NULL)
+  {
+    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "You have asked to compare a value against one already recorded, but no ADJ_VEC_AXPY_CB callback has been provided.");
+    return ADJ_ERR_NEED_CALLBACK;
+  }
+
+  switch (storage.storage_type)
+  {
+    case ADJ_STORAGE_MEMORY_COPY:
+      if (adjointer->callbacks.vec_axpy == NULL) return ADJ_ERR_NEED_CALLBACK;
+      data_ptr->storage.storage_type = ADJ_STORAGE_MEMORY_COPY;
+      data_ptr->storage.has_value = storage.has_value;
+      adjointer->callbacks.vec_duplicate(storage.value, &(data_ptr->storage.value));
+      adjointer->callbacks.vec_axpy(&(data_ptr->storage.value), (adj_scalar)1.0, storage.value);
+      break;
+    case ADJ_STORAGE_MEMORY_INCREF:
+      data_ptr->storage = storage;
+      break;
+    default:
+      strncpy(adj_error_msg, "Storage types other than ADJ_STORAGE_MEMORY_COPY and ADJ_STORAGE_MEMORY_INCREF  are not implemented yet.", ADJ_ERROR_MSG_BUF);
+      return ADJ_ERR_NOT_IMPLEMENTED;
+  }
+
+  return ADJ_ERR_OK;
+}
+
+int adj_record_variable_compare(adj_adjointer* adjointer, adj_variable_data* data_ptr, adj_variable var, adj_storage_data storage)
+{
   if (data_ptr->storage.has_value && storage.compare)
   {
     adj_vector tmp;
@@ -456,10 +555,15 @@ int adj_record_variable(adj_adjointer* adjointer, adj_variable var, adj_storage_
       snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "You have asked to compare a value against one already recorded, but no ADJ_VEC_DESTROY_CB callback has been provided.");
       return ADJ_ERR_NEED_CALLBACK;
     }
+    if (storage.storage_type != ADJ_STORAGE_MEMORY_COPY && storage.storage_type != ADJ_STORAGE_MEMORY_INCREF)
+    {
+      snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Sorry, comparison of values hasn't been generalised to storage types other than ADJ_STORAGE_MEMORY_COPY and ADJ_STORAGE_MEMORY_INCREF yet.");
+      return ADJ_ERR_NOT_IMPLEMENTED;
+      /* For future developers: the reason is that storage.value (used a few lines below) might not exist */
+    }
 
     adjointer->callbacks.vec_duplicate(data_ptr->storage.value, &tmp);
     adjointer->callbacks.vec_axpy(&tmp, (adj_scalar)1.0, data_ptr->storage.value);
-    assert(storage.storage_type == ADJ_STORAGE_MEMORY_COPY || storage.storage_type == ADJ_STORAGE_MEMORY_INCREF); /* Should be generalised in future when we have other storage backends: storage.value used below might not exist */
     adjointer->callbacks.vec_axpy(&tmp, (adj_scalar)-1.0, storage.value);
     adjointer->callbacks.vec_getnorm(tmp, &norm);
 
@@ -475,39 +579,11 @@ int adj_record_variable(adj_adjointer* adjointer, adj_variable var, adj_storage_
       return ADJ_ERR_OK;
     }
   }
-
-  if (data_ptr->storage.has_value)
+  else
   {
-    char buf[ADJ_NAME_LEN];
-    adj_variable_str(var, buf, ADJ_NAME_LEN);
-    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Variable %s already has a value.", buf);
-    return ADJ_WARN_ALREADY_RECORDED;
+    return ADJ_ERR_OK;
   }
-
-  /* Just in case */
-  strncpy(adj_error_msg, "Need data callback.", ADJ_ERROR_MSG_BUF);
-
-  switch (storage.storage_type)
-  {
-    case ADJ_STORAGE_MEMORY_COPY:
-      if (adjointer->callbacks.vec_duplicate == NULL) return ADJ_ERR_NEED_CALLBACK;
-      if (adjointer->callbacks.vec_axpy == NULL) return ADJ_ERR_NEED_CALLBACK;
-      data_ptr->storage.storage_type = ADJ_STORAGE_MEMORY_COPY;
-      data_ptr->storage.has_value = storage.has_value;
-      adjointer->callbacks.vec_duplicate(storage.value, &(data_ptr->storage.value));
-      adjointer->callbacks.vec_axpy(&(data_ptr->storage.value), (adj_scalar)1.0, storage.value);
-      break;
-    case ADJ_STORAGE_MEMORY_INCREF:
-      data_ptr->storage = storage;
-      break;
-    default:
-      strncpy(adj_error_msg, "Storage types other than ADJ_STORAGE_MEMORY_COPY and ADJ_STORAGE_MEMORY_INCREF  are not implemented yet.", ADJ_ERROR_MSG_BUF);
-      return ADJ_ERR_NOT_IMPLEMENTED;
-  }
-
-  return ADJ_ERR_OK;
 }
-
 
 int adj_register_operator_callback(adj_adjointer* adjointer, int type, char* name, void (*fn)(void))
 {
