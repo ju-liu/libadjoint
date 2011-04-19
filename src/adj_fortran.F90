@@ -645,7 +645,7 @@ module libadjoint
       use iso_c_binding
       type(adj_storage_data), intent(inout) :: mem
       integer(kind=c_int), intent(in), value :: compare
-      adj_scalar_f, intent(in) :: comparison_tolerance
+      adj_scalar_f, intent(in), value :: comparison_tolerance
       integer(kind=c_int) :: ierr
     end function adj_storage_set_compare_c
 
