@@ -462,6 +462,10 @@ int adj_record_variable(adj_adjointer* adjointer, adj_variable var, adj_storage_
         if (ierr == ADJ_WARN_COMPARISON_FAILED) /* If the comparison failed, then ... */
         {
           int record_ierr;
+
+          ierr = adj_forget_variable_value(adjointer, data_ptr);
+          if (ierr != ADJ_ERR_OK) return ierr;
+
           record_ierr = adj_record_variable_core(adjointer, data_ptr, storage); /* Overwrite the result anyway */
           /* If no error happened from the recording, return the warning that the comparison failed;
              otherwise, return the (presumably more serious) error from the recording */
@@ -480,6 +484,8 @@ int adj_record_variable(adj_adjointer* adjointer, adj_variable var, adj_storage_
     {
       if (storage.overwrite)
       {
+        ierr = adj_forget_variable_value(adjointer, data_ptr);
+        if (ierr != ADJ_ERR_OK) return ierr;
         return adj_record_variable_core(adjointer, data_ptr, storage);
       }
       else /* We don't have the overwrite flag */
@@ -566,6 +572,7 @@ int adj_record_variable_compare(adj_adjointer* adjointer, adj_variable_data* dat
     adjointer->callbacks.vec_axpy(&tmp, (adj_scalar)1.0, data_ptr->storage.value);
     adjointer->callbacks.vec_axpy(&tmp, (adj_scalar)-1.0, storage.value);
     adjointer->callbacks.vec_getnorm(tmp, &norm);
+    adjointer->callbacks.vec_destroy(&tmp);
 
     if (norm > storage.comparison_tolerance) /* Greater than, so that we can use a comparison tolerance of 0.0 */
     {
