@@ -571,7 +571,7 @@ int adj_record_variable_compare(adj_adjointer* adjointer, adj_variable_data* dat
     {
       char buf[ADJ_NAME_LEN];
       adj_variable_str(var, buf, ADJ_NAME_LEN);
-      snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Comparing %s against previously recorded value: norm of the difference is %f (> tolerance of %f)", buf, norm, storage.comparison_tolerance);
+      snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Comparing %s against previously recorded value: norm of the difference is %e (> tolerance of %e)", buf, norm, storage.comparison_tolerance);
       return ADJ_WARN_COMPARISON_FAILED;
     }
     else
