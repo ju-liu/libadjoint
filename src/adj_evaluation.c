@@ -177,9 +177,9 @@ int adj_evaluate_nonlinear_derivative_action_isp(adj_adjointer* adjointer, void 
   if (adjointer->callbacks.vec_destroy == NULL)   return ADJ_ERR_NEED_CALLBACK;
   if (adjointer->callbacks.vec_axpy == NULL)      return ADJ_ERR_NEED_CALLBACK;
   if (adjointer->callbacks.vec_duplicate == NULL) return ADJ_ERR_NEED_CALLBACK;
-  if (adjointer->callbacks.vec_setvalues == NULL) return ADJ_ERR_NEED_CALLBACK;
+  if (adjointer->callbacks.vec_set_values == NULL) return ADJ_ERR_NEED_CALLBACK;
   if (adjointer->callbacks.vec_divide == NULL)    return ADJ_ERR_NEED_CALLBACK;
-  if (adjointer->callbacks.vec_getsize == NULL)    return ADJ_ERR_NEED_CALLBACK;
+  if (adjointer->callbacks.vec_get_size == NULL)    return ADJ_ERR_NEED_CALLBACK;
   strncpy(adj_error_msg, "", ADJ_ERROR_MSG_BUF);
 
   ierr = adj_has_variable_value(adjointer, derivative.variable);
@@ -193,7 +193,7 @@ int adj_evaluate_nonlinear_derivative_action_isp(adj_adjointer* adjointer, void 
   /* Firstly, get the value associated with the variable to be perturbed, and then fetch its size. */
   ierr = adj_get_variable_value(adjointer, derivative.variable, &dependency);
   assert(ierr == ADJ_ERR_OK); /* we checked for it earlier */
-  adjointer->callbacks.vec_getsize(dependency, &sz);
+  adjointer->callbacks.vec_get_size(dependency, &sz);
 
   ierr = adj_find_operator_callback(adjointer, ADJ_NBLOCK_COLOURING_CB, derivative.nonlinear_block.name, (void (**)(void)) &nonlinear_colouring_func);
   if (ierr != ADJ_ERR_OK) return ierr;
@@ -236,7 +236,7 @@ int adj_evaluate_nonlinear_derivative_action_isp(adj_adjointer* adjointer, void 
       else
         perturbation_scalars[i] = (adj_scalar) 0.0;
     }
-    adjointer->callbacks.vec_setvalues(&perturbation_vector, perturbation_scalars);
+    adjointer->callbacks.vec_set_values(&perturbation_vector, perturbation_scalars);
 
     /* Step 4b. Compute the action at the perturbed state. */
     ierr = adj_evaluate_nonlinear_action(adjointer, nonlinear_action_func, derivative.nonlinear_block, derivative.contraction, &derivative.variable, &perturbation_vector, &perturbed);
@@ -248,7 +248,7 @@ int adj_evaluate_nonlinear_derivative_action_isp(adj_adjointer* adjointer, void 
     /* Step 4d. Divide by the perturbation. */
     for (i = 0; i < sz; i++)
       perturbation_scalars[i] = (adj_scalar) h;
-    adjointer->callbacks.vec_setvalues(&perturbation_vector, perturbation_scalars);
+    adjointer->callbacks.vec_set_values(&perturbation_vector, perturbation_scalars);
     adjointer->callbacks.vec_divide(&perturbed, perturbation_vector);
 
     /* Step 4e. Now use it to dot product with value and to compute the rhs. */
@@ -298,7 +298,7 @@ int adj_evaluate_nonlinear_action(adj_adjointer* adjointer, void (*nonlinear_act
   if (adjointer->callbacks.vec_destroy == NULL)   return ADJ_ERR_NEED_CALLBACK;
   if (adjointer->callbacks.vec_axpy == NULL)      return ADJ_ERR_NEED_CALLBACK;
   if (adjointer->callbacks.vec_duplicate == NULL) return ADJ_ERR_NEED_CALLBACK;
-  if (adjointer->callbacks.vec_setvalues == NULL) return ADJ_ERR_NEED_CALLBACK;
+  if (adjointer->callbacks.vec_set_values == NULL) return ADJ_ERR_NEED_CALLBACK;
   strncpy(adj_error_msg, "", ADJ_ERROR_MSG_BUF);
 
   /* If you want to compute at a perturbed state, you need to give me both perturbed_var

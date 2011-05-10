@@ -18,10 +18,10 @@ int adj_create_adjointer(adj_adjointer* adjointer)
   adjointer->callbacks.vec_duplicate = NULL;
   adjointer->callbacks.vec_axpy = NULL;
   adjointer->callbacks.vec_destroy = NULL;
-  adjointer->callbacks.vec_setvalues = NULL;
-  adjointer->callbacks.vec_getsize = NULL;
+  adjointer->callbacks.vec_set_values = NULL;
+  adjointer->callbacks.vec_get_size = NULL;
   adjointer->callbacks.vec_divide = NULL;
-  adjointer->callbacks.vec_getnorm = NULL;
+  adjointer->callbacks.vec_get_norm = NULL;
 
   adjointer->callbacks.mat_duplicate = NULL;
   adjointer->callbacks.mat_axpy = NULL;
@@ -541,7 +541,7 @@ int adj_record_variable_compare(adj_adjointer* adjointer, adj_variable_data* dat
     adj_vector tmp;
     adj_scalar norm;
 
-    if (adjointer->callbacks.vec_getnorm == NULL)
+    if (adjointer->callbacks.vec_get_norm == NULL)
     {
       snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "You have asked to compare a value against one already recorded, but no ADJ_VEC_GETNORM_CB callback has been provided.");
       return ADJ_ERR_NEED_CALLBACK;
@@ -571,7 +571,7 @@ int adj_record_variable_compare(adj_adjointer* adjointer, adj_variable_data* dat
     adjointer->callbacks.vec_duplicate(data_ptr->storage.value, &tmp);
     adjointer->callbacks.vec_axpy(&tmp, (adj_scalar)1.0, data_ptr->storage.value);
     adjointer->callbacks.vec_axpy(&tmp, (adj_scalar)-1.0, storage.value);
-    adjointer->callbacks.vec_getnorm(tmp, &norm);
+    adjointer->callbacks.vec_get_norm(tmp, &norm);
     adjointer->callbacks.vec_destroy(&tmp);
 
     if (norm > storage.comparison_tolerance) /* Greater than, so that we can use a comparison tolerance of 0.0 */
@@ -674,14 +674,20 @@ int adj_register_data_callback(adj_adjointer* adjointer, int type, void (*fn)(vo
     case ADJ_VEC_DIVIDE_CB:
       adjointer->callbacks.vec_divide = (void(*)(adj_vector *numerator, adj_vector denominator)) fn;
       break;
-    case ADJ_VEC_SETVALUES_CB:
-      adjointer->callbacks.vec_setvalues = (void(*)(adj_vector *vec, adj_scalar scalars[])) fn;
+    case ADJ_VEC_SET_VALUES_CB:
+      adjointer->callbacks.vec_set_values = (void(*)(adj_vector *vec, adj_scalar scalars[])) fn;
       break;
-    case ADJ_VEC_GETSIZE_CB:
-      adjointer->callbacks.vec_getsize = (void(*)(adj_vector vec, int *sz)) fn;
+    case ADJ_VEC_GET_SIZE_CB:
+      adjointer->callbacks.vec_get_size = (void(*)(adj_vector vec, int *sz)) fn;
       break;
-    case ADJ_VEC_GETNORM_CB:
-      adjointer->callbacks.vec_getnorm = (void(*)(adj_vector vec, adj_scalar *norm)) fn;
+    case ADJ_VEC_GET_NORM_CB:
+      adjointer->callbacks.vec_get_norm = (void(*)(adj_vector vec, adj_scalar *norm)) fn;
+      break;
+    case ADJ_VEC_DOT_PRODUCT_CB:
+      adjointer->callbacks.vec_dot_product = (void(*)(adj_vector x, adj_vector y, adj_scalar* val)) fn;
+      break;
+    case ADJ_VEC_SET_RANDOM_CB:
+      adjointer->callbacks.vec_set_random = (void(*)(adj_vector* x)) fn;
       break;
 
     case ADJ_MAT_DUPLICATE_CB:

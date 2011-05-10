@@ -45,10 +45,12 @@ module libadjoint_data_structures
     type(c_funptr) :: vec_duplicate
     type(c_funptr) :: vec_axpy
     type(c_funptr) :: vec_destroy
-    type(c_funptr) :: vec_setvalues
-    type(c_funptr) :: vec_getsize
+    type(c_funptr) :: vec_set_values
+    type(c_funptr) :: vec_get_size
     type(c_funptr) :: vec_divide
-    type(c_funptr) :: vec_getnorm
+    type(c_funptr) :: vec_get_norm
+    type(c_funptr) :: vec_dot_product
+    type(c_funptr) :: vec_set_random
 
     type(c_funptr) :: mat_duplicate
     type(c_funptr) :: mat_axpy
@@ -730,6 +732,13 @@ module libadjoint
       type(adj_dictionary), intent(inout) :: dict
     end subroutine adj_dict_print
 
+    function adj_set_petsc_data_callbacks(adjointer) result(ierr) bind(c, name='adj_set_petsc_data_callbacks')
+      use libadjoint_data_structures
+      use iso_c_binding
+      type(adj_adjointer), intent(inout) :: adjointer
+      integer(kind=c_int) :: ierr
+    end function adj_set_petsc_data_callbacks
+
   end interface
 
   contains
@@ -1175,7 +1184,6 @@ module libadjoint_petsc_data_structures
 #endif
 
   private
-  public :: adj_set_petsc_data_callbacks
 #ifdef HAVE_PETSC
   public :: petsc_vec_from_adj_vector
   public :: petsc_vec_to_adj_vector
@@ -1211,59 +1219,6 @@ module libadjoint_petsc_data_structures
 
   contains
 
-  function adj_set_petsc_data_callbacks(adjointer) result(ierr)
-    type(adj_adjointer), intent(inout) :: adjointer
-    integer(kind=c_int) :: ierr
-
-#ifdef HAVE_PETSC
-    call PetscInitialize(PETSC_NULL_CHARACTER, ierr)
-#endif
-
-    ierr = adj_register_data_callback(adjointer, ADJ_VEC_DUPLICATE_CB, c_funloc(petsc_vec_duplicate_proc_f))
-    call adj_chkierr(ierr)
-    ierr = adj_register_data_callback(adjointer, ADJ_VEC_AXPY_CB, c_funloc(petsc_vec_axpy_proc_f))
-    call adj_chkierr(ierr)
-    ierr = adj_register_data_callback(adjointer, ADJ_VEC_DESTROY_CB, c_funloc(petsc_vec_destroy_proc_f))
-    call adj_chkierr(ierr)
-    ierr = adj_register_data_callback(adjointer, ADJ_VEC_SETVALUES_CB, c_funloc(petsc_vec_setvalues_proc_f))
-    call adj_chkierr(ierr)
-    ierr = adj_register_data_callback(adjointer, ADJ_VEC_DIVIDE_CB, c_funloc(petsc_vec_divide_proc_f))
-    call adj_chkierr(ierr)
-    ierr = adj_register_data_callback(adjointer, ADJ_MAT_AXPY_CB, c_funloc(petsc_mat_axpy_proc_f))
-    call adj_chkierr(ierr)
-    ierr = adj_register_data_callback(adjointer, ADJ_MAT_DESTROY_CB, c_funloc(petsc_mat_destroy_proc_f))
-    call adj_chkierr(ierr)
-    ierr = adj_register_data_callback(adjointer, ADJ_MAT_DUPLICATE_CB, c_funloc(petsc_mat_duplicate_proc_f))
-    call adj_chkierr(ierr)
-  end function adj_set_petsc_data_callbacks
-
-  subroutine petsc_vec_duplicate_proc_f(x, newx) bind(c)
-    type(adj_vector), intent(in), value :: x
-    type(adj_vector), intent(out) :: newx
-    integer :: ierr
-#ifdef HAVE_PETSC
-    Vec :: x_petsc
-    Vec :: newx_petsc
-    x_petsc = petsc_vec_from_adj_vector(x)
-    call VecDuplicate(x_petsc, newx_petsc, ierr)
-    call VecZeroEntries(newx_petsc, ierr)
-    newx = petsc_vec_to_adj_vector(newx_petsc)
-#endif
-  end subroutine petsc_vec_duplicate_proc_f
-
-  subroutine petsc_vec_axpy_proc_f(y, alpha, x) bind(c)
-    type(adj_vector), intent(inout) :: y
-    adj_scalar_f, intent(in), value :: alpha
-    type(adj_vector), intent(in), value :: x
-    integer :: ierr
-#ifdef HAVE_PETSC
-    Vec :: y_petsc, x_petsc
-    y_petsc = petsc_vec_from_adj_vector(y)
-    x_petsc = petsc_vec_from_adj_vector(x)
-    call VecAXPY(y_petsc, alpha, x_petsc, ierr)
-#endif
-  end subroutine petsc_vec_axpy_proc_f
-
   subroutine petsc_vec_destroy_proc_f(x) bind(c)
     ! Destroys a vector.
     use iso_c_binding
@@ -1276,58 +1231,6 @@ module libadjoint_petsc_data_structures
     deallocate(xvec)
 #endif
   end subroutine petsc_vec_destroy_proc_f
-
-  subroutine petsc_vec_setvalues_proc_f(vec, scalars) bind(c)
-    type(adj_vector), intent(inout) :: vec
-    adj_scalar_f, dimension(*), intent(in) :: scalars
-    integer :: ierr
-    integer :: i
-    integer :: sz
-#ifdef HAVE_PETSC
-    call VecGetSize(petsc_vec_from_adj_vector(vec), sz, ierr)
-    call VecSetValues(petsc_vec_from_adj_vector(vec), sz, (/ (i, i=0,sz-1) /), scalars, INSERT_VALUES, ierr)
-    call VecAssemblyBegin(petsc_vec_from_adj_vector(vec), ierr)
-    call VecAssemblyEnd(petsc_vec_from_adj_vector(vec), ierr)
-#endif
-  end subroutine petsc_vec_setvalues_proc_f
-
-  subroutine petsc_vec_divide_proc_f(numerator, denominator) bind(c)
-    ! Computes numerator = numerator/denominator pointwise
-    type(adj_vector), intent(inout) :: numerator 
-    type(adj_vector), intent(in), value :: denominator
-    integer :: ierr
-#ifdef HAVE_PETSC
-
-    call VecPointwiseDivide(petsc_vec_from_adj_vector(numerator), petsc_vec_from_adj_vector(numerator), &
-                          & petsc_vec_from_adj_vector(denominator), ierr)
-#endif
-  end subroutine petsc_vec_divide_proc_f
-
-  subroutine petsc_mat_duplicate_proc_f(matin, matout) bind(c)
-    ! Duplicate a matrix
-    use iso_c_binding
-    type(adj_matrix), intent(in), value :: matin
-    type(adj_matrix), intent(out) :: matout
-    integer :: ierr
-#ifdef HAVE_PETSC
-    Mat :: matout_petsc
-    call MatDuplicate(petsc_mat_from_adj_matrix(matin), MAT_DO_NOT_COPY_VALUES, matout_petsc, ierr)
-    call MatZeroEntries(matout_petsc, ierr)
-    matout = petsc_mat_to_adj_matrix(matout_petsc)
-#endif
-  end subroutine petsc_mat_duplicate_proc_f
-
-  subroutine petsc_mat_axpy_proc_f(Y, alpha, X) bind(c)
-    ! Computes Y = alpha*X + Y.
-    use iso_c_binding
-    type(adj_matrix), intent(inout) :: Y
-    adj_scalar_f, intent(in), value :: alpha
-    type(adj_matrix), intent(in), value :: X
-    integer :: ierr
-#ifdef HAVE_PETSC
-    call MatAXPY(petsc_mat_from_adj_matrix(Y), alpha, petsc_mat_from_adj_matrix(X), SAME_NONZERO_PATTERN, ierr)
-#endif
-  end subroutine petsc_mat_axpy_proc_f
 
   subroutine petsc_mat_destroy_proc_f(mat) bind(c)
     ! Frees space taken by a matrix.

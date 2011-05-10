@@ -12,11 +12,15 @@ int adj_set_petsc_data_callbacks(adj_adjointer* adjointer)
   adj_chkierr(ierr);
   ierr = adj_register_data_callback(adjointer, ADJ_VEC_DESTROY_CB, (void (*)(void)) petsc_vec_destroy_proc);
   adj_chkierr(ierr);
-  ierr = adj_register_data_callback(adjointer, ADJ_VEC_SETVALUES_CB,(void (*)(void)) petsc_vec_setvalues_proc);
+  ierr = adj_register_data_callback(adjointer, ADJ_VEC_SET_VALUES_CB,(void (*)(void)) petsc_vec_setvalues_proc);
   adj_chkierr(ierr);
   ierr = adj_register_data_callback(adjointer, ADJ_VEC_DIVIDE_CB,(void (*)(void)) petsc_vec_divide_proc);
   adj_chkierr(ierr);
-  ierr = adj_register_data_callback(adjointer, ADJ_VEC_GETNORM_CB,(void (*)(void)) petsc_vec_getnorm_proc);
+  ierr = adj_register_data_callback(adjointer, ADJ_VEC_GET_NORM_CB,(void (*)(void)) petsc_vec_getnorm_proc);
+  adj_chkierr(ierr);
+  ierr = adj_register_data_callback(adjointer, ADJ_VEC_SET_RANDOM_CB,(void (*)(void)) petsc_vec_set_random_proc);
+  adj_chkierr(ierr);
+  ierr = adj_register_data_callback(adjointer, ADJ_VEC_DOT_PRODUCT_CB,(void (*)(void)) petsc_vec_dot_product_proc);
   adj_chkierr(ierr);
   ierr = adj_register_data_callback(adjointer, ADJ_MAT_AXPY_CB,(void (*)(void)) petsc_mat_axpy_proc);
   adj_chkierr(ierr);
@@ -71,6 +75,30 @@ void petsc_vec_getnorm_proc(adj_vector x, adj_scalar* norm)
 #else
     (void) x;
     (void) norm;
+#endif
+}
+
+void petsc_vec_dot_product_proc(adj_vector x, adj_vector y, adj_scalar* val)
+{
+#ifdef HAVE_PETSC
+  VecDot(*(Vec*) x.ptr, *(Vec*) y.ptr, val);
+#else
+    (void) x;
+    (void) y;
+    (void) val;
+#endif
+}
+
+void petsc_vec_set_random_proc(adj_vector* x)
+{
+#ifdef HAVE_PETSC
+    PetscRandom rctx;  
+    PetscRandomCreate(PETSC_COMM_WORLD,&rctx);
+    PetscRandomSetFromOptions(rctx);
+    VecSetRandom(*(Vec*) x->ptr, rctx);
+    PetscRandomDestroy(rctx);
+#else
+    (void) x;
 #endif
 }
 
