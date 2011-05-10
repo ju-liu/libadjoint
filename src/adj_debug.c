@@ -33,6 +33,7 @@ int adj_test_action_transpose(adj_adjointer* adjointer, adj_block block, adj_vec
   void (*block_action_func)(int, adj_variable*, adj_vector*, int, adj_scalar, adj_vector, void*, adj_vector*) = NULL;
   adj_vector x, y, Ax, ATy;
   adj_scalar yAx, ATyx;
+  int orig_block_hermitian;
 
   if (adjointer->callbacks.vec_set_random == NULL)
   {
@@ -54,6 +55,8 @@ int adj_test_action_transpose(adj_adjointer* adjointer, adj_block block, adj_vec
   if (ierr != ADJ_ERR_OK)
     return ierr;
 
+  orig_block_hermitian = block.hermitian;
+
   for (i = 0; i < N; i++)
   {
     adjointer->callbacks.vec_duplicate(model_input, &x);
@@ -63,10 +66,11 @@ int adj_test_action_transpose(adj_adjointer* adjointer, adj_block block, adj_vec
     adjointer->callbacks.vec_set_random(&y);
     adjointer->callbacks.vec_duplicate(y, &Ax);
 
+    block.hermitian = ADJ_FALSE;
     ierr = adj_evaluate_block_action(adjointer, block, x, &Ax);
     if (ierr != ADJ_ERR_OK)
       return ierr;
-    block.hermitian = !block.hermitian;
+    block.hermitian = ADJ_TRUE;
     ierr = adj_evaluate_block_action(adjointer, block, y, &ATy);
     if (ierr != ADJ_ERR_OK)
       return ierr; 
@@ -77,10 +81,11 @@ int adj_test_action_transpose(adj_adjointer* adjointer, adj_block block, adj_vec
     if (ierr != ADJ_ERR_OK)
       return ierr;
 
-    block.hermitian = !block.hermitian;
     /* Note: we assume real adj_scalars here */
     if (fabs(yAx - ATyx) > tol) 
       return ADJ_ERR_TOLERANCE_EXCEEDED;
   }
+
+  block.hermitian = orig_block_hermitian;
   return ADJ_ERR_OK;
 }

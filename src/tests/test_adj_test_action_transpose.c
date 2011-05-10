@@ -45,7 +45,7 @@ void matrix_action_callback(int nb_variables, adj_variable* variables, adj_vecto
   (void) dependencies;
   Vec input_shifted;
 
-  /* This is the idendity operator */
+  /* This is the identity operator */
   VecDuplicate(petsc_vec_from_adj_vector(input), (Vec*)output->ptr);
   VecCopy(petsc_vec_from_adj_vector(input), *(Vec*)output->ptr);
   
