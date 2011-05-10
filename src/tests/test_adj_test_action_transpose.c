@@ -20,7 +20,7 @@ void test_adj_test_action_transpose(void)
 {
   adj_adjointer adjointer;
   adj_block matrix;
-  int ierr, dim=10, number_of_tests = 1;
+  int ierr, dim=10, number_of_tests = 5;
   Vec input, output;
   adj_scalar tol = 1e-10;
 
@@ -31,8 +31,6 @@ void test_adj_test_action_transpose(void)
   adj_create_block("MatrixOperator", NULL, NULL, &matrix);
   VecCreateSeq(PETSC_COMM_SELF, dim, &input);
   VecCreateSeq(PETSC_COMM_SELF, dim, &output);
-  VecSet(input, 1.0);
-  VecSet(output, 1.0);
  
   ierr = adj_test_action_transpose(&adjointer, matrix, petsc_vec_to_adj_vector(&input), petsc_vec_to_adj_vector(&output), number_of_tests, tol);
   adj_test_assert(ierr==ADJ_ERR_OK, "Should have worked");
@@ -45,8 +43,17 @@ void matrix_action_callback(int nb_variables, adj_variable* variables, adj_vecto
   (void) nb_variables;
   (void) variables;
   (void) dependencies;
+  Vec input_shifted;
+
+  /* This is the idendity operator */
   VecDuplicate(petsc_vec_from_adj_vector(input), (Vec*)output->ptr);
   VecCopy(petsc_vec_from_adj_vector(input), *(Vec*)output->ptr);
+  
+  /* Now, let us add an off diagonal term */
+  VecDuplicate(petsc_vec_from_adj_vector(input), &input_shifted);
+  VecShift(input_shifted, 2);
+  VecAXPY(*(Vec*)output->ptr, 0.5, input_shifted);
+
   VecScale(*(Vec*)output->ptr, (PetscScalar) coefficient);
 }
 #endif
