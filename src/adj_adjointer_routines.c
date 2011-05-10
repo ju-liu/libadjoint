@@ -22,6 +22,8 @@ int adj_create_adjointer(adj_adjointer* adjointer)
   adjointer->callbacks.vec_get_size = NULL;
   adjointer->callbacks.vec_divide = NULL;
   adjointer->callbacks.vec_get_norm = NULL;
+  adjointer->callbacks.vec_set_random = NULL;
+  adjointer->callbacks.vec_dot_product = NULL;
 
   adjointer->callbacks.mat_duplicate = NULL;
   adjointer->callbacks.mat_axpy = NULL;
@@ -543,7 +545,7 @@ int adj_record_variable_compare(adj_adjointer* adjointer, adj_variable_data* dat
 
     if (adjointer->callbacks.vec_get_norm == NULL)
     {
-      snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "You have asked to compare a value against one already recorded, but no ADJ_VEC_GETNORM_CB callback has been provided.");
+      snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "You have asked to compare a value against one already recorded, but no ADJ_VEC_GET_NORM_CB callback has been provided.");
       return ADJ_ERR_NEED_CALLBACK;
     }
     if (adjointer->callbacks.vec_duplicate == NULL)
@@ -1421,30 +1423,4 @@ int adj_variable_get_depending_timestep(adj_adjointer* adjointer, adj_variable v
   }
 
   return ADJ_ERR_INVALID_INPUTS;
-}
-
-int adj_adjointer_check_consistency(adj_adjointer* adjointer)
-{
-  int ierr;
-  adj_variable_hash* hash_ptr;
-
-  hash_ptr = adjointer->varhash;
-  while(hash_ptr != NULL)
-  {
-    adj_variable var = hash_ptr->variable;
-    adj_variable_data* data_ptr = hash_ptr->data;
-
-    if (var.auxiliary == ADJ_FALSE && data_ptr->equation < 0)
-    {
-      char buf[ADJ_NAME_LEN];
-      adj_variable_str(var, buf, ADJ_NAME_LEN);
-      ierr = ADJ_ERR_INVALID_INPUTS;
-      snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Variable %s is not auxiliary, but has no equation set for it.", buf);
-      return ierr;
-    }
-
-    hash_ptr = hash_ptr->hh.next;
-  }
-
-  return ADJ_ERR_OK;
 }
