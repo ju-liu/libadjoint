@@ -13,7 +13,7 @@ void test_adj_evaluate_block_action(void)
 #include "libadjoint/adj_petsc_data_structures.h"
 #include "libadjoint/adj_petsc.h"
 
-void identity_action_callback(int nb_variables, adj_variable* variables, adj_vector* dependencies, int hermitian, adj_scalar coefficient, adj_vector input, void* context, adj_vector output);
+void identity_action_callback(int nb_variables, adj_variable* variables, adj_vector* dependencies, int hermitian, adj_scalar coefficient, adj_vector input, void* context, adj_vector* output);
 
 void test_adj_evaluate_block_action(void)
 {
@@ -22,6 +22,9 @@ void test_adj_evaluate_block_action(void)
   int ierr, dim=10;
   PetscReal norm;
   Vec input, output, difference;
+  adj_vector adj_output;
+
+  adj_output = petsc_vec_to_adj_vector(&output);
 
   adj_create_adjointer(&adjointer);
   adj_set_petsc_data_callbacks(&adjointer);
@@ -33,12 +36,12 @@ void test_adj_evaluate_block_action(void)
 
   strncpy(I.name, "NotTheIdentityOperator", 22);
   I.name[22]='\0';
-  ierr = adj_evaluate_block_action(&adjointer, I, petsc_vec_to_adj_vector(&input), (adj_vector*) &output);
+  ierr = adj_evaluate_block_action(&adjointer, I, petsc_vec_to_adj_vector(&input), &adj_output);
   adj_test_assert(ierr!=ADJ_ERR_OK, "Should have not worked");
 
   strncpy(I.name, "IdentityOperator", 19);
   I.name[19]='\0';
-  ierr = adj_evaluate_block_action(&adjointer, I, petsc_vec_to_adj_vector(&input), (adj_vector*) &output);
+  ierr = adj_evaluate_block_action(&adjointer, I, petsc_vec_to_adj_vector(&input), &adj_output);
   adj_test_assert(ierr==ADJ_ERR_OK, "Should have worked");
  
   VecDuplicate(input, &difference);
@@ -48,15 +51,15 @@ void test_adj_evaluate_block_action(void)
   adj_test_assert(norm == 0.0, "Norm should be zero");
 }
 
-void identity_action_callback(int nb_variables, adj_variable* variables, adj_vector* dependencies, int hermitian, adj_scalar coefficient, adj_vector input, void* context, adj_vector output)
+void identity_action_callback(int nb_variables, adj_variable* variables, adj_vector* dependencies, int hermitian, adj_scalar coefficient, adj_vector input, void* context, adj_vector* output)
 {
   (void) hermitian;
   (void) context;
   (void) nb_variables;
   (void) variables;
   (void) dependencies;
-  VecDuplicate(petsc_vec_from_adj_vector(input), (Vec*)output.ptr);
-  VecCopy(petsc_vec_from_adj_vector(input), *(Vec*)output.ptr);
-  VecScale(*(Vec*)output.ptr, (PetscScalar) coefficient);
+  VecDuplicate(petsc_vec_from_adj_vector(input), (Vec*)output->ptr);
+  VecCopy(petsc_vec_from_adj_vector(input), *(Vec*)output->ptr);
+  VecScale(*(Vec*)output->ptr, (PetscScalar) coefficient);
 }
 #endif
