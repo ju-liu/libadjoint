@@ -3,6 +3,8 @@
 
 #include <string.h>
 #include <sys/time.h>
+#include <sys/types.h>
+#include <unistd.h>
 #include "adj_constants.h"
 #include "adj_adjointer_routines.h"
 #include "adj_data_structures.h"

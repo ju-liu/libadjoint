@@ -101,7 +101,9 @@ void petsc_vec_set_random_proc(adj_vector* x)
     PetscRandomSetType(rctx, PETSCRAND48);
 
     gettimeofday(&tval, NULL);
-    PetscRandomSetSeed(rctx, (unsigned long) tval.tv_usec);
+    /* XOR the microseconds since the last whole second since the epoch with the PID of the
+       current process. That should make it random enough */
+    PetscRandomSetSeed(rctx, (unsigned long) (tval.tv_usec | getpid()));
     PetscRandomSeed(rctx);
 
     VecSetRandom(*(Vec*) x->ptr, rctx);
