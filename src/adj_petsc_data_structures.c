@@ -94,10 +94,18 @@ void petsc_vec_dot_product_proc(adj_vector x, adj_vector y, adj_scalar* val)
 void petsc_vec_set_random_proc(adj_vector* x)
 {
 #ifdef HAVE_PETSC
-    PetscRandom rctx;  
+    struct timeval tval;
+
+    PetscRandom rctx;
     PetscRandomCreate(PETSC_COMM_WORLD,&rctx);
-    PetscRandomSetFromOptions(rctx);
+    PetscRandomSetType(rctx, PETSCRAND48);
+
+    gettimeofday(&tval, NULL);
+    PetscRandomSetSeed(rctx, (unsigned long) tval.tv_usec);
+    PetscRandomSeed(rctx);
+
     VecSetRandom(*(Vec*) x->ptr, rctx);
+    VecView(*(Vec*) x->ptr, PETSC_VIEWER_STDOUT_SELF);
     PetscRandomDestroy(rctx);
 #else
     (void) x;

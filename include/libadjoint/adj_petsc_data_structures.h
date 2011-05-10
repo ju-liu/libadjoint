@@ -2,6 +2,7 @@
 #define ADJ_PETSC_DATA_STRUCTURES_H
 
 #include <string.h>
+#include <sys/time.h>
 #include "adj_constants.h"
 #include "adj_adjointer_routines.h"
 #include "adj_data_structures.h"
