@@ -147,6 +147,14 @@ int adj_block_set_hermitian(adj_block* block, int hermitian)
   return ADJ_ERR_OK;
 }
 
+int adj_block_set_test_hermitian(adj_block* block, int test_hermitian, int number_of_tests, float tolerance) 
+{
+  block->test_hermitian = test_hermitian;
+  block->number_of_tests = number_of_tests;
+  block->tolerance = tolerance;
+  return ADJ_ERR_OK;
+}
+
 int adj_variable_equal(adj_variable* var1, adj_variable* var2, int nvars)
 {
   return memcmp(var1, var2, nvars * sizeof(adj_variable)) == 0 ? 1 : 0;
