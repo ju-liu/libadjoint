@@ -420,7 +420,7 @@ module libadjoint
       integer(kind=c_int) :: ierr
     end function adj_block_set_hermitian
 
-    function adj_block_set_test_hermitian(block, test_hermitian, number_of_tests, tolerance) result(ierr) &
+    function adj_block_set_test_hermitian_c(block, test_hermitian, number_of_tests, tolerance) result(ierr) &
                                         & bind(c, name='adj_block_set_test_hermitian')
       use libadjoint_data_structures
       use iso_c_binding
@@ -429,7 +429,7 @@ module libadjoint
       integer(kind=c_int), intent(in), value :: number_of_tests
       adj_scalar_f, intent(in), value :: tolerance
       integer(kind=c_int) :: ierr
-    end function adj_block_set_test_hermitian
+    end function adj_block_set_test_hermitian_c
     
     function adj_create_equation_c(variable, nblocks, blocks, targets, equation) result(ierr) bind(c, name='adj_create_equation')
       use libadjoint_data_structures
@@ -1196,6 +1196,26 @@ module libadjoint
 
     ierr = adj_storage_set_overwrite_c(mem, overwrite_c)
   end function adj_storage_set_overwrite
+
+  function adj_block_set_test_hermitian(block, test_hermitian, number_of_tests, tolerance) result(ierr)
+    use libadjoint_data_structures
+    use iso_c_binding
+    type(adj_block), intent(inout) :: block
+    logical, intent(in) :: test_hermitian
+    integer(kind=c_int), intent(in), value :: number_of_tests
+    adj_scalar_f, intent(in), value :: tolerance
+    integer(kind=c_int) :: ierr
+
+    integer(kind=c_int) :: test_hermitian_c
+
+    if (test_hermitian) then
+      test_hermitian_c = ADJ_TRUE
+    else
+      test_hermitian_c = ADJ_FALSE
+    end if
+
+    ierr = adj_block_set_test_hermitian_c(block, test_hermitian_c, number_of_tests, tolerance)
+  end function adj_block_set_test_hermitian
 
 end module libadjoint
 
