@@ -412,13 +412,13 @@ module libadjoint
       integer(kind=c_int) :: ierr
     end function adj_block_set_coefficient
 
-    function adj_block_set_hermitian(block, hermitian) result(ierr) bind(c, name='adj_block_set_hermitian')
+    function adj_block_set_hermitian_c(block, hermitian) result(ierr) bind(c, name='adj_block_set_hermitian')
       use libadjoint_data_structures
       use iso_c_binding
       type(adj_block), intent(inout) :: block
       integer(kind=c_int), intent(in), value :: hermitian
       integer(kind=c_int) :: ierr
-    end function adj_block_set_hermitian
+    end function adj_block_set_hermitian_c
 
     function adj_block_set_test_hermitian_c(block, test_hermitian, number_of_tests, tolerance) result(ierr) &
                                         & bind(c, name='adj_block_set_test_hermitian')
@@ -1216,6 +1216,23 @@ module libadjoint
 
     ierr = adj_block_set_test_hermitian_c(block, test_hermitian_c, number_of_tests, tolerance)
   end function adj_block_set_test_hermitian
+
+  function adj_block_set_hermitian(block, hermitian) result(ierr)
+    use libadjoint_data_structures
+    use iso_c_binding
+    type(adj_block), intent(inout) :: block
+    logical, intent(in) :: hermitian
+    integer(kind=c_int) :: ierr
+
+    integer(kind=c_int) :: hermitian_c
+
+    if (hermitian) then
+      hermitian_c = ADJ_TRUE
+    else
+      hermitian_c = ADJ_FALSE
+    end if
+    ierr = adj_block_set_hermitian_c(block, hermitian_c)
+  end function adj_block_set_hermitian
 
 end module libadjoint
 
