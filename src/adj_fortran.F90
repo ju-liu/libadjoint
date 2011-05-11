@@ -29,6 +29,9 @@ module libadjoint_data_structures
     type(c_ptr) :: context
     integer(kind=c_int) :: hermitian
     adj_scalar_f :: coefficient
+    integer(kind=c_int) :: test_hermitian
+    integer(kind=c_int) :: number_of_tests
+    adj_scalar_f :: tolerance
   end type adj_block
 
   type, bind(c) :: adj_equation
@@ -406,6 +409,16 @@ module libadjoint
       integer(kind=c_int) :: ierr
     end function adj_block_set_hermitian
 
+    function adj_block_set_test_hermitian(block, test_hermitian, number_of_tests, tolerance) result(ierr) bind(c, name='adj_block_set_test_hermitian')
+      use libadjoint_data_structures
+      use iso_c_binding
+      type(adj_block), intent(inout) :: block
+      integer(kind=c_int), intent(in), value :: test_hermitian
+      integer(kind=c_int), intent(in), value :: number_of_tests
+      adj_scalar_f, intent(in), value :: tolerance
+      integer(kind=c_int) :: ierr
+    end function adj_block_set_test_hermitian
+    
     function adj_create_equation_c(variable, nblocks, blocks, targets, equation) result(ierr) bind(c, name='adj_create_equation')
       use libadjoint_data_structures
       use iso_c_binding
