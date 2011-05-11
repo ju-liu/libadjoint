@@ -61,9 +61,7 @@ int adj_test_action_transpose(adj_adjointer* adjointer, adj_block block, adj_vec
 
 
   adjointer->callbacks.vec_duplicate(model_input, &x);
-  adjointer->callbacks.vec_duplicate(x, &ATy);
   adjointer->callbacks.vec_duplicate(model_output, &y);
-  adjointer->callbacks.vec_duplicate(y, &Ax);
   block.test_hermitian = ADJ_FALSE;
 
   for (i = 0; i < N; i++)
@@ -83,19 +81,19 @@ int adj_test_action_transpose(adj_adjointer* adjointer, adj_block block, adj_vec
 
     adjointer->callbacks.vec_dot_product(x, ATy, &ATyx);
     adjointer->callbacks.vec_dot_product(y, Ax, &yAx);
+    adjointer->callbacks.vec_destroy(&ATy);
+    adjointer->callbacks.vec_destroy(&Ax);
 
     if (cabs((double complex) yAx - ATyx) > tol) 
     {
-      snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Transpose verification of block \"%s\" failed: |<y, Ax> - <A^Ty, x>| == %lf (> tolerance of %lf).", block.name, cabs((double complex) yAx - ATyx), (double) tol);
+      snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Transpose verification of block \"%s\" failed: |<y, Ax> - <A^Ty, x>| == %e (> tolerance of %e).", block.name, cabs((double complex) yAx - ATyx), (double) tol);
       ierr = ADJ_ERR_TOLERANCE_EXCEEDED;
       break;
     }
   }
 
   adjointer->callbacks.vec_destroy(&x);
-  adjointer->callbacks.vec_destroy(&ATy);
   adjointer->callbacks.vec_destroy(&y);
-  adjointer->callbacks.vec_destroy(&Ax);
 
   return ierr;
 }
