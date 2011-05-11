@@ -409,7 +409,8 @@ module libadjoint
       integer(kind=c_int) :: ierr
     end function adj_block_set_hermitian
 
-    function adj_block_set_test_hermitian(block, test_hermitian, number_of_tests, tolerance) result(ierr) bind(c, name='adj_block_set_test_hermitian')
+    function adj_block_set_test_hermitian(block, test_hermitian, number_of_tests, tolerance) result(ierr) &
+                                        & bind(c, name='adj_block_set_test_hermitian')
       use libadjoint_data_structures
       use iso_c_binding
       type(adj_block), intent(inout) :: block
