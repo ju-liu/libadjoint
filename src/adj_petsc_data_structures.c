@@ -107,7 +107,6 @@ void petsc_vec_set_random_proc(adj_vector* x)
     PetscRandomSeed(rctx);
 
     VecSetRandom(*(Vec*) x->ptr, rctx);
-    VecView(*(Vec*) x->ptr, PETSC_VIEWER_STDOUT_SELF);
     PetscRandomDestroy(rctx);
 #else
     (void) x;

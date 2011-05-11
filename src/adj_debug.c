@@ -50,6 +50,11 @@ int adj_test_action_transpose(adj_adjointer* adjointer, adj_block block, adj_vec
     snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "In order to test the transpose of an operator, you need the ADJ_VEC_DUPLICATE_CB callback.");
     return ADJ_ERR_NEED_CALLBACK;
   }
+  if (adjointer->callbacks.vec_destroy == NULL)
+  {
+    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "In order to test the transpose of an operator, you need the ADJ_VEC_DESTROY_CB callback.");
+    return ADJ_ERR_NEED_CALLBACK;
+  }
 
   ierr = adj_find_operator_callback(adjointer, ADJ_BLOCK_ACTION_CB, block.name, (void (**)(void)) &block_action_func);
   if (ierr != ADJ_ERR_OK)
@@ -57,14 +62,15 @@ int adj_test_action_transpose(adj_adjointer* adjointer, adj_block block, adj_vec
 
   orig_block_hermitian = block.hermitian;
 
+  adjointer->callbacks.vec_duplicate(model_input, &x);
+  adjointer->callbacks.vec_duplicate(x, &ATy);
+  adjointer->callbacks.vec_duplicate(model_output, &y);
+  adjointer->callbacks.vec_duplicate(y, &Ax);
+
   for (i = 0; i < N; i++)
   {
-    adjointer->callbacks.vec_duplicate(model_input, &x);
     adjointer->callbacks.vec_set_random(&x);
-    adjointer->callbacks.vec_duplicate(x, &ATy);
-    adjointer->callbacks.vec_duplicate(model_output, &y);
     adjointer->callbacks.vec_set_random(&y);
-    adjointer->callbacks.vec_duplicate(y, &Ax);
 
     block.hermitian = ADJ_FALSE;
     ierr = adj_evaluate_block_action(adjointer, block, x, &Ax);
@@ -85,6 +91,11 @@ int adj_test_action_transpose(adj_adjointer* adjointer, adj_block block, adj_vec
     if (fabs(yAx - ATyx) > tol) 
       return ADJ_ERR_TOLERANCE_EXCEEDED;
   }
+
+  adjointer->callbacks.vec_destroy(&x);
+  adjointer->callbacks.vec_destroy(&ATy);
+  adjointer->callbacks.vec_destroy(&y);
+  adjointer->callbacks.vec_destroy(&Ax);
 
   block.hermitian = orig_block_hermitian;
   return ADJ_ERR_OK;
