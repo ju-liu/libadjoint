@@ -172,9 +172,20 @@ module libadjoint
 
     subroutine adj_vec_norm_proc(x, norm) bind(c)
       use libadjoint_data_structures
-      type(adj_vector), intent(in) :: x
+      type(adj_vector), intent(in), value :: x
       adj_scalar_f, intent(out) :: norm
     end subroutine adj_vec_norm_proc
+
+    subroutine adj_vec_dot_product(x, y, val) bind(c)
+      use libadjoint_data_structures
+      type(adj_vector), intent(in), value :: x, y
+      adj_scalar_f, intent(out) :: val
+    end subroutine adj_vec_dot_product
+
+    subroutine adj_vec_set_random(x) bind(c)
+      use libadjoint_data_structures
+      type(adj_vector), intent(inout) :: x
+    end subroutine adj_vec_set_random
 
     subroutine adj_mat_duplicate_proc(matin, matout) bind(c)
       ! Allocate a new matrix, using a given matrix as the model
