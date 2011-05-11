@@ -1,12 +1,14 @@
 #include "libadjoint/adj_evaluation.h"
 
-int adj_evaluate_block_action(adj_adjointer* adjointer, adj_block block, adj_vector input, adj_vector* output)
+int adj_evaluate_block_action(adj_adjointer* adjointer, adj_block block, adj_vector input, adj_vector* output, int test_hermitian)
 {
   int i, ierr;
   void (*block_action_func)(int, adj_variable*, adj_vector*, int, adj_scalar, adj_vector, void*, adj_vector*) = NULL;
   adj_vector* dependencies = NULL;
   int nb_variables = 0;
   adj_variable* variables = NULL;
+  adj_scalar tol = 1e-10;
+  int number_of_tests = 1;
 
   ierr = adj_find_operator_callback(adjointer, ADJ_BLOCK_ACTION_CB, block.name, (void (**)(void)) &block_action_func);
   if (ierr != ADJ_ERR_OK)
@@ -29,6 +31,10 @@ int adj_evaluate_block_action(adj_adjointer* adjointer, adj_block block, adj_vec
   }
 
   block_action_func(nb_variables, variables, dependencies, block.hermitian, block.coefficient, input, block.context, output );
+  if (test_hermitian) 
+  { 
+    adj_test_action_transpose(adjointer, block, input, *output, number_of_tests, tol);
+  }
 
   if (block.has_nonlinear_block)
     free(dependencies);

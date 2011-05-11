@@ -73,11 +73,11 @@ int adj_test_action_transpose(adj_adjointer* adjointer, adj_block block, adj_vec
     adjointer->callbacks.vec_set_random(&y);
 
     block.hermitian = ADJ_FALSE;
-    ierr = adj_evaluate_block_action(adjointer, block, x, &Ax);
+    ierr = adj_evaluate_block_action(adjointer, block, x, &Ax, ADJ_FALSE);
     if (ierr != ADJ_ERR_OK)
       return ierr;
     block.hermitian = ADJ_TRUE;
-    ierr = adj_evaluate_block_action(adjointer, block, y, &ATy);
+    ierr = adj_evaluate_block_action(adjointer, block, y, &ATy, ADJ_FALSE);
     if (ierr != ADJ_ERR_OK)
       return ierr; 
     adjointer->callbacks.vec_dot_product(x, ATy, &ATyx);

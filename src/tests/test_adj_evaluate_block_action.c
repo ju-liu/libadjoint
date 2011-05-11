@@ -36,12 +36,14 @@ void test_adj_evaluate_block_action(void)
 
   strncpy(I.name, "NotTheIdentityOperator", 22);
   I.name[22]='\0';
-  ierr = adj_evaluate_block_action(&adjointer, I, petsc_vec_to_adj_vector(&input), &adj_output);
+
+
+  ierr = adj_evaluate_block_action(&adjointer, I, petsc_vec_to_adj_vector(&input), &adj_output, ADJ_TRUE);
   adj_test_assert(ierr!=ADJ_ERR_OK, "Should have not worked");
 
   strncpy(I.name, "IdentityOperator", 19);
   I.name[19]='\0';
-  ierr = adj_evaluate_block_action(&adjointer, I, petsc_vec_to_adj_vector(&input), &adj_output);
+  ierr = adj_evaluate_block_action(&adjointer, I, petsc_vec_to_adj_vector(&input), &adj_output, ADJ_TRUE);
   adj_test_assert(ierr==ADJ_ERR_OK, "Should have worked");
  
   VecDuplicate(input, &difference);

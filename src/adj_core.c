@@ -156,7 +156,7 @@ int adj_get_adjoint_equation(adj_adjointer* adjointer, int equation, char* funct
     ierr = adj_get_variable_value(adjointer, other_adj_var, &adj_value);
     assert(ierr == ADJ_ERR_OK); /* we should have them all, we checked for them earlier */
 
-    ierr = adj_evaluate_block_action(adjointer, block, adj_value, &rhs_tmp);
+    ierr = adj_evaluate_block_action(adjointer, block, adj_value, &rhs_tmp, ADJ_TRUE);
     if (ierr != ADJ_ERR_OK) return ierr;
     adjointer->callbacks.vec_axpy(rhs, (adj_scalar)-1.0, rhs_tmp);
     adjointer->callbacks.vec_destroy(&rhs_tmp);
@@ -280,7 +280,7 @@ int adj_get_forward_equation(adj_adjointer* adjointer, int equation, adj_matrix*
     ierr = adj_get_variable_value(adjointer, other_var, &value);
     assert(ierr == ADJ_ERR_OK); /* we should have them all, we checked for them earlier */
 
-    ierr = adj_evaluate_block_action(adjointer, block, value, &rhs_tmp);
+    ierr = adj_evaluate_block_action(adjointer, block, value, &rhs_tmp, ADJ_TRUE);
     if (ierr != ADJ_ERR_OK) return ierr;
     adjointer->callbacks.vec_axpy(rhs, (adj_scalar)-1.0, rhs_tmp);
     adjointer->callbacks.vec_destroy(&rhs_tmp);
