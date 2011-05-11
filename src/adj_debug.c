@@ -33,7 +33,6 @@ int adj_test_action_transpose(adj_adjointer* adjointer, adj_block block, adj_vec
   void (*block_action_func)(int, adj_variable*, adj_vector*, int, adj_scalar, adj_vector, void*, adj_vector*) = NULL;
   adj_vector x, y, Ax, ATy;
   adj_scalar yAx, ATyx;
-  int orig_block_hermitian;
 
   if (adjointer->callbacks.vec_set_random == NULL)
   {
@@ -60,36 +59,37 @@ int adj_test_action_transpose(adj_adjointer* adjointer, adj_block block, adj_vec
   if (ierr != ADJ_ERR_OK)
     return ierr;
 
-  orig_block_hermitian = block.hermitian;
 
   adjointer->callbacks.vec_duplicate(model_input, &x);
   adjointer->callbacks.vec_duplicate(x, &ATy);
   adjointer->callbacks.vec_duplicate(model_output, &y);
   adjointer->callbacks.vec_duplicate(y, &Ax);
+  block.test_hermitian = ADJ_FALSE;
 
   for (i = 0; i < N; i++)
   {
     adjointer->callbacks.vec_set_random(&x);
     adjointer->callbacks.vec_set_random(&y);
 
-    block.hermitian = ADJ_FALSE;
     ierr = adj_evaluate_block_action(adjointer, block, x, &Ax);
     if (ierr != ADJ_ERR_OK)
-      return ierr;
-    block.hermitian = ADJ_TRUE;
+      break;
+
+    block.hermitian = !block.hermitian;
     ierr = adj_evaluate_block_action(adjointer, block, y, &ATy);
     if (ierr != ADJ_ERR_OK)
-      return ierr; 
-    adjointer->callbacks.vec_dot_product(x, ATy, &ATyx);
-    if (ierr != ADJ_ERR_OK)
-      return ierr;
-    adjointer->callbacks.vec_dot_product(y, Ax, &yAx);
-    if (ierr != ADJ_ERR_OK)
-      return ierr;
+      break;
+    block.hermitian = !block.hermitian;
 
-    /* Note: we assume real adj_scalars here */
-    if (fabs(yAx - ATyx) > tol) 
-      return ADJ_ERR_TOLERANCE_EXCEEDED;
+    adjointer->callbacks.vec_dot_product(x, ATy, &ATyx);
+    adjointer->callbacks.vec_dot_product(y, Ax, &yAx);
+
+    if (cabs((double complex) yAx - ATyx) > tol) 
+    {
+      snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Transpose verification failed: |<y, Ax> - <A^Ty, x>| == %lf (> tolerance of %lf).", cabs((double complex) yAx - ATyx), (double) tol);
+      ierr = ADJ_ERR_TOLERANCE_EXCEEDED;
+      break;
+    }
   }
 
   adjointer->callbacks.vec_destroy(&x);
@@ -97,6 +97,5 @@ int adj_test_action_transpose(adj_adjointer* adjointer, adj_block block, adj_vec
   adjointer->callbacks.vec_destroy(&y);
   adjointer->callbacks.vec_destroy(&Ax);
 
-  block.hermitian = orig_block_hermitian;
-  return ADJ_ERR_OK;
+  return ierr;
 }

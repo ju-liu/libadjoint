@@ -4,6 +4,8 @@
 #include <assert.h>
 #include <stdio.h>
 #include <math.h>
+#include <complex.h>
+#undef I
 #include "adj_data_structures.h"
 #include "adj_error_handling.h"
 #include "adj_evaluation.h"

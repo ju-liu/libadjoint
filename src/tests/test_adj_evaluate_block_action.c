@@ -36,11 +36,18 @@ void test_adj_evaluate_block_action(void)
 
   strncpy(I.name, "NotTheIdentityOperator", 22);
   I.name[22]='\0';
+
+
   ierr = adj_evaluate_block_action(&adjointer, I, petsc_vec_to_adj_vector(&input), &adj_output);
   adj_test_assert(ierr!=ADJ_ERR_OK, "Should have not worked");
 
   strncpy(I.name, "IdentityOperator", 19);
   I.name[19]='\0';
+  ierr = adj_block_set_test_hermitian(&I, ADJ_TRUE, 10, -10.0);
+  adj_test_assert(ierr != ADJ_ERR_OK, "Should not have worked");
+  ierr = adj_block_set_test_hermitian(&I, ADJ_TRUE, 10, 0.0);
+  adj_test_assert(ierr == ADJ_ERR_OK, "Should have worked");
+
   ierr = adj_evaluate_block_action(&adjointer, I, petsc_vec_to_adj_vector(&input), &adj_output);
   adj_test_assert(ierr==ADJ_ERR_OK, "Should have worked");
  

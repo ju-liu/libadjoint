@@ -124,6 +124,9 @@ int adj_create_block(char* name, adj_nonlinear_block* nblock, void* context, adj
   block->context = context;
   block->hermitian = 0;
   block->coefficient = (adj_scalar)1.0;
+  block->test_hermitian = ADJ_FALSE;
+  block->number_of_tests = 0;
+  block->tolerance = (adj_scalar) 0.0;
 
   return ADJ_ERR_OK;
 }
@@ -143,7 +146,39 @@ int adj_block_set_coefficient(adj_block* block, adj_scalar coefficient)
 
 int adj_block_set_hermitian(adj_block* block, int hermitian)
 {
+  if (hermitian != ADJ_TRUE && hermitian != ADJ_FALSE)
+  {
+    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "The hermitian argument should either be ADJ_TRUE or ADJ_FALSE.");
+    return ADJ_ERR_INVALID_INPUTS;
+  }
+
   block->hermitian = hermitian;
+  return ADJ_ERR_OK;
+}
+
+int adj_block_set_test_hermitian(adj_block* block, int test_hermitian, int number_of_tests, adj_scalar tolerance) 
+{
+  if (test_hermitian != ADJ_TRUE && test_hermitian != ADJ_FALSE)
+  {
+    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "The test_hermitian argument should either be ADJ_TRUE or ADJ_FALSE.");
+    return ADJ_ERR_INVALID_INPUTS;
+  }
+
+  if (number_of_tests <= 0)
+  {
+    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "The number_of_tests argument must be positive.");
+    return ADJ_ERR_INVALID_INPUTS;
+  }
+
+  if (tolerance < (adj_scalar) 0.0)
+  {
+    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "The tolerance argument must be nonnegative.");
+    return ADJ_ERR_INVALID_INPUTS;
+  }
+
+  block->test_hermitian = test_hermitian;
+  block->number_of_tests = number_of_tests;
+  block->tolerance = tolerance;
   return ADJ_ERR_OK;
 }
 

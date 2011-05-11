@@ -30,10 +30,15 @@ int adj_evaluate_block_action(adj_adjointer* adjointer, adj_block block, adj_vec
 
   block_action_func(nb_variables, variables, dependencies, block.hermitian, block.coefficient, input, block.context, output );
 
+  ierr = ADJ_ERR_OK;
+  /* Run the hermitian tests if specified */
+  if (block.test_hermitian) 
+    ierr = adj_test_action_transpose(adjointer, block, input, *output, block.number_of_tests, block.tolerance);
+
   if (block.has_nonlinear_block)
     free(dependencies);
 
-  return ADJ_ERR_OK;
+  return ierr;
 }
 
 
