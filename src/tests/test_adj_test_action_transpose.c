@@ -44,14 +44,27 @@ void matrix_action_callback(int nb_variables, adj_variable* variables, adj_vecto
   (void) variables;
   (void) dependencies;
   Vec input_shifted;
+  int i, shift = 0, dim;
+  PetscScalar  *input_array, *shifted_array;
 
   /* This is the identity operator */
   VecDuplicate(petsc_vec_from_adj_vector(input), (Vec*)output->ptr);
   VecCopy(petsc_vec_from_adj_vector(input), *(Vec*)output->ptr);
-  
   /* Now, let us add an off diagonal term */
   VecDuplicate(petsc_vec_from_adj_vector(input), &input_shifted);
-  VecShift(input_shifted, 2);
+  VecCopy(petsc_vec_from_adj_vector(input), input_shifted);
+  VecGetLocalSize(input_shifted, &dim);
+  if (!hermitian) 
+    shift = 2;
+  else 
+    shift = dim - 2;
+  VecGetArray(input_shifted, &shifted_array);
+  VecGetArray(petsc_vec_from_adj_vector(input), &input_array);
+  for (i=0; i<dim; i++) {
+      shifted_array[i] = input_array[(i+shift)%dim]; 
+  }
+  VecRestoreArray(input_shifted, &shifted_array);
+ 
   VecAXPY(*(Vec*)output->ptr, 0.5, input_shifted);
 
   VecScale(*(Vec*)output->ptr, (PetscScalar) coefficient);
