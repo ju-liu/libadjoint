@@ -24,8 +24,6 @@ void test_adj_evaluate_block_action(void)
   Vec input, output, difference;
   adj_vector adj_output;
 
-  adj_output = petsc_vec_to_adj_vector(&output);
-
   adj_create_adjointer(&adjointer);
   adj_set_petsc_data_callbacks(&adjointer);
   adj_register_operator_callback(&adjointer, ADJ_BLOCK_ACTION_CB, "IdentityOperator", (void (*)(void)) identity_action_callback);
@@ -51,6 +49,7 @@ void test_adj_evaluate_block_action(void)
   ierr = adj_evaluate_block_action(&adjointer, I, petsc_vec_to_adj_vector(&input), &adj_output);
   adj_test_assert(ierr==ADJ_ERR_OK, "Should have worked");
  
+  output = petsc_vec_from_adj_vector(adj_output);
   VecDuplicate(input, &difference);
   VecCopy(input, difference);
   VecAXPY(difference, -1.0, output);
@@ -65,8 +64,12 @@ void identity_action_callback(int nb_variables, adj_variable* variables, adj_vec
   (void) nb_variables;
   (void) variables;
   (void) dependencies;
-  VecDuplicate(petsc_vec_from_adj_vector(input), (Vec*)output->ptr);
-  VecCopy(petsc_vec_from_adj_vector(input), *(Vec*)output->ptr);
-  VecScale(*(Vec*)output->ptr, (PetscScalar) coefficient);
+  Vec* xvec;
+  xvec = (Vec*) malloc(sizeof(Vec));
+
+  VecDuplicate(petsc_vec_from_adj_vector(input), xvec);
+  VecCopy(petsc_vec_from_adj_vector(input), *xvec);
+  VecScale(*xvec, (PetscScalar) coefficient);
+  *output = petsc_vec_to_adj_vector(xvec);
 }
 #endif

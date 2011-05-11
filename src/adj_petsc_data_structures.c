@@ -82,7 +82,7 @@ void petsc_vec_dot_product_proc(adj_vector x, adj_vector y, adj_scalar* val)
 {
 #ifdef HAVE_PETSC
   PetscScalar petsc_val;
-  VecDot(*(Vec*) x.ptr, *(Vec*) y.ptr, &petsc_val);
+  VecDot(petsc_vec_from_adj_vector(x), petsc_vec_from_adj_vector(y), &petsc_val);
   *val = (adj_scalar) petsc_val;
 #else
     (void) x;
