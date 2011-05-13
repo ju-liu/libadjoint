@@ -86,7 +86,7 @@ int adj_test_action_transpose(adj_adjointer* adjointer, adj_block block, adj_vec
 
     if (cabs((double complex) yAx - ATyx) > tol) 
     {
-      snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Transpose verification of block \"%s\" failed: |<y, Ax> - <A^Ty, x>| == %e (> tolerance of %e).", block.name, cabs((double complex) yAx - ATyx), (double) tol);
+      snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Transpose verification of block \"%s\" failed: |<y, Ax> - <A^Ty, x>| == %e (> tolerance of %e, iteration %d).", block.name, cabs((double complex) yAx - ATyx), (double) tol, i+1);
       ierr = ADJ_ERR_TOLERANCE_EXCEEDED;
       break;
     }
