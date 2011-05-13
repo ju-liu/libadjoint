@@ -415,6 +415,7 @@ int adj_record_variable(adj_adjointer* adjointer, adj_variable var, adj_storage_
 {
   adj_variable_data* data_ptr;
   int ierr;
+  int compare_ierr;
 
   if (adjointer->options[ADJ_ACTIVITY] == ADJ_ACTIVITY_NOTHING) return ADJ_ERR_OK;
 
@@ -459,23 +460,21 @@ int adj_record_variable(adj_adjointer* adjointer, adj_variable var, adj_storage_
     if (storage.compare)
     {
       ierr = adj_record_variable_compare(adjointer, data_ptr, var, storage);
+      compare_ierr = ierr;
       if (storage.overwrite)
       {
-        if (ierr == ADJ_WARN_COMPARISON_FAILED) /* If the comparison failed, then ... */
-        {
-          int record_ierr;
+        int record_ierr;
 
-          ierr = adj_forget_variable_value(adjointer, data_ptr);
-          if (ierr != ADJ_ERR_OK) return ierr;
+        ierr = adj_forget_variable_value(adjointer, data_ptr);
+        if (ierr != ADJ_ERR_OK) return ierr;
 
-          record_ierr = adj_record_variable_core(adjointer, data_ptr, storage); /* Overwrite the result anyway */
-          /* If no error happened from the recording, return the warning that the comparison failed;
-             otherwise, return the (presumably more serious) error from the recording */
-          if (record_ierr == ADJ_ERR_OK)
-            return ADJ_WARN_COMPARISON_FAILED;
-          else
-            return record_ierr;
-        }
+        record_ierr = adj_record_variable_core(adjointer, data_ptr, storage); /* Overwrite the result anyway */
+        /* If no error happened from the recording, return the warning that the comparison failed;
+           otherwise, return the (presumably more serious) error from the recording */
+        if (record_ierr == ADJ_ERR_OK)
+          return compare_ierr;
+        else
+          return record_ierr;
       }
       else /* We don't have the overwrite flag */
       {
