@@ -219,6 +219,7 @@ int adj_register_equation(adj_adjointer* adjointer, adj_equation equation)
   if (adjointer->nequations == adjointer->equations_sz)
   {
     adjointer->equations = (adj_equation*) realloc(adjointer->equations, (adjointer->equations_sz + ADJ_PREALLOC_SIZE) * sizeof(adj_equation));
+    ADJ_CHKMALLOC(adjointer->equations);
     adjointer->equations_sz = adjointer->equations_sz + ADJ_PREALLOC_SIZE;
   }
 
@@ -228,7 +229,8 @@ int adj_register_equation(adj_adjointer* adjointer, adj_equation equation)
   /* Do any necessary recording of timestep indices */
   if (adjointer->ntimesteps < equation.variable.timestep + 1) /* adjointer->ntimesteps should be at least equation.variable.timestep + 1 */
   {
-    adj_extend_timestep_data(adjointer, equation.variable.timestep + 1); /* extend the array as necessary */
+    ierr = adj_extend_timestep_data(adjointer, equation.variable.timestep + 1); /* extend the array as necessary */
+    if (ierr != ADJ_ERR_OK) return ierr;
   }
   if (adjointer->timestep_data[equation.variable.timestep].start_equation == -1) /* -1 is the sentinel value for unset */
   {
@@ -240,12 +242,15 @@ int adj_register_equation(adj_adjointer* adjointer, adj_equation equation)
      it's simpler that way. */
   /* so we're going to make our own copies, so that the user can destroy his. */
   adjointer->equations[adjointer->nequations - 1].blocks = (adj_block*) malloc(equation.nblocks * sizeof(adj_block));
+  ADJ_CHKMALLOC(adjointer->equations[adjointer->nequations - 1].blocks);
   memcpy(adjointer->equations[adjointer->nequations - 1].blocks, equation.blocks, equation.nblocks * sizeof(adj_block));
   adjointer->equations[adjointer->nequations - 1].targets = (adj_variable*) malloc(equation.nblocks * sizeof(adj_variable));
+  ADJ_CHKMALLOC(adjointer->equations[adjointer->nequations - 1].targets);
   memcpy(adjointer->equations[adjointer->nequations - 1].targets, equation.targets, equation.nblocks * sizeof(adj_variable));
   if (equation.nrhsdeps > 0)
   {
     adjointer->equations[adjointer->nequations - 1].rhsdeps = (adj_variable*) malloc(equation.nrhsdeps * sizeof(adj_variable));
+    ADJ_CHKMALLOC(adjointer->equations[adjointer->nequations - 1].rhsdeps);
     memcpy(adjointer->equations[adjointer->nequations - 1].rhsdeps, equation.rhsdeps, equation.nrhsdeps * sizeof(adj_variable));
   }
 
@@ -267,6 +272,7 @@ int adj_register_equation(adj_adjointer* adjointer, adj_equation equation)
        so we don't need adj_append_unique */
     data_ptr->ntargeting_equations++;
     data_ptr->targeting_equations = (int*) realloc(data_ptr->targeting_equations, data_ptr->ntargeting_equations * sizeof(int));
+    ADJ_CHKMALLOC(data_ptr->targeting_equations);
     data_ptr->targeting_equations[data_ptr->ntargeting_equations - 1] = adjointer->nequations - 1;
   }
 
@@ -289,7 +295,8 @@ int adj_register_equation(adj_adjointer* adjointer, adj_equation equation)
     }
 
     /* Now data_ptr points to the data we're storing */
-    adj_append_unique(&(data_ptr->rhs_equations), &(data_ptr->nrhs_equations), adjointer->nequations - 1);
+    ierr = adj_append_unique(&(data_ptr->rhs_equations), &(data_ptr->nrhs_equations), adjointer->nequations - 1);
+    if (ierr != ADJ_ERR_OK) return ierr;
   }
 
   /* Now we need to record what we need for which adjoint equation from the rhs dependencies */
@@ -317,7 +324,8 @@ int adj_register_equation(adj_adjointer* adjointer, adj_equation equation)
     {
       ierr = adj_find_variable_data(&(adjointer->varhash), &(equation.rhsdeps[j]), &data_ptr);
       if (ierr != ADJ_ERR_OK) return ierr;
-      adj_append_unique(&(data_ptr->adjoint_equations), &(data_ptr->nadjoint_equations), eqn_no); /* dependency j is necessary for equation i */
+      ierr = adj_append_unique(&(data_ptr->adjoint_equations), &(data_ptr->nadjoint_equations), eqn_no); /* dependency j is necessary for equation i */
+      if (ierr != ADJ_ERR_OK) return ierr;
     }
   }
 
@@ -344,7 +352,8 @@ int adj_register_equation(adj_adjointer* adjointer, adj_equation equation)
         {
           return ierr;
         }
-        adj_append_unique(&(data_ptr->depending_equations), &(data_ptr->ndepending_equations), adjointer->nequations - 1);
+        ierr = adj_append_unique(&(data_ptr->depending_equations), &(data_ptr->ndepending_equations), adjointer->nequations - 1);
+        if (ierr != ADJ_ERR_OK) return ierr;
       }
     }
   }
@@ -370,10 +379,12 @@ int adj_register_equation(adj_adjointer* adjointer, adj_equation equation)
         if (ierr != ADJ_ERR_OK) return ierr;
 
         /* One set of dependencies: the (adjoint equation of) (the target of this block) (needs) (this dependency) */
-        adj_append_unique(&(j_data->adjoint_equations), &(j_data->nadjoint_equations), block_target_data->equation);
+        ierr = adj_append_unique(&(j_data->adjoint_equations), &(j_data->nadjoint_equations), block_target_data->equation);
+        if (ierr != ADJ_ERR_OK) return ierr;
 
         /* Another set of dependencies: the (adjoint equation of) (the j'th dependency) (needs) (the target of this block) */
-        adj_append_unique(&(block_target_data->adjoint_equations), &(block_target_data->nadjoint_equations), j_data->equation);
+        ierr = adj_append_unique(&(block_target_data->adjoint_equations), &(block_target_data->nadjoint_equations), j_data->equation);
+        if (ierr != ADJ_ERR_OK) return ierr;
 
         /* Now we loop over all the dependencies again and fill in the cross-dependencies */
         for (k = 0; k < equation.blocks[i].nonlinear_block.ndepends; k++)
@@ -385,7 +396,8 @@ int adj_register_equation(adj_adjointer* adjointer, adj_equation equation)
           if (ierr != ADJ_ERR_OK) return ierr;
 
           /* Another set of dependencies: the (adjoint equation of) (the j'th dependency) (needs) (the k'th dependency) */
-          adj_append_unique(&(k_data->adjoint_equations), &(k_data->nadjoint_equations), j_data->equation);
+          ierr = adj_append_unique(&(k_data->adjoint_equations), &(k_data->nadjoint_equations), j_data->equation);
+          if (ierr != ADJ_ERR_OK) return ierr;
         }
       }
     }
@@ -638,6 +650,7 @@ int adj_register_operator_callback(adj_adjointer* adjointer, int type, char* nam
 
   /* If we got here, that means that we didn't find it. Tack it on to the end of the list. */
   cb_ptr = (adj_op_callback*) malloc(sizeof(adj_op_callback));
+  ADJ_CHKMALLOC(cb_ptr);
   strncpy(cb_ptr->name, name, ADJ_NAME_LEN);
   cb_ptr->callback = fn;
   cb_ptr->next = NULL;
@@ -732,6 +745,7 @@ int adj_register_functional_derivative_callback(adj_adjointer* adjointer, char* 
 
   /* If we got here, that means that we didn't find it. Tack it on to the end of the list. */
   cb_ptr = (adj_func_deriv_callback*) malloc(sizeof(adj_func_deriv_callback));
+  ADJ_CHKMALLOC(cb_ptr);
   strncpy(cb_ptr->name, name, ADJ_NAME_LEN);
   cb_ptr->callback = (void (*)(void* adjointer, adj_variable variable, int nb_variables, adj_variable* variables, adj_vector* dependencies, char* name, adj_vector* output)) fn;
   cb_ptr->next = NULL;
@@ -1057,6 +1071,7 @@ int adj_add_new_hash_entry(adj_adjointer* adjointer, adj_variable* var, adj_vari
   }
 
   *data = (adj_variable_data*) malloc(sizeof(adj_variable_data));
+  ADJ_CHKMALLOC(*data);
   memset(*data, 0, sizeof(adj_variable_data));
   (*data)->equation = -1;
   (*data)->next = NULL;
@@ -1152,6 +1167,8 @@ int adj_timestep_end_equation(adj_adjointer* adjointer, int timestep, int* end)
 
 int adj_timestep_set_times(adj_adjointer* adjointer, int timestep, adj_scalar start, adj_scalar end)
 {
+  int ierr;
+
   if (timestep < 0)
   {
     strncpy(adj_error_msg, "Invalid timestep supplied to adj_timestep_set_times.", ADJ_ERROR_MSG_BUF);
@@ -1165,7 +1182,10 @@ int adj_timestep_set_times(adj_adjointer* adjointer, int timestep, adj_scalar st
   }
 
   if (adjointer->ntimesteps <= timestep)
-    adj_extend_timestep_data(adjointer, timestep + 1);
+  {
+    ierr = adj_extend_timestep_data(adjointer, timestep + 1);
+    if (ierr != ADJ_ERR_OK) return ierr;
+  }
 
   adjointer->timestep_data[timestep].start_time = start;
   adjointer->timestep_data[timestep].end_time = end;
@@ -1208,6 +1228,8 @@ int adj_timestep_get_times(adj_adjointer* adjointer, int timestep, adj_scalar* s
 int adj_timestep_set_functional_dependencies(adj_adjointer* adjointer, int timestep, char* functional, int ndepends, adj_variable* dependencies)
 {
   int i;
+  int ierr;
+
   adj_functional_data* functional_data_ptr = NULL;
   if (timestep < 0)
   {
@@ -1231,7 +1253,10 @@ int adj_timestep_set_functional_dependencies(adj_adjointer* adjointer, int times
   }
 
   if (adjointer->ntimesteps <= timestep)
-    adj_extend_timestep_data(adjointer, timestep + 1);
+  {
+    ierr = adj_extend_timestep_data(adjointer, timestep + 1);
+    if (ierr != ADJ_ERR_OK) return ierr;
+  }
 
   /* Make sure that the dependencies for this timestep have not been set before */
   functional_data_ptr = adjointer->timestep_data[timestep].functional_data_start;
@@ -1247,6 +1272,7 @@ int adj_timestep_set_functional_dependencies(adj_adjointer* adjointer, int times
 
   /* append the functional information to the adjointer */  
   functional_data_ptr = (adj_functional_data*) malloc(sizeof(adj_functional_data));
+  ADJ_CHKMALLOC(functional_data_ptr);
 
   if (adjointer->timestep_data[timestep].functional_data_start == NULL)
     adjointer->timestep_data[timestep].functional_data_start = functional_data_ptr;
@@ -1258,6 +1284,7 @@ int adj_timestep_set_functional_dependencies(adj_adjointer* adjointer, int times
   strncpy(functional_data_ptr->name, functional, ADJ_NAME_LEN);
   functional_data_ptr->ndepends = ndepends;
   functional_data_ptr->dependencies = (adj_variable*) malloc(ndepends * sizeof(adj_variable));
+  ADJ_CHKMALLOC(functional_data_ptr->dependencies);
   memcpy(functional_data_ptr->dependencies, dependencies, ndepends * sizeof(adj_variable));
 
   for (i = 0; i < ndepends; i++)
@@ -1273,28 +1300,30 @@ int adj_timestep_set_functional_dependencies(adj_adjointer* adjointer, int times
     }
 
     /* Record that this variable is necessary for the functional evaluation at this point in time */
-    adj_append_unique(&(data_ptr->depending_timesteps), &(data_ptr->ndepending_timesteps), timestep);
+    ierr = adj_append_unique(&(data_ptr->depending_timesteps), &(data_ptr->ndepending_timesteps), timestep);
+    if (ierr != ADJ_ERR_OK) return ierr;
   }
   /* We are done */
   return ADJ_ERR_OK;
 }
 
-void adj_append_unique(int** array, int* array_sz, int value)
+int adj_append_unique(int** array, int* array_sz, int value)
 {
   int i;
 
   for (i = 0; i < *array_sz; i++)
     if ((*array)[i] == value)
-      return;
+      return ADJ_ERR_OK;
 
   /* So if we got here, we really do need to append it */
   *array_sz = *array_sz + 1;
   *array = (int*) realloc(*array, *array_sz * sizeof(int));
+  ADJ_CHKMALLOC(*array);
   (*array)[*array_sz - 1] = value;
-  return;
+  return ADJ_ERR_OK;
 }
 
-void adj_extend_timestep_data(adj_adjointer* adjointer, int extent)
+int adj_extend_timestep_data(adj_adjointer* adjointer, int extent)
 {
   /* We have an array adjointer->timestep_data, of size adjointer->ntimesteps.
      We want to realloc that to have size extent. We'll also need to zero/initialise
@@ -1303,6 +1332,7 @@ void adj_extend_timestep_data(adj_adjointer* adjointer, int extent)
 
   assert(extent > adjointer->ntimesteps);
   adjointer->timestep_data = (adj_timestep_data*) realloc(adjointer->timestep_data, extent * sizeof(adj_timestep_data));
+  ADJ_CHKMALLOC(adjointer->timestep_data);
   for (i = adjointer->ntimesteps; i < extent; i++)
   {
     adjointer->timestep_data[i].start_equation = -1;
@@ -1312,6 +1342,8 @@ void adj_extend_timestep_data(adj_adjointer* adjointer, int extent)
     adjointer->timestep_data[i].functional_data_end = NULL;
   }
   adjointer->ntimesteps = extent;
+
+  return ADJ_ERR_OK;
 }
 
 int adj_minval(int* array, int array_sz)

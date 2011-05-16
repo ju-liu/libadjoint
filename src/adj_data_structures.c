@@ -79,6 +79,7 @@ int adj_create_nonlinear_block(char* name, int ndepends, adj_variable* depends, 
   nblock->context = context;
   nblock->ndepends = ndepends;
   nblock->depends = malloc(ndepends * sizeof(adj_variable));
+  ADJ_CHKMALLOC(nblock->depends);
   memcpy(nblock->depends, depends, ndepends * sizeof(adj_variable));
   return ADJ_ERR_OK;
 }

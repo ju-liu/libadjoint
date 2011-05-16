@@ -211,7 +211,7 @@ include/libadjoint/adj_constants_f.h: include/libadjoint/adj_constants.h
 	@sed -e 's@/\*@!@' -e 's@\*/@@' -e 's@ADJ_CONSTANTS_H@ADJ_CONSTANTS_F_H@' -e '/adj_scalar /d' $< > $@
 include/libadjoint/adj_error_handling_f.h: include/libadjoint/adj_error_handling.h
 	@echo "  SED $@"
-	@grep '^#' $< | grep -v '^#include' > $@
+	@grep '^#' $< | grep -v '^#include' | grep -v 'CHKMALLOC' > $@
 
 # You can generate some of this with: for i in src/*.c; do gcc -Iinclude/ -MM $i; done | sed -e 's@\\@@' -e 's@^adj@obj/adj@'
 obj/adj_data_structures.o: include/libadjoint/adj_data_structures.h include/libadjoint/adj_constants.h include/libadjoint/adj_error_handling.h include/libadjoint/uthash.h

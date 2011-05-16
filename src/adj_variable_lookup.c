@@ -12,6 +12,7 @@ int adj_add_variable_data(adj_variable_hash** hash, adj_variable* var, adj_varia
     return ADJ_ERR_HASH_FAILED;
 
   entry = (adj_variable_hash*) malloc(sizeof(adj_variable_hash));
+  ADJ_CHKMALLOC(entry);
   memset(entry, 0, sizeof(adj_variable_hash));
   entry->variable = *var;
   entry->data = data;

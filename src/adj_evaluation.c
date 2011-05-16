@@ -19,6 +19,7 @@ int adj_evaluate_block_action(adj_adjointer* adjointer, adj_block block, adj_vec
     nb_variables = block.nonlinear_block.ndepends;
     variables = block.nonlinear_block.depends;
     dependencies = (adj_vector*) malloc(nb_variables * sizeof(adj_vector));
+    ADJ_CHKMALLOC(dependencies);
 
     for (i = 0; i < nb_variables; i++)
     {
@@ -61,6 +62,7 @@ int adj_evaluate_block_assembly(adj_adjointer* adjointer, adj_block block, adj_m
     nb_variables = block.nonlinear_block.ndepends;
     variables = block.nonlinear_block.depends;
     dependencies = (adj_vector*) malloc(nb_variables * sizeof(adj_vector));
+    ADJ_CHKMALLOC(dependencies);
 
     for (i = 0; i < nb_variables; i++)
     {
@@ -146,6 +148,7 @@ int adj_evaluate_nonlinear_derivative_action_supplied(adj_adjointer* adjointer, 
   int ierr;
 
   dependencies = (adj_vector*) malloc(derivative.nonlinear_block.ndepends * sizeof(adj_vector));
+  ADJ_CHKMALLOC(dependencies);
   for (i = 0; i < derivative.nonlinear_block.ndepends; i++)
   {
     ierr = adj_get_variable_value(adjointer, derivative.nonlinear_block.depends[i], &(dependencies[i]));
@@ -203,6 +206,7 @@ int adj_evaluate_nonlinear_derivative_action_isp(adj_adjointer* adjointer, void 
   ierr = adj_find_operator_callback(adjointer, ADJ_NBLOCK_COLOURING_CB, derivative.nonlinear_block.name, (void (**)(void)) &nonlinear_colouring_func);
   if (ierr != ADJ_ERR_OK) return ierr;
   colouring = (int*) malloc(sz * sizeof(int));
+  ADJ_CHKMALLOC(colouring);
   ierr = adj_evaluate_nonlinear_colouring(adjointer, derivative.nonlinear_block, derivative.variable, nonlinear_colouring_func, sz, colouring);
   if (ierr != ADJ_ERR_OK)
   {
@@ -227,6 +231,7 @@ int adj_evaluate_nonlinear_derivative_action_isp(adj_adjointer* adjointer, void 
   /* Step 3. We'll also duplicate perturbation_vector, as we'll need it in a little bit. */
   adjointer->callbacks.vec_duplicate(dependency, &perturbation_vector);
   perturbation_scalars = (adj_scalar*) malloc(sz * sizeof(adj_scalar));
+  ADJ_CHKMALLOC(perturbation_scalars);
 
   /* Step 4. Loop over colours. */
   for (colour = 1; colour <= ncolours; colour++)
@@ -277,6 +282,7 @@ int adj_evaluate_nonlinear_colouring(adj_adjointer* adjointer, adj_nonlinear_blo
   adj_vector* dependencies;
 
   dependencies = (adj_vector*) malloc(nonlinear_block.ndepends * sizeof(adj_vector));
+  ADJ_CHKMALLOC(dependencies);
   for (i = 0; i < nonlinear_block.ndepends; i++)
   {
     ierr = adj_get_variable_value(adjointer, nonlinear_block.depends[i], &(dependencies[i]));
@@ -315,6 +321,7 @@ int adj_evaluate_nonlinear_action(adj_adjointer* adjointer, void (*nonlinear_act
   }
 
   dependencies = (adj_vector*) malloc(nonlinear_block.ndepends * sizeof(adj_vector));
+  ADJ_CHKMALLOC(dependencies);
   for (i = 0; i < nonlinear_block.ndepends; i++)
   {
     ierr = adj_get_variable_value(adjointer, nonlinear_block.depends[i], &(dependencies[i]));
@@ -400,6 +407,7 @@ int adj_evaluate_functional_derivative(adj_adjointer* adjointer, adj_variable va
 
   ntimesteps_to_consider = data_ptr->ndepending_timesteps + 1;
   timesteps_to_consider = (int*) malloc(ntimesteps_to_consider * sizeof(int));
+  ADJ_CHKMALLOC(timesteps_to_consider);
   for (i = 0; i < data_ptr->ndepending_timesteps; i++)
     timesteps_to_consider[i] = data_ptr->depending_timesteps[i];
   timesteps_to_consider[i] = variable.timestep;
@@ -432,7 +440,9 @@ int adj_evaluate_functional_derivative(adj_adjointer* adjointer, adj_variable va
   }
 
   variables = (adj_variable*) malloc(nb_variables * sizeof(adj_variable));
+  ADJ_CHKMALLOC(variables);
   dependencies = (adj_vector*) malloc(nb_variables * sizeof(adj_vector));
+  ADJ_CHKMALLOC(dependencies);
   nb_variables = 0;
   ierr = adj_destroy_hash(&hash);
   if (ierr != ADJ_ERR_OK) return ierr;
@@ -490,6 +500,7 @@ int adj_evaluate_forward_source(adj_adjointer* adjointer, int equation, adj_vect
   nrhsdeps = adjointer->equations[equation].nrhsdeps;
   variables = adjointer->equations[equation].rhsdeps;
   dependencies = (adj_vector*) malloc(nrhsdeps * sizeof(adj_vector));
+  ADJ_CHKMALLOC(dependencies);
 
   for (j=0 ; j < nrhsdeps; j++)
   {

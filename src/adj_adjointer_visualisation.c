@@ -122,8 +122,10 @@ int adj_html_eqn(FILE* fp, adj_adjointer* adjointer, adj_equation adj_eqn, int d
   for (i = 0; i < adjointer->nequations; ++i)
   {
     row[i] = malloc(ADJ_NAME_LEN*sizeof(char));
+    ADJ_CHKMALLOC(row[i]);
     row[i][0]='\0';
     desc[i] = malloc(32*ADJ_NAME_LEN*sizeof(char));  // The description can become very long
+    ADJ_CHKMALLOC(desc[i]);
     desc[i][0]='\0';
   }
 
@@ -204,8 +206,10 @@ int adj_html_adjoint_eqn(FILE* fp, adj_adjointer* adjointer, adj_equation fwd_eq
   for (i = 0; i < adjointer->nequations; ++i)
   {
     row[i] = malloc(ADJ_NAME_LEN*sizeof(char));
+    ADJ_CHKMALLOC(row[i]);
     row[i][0]='\0';
     desc[i] = malloc(32*ADJ_NAME_LEN*sizeof(char)); // The description can become very long
+    ADJ_CHKMALLOC(desc[i]);
     desc[i][0]='\0';
   }
 
