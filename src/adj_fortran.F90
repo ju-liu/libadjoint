@@ -69,6 +69,11 @@ module libadjoint_data_structures
     type(c_ptr) :: firstnode
     type(c_ptr) :: lastnode
   end type adj_op_callback_list
+  
+  type, bind(c) :: adj_func_callback_list
+    type(c_ptr) :: firstnode
+    type(c_ptr) :: lastnode
+  end type adj_func_callback_list
 
   type, bind(c) :: adj_func_deriv_callback_list
     type(c_ptr) :: firstnode
@@ -95,6 +100,7 @@ module libadjoint_data_structures
     type(adj_op_callback_list) :: nonlinear_derivative_assembly_list
     type(adj_op_callback_list) :: block_action_list
     type(adj_op_callback_list) :: block_assembly_list
+    type(adj_func_callback_list) :: functional_list
     type(adj_func_deriv_callback_list) :: functional_derivative_list
     type(c_funptr) :: forward_source_callback
   end type adj_adjointer
@@ -288,6 +294,18 @@ module libadjoint
       type(adj_matrix), intent(out) :: output
       type(adj_vector), intent(out) :: rhs
     end subroutine adj_block_assembly_proc
+    
+    subroutine adj_functional_proc(adjointer, timestep, ndepends, dependencies, values, name, output) bind(c)
+      use iso_c_binding
+      use libadjoint_data_structures
+      type(adj_adjointer), intent(in) :: adjointer
+      integer(kind=c_int), intent(in), value :: timestep
+      integer(kind=c_int), intent(in), value :: ndepends
+      type(adj_variable), dimension(ndepends), intent(in) :: dependencies
+      type(adj_vector), dimension(ndepends), intent(in) :: values
+      character(kind=c_char), dimension(ADJ_NAME_LEN), intent(in) :: name
+      adj_scalar_f, intent(out) :: output
+    end subroutine adj_functional_proc
 
     subroutine adj_functional_derivative_proc(adjointer, variable, ndepends, dependencies, values, name, output) bind(c)
       use iso_c_binding
@@ -526,6 +544,16 @@ module libadjoint
       type(c_funptr), intent(in), value :: fnptr
       integer(kind=c_int) :: ierr
     end function adj_register_data_callback
+    
+    function adj_register_functional_callback_c(adjointer, name, fnptr) &
+                                              & result(ierr) bind(c, name='adj_register_functional_callback')
+      use libadjoint_data_structures
+      use iso_c_binding
+      type(adj_adjointer), intent(inout) :: adjointer
+      character(kind=c_char), dimension(ADJ_NAME_LEN), intent(in) :: name
+      type(c_funptr), intent(in), value :: fnptr
+      integer(kind=c_int) :: ierr
+    end function adj_register_functional_callback_c
 
     function adj_register_functional_derivative_callback_c(adjointer, name, fnptr) &
                                                       & result(ierr) bind(c, name='adj_register_functional_derivative_callback')
@@ -763,6 +791,17 @@ module libadjoint
       type(adj_adjointer), intent(inout) :: adjointer
       integer(kind=c_int) :: ierr
     end function adj_set_petsc_data_callbacks
+
+    function adj_evaluate_functional_c(adjointer, timestep, functional, output) result(ierr) &
+           & bind(c, name='adj_evaluate_functional')
+      use libadjoint_data_structures
+      use iso_c_binding
+      type(adj_adjointer), intent(inout) :: adjointer
+      integer(kind=c_int), intent(in), value :: timestep
+      character(kind=c_char), dimension(ADJ_NAME_LEN), intent(in) :: functional
+      adj_scalar_f, intent(out) :: output 
+      integer(kind=c_int) :: ierr
+    end function adj_evaluate_functional_c
 
   end interface
 
@@ -1006,6 +1045,26 @@ module libadjoint
 
     ierr = adj_variable_get_depending_timestep_c(adjointer, variable, functional_c, i, timestep)
   end function adj_variable_get_depending_timestep
+  
+  function adj_register_functional_callback(adjointer, name, fnptr) result(ierr)
+    type(adj_adjointer), intent(inout) :: adjointer
+    character(len=*), intent(in) :: name
+    type(c_funptr), intent(in) :: fnptr
+    integer :: ierr
+
+    character(kind=c_char), dimension(ADJ_NAME_LEN) :: name_c
+    integer :: j
+
+    do j=1,len_trim(name)
+      name_c(j) = name(j:j)
+    end do
+    do j=len_trim(name)+1,ADJ_NAME_LEN
+      name_c(j) = c_null_char
+    end do
+    name_c(ADJ_NAME_LEN) = c_null_char
+
+    ierr = adj_register_functional_callback_c(adjointer, name_c, fnptr)
+  end function adj_register_functional_callback
 
   function adj_register_functional_derivative_callback(adjointer, name, fnptr) result(ierr)
     type(adj_adjointer), intent(inout) :: adjointer
@@ -1046,6 +1105,27 @@ module libadjoint
 
     ierr = adj_adjointer_to_html_c(adjointer, filename_c, type)
   end function adj_adjointer_to_html
+  
+  function adj_evaluate_functional(adjointer, timestep, functional, output) result(ierr) 
+    type(adj_adjointer), intent(inout) :: adjointer
+    integer, intent(in) :: timestep
+    character(len=*), intent(in) :: functional
+    adj_scalar_f, intent(out) :: output
+    integer :: ierr
+    
+    character(kind=c_char), dimension(ADJ_NAME_LEN) :: functional_c
+    integer :: j
+
+    do j=1,len_trim(functional)
+      functional_c(j) = functional(j:j)
+    end do
+    do j=len_trim(functional)+1,ADJ_NAME_LEN
+      functional_c(j) = c_null_char
+    end do
+    functional_c(ADJ_NAME_LEN) = c_null_char
+
+    ierr = adj_evaluate_functional_c(adjointer, timestep, functional_c, output)
+  end function adj_evaluate_functional
   
   function adj_dict_set(dict, key, value) result(ierr)
     type(adj_dictionary), intent(inout) :: dict

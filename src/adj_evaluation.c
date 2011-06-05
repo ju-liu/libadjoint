@@ -364,6 +364,52 @@ int adj_evaluate_nonlinear_action(adj_adjointer* adjointer, void (*nonlinear_act
   return ADJ_ERR_OK;
 }
 
+int adj_evaluate_functional(adj_adjointer* adjointer, int timestep, char* functional, adj_scalar* output)
+{
+  int ierr;
+  void (*functional_func)(adj_adjointer* adjointer, int timestep, int nb_variables, adj_variable* variables, adj_vector* dependencies, char* name, adj_scalar* output) = NULL;
+  adj_vector* dependencies = NULL;
+  int nb_variables = 0;
+  adj_variable* variables = NULL;
+  adj_functional_data* functional_data_ptr = NULL;
+
+  ierr = adj_find_functional_callback(adjointer, functional, &functional_func);
+  if (ierr != ADJ_ERR_OK)
+    return ierr;
+
+  if (adjointer->ntimesteps <= timestep) 
+  {
+    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "No data is associated with this timestep %d.", timestep);
+    return ADJ_ERR_INVALID_INPUTS;
+  }
+  
+  functional_data_ptr = adjointer->timestep_data[timestep].functional_data_start;
+  while (functional_data_ptr != NULL)
+  {
+    if (strncmp(functional_data_ptr->name, functional, ADJ_NAME_LEN) == 0)
+    {
+      int k;
+      nb_variables = functional_data_ptr->ndepends;
+      dependencies = (adj_vector*) malloc( nb_variables * sizeof(adj_vector));
+      ADJ_CHKMALLOC(dependencies);
+      variables = functional_data_ptr->dependencies;
+
+      for (k = 0; k < nb_variables; k++)
+      {
+        ierr = adj_get_variable_value(adjointer, variables[k], &(dependencies[k]));
+        if (ierr != ADJ_ERR_OK) return ierr;
+      }
+      /* We have the right callback, so let's call it already */ 
+      functional_func(adjointer, timestep, nb_variables, variables, dependencies, functional, output);
+      free(dependencies);
+      return ADJ_ERR_OK;
+    }
+    functional_data_ptr = functional_data_ptr->next;
+  }
+  snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Internal libadjoint error in adj_evaluate_functional. No functional data was found for the %s", functional);
+  return ADJ_ERR_NEED_VALUE;
+}
+
 int adj_evaluate_functional_derivative(adj_adjointer* adjointer, adj_variable variable, char* functional, adj_vector* output, int* has_output)
 {
   int i, ierr;
@@ -405,6 +451,9 @@ int adj_evaluate_functional_derivative(adj_adjointer* adjointer, adj_variable va
   if (ierr != ADJ_ERR_OK)
     return ierr;
 
+  /* Create the dependency list for the functional derivative evaluation. */
+  /* For that we loop over all timesteps that need 'variable' for the functional evaluation */
+  /* and add its dependency to the dependency list */ 
   ntimesteps_to_consider = data_ptr->ndepending_timesteps + 1;
   timesteps_to_consider = (int*) malloc(ntimesteps_to_consider * sizeof(int));
   ADJ_CHKMALLOC(timesteps_to_consider);

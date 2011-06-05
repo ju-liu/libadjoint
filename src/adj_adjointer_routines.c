@@ -41,6 +41,8 @@ int adj_create_adjointer(adj_adjointer* adjointer)
   adjointer->block_action_list.lastnode = NULL;
   adjointer->block_assembly_list.firstnode = NULL;
   adjointer->block_assembly_list.lastnode = NULL;
+  adjointer->functional_list.firstnode = NULL;
+  adjointer->functional_list.lastnode = NULL;
   adjointer->functional_derivative_list.firstnode = NULL;
   adjointer->functional_derivative_list.lastnode = NULL;
   adjointer->forward_source_callback = NULL;
@@ -59,6 +61,8 @@ int adj_destroy_adjointer(adj_adjointer* adjointer)
   adj_variable_data* data_ptr_tmp;
   adj_op_callback* cb_ptr;
   adj_op_callback* cb_ptr_tmp;
+  adj_func_callback* func_cb_ptr;
+  adj_func_callback* func_cb_ptr_tmp;
   adj_func_deriv_callback* func_deriv_cb_ptr;
   adj_func_deriv_callback* func_deriv_cb_ptr_tmp;
   adj_functional_data* functional_data_ptr_next = NULL;
@@ -143,6 +147,14 @@ int adj_destroy_adjointer(adj_adjointer* adjointer)
     free(cb_ptr_tmp);
   }
 
+  func_cb_ptr = adjointer->functional_list.firstnode;
+  while(func_cb_ptr != NULL)
+  {
+    func_cb_ptr_tmp = func_cb_ptr;
+    func_cb_ptr = func_cb_ptr->next;
+    free(func_cb_ptr_tmp);
+  }
+  
   func_deriv_cb_ptr = adjointer->functional_derivative_list.firstnode;
   while(func_deriv_cb_ptr != NULL)
   {
@@ -722,6 +734,49 @@ int adj_register_data_callback(adj_adjointer* adjointer, int type, void (*fn)(vo
   return ADJ_ERR_OK;
 }
 
+int adj_register_functional_callback(adj_adjointer* adjointer, char* name, void (*fn)(adj_adjointer* adjointer, int timestep, int nb_variables, adj_variable* variables, adj_vector* dependencies, char* name, adj_scalar* output))
+{
+  adj_func_callback_list* cb_list_ptr;
+  adj_func_callback* cb_ptr;
+
+  if (adjointer->options[ADJ_ACTIVITY] == ADJ_ACTIVITY_NOTHING) return ADJ_ERR_OK;
+
+  cb_list_ptr = &(adjointer->functional_list);
+
+  /* First, we look for an existing callback data structure that might already exist, to replace the function */
+  cb_ptr = cb_list_ptr->firstnode;
+  while (cb_ptr != NULL)
+  {
+    if (strncmp(cb_ptr->name, name, ADJ_NAME_LEN) == 0)
+    {
+      cb_ptr->callback = (void (*)(void* adjointer, int timestep, int nb_variables, adj_variable* variables, adj_vector* dependencies, char* name, adj_scalar* output)) fn;
+      return ADJ_ERR_OK;
+    }
+    cb_ptr = cb_ptr->next;
+  }
+
+  /* If we got here, that means that we didn't find it. Tack it on to the end of the list. */
+  cb_ptr = (adj_func_callback*) malloc(sizeof(adj_func_callback));
+  ADJ_CHKMALLOC(cb_ptr);
+  strncpy(cb_ptr->name, name, ADJ_NAME_LEN);
+  cb_ptr->callback = (void (*)(void* adjointer, int timestep, int nb_variables, adj_variable* variables, adj_vector* dependencies, char* name, adj_scalar* output)) fn;
+  cb_ptr->next = NULL;
+
+  /* Special case for the first callback */
+  if (cb_list_ptr->firstnode == NULL)
+  {
+    cb_list_ptr->firstnode = cb_ptr;
+    cb_list_ptr->lastnode = cb_ptr;
+  }
+  else
+  {
+    cb_list_ptr->lastnode->next = cb_ptr;
+    cb_list_ptr->lastnode = cb_ptr;
+  }
+
+  return ADJ_ERR_OK;
+}
+
 int adj_register_functional_derivative_callback(adj_adjointer* adjointer, char* name, void (*fn)(adj_adjointer* adjointer, adj_variable variable, int nb_variables, adj_variable* variables, adj_vector* dependencies, char* name, adj_vector* output))
 {
   adj_func_deriv_callback_list* cb_list_ptr;
@@ -874,6 +929,28 @@ int adj_find_operator_callback(adj_adjointer* adjointer, int type, char* name, v
   }
 
   snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Could not find callback type %d for operator %s.", type, name);
+  return ADJ_ERR_NEED_CALLBACK;
+}
+
+int adj_find_functional_callback(adj_adjointer* adjointer, char* name, void (**fn)(adj_adjointer* adjointer, int timestep, int nb_variables, adj_variable* variables, adj_vector* dependencies, char* name, adj_scalar* output))
+{
+  adj_func_callback_list* cb_list_ptr;
+  adj_func_callback* cb_ptr;
+
+  cb_list_ptr = &(adjointer->functional_list);
+
+  cb_ptr = cb_list_ptr->firstnode;
+  while (cb_ptr != NULL)
+  {
+    if (strncmp(cb_ptr->name, name, ADJ_NAME_LEN) == 0)
+    {
+      *fn = (void (*)(adj_adjointer* adjointer, int timestep, int nb_variables, adj_variable* variables, adj_vector* dependencies, char* name, adj_scalar* output)) cb_ptr->callback;
+      return ADJ_ERR_OK;
+    }
+    cb_ptr = cb_ptr->next;
+  }
+
+  snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Could not find functional callback %s.", name);
   return ADJ_ERR_NEED_CALLBACK;
 }
 
@@ -1365,6 +1442,7 @@ int adj_minval(int* array, int array_sz)
   return minval;
 }
 
+/* Provides the number of timesteps that need this variable for the computation of the specified functional */
 int adj_variable_get_ndepending_timesteps(adj_adjointer* adjointer, adj_variable variable, char* functional, int* ntimesteps)
 {
   int ierr;
@@ -1406,6 +1484,7 @@ int adj_variable_get_ndepending_timesteps(adj_adjointer* adjointer, adj_variable
   return ADJ_ERR_OK;
 }
 
+/* Provides the timesteps that need this variable for the computation of the specified functional */
 int adj_variable_get_depending_timestep(adj_adjointer* adjointer, adj_variable variable, char* functional, int i, int* timestep)
 {
   int ierr;

@@ -142,6 +142,14 @@ typedef struct
   adj_op_callback* lastnode;
 } adj_op_callback_list;
 
+typedef struct adj_func_callback
+{
+  char name[ADJ_NAME_LEN];
+  /* we want this to be adj_adjointer* adjointer, but we haven't defined adj_adjointer yet */
+  void (*callback)(void* adjointer, int timestep, int nb_variables, adj_variable* variables, adj_vector* dependencies, char* name, adj_scalar* output);
+  struct adj_func_callback* next;
+} adj_func_callback;
+
 typedef struct adj_func_deriv_callback
 {
   char name[ADJ_NAME_LEN];
@@ -149,6 +157,12 @@ typedef struct adj_func_deriv_callback
   void (*callback)(void* adjointer, adj_variable variable, int nb_variables, adj_variable* variables, adj_vector* dependencies, char* name, adj_vector* output);
   struct adj_func_deriv_callback* next;
 } adj_func_deriv_callback;
+
+typedef struct
+{
+  adj_func_callback* firstnode;
+  adj_func_callback* lastnode;
+} adj_func_callback_list;
 
 typedef struct
 {
@@ -223,6 +237,7 @@ typedef struct adj_adjointer
   adj_op_callback_list nonlinear_derivative_assembly_list;
   adj_op_callback_list block_action_list;
   adj_op_callback_list block_assembly_list;
+  adj_func_callback_list functional_list;
   adj_func_deriv_callback_list functional_derivative_list;
   void (*forward_source_callback)(struct adj_adjointer* adjointer, adj_variable variable, int nb_variables, adj_variable* variables, adj_vector* dependencies, void* context, adj_vector* output, int* has_output);
 } adj_adjointer;
