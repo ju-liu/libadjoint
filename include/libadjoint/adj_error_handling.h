@@ -21,6 +21,7 @@ char adj_error_msg[ADJ_ERROR_MSG_BUF];
 
 #define ADJ_WARN_ALREADY_RECORDED -1
 #define ADJ_WARN_COMPARISON_FAILED -2
+#define ADJ_WARN_UNINITIALISED_VALUE -3
 
 /* if you add a new one, make sure to add it into adj_error_codes in src/adj_error_handling.c */
 

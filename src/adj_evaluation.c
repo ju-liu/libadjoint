@@ -399,15 +399,20 @@ int adj_evaluate_functional(adj_adjointer* adjointer, int timestep, char* functi
         ierr = adj_get_variable_value(adjointer, variables[k], &(dependencies[k]));
         if (ierr != ADJ_ERR_OK) return ierr;
       }
-      /* We have the right callback, so let's call it already */ 
-      functional_func(adjointer, timestep, nb_variables, variables, dependencies, functional, output);
-      free(dependencies);
-      return ADJ_ERR_OK;
     }
     functional_data_ptr = functional_data_ptr->next;
   }
-  snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Internal libadjoint error in adj_evaluate_functional. No functional data was found for the %s", functional);
-  return ADJ_ERR_NEED_VALUE;
+  if (dependencies == NULL) 
+  {
+    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Warning: Evaluating functional %s at timestep %d without having any dependencies registered for it.\n", functional, timestep);
+    return ADJ_WARN_UNINITIALISED_VALUE;
+  }
+  
+  /* We have the right callback, so let's call it already */ 
+  functional_func(adjointer, timestep, nb_variables, variables, dependencies, functional, output);
+
+  free(dependencies);
+  return ADJ_ERR_OK;
 }
 
 int adj_evaluate_functional_derivative(adj_adjointer* adjointer, adj_variable variable, char* functional, adj_vector* output, int* has_output)
