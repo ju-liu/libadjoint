@@ -81,7 +81,7 @@ int adj_evaluate_block_assembly(adj_adjointer* adjointer, adj_block block, adj_m
 }
 
 
-int adj_evaluate_nonlinear_derivative_action(adj_adjointer* adjointer, int nderivatives, adj_nonlinear_block_derivative* derivatives, adj_vector value, adj_vector model_rhs, adj_vector* rhs)
+int adj_evaluate_nonlinear_derivative_action(adj_adjointer* adjointer, int nderivatives, adj_nonlinear_block_derivative* derivatives, adj_vector value, adj_vector* rhs)
 {
   int ierr;
   int deriv;
@@ -112,12 +112,14 @@ int adj_evaluate_nonlinear_derivative_action(adj_adjointer* adjointer, int nderi
     ierr = adj_find_operator_callback(adjointer, ADJ_NBLOCK_DERIVATIVE_ACTION_CB, derivatives[deriv].nonlinear_block.name, (void (**)(void)) &nonlinear_derivative_action_func);
     if (ierr == ADJ_ERR_OK)
     {
-      ierr = adj_evaluate_nonlinear_derivative_action_supplied(adjointer, nonlinear_derivative_action_func, derivatives[deriv], value, rhs);
+      adj_vector rhs_tmp;
+      ierr = adj_evaluate_nonlinear_derivative_action_supplied(adjointer, nonlinear_derivative_action_func, derivatives[deriv], value, &rhs_tmp);
       if (ierr != ADJ_ERR_OK) return ierr;
+      adjointer->callbacks.vec_axpy(rhs, (adj_scalar) -1.0, rhs_tmp);
+      adjointer->callbacks.vec_destroy(&rhs_tmp);
     }
     else
     {
-      (void) model_rhs;
       snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Sorry, ISP is not implemented yet.");
       return ADJ_ERR_NOT_IMPLEMENTED;
 

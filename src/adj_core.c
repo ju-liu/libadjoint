@@ -238,7 +238,6 @@ int adj_get_adjoint_equation(adj_adjointer* adjointer, int equation, char* funct
         /* This G-block is NOT on the diagonal, so we only need its action */
         adj_variable adj_associated;
         adj_vector adj_value;
-        adj_vector rhs_tmp;
 
         adj_associated = depending_eqn.variable;
         adj_associated.type = ADJ_ADJOINT;
@@ -247,10 +246,8 @@ int adj_get_adjoint_equation(adj_adjointer* adjointer, int equation, char* funct
         if (ierr != ADJ_ERR_OK) return ierr;
 
         /* And now we are ready */
-        ierr = adj_evaluate_nonlinear_derivative_action(adjointer, nderivs, derivs, adj_value, *rhs, &rhs_tmp);
+        ierr = adj_evaluate_nonlinear_derivative_action(adjointer, nderivs, derivs, adj_value, rhs);
         if (ierr != ADJ_ERR_OK) return ierr;
-        adjointer->callbacks.vec_axpy(rhs, (adj_scalar) -1.0, rhs_tmp);
-        adjointer->callbacks.vec_destroy(&rhs_tmp);
       }
 
       for (i = 0; i < nderivs; i++)
