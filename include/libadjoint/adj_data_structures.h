@@ -262,6 +262,8 @@ int adj_destroy_equation(adj_equation* equation);
 #ifndef ADJ_HIDE_FROM_USER
 int adj_variable_equal(adj_variable* var1, adj_variable* var2, int nvars);
 int adj_variable_str(adj_variable var, char* name, size_t namelen);
+int adj_create_nonlinear_block_derivative(adj_adjointer* adjointer, adj_nonlinear_block nblock, adj_variable fwd, adj_vector contraction, int hermitian, adj_nonlinear_block_derivative* deriv);
+int adj_destroy_nonlinear_block_derivative(adj_adjointer* adjointer, adj_nonlinear_block_derivative* deriv);
 #endif
 
 #endif

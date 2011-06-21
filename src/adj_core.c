@@ -162,6 +162,26 @@ int adj_get_adjoint_equation(adj_adjointer* adjointer, int equation, char* funct
     adjointer->callbacks.vec_destroy(&rhs_tmp);
   }
 
+  /* --------------------------------------------------------------------------
+   * Computation of G* terms                                                  |
+   * -------------------------------------------------------------------------- */
+
+  /* We need to loop through the equations that depend on fwd_var; each one of those will produce
+     a term in this row of G*. */
+  {
+    for (i = 0; i < fwd_data->ndepending_equations; i++)
+    {
+      /* We compute the block of G*, either assembling it, or computing its action, as appropriate. */
+      int depending_eqn_no;
+      adj_equation depending_eqn;
+
+      depending_eqn_no = fwd_data->depending_equations[i];
+      depending_eqn = adjointer->equations[depending_eqn_no];
+
+      /* Now, we loop through the blocks of this forward equation, finding the ones that depend on the fwd variable. */
+    }
+  }
+
   /* Now add dJ/du to the rhs */
   {
     adj_vector rhs_tmp;

@@ -305,3 +305,43 @@ int adj_variable_set_auxiliary(adj_variable* var, int auxiliary)
   var->auxiliary = auxiliary;
   return ADJ_ERR_OK;
 }
+
+int adj_create_nonlinear_block_derivative(adj_adjointer* adjointer, adj_nonlinear_block nblock, adj_variable fwd, adj_vector contraction, int hermitian, adj_nonlinear_block_derivative* deriv)
+{
+  if (adjointer->callbacks.vec_duplicate == NULL)
+  {
+    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "We need the ADJ_VEC_DUPLICATE_CB callback to do nonlinear differentiation.");
+    return ADJ_ERR_NEED_CALLBACK;
+  }
+  if (adjointer->callbacks.vec_axpy == NULL)
+  {
+    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "We need the ADJ_VEC_AXPY_CB callback to do nonlinear differentiation.");
+    return ADJ_ERR_NEED_CALLBACK;
+  }
+
+  deriv->nonlinear_block = nblock;
+  deriv->variable = fwd;
+  deriv->hermitian = hermitian;
+
+  /* We make a copy because, when we destroy these, the contractions may or may not be 
+     vectors stored for other reasons. (The simplification routine to minimise the amount
+     of derivatives we have to compute will create new contractions.) So we make it so that
+     the nonlinear_block_derivative ALWAYS owns its contraction, so that we can unambiguously
+     decide to deallocate it. */
+  adjointer->callbacks.vec_duplicate(contraction, &(deriv->contraction));
+  adjointer->callbacks.vec_axpy(&(deriv->contraction), (adj_scalar) 1.0, contraction);
+
+  return ADJ_ERR_OK;
+}
+
+int adj_destroy_nonlinear_block_derivative(adj_adjointer* adjointer, adj_nonlinear_block_derivative* deriv)
+{
+  if (adjointer->callbacks.vec_destroy == NULL)
+  {
+    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "We need the ADJ_VEC_DESTROY_CB callback to destroy adj_nonlinear_block_derivatives.");
+    return ADJ_ERR_NEED_CALLBACK;
+  }
+
+  adjointer->callbacks.vec_destroy(&(deriv->contraction));
+  return ADJ_ERR_OK;
+}
