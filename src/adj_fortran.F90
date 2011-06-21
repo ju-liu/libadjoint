@@ -833,13 +833,19 @@ module libadjoint
   function adj_create_variable(name, timestep, iteration, auxiliary, variable) result(ierr)
     character(len=*), intent(in) :: name
     integer, intent(in) :: timestep, iteration
-    integer, intent(in) :: auxiliary
+    logical, intent(in) :: auxiliary
     type(adj_variable), intent(out) :: variable
     integer :: ierr
 
     character(kind=c_char), dimension(ADJ_NAME_LEN) :: name_c
     integer :: j
+    integer :: auxiliary_c
 
+    if (auxiliary) then
+      auxiliary_c = ADJ_TRUE
+    else
+      auxiliary_c = ADJ_FALSE
+    end if
     do j=1,len_trim(name)
       name_c(j) = name(j:j)
     end do
@@ -848,7 +854,7 @@ module libadjoint
     end do
     name_c(ADJ_NAME_LEN) = c_null_char
 
-    ierr = adj_create_variable_c(name_c, timestep, iteration, auxiliary, variable)
+    ierr = adj_create_variable_c(name_c, timestep, iteration, auxiliary_c, variable)
   end function adj_create_variable
 
   function adj_variable_get_name(variable, name) result(ierr)

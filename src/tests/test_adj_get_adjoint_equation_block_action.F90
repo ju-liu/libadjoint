@@ -158,9 +158,9 @@ subroutine test_adj_get_adjoint_equation_block_action
 
   ierr = adj_create_block("IdentityOperator", block=I)
   call adj_test_assert(ierr == ADJ_ERR_OK, "Should have worked")
-  ierr = adj_create_variable("Velocity", timestep=0, iteration=0, auxiliary=ADJ_FALSE, variable=u0)
+  ierr = adj_create_variable("Velocity", timestep=0, iteration=0, auxiliary=.false., variable=u0)
   call adj_test_assert(ierr == ADJ_ERR_OK, "Should have worked")
-  ierr = adj_create_variable("Velocity", timestep=1, iteration=0, auxiliary=ADJ_FALSE, variable=u1)
+  ierr = adj_create_variable("Velocity", timestep=1, iteration=0, auxiliary=.false., variable=u1)
   call adj_test_assert(ierr == ADJ_ERR_OK, "Should have worked")
 
   ierr = adj_create_equation(u0, (/I/), (/u0/), equation)

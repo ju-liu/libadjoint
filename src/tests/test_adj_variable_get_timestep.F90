@@ -9,7 +9,7 @@ subroutine test_adj_variable_get_timestep
   type(adj_variable) :: var
   integer :: timestep
 
-  ierr = adj_create_variable("Velocity", 17, 0, 0, var)
+  ierr = adj_create_variable("Velocity", 17, 0, .false., var)
   call adj_test_assert(ierr == 0, "Should have worked")
 
   ierr = adj_variable_get_timestep(var, timestep)

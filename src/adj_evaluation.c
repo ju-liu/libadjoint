@@ -86,8 +86,6 @@ int adj_evaluate_nonlinear_derivative_action(adj_adjointer* adjointer, int nderi
   int ierr;
   int deriv;
   void (*nonlinear_derivative_action_func)(int nvar, adj_variable* variables, adj_vector* dependencies, adj_variable derivative, adj_vector contraction, int hermitian, adj_vector input, void* context, adj_vector* output);
-  void (*nonlinear_action_func)(int nvar, adj_variable* variables, adj_vector* dependencies, adj_vector input, void* context, adj_vector* output) = NULL;
-  adj_vector rhs_tmp;
 
   /* As usual, check as much as we can at the start */
   strncpy(adj_error_msg, "Need a data callback, but it hasn't been supplied.", ADJ_ERROR_MSG_BUF);
@@ -114,14 +112,17 @@ int adj_evaluate_nonlinear_derivative_action(adj_adjointer* adjointer, int nderi
     ierr = adj_find_operator_callback(adjointer, ADJ_NBLOCK_DERIVATIVE_ACTION_CB, derivatives[deriv].nonlinear_block.name, (void (**)(void)) &nonlinear_derivative_action_func);
     if (ierr == ADJ_ERR_OK)
     {
-      ierr = adj_evaluate_nonlinear_derivative_action_supplied(adjointer, nonlinear_derivative_action_func, derivatives[deriv], value, &rhs_tmp);
+      ierr = adj_evaluate_nonlinear_derivative_action_supplied(adjointer, nonlinear_derivative_action_func, derivatives[deriv], value, rhs);
       if (ierr != ADJ_ERR_OK) return ierr;
-      adjointer->callbacks.vec_axpy(rhs, (adj_scalar) 1.0, rhs_tmp);
-      adjointer->callbacks.vec_destroy(&rhs_tmp);
     }
     else
     {
-      /* OK, if that didn't work, let's try ISP. */
+      (void) model_rhs;
+      snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Sorry, ISP is not implemented yet.");
+      return ADJ_ERR_NOT_IMPLEMENTED;
+
+/*
+      void (*nonlinear_action_func)(int nvar, adj_variable* variables, adj_vector* dependencies, adj_vector input, void* context, adj_vector* output) = NULL;
       ierr = adj_find_operator_callback(adjointer, ADJ_NBLOCK_ACTION_CB, derivatives[deriv].nonlinear_block.name, (void (**)(void)) &nonlinear_action_func);
       if (ierr != ADJ_ERR_OK)
       {
@@ -133,6 +134,7 @@ int adj_evaluate_nonlinear_derivative_action(adj_adjointer* adjointer, int nderi
       if (ierr != ADJ_ERR_OK) return ierr;
       adjointer->callbacks.vec_axpy(rhs, (adj_scalar) 1.0, rhs_tmp);
       adjointer->callbacks.vec_destroy(&rhs_tmp);
+*/
     }
   }
 

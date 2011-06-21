@@ -11,7 +11,7 @@ typedef struct
   char name[ADJ_NAME_LEN];
   int timestep; /* what timestep this variable is associated with */
   int iteration; /* what iteration inside the timestep */
-  int type; /* forward, adjoint, or tlm */
+  int type; /* forward, adjoint, or tlm: ADJ_FORWARD, ADJ_ADJOINT, or ADJ_TLM */
   int auxiliary; /* is this a real dependency (a variable that is solved for) or auxiliary */
   char functional[ADJ_NAME_LEN]; /* which functional or parameter is this associated with (adjoint/tlm variables) */
 } adj_variable;

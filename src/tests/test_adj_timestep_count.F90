@@ -15,7 +15,7 @@ subroutine test_adj_timestep_count
   ierr = adj_timestep_count(adjointer, count)
   call adj_test_assert(count == 0, "Should be zero")
 
-  ierr = adj_create_variable("Velocity", timestep=23, iteration=0, auxiliary=0, variable=u)
+  ierr = adj_create_variable("Velocity", timestep=23, iteration=0, auxiliary=.false., variable=u)
   call adj_chkierr(ierr)
   ierr = adj_create_block("Identity", block=I)
   call adj_chkierr(ierr)
@@ -26,7 +26,7 @@ subroutine test_adj_timestep_count
   ierr = adj_destroy_equation(equation)
   call adj_chkierr(ierr)
 
-  ierr = adj_create_variable("Velocity", timestep=0, iteration=0, auxiliary=0, variable=u)
+  ierr = adj_create_variable("Velocity", timestep=0, iteration=0, auxiliary=.false., variable=u)
   call adj_chkierr(ierr)
   ierr = adj_create_equation(variable=u, blocks=(/I/), targets=(/u/), equation=equation)
   call adj_chkierr(ierr)
@@ -34,7 +34,7 @@ subroutine test_adj_timestep_count
   call adj_chkierr(ierr)
   ierr = adj_destroy_equation(equation)
   call adj_chkierr(ierr)
-  ierr = adj_create_variable("Velocity", timestep=0, iteration=1, auxiliary=0, variable=u)
+  ierr = adj_create_variable("Velocity", timestep=0, iteration=1, auxiliary=.false., variable=u)
   call adj_chkierr(ierr)
   ierr = adj_create_equation(variable=u, blocks=(/I/), targets=(/u/), equation=equation)
   call adj_chkierr(ierr)
@@ -43,7 +43,7 @@ subroutine test_adj_timestep_count
   ierr = adj_destroy_equation(equation)
   call adj_chkierr(ierr)
 
-  ierr = adj_create_variable("Velocity", timestep=2, iteration=0, auxiliary=0, variable=u)
+  ierr = adj_create_variable("Velocity", timestep=2, iteration=0, auxiliary=.false., variable=u)
   call adj_chkierr(ierr)
   ierr = adj_create_equation(variable=u, blocks=(/I/), targets=(/u/), equation=equation)
   call adj_chkierr(ierr)
@@ -52,7 +52,7 @@ subroutine test_adj_timestep_count
   ierr = adj_destroy_equation(equation)
   call adj_chkierr(ierr)
 
-  ierr = adj_create_variable("Velocity", timestep=1, iteration=0, auxiliary=0, variable=u)
+  ierr = adj_create_variable("Velocity", timestep=1, iteration=0, auxiliary=.false., variable=u)
   call adj_chkierr(ierr)
   ierr = adj_create_equation(variable=u, blocks=(/I/), targets=(/u/), equation=equation)
   call adj_chkierr(ierr)

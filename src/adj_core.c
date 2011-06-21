@@ -172,13 +172,93 @@ int adj_get_adjoint_equation(adj_adjointer* adjointer, int equation, char* funct
     for (i = 0; i < fwd_data->ndepending_equations; i++)
     {
       /* We compute the block of G*, either assembling it, or computing its action, as appropriate. */
-      int depending_eqn_no;
+      int ndepending_eqn;
       adj_equation depending_eqn;
+      int nderivs;
+      adj_nonlinear_block_derivative* derivs;
+      int l, k;
 
-      depending_eqn_no = fwd_data->depending_equations[i];
-      depending_eqn = adjointer->equations[depending_eqn_no];
+      ndepending_eqn = fwd_data->depending_equations[i];
+      depending_eqn = adjointer->equations[ndepending_eqn];
 
-      /* Now, we loop through the blocks of this forward equation, finding the ones that depend on the fwd variable. */
+      /* Now, we loop through the blocks of this forward equation, finding the ones that depend on the fwd variable.
+         First, let's find out how many blocks depend on this variable; then we'll malloc that many 
+         adj_nonlinear_block_derivatives, and then we'll go about filling them in. */
+      nderivs = 0;
+      for (j = 0; j < depending_eqn.nblocks; j++)
+      {
+        if (depending_eqn.blocks[j].has_nonlinear_block)
+        {
+          for (k = 0; k < depending_eqn.blocks[j].nonlinear_block.ndepends; k++)
+          {
+            if (adj_variable_equal(&fwd_var, &depending_eqn.blocks[j].nonlinear_block.depends[k], 1))
+            {
+              nderivs++;
+            }
+          }
+        }
+      }
+
+      /* Now that we have ndepending_blocks, let's use it */
+      derivs = (adj_nonlinear_block_derivative*) malloc(nderivs * sizeof(adj_nonlinear_block_derivative));
+      ADJ_CHKMALLOC(derivs);
+      l = 0;
+      for (j = 0; j < depending_eqn.nblocks; j++)
+      {
+        if (depending_eqn.blocks[j].has_nonlinear_block)
+        {
+          for (k = 0; k < depending_eqn.blocks[j].nonlinear_block.ndepends; k++)
+          {
+            if (adj_variable_equal(&fwd_var, &depending_eqn.blocks[j].nonlinear_block.depends[k], 1))
+            {
+              adj_vector target;
+              ierr = adj_get_variable_value(adjointer, depending_eqn.targets[j], &target);
+              if (ierr != ADJ_ERR_OK) return ierr;
+
+              ierr = adj_create_nonlinear_block_derivative(adjointer, depending_eqn.blocks[j].nonlinear_block, fwd_var, target, ADJ_TRUE, &derivs[l]);
+              if (ierr != ADJ_ERR_OK) return ierr;
+              l++;
+            }
+          }
+        }
+      }
+
+      /* OK, Here's where we would do simplifications -- I'll leave this as an optimisation for now */
+      /* .......................................................................................... */
+
+      /* Now, we go and evaluate each one of the derivatives, assembling or acting as appropriate */
+      if (ndepending_eqn == equation)
+      {
+        /* This G-block is on the diagonal, and so we must assemble it .. later */
+        snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Sorry, we can't handle G-blocks on the diagonal yet.");
+        return ADJ_ERR_NOT_IMPLEMENTED;
+      }
+      else
+      {
+        /* This G-block is NOT on the diagonal, so we only need its action */
+        adj_variable adj_associated;
+        adj_vector adj_value;
+        adj_vector rhs_tmp;
+
+        adj_associated = depending_eqn.variable;
+        adj_associated.type = ADJ_ADJOINT;
+        strncpy(adj_associated.functional, functional, ADJ_NAME_LEN);
+        ierr = adj_get_variable_value(adjointer, adj_associated, &adj_value);
+        if (ierr != ADJ_ERR_OK) return ierr;
+
+        /* And now we are ready */
+        ierr = adj_evaluate_nonlinear_derivative_action(adjointer, nderivs, derivs, adj_value, *rhs, &rhs_tmp);
+        if (ierr != ADJ_ERR_OK) return ierr;
+        adjointer->callbacks.vec_axpy(rhs, (adj_scalar) -1.0, rhs_tmp);
+        adjointer->callbacks.vec_destroy(&rhs_tmp);
+      }
+
+      for (i = 0; i < nderivs; i++)
+      {
+        ierr = adj_destroy_nonlinear_block_derivative(adjointer, &derivs[i]);
+        if (ierr != ADJ_ERR_OK) return ierr;
+      }
+      free(derivs);
     }
   }
 
