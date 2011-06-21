@@ -85,7 +85,7 @@ int adj_evaluate_nonlinear_derivative_action(adj_adjointer* adjointer, int nderi
 {
   int ierr;
   int deriv;
-  void (*nonlinear_derivative_action_func)(int nvar, adj_variable* variables, adj_vector* dependencies, adj_variable derivative, adj_vector contraction, int hermitian, adj_vector input, void* context, adj_vector* output);
+  void (*nonlinear_derivative_action_func)(int nvar, adj_variable* variables, adj_vector* dependencies, adj_variable derivative, adj_vector contraction, int hermitian, adj_vector input, adj_scalar coefficient, void* context, adj_vector* output);
 
   /* As usual, check as much as we can at the start */
   strncpy(adj_error_msg, "Need a data callback, but it hasn't been supplied.", ADJ_ERROR_MSG_BUF);
@@ -142,7 +142,7 @@ int adj_evaluate_nonlinear_derivative_action(adj_adjointer* adjointer, int nderi
 }
 
 int adj_evaluate_nonlinear_derivative_action_supplied(adj_adjointer* adjointer, void (*nonlinear_derivative_action_func)(int nvar, adj_variable* variables, 
-     adj_vector* dependencies, adj_variable derivative, adj_vector contraction, int hermitian, adj_vector input, void* context, adj_vector* output),
+     adj_vector* dependencies, adj_variable derivative, adj_vector contraction, int hermitian, adj_vector input, adj_scalar coefficient, void* context, adj_vector* output),
      adj_nonlinear_block_derivative derivative, adj_vector value, adj_vector* rhs)
 {
   adj_vector* dependencies = NULL;
@@ -158,7 +158,7 @@ int adj_evaluate_nonlinear_derivative_action_supplied(adj_adjointer* adjointer, 
   }
 
   nonlinear_derivative_action_func(derivative.nonlinear_block.ndepends, derivative.nonlinear_block.depends, dependencies, derivative.variable,
-                                   derivative.contraction, derivative.hermitian, value, derivative.nonlinear_block.context, rhs);
+                                   derivative.contraction, derivative.hermitian, value, derivative.nonlinear_block.coefficient, derivative.nonlinear_block.context, rhs);
 
   free(dependencies);
   return ADJ_ERR_OK;

@@ -241,7 +241,7 @@ module libadjoint
     end subroutine adj_nonlinear_action_proc
 
     subroutine adj_nonlinear_derivative_action_proc(nvar, variables, dependencies, derivative, contraction, hermitian, &
-                                                  & input, context, output) bind(c)
+                                                  & input, coefficient, context, output) bind(c)
       use iso_c_binding
       use libadjoint_data_structures
       integer(kind=c_int), intent(in), value :: nvar
@@ -251,6 +251,7 @@ module libadjoint
       type(adj_vector), intent(in), value :: contraction
       integer(kind=c_int), intent(in), value :: hermitian
       type(adj_vector), intent(in), value :: input
+      adj_scalar_f, intent(in), value :: coefficient
       type(c_ptr), intent(in), value :: context
       type(adj_vector), intent(out) :: output
     end subroutine adj_nonlinear_derivative_action_proc
@@ -803,6 +804,19 @@ module libadjoint
       integer(kind=c_int) :: ierr
     end function adj_evaluate_functional_c
 
+    pure function adj_variable_equal_c(varsa, varsb, sz) result(eq) bind(c, name='adj_variable_equal')
+      use libadjoint_data_structures
+      use iso_c_binding
+      integer(kind=c_int), intent(in), value :: sz
+      type(adj_variable), intent(in), dimension(sz) :: varsa, varsb
+      integer(kind=c_int) :: eq
+    end function adj_variable_equal_c
+
+  end interface
+
+  private :: adj_variable_equal, adj_variable_equal_c
+  interface operator (==)
+    module procedure adj_variable_equal
   end interface
 
   contains
@@ -1319,6 +1333,19 @@ module libadjoint
     end if
     ierr = adj_block_set_hermitian_c(block, hermitian_c)
   end function adj_block_set_hermitian
+
+  pure function adj_variable_equal(var1, var2)
+    type(adj_variable), intent(in) :: var1, var2
+    logical :: adj_variable_equal
+    type(adj_variable), dimension(1) :: var1tmp, var2tmp
+
+    integer(kind=c_int) :: eq
+
+    var1tmp(1) = var1
+    var2tmp(1) = var2
+    eq = adj_variable_equal_c(var1tmp, var2tmp, 1)
+    adj_variable_equal = (eq == 1)
+  end function adj_variable_equal
 
 end module libadjoint
 

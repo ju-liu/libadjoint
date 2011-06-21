@@ -28,7 +28,7 @@ subroutine block_action_callback(nvar, variables, dependencies, hermitian, coeff
 end subroutine block_action_callback
 
 subroutine nonlinear_derivative_action_callback(nvar, variables, dependencies, derivative, contraction, hermitian, &
-                                                & input, context, output_vec) bind(c)
+                                                & input, coefficient, context, output_vec) bind(c)
   use libadjoint
   use libadjoint_petsc_data_structures
   use iso_c_binding
@@ -43,6 +43,7 @@ subroutine nonlinear_derivative_action_callback(nvar, variables, dependencies, d
   type(adj_vector), intent(in), value :: contraction
   integer(kind=c_int), intent(in), value :: hermitian
   type(adj_vector), intent(in), value :: input
+  adj_scalar_f, intent(in), value :: coefficient
   type(c_ptr), intent(in), value :: context
   type(adj_vector), intent(out) :: output_vec
 
