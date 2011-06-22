@@ -269,6 +269,7 @@ int adj_create_equation(adj_variable var, int nblocks, adj_block* blocks, adj_va
 
   equation->nrhsdeps = 0;
   equation->rhsdeps = NULL;
+  equation->rhs_context = NULL;
 
   return ADJ_ERR_OK;
 }
