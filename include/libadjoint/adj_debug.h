@@ -11,6 +11,6 @@
 #include "adj_evaluation.h"
 
 int adj_adjointer_check_consistency(adj_adjointer* adjointer);
-int adj_test_action_transpose(adj_adjointer* adjointer, adj_block block, adj_vector model_input, adj_vector model_output, int N, adj_scalar tol);
+int adj_test_block_action_transpose(adj_adjointer* adjointer, adj_block block, adj_vector model_input, adj_vector model_output, int N, adj_scalar tol);
 
 #endif

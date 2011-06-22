@@ -81,6 +81,9 @@ int adj_create_nonlinear_block(char* name, int ndepends, adj_variable* depends, 
   nblock->depends = malloc(ndepends * sizeof(adj_variable));
   ADJ_CHKMALLOC(nblock->depends);
   memcpy(nblock->depends, depends, ndepends * sizeof(adj_variable));
+  nblock->test_deriv_hermitian = ADJ_FALSE;
+  nblock->number_of_tests = 0;
+  nblock->tolerance = (adj_scalar) 0.0;
   return ADJ_ERR_OK;
 }
 
@@ -180,6 +183,32 @@ int adj_block_set_test_hermitian(adj_block* block, int test_hermitian, int numbe
   block->test_hermitian = test_hermitian;
   block->number_of_tests = number_of_tests;
   block->tolerance = tolerance;
+  return ADJ_ERR_OK;
+}
+
+int adj_nonlinear_block_set_test_hermitian(adj_nonlinear_block* nblock, int test_deriv_hermitian, int number_of_tests, adj_scalar tolerance) 
+{
+  if (test_deriv_hermitian != ADJ_TRUE && test_deriv_hermitian != ADJ_FALSE)
+  {
+    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "The test_deriv_hermitian argument should either be ADJ_TRUE or ADJ_FALSE.");
+    return ADJ_ERR_INVALID_INPUTS;
+  }
+
+  if (number_of_tests <= 0)
+  {
+    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "The number_of_tests argument must be positive.");
+    return ADJ_ERR_INVALID_INPUTS;
+  }
+
+  if (tolerance < (adj_scalar) 0.0)
+  {
+    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "The tolerance argument must be nonnegative.");
+    return ADJ_ERR_INVALID_INPUTS;
+  }
+
+  nblock->test_deriv_hermitian = test_deriv_hermitian;
+  nblock->number_of_tests = number_of_tests;
+  nblock->tolerance = tolerance;
   return ADJ_ERR_OK;
 }
 

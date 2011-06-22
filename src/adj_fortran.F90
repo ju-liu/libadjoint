@@ -20,6 +20,9 @@ module libadjoint_data_structures
     integer(kind=c_int) :: ndepends
     type(c_ptr) :: depends
     type(c_ptr) :: context
+    integer(kind=c_int) :: test_deriv_hermitian
+    integer(kind=c_int) :: number_of_tests
+    adj_scalar_f :: tolerance
   end type adj_nonlinear_block
 
   type, bind(c) :: adj_block
@@ -449,6 +452,17 @@ module libadjoint
       adj_scalar_f, intent(in), value :: tolerance
       integer(kind=c_int) :: ierr
     end function adj_block_set_test_hermitian_c
+
+    function adj_nonlinear_block_set_test_hermitian_c(nblock, test_hermitian, number_of_tests, tolerance) result(ierr) &
+                                        & bind(c, name='adj_nonlinear_block_set_test_hermitian')
+      use libadjoint_data_structures
+      use iso_c_binding
+      type(adj_nonlinear_block), intent(inout) :: nblock
+      integer(kind=c_int), intent(in), value :: test_hermitian
+      integer(kind=c_int), intent(in), value :: number_of_tests
+      adj_scalar_f, intent(in), value :: tolerance
+      integer(kind=c_int) :: ierr
+    end function adj_nonlinear_block_set_test_hermitian_c
     
     function adj_create_equation_c(variable, nblocks, blocks, targets, equation) result(ierr) bind(c, name='adj_create_equation')
       use libadjoint_data_structures
@@ -1316,6 +1330,26 @@ module libadjoint
 
     ierr = adj_block_set_test_hermitian_c(block, test_hermitian_c, number_of_tests, tolerance)
   end function adj_block_set_test_hermitian
+
+  function adj_nonlinear_block_set_test_hermitian(nblock, test_hermitian, number_of_tests, tolerance) result(ierr)
+    use libadjoint_data_structures
+    use iso_c_binding
+    type(adj_nonlinear_block), intent(inout) :: nblock
+    logical, intent(in) :: test_hermitian
+    integer(kind=c_int), intent(in), value :: number_of_tests
+    adj_scalar_f, intent(in), value :: tolerance
+    integer(kind=c_int) :: ierr
+
+    integer(kind=c_int) :: test_hermitian_c
+
+    if (test_hermitian) then
+      test_hermitian_c = ADJ_TRUE
+    else
+      test_hermitian_c = ADJ_FALSE
+    end if
+
+    ierr = adj_nonlinear_block_set_test_hermitian_c(nblock, test_hermitian_c, number_of_tests, tolerance)
+  end function adj_nonlinear_block_set_test_hermitian
 
   function adj_block_set_hermitian(block, hermitian) result(ierr)
     use libadjoint_data_structures
