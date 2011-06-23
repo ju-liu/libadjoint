@@ -108,6 +108,15 @@ int adj_evaluate_nonlinear_derivative_action(adj_adjointer* adjointer, int nderi
 
   for (deriv = 0; deriv < nderivatives; deriv++)
   {
+    if (derivatives[deriv].nonlinear_block.test_deriv_hermitian)
+    {
+      ierr = adj_test_nonlinear_derivative_action_transpose(adjointer, derivatives[deriv], value, *rhs, derivatives[deriv].nonlinear_block.number_of_tests, derivatives[deriv].nonlinear_block.tolerance);
+      if (ierr != ADJ_ERR_OK) return ierr;
+    }
+  }
+
+  for (deriv = 0; deriv < nderivatives; deriv++)
+  {
     /* First, try to find a routine supplied by the user. */
     ierr = adj_find_operator_callback(adjointer, ADJ_NBLOCK_DERIVATIVE_ACTION_CB, derivatives[deriv].nonlinear_block.name, (void (**)(void)) &nonlinear_derivative_action_func);
     if (ierr == ADJ_ERR_OK)
