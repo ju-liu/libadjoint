@@ -135,6 +135,7 @@ int adj_test_nonlinear_derivative_action_transpose(adj_adjointer* adjointer, adj
   adjointer->callbacks.vec_duplicate(model_input, &x);
   adjointer->callbacks.vec_duplicate(model_output, &y);
   nonlinear_block_derivative.nonlinear_block.test_deriv_hermitian = ADJ_FALSE;
+  nonlinear_block_derivative.nonlinear_block.test_derivative = ADJ_FALSE;
 
   for (i = 0; i < N; i++)
   {
@@ -199,6 +200,8 @@ int adj_test_nonlinear_derivative_action_consistency(adj_adjointer* adjointer, a
   int sz;
 
   nonlinear_block_derivative.nonlinear_block.test_derivative = ADJ_FALSE;
+  nonlinear_block_derivative.nonlinear_block.test_deriv_hermitian = ADJ_FALSE;
+  nonlinear_block_derivative.nonlinear_block.coefficient = (adj_scalar) 1.0;
 
   if (adjointer->callbacks.vec_duplicate == NULL)
   {
