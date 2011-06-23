@@ -254,10 +254,13 @@ int adj_test_nonlinear_derivative_action_consistency(adj_adjointer* adjointer, a
 
   adjointer->callbacks.vec_duplicate(original_dependency, &dependency_perturbation);
   fd_errors = (adj_scalar*) malloc(N * sizeof(adj_scalar));
+  ADJ_CHKMALLOC(fd_errors);
   grad_errors = (adj_scalar*) malloc(N * sizeof(adj_scalar));
+  ADJ_CHKMALLOC(grad_errors);
 
   adjointer->callbacks.vec_get_size(original_dependency, &sz);
   perturbations = (adj_scalar*) malloc(sz * sizeof(adj_scalar));
+  ADJ_CHKMALLOC(perturbations);
 
   perturbation = (adj_scalar) 2.0e-8;
   for (i = 0; i < N; i++)
@@ -291,8 +294,10 @@ int adj_test_nonlinear_derivative_action_consistency(adj_adjointer* adjointer, a
 
   /* Now we analyse the fd_errors and grad_errors to investigate the order of convergence.
      fd_errors should converge at first order, and grad_errors should converge at second order. */
-  fd_conv = (adj_scalar*) malloc(N-1 * sizeof(adj_scalar));
-  grad_conv = (adj_scalar*) malloc(N-1 * sizeof(adj_scalar));
+  fd_conv = (adj_scalar*) malloc((N-1) * sizeof(adj_scalar));
+  ADJ_CHKMALLOC(fd_conv);
+  grad_conv = (adj_scalar*) malloc((N-1) * sizeof(adj_scalar));
+  ADJ_CHKMALLOC(grad_conv);
 
   return_ierr = ADJ_ERR_OK;
   for (i = 0; i < N - 1; i++)
