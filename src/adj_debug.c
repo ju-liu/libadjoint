@@ -140,6 +140,8 @@ int adj_test_nonlinear_derivative_action_transpose(adj_adjointer* adjointer, adj
   {
     adjointer->callbacks.vec_set_random(&x);
     adjointer->callbacks.vec_set_random(&y);
+    adjointer->callbacks.vec_duplicate(model_output, &Gx);
+    adjointer->callbacks.vec_duplicate(model_input, &GTy);
 
     ierr = adj_evaluate_nonlinear_derivative_action(adjointer, 1, &nonlinear_block_derivative, x, &Gx);
     if (ierr != ADJ_ERR_OK)
