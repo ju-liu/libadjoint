@@ -23,6 +23,8 @@ module libadjoint_data_structures
     integer(kind=c_int) :: test_deriv_hermitian
     integer(kind=c_int) :: number_of_tests
     adj_scalar_f :: tolerance
+    integer(kind=c_int) :: test_derivative
+    integer(kind=c_int) :: number_of_rounds
   end type adj_nonlinear_block
 
   type, bind(c) :: adj_block
@@ -464,6 +466,16 @@ module libadjoint
       integer(kind=c_int) :: ierr
     end function adj_nonlinear_block_set_test_hermitian_c
     
+    function adj_nonlinear_block_set_test_derivative_c(nblock, test_derivative, number_of_rounds) result(ierr) &
+                                        & bind(c, name='adj_nonlinear_block_set_test_derivative')
+      use libadjoint_data_structures
+      use iso_c_binding
+      type(adj_nonlinear_block), intent(inout) :: nblock
+      integer(kind=c_int), intent(in), value :: test_derivative
+      integer(kind=c_int), intent(in), value :: number_of_rounds
+      integer(kind=c_int) :: ierr
+    end function adj_nonlinear_block_set_test_derivative_c
+
     function adj_create_equation_c(variable, nblocks, blocks, targets, equation) result(ierr) bind(c, name='adj_create_equation')
       use libadjoint_data_structures
       use iso_c_binding
@@ -1350,6 +1362,25 @@ module libadjoint
 
     ierr = adj_nonlinear_block_set_test_hermitian_c(nblock, test_hermitian_c, number_of_tests, tolerance)
   end function adj_nonlinear_block_set_test_hermitian
+
+  function adj_nonlinear_block_set_test_derivative(nblock, test_derivative, number_of_rounds) result(ierr)
+    use libadjoint_data_structures
+    use iso_c_binding
+    type(adj_nonlinear_block), intent(inout) :: nblock
+    logical, intent(in) :: test_derivative
+    integer, intent(in) :: number_of_rounds
+    integer(kind=c_int) :: ierr
+
+    integer(kind=c_int) :: test_derivative_c
+
+    if (test_derivative) then
+      test_derivative_c = ADJ_TRUE
+    else
+      test_derivative_c = ADJ_FALSE
+    end if
+
+    ierr = adj_nonlinear_block_set_test_derivative_c(nblock, test_derivative_c, number_of_rounds)
+  end function adj_nonlinear_block_set_test_derivative
 
   function adj_block_set_hermitian(block, hermitian) result(ierr)
     use libadjoint_data_structures

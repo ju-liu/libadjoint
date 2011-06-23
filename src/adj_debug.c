@@ -172,3 +172,170 @@ int adj_test_nonlinear_derivative_action_transpose(adj_adjointer* adjointer, adj
   return ierr;
 }
 
+int adj_test_nonlinear_derivative_action_consistency(adj_adjointer* adjointer, adj_nonlinear_block_derivative nonlinear_block_derivative, adj_variable deriv_var, int N)
+{
+  /* Implement the derivative test. If you have a function J(u), then by Taylor's theorem
+     ||J(u + delta_u) - J(u)|| should be first-order in ||delta_u||, and
+     ||J(u + delta_u) - J(u) - grad(J) . delta_u || should be second-order in ||delta_u||.
+     This routine checks the order of convergence of the latter, to make sure that the gradient supplied by the user
+     is indeed the gradient of the nonlinear action function. */
+
+  int i, j;
+  int ierr;
+  void (*nonlinear_derivative_action_func)(int nvar, adj_variable* variables, adj_vector* dependencies, adj_variable derivative, adj_vector contraction, int hermitian, adj_vector input, adj_scalar coefficient, void* context, adj_vector* output) = NULL;
+  void (*nonlinear_action_func)(int nvar, adj_variable* variables, adj_vector* dependencies, adj_vector input, void* context, adj_vector* output) = NULL;
+  adj_scalar perturbation; /* the magnitude of the perturbation */
+  adj_scalar* perturbations; /* an array, with perturbation in each entry */
+  adj_scalar* fd_errors; /* the ||J(u + delta_u) - J(u)|| for various ||delta_u||'s */
+  adj_scalar* grad_errors; /* the ||J(u + delta_u) - J(u) - grad(J) . delta_u|| for various ||delta_u||'s */
+  adj_vector original_dependency; /* u */
+  adj_vector dependency_perturbation; /* delta_u */
+  adj_vector original_output; /* J(u) */
+  adj_vector perturbed_output; /* J(u + delta_u) */
+  adj_vector gradient; /* grad(J) . delta_u */
+  adj_scalar* fd_conv; /* the orders of convergence for fd_errors */
+  adj_scalar* grad_conv; /* the orders of convergence for grad_errors */
+  int return_ierr;
+  int sz;
+
+  nonlinear_block_derivative.nonlinear_block.test_derivative = ADJ_FALSE;
+
+  if (adjointer->callbacks.vec_duplicate == NULL)
+  {
+    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "In order to test the nonlinear derivative action consistency of an operator, you need the ADJ_VEC_DUPLICATE_CB callback.");
+    return ADJ_ERR_NEED_CALLBACK;
+  }
+  if (adjointer->callbacks.vec_destroy == NULL)
+  {
+    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "In order to test the nonlinear derivative action consistency of an operator, you need the ADJ_VEC_DESTROY_CB callback.");
+    return ADJ_ERR_NEED_CALLBACK;
+  }
+  if (adjointer->callbacks.vec_axpy == NULL)
+  {
+    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "In order to test the nonlinear derivative action consistency of an operator, you need the ADJ_VEC_AXPY_CB callback.");
+    return ADJ_ERR_NEED_CALLBACK;
+  }
+  if (adjointer->callbacks.vec_set_values == NULL)
+  {
+    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "In order to test the nonlinear derivative action consistency of an operator, you need the ADJ_VEC_SET_VALUES_CB callback.");
+    return ADJ_ERR_NEED_CALLBACK;
+  }
+  if (adjointer->callbacks.vec_get_norm == NULL)
+  {
+    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "In order to test the nonlinear derivative action consistency of an operator, you need the ADJ_VEC_GET_NORM_CB callback.");
+    return ADJ_ERR_NEED_CALLBACK;
+  }
+  if (adjointer->callbacks.vec_get_size == NULL)
+  {
+    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "In order to test the nonlinear derivative action consistency of an operator, you need the ADJ_VEC_GET_SIZE_CB callback.");
+    return ADJ_ERR_NEED_CALLBACK;
+  }
+
+  ierr = adj_find_operator_callback(adjointer, ADJ_NBLOCK_ACTION_CB, nonlinear_block_derivative.nonlinear_block.name, (void (**)(void)) &nonlinear_action_func);
+  if (ierr != ADJ_ERR_OK)
+    return ierr;
+
+  ierr = adj_find_operator_callback(adjointer, ADJ_NBLOCK_DERIVATIVE_ACTION_CB, nonlinear_block_derivative.nonlinear_block.name, (void (**)(void)) &nonlinear_derivative_action_func);
+  if (ierr != ADJ_ERR_OK)
+    return ierr;
+
+  if (N < 2) 
+  {
+    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "You need to compute at least two rounds to perform the derivative test.");
+    return ADJ_ERR_INVALID_INPUTS;
+  }
+
+  ierr = adj_get_variable_value(adjointer, deriv_var, &original_dependency);
+  if (ierr != ADJ_ERR_OK) return ierr;
+
+  /* Compute the unperturbed quantity we'll need through the loop */
+  ierr = adj_evaluate_nonlinear_action(adjointer, nonlinear_action_func, nonlinear_block_derivative.nonlinear_block, nonlinear_block_derivative.contraction, NULL, NULL, &original_output);
+  if (ierr != ADJ_ERR_OK) return ierr;
+
+  adjointer->callbacks.vec_duplicate(original_dependency, &dependency_perturbation);
+  fd_errors = (adj_scalar*) malloc(N * sizeof(adj_scalar));
+  grad_errors = (adj_scalar*) malloc(N * sizeof(adj_scalar));
+
+  adjointer->callbacks.vec_get_size(original_dependency, &sz);
+  perturbations = (adj_scalar*) malloc(sz * sizeof(adj_scalar));
+
+  perturbation = (adj_scalar) 2.0e-8;
+  for (i = 0; i < N; i++)
+  {
+    perturbation = perturbation / 2.0;
+    /* Set dependency_perturbation to have the value perturbation in every entry */
+    for (j = 0; j < sz; j++)
+    {
+      perturbations[j] = perturbation;
+    }
+    adjointer->callbacks.vec_set_values(&dependency_perturbation, perturbations);
+
+    ierr = adj_evaluate_nonlinear_action(adjointer, nonlinear_action_func, nonlinear_block_derivative.nonlinear_block, nonlinear_block_derivative.contraction, &deriv_var, &dependency_perturbation, &perturbed_output);
+    if (ierr != ADJ_ERR_OK) return ierr;
+
+    adjointer->callbacks.vec_axpy(&perturbed_output, (adj_scalar) -1.0, original_output);
+    adjointer->callbacks.vec_get_norm(perturbed_output, &fd_errors[i]);
+
+    adjointer->callbacks.vec_duplicate(original_output, &gradient);
+    ierr = adj_evaluate_nonlinear_derivative_action(adjointer, 1, &nonlinear_block_derivative, dependency_perturbation, &gradient);
+    adjointer->callbacks.vec_axpy(&perturbed_output, (adj_scalar) 1.0, gradient);
+    adjointer->callbacks.vec_destroy(&gradient);
+
+    adjointer->callbacks.vec_get_norm(perturbed_output, &grad_errors[i]);
+    adjointer->callbacks.vec_destroy(&perturbed_output);
+  }
+
+  free(perturbations);
+  adjointer->callbacks.vec_destroy(&dependency_perturbation);
+  adjointer->callbacks.vec_destroy(&original_output);
+
+  /* Now we analyse the fd_errors and grad_errors to investigate the order of convergence.
+     fd_errors should converge at first order, and grad_errors should converge at second order. */
+  fd_conv = (adj_scalar*) malloc(N-1 * sizeof(adj_scalar));
+  grad_conv = (adj_scalar*) malloc(N-1 * sizeof(adj_scalar));
+
+  return_ierr = ADJ_ERR_OK;
+  for (i = 0; i < N - 1; i++)
+  {
+    if (fd_errors[i+1] == (adj_scalar) 0.0 || fd_errors[i] == (adj_scalar) 0.0)
+    {
+      snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Expected the nonlinear action %s to give different outputs for different inputs, but got no difference.", nonlinear_block_derivative.nonlinear_block.name);
+      return_ierr = ADJ_WARN_COMPARISON_FAILED;
+      break;
+    }
+
+    fd_conv[i] = log2( (double) (fd_errors[i] / fd_errors[i+1]) );
+
+    /* fd_conv should be in [0.9, 1.1] */
+    if (fabs((double) (fd_conv[i] - (adj_scalar) 1.0)) > 0.1)
+    {
+      snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Expected the finite differences of operator %s to converge at first order, but got %f.", nonlinear_block_derivative.nonlinear_block.name, (double) fd_conv[i]);
+      return_ierr = ADJ_WARN_COMPARISON_FAILED;
+      break;
+    }
+
+    if (grad_errors[i] == (adj_scalar) 0.0 || grad_errors[i+1] == (adj_scalar) 0.0) /* might happen if the function is linear in its dependency */
+    {
+      grad_conv[i] = (adj_scalar) 2.0; /* the order we expect */
+    }
+    else
+    {
+      grad_conv[i] = log2( (double) (grad_errors[i] / grad_errors[i+1]) );
+    }
+
+    /* fd_conv should be in [1.9, 2.1] */
+    if (fabs((double) (grad_conv[i] - (adj_scalar) 2.0)) > 0.1)
+    {
+      snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Expected the Taylor series remainder of operator %s to converge at second order, but got %f.", nonlinear_block_derivative.nonlinear_block.name, (double) grad_conv[i]);
+      return_ierr = ADJ_WARN_COMPARISON_FAILED;
+      break;
+    }
+  }
+
+  free(fd_errors);
+  free(grad_errors);
+  free(fd_conv);
+  free(grad_conv);
+
+  return return_ierr;
+}

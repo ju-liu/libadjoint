@@ -40,6 +40,8 @@ typedef struct
   int test_deriv_hermitian; /* if ADJ_TRUE, the hermitian implementation of this nonlinear block's derivatives are tested automatically */
   int number_of_tests;
   adj_scalar tolerance;
+  int test_derivative; /* Flags for test_derivative */
+  int number_of_rounds;
 } adj_nonlinear_block;
 
 typedef struct
@@ -50,7 +52,7 @@ typedef struct
   void* context;
   int hermitian;
   adj_scalar coefficient;
-  int test_hermitian;
+  int test_hermitian; /* Flags for test_hermitian */
   int number_of_tests;
   adj_scalar tolerance;
 } adj_block;
@@ -259,6 +261,7 @@ int adj_block_set_coefficient(adj_block* block, adj_scalar coefficient);
 int adj_block_set_hermitian(adj_block* block, int hermitian);
 int adj_block_set_test_hermitian(adj_block* block, int test_hermitian, int number_of_tests, adj_scalar tolerance);
 int adj_nonlinear_block_set_test_hermitian(adj_nonlinear_block* nblock, int test_deriv_hermitian, int number_of_tests, adj_scalar tolerance); 
+int adj_nonlinear_block_set_test_derivative(adj_nonlinear_block* nblock, int test_derivative, int number_of_rounds);
 int adj_create_equation(adj_variable var, int nblocks, adj_block* blocks, adj_variable* targets, adj_equation* equation);
 int adj_equation_set_rhs_dependencies(adj_equation* equation, int nrhsdeps, adj_variable* rhsdeps, void* context);
 int adj_destroy_equation(adj_equation* equation);

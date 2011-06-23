@@ -84,6 +84,8 @@ int adj_create_nonlinear_block(char* name, int ndepends, adj_variable* depends, 
   nblock->test_deriv_hermitian = ADJ_FALSE;
   nblock->number_of_tests = 0;
   nblock->tolerance = (adj_scalar) 0.0;
+  nblock->test_derivative = ADJ_FALSE;
+  nblock->number_of_rounds = 0;
   return ADJ_ERR_OK;
 }
 
@@ -209,6 +211,25 @@ int adj_nonlinear_block_set_test_hermitian(adj_nonlinear_block* nblock, int test
   nblock->test_deriv_hermitian = test_deriv_hermitian;
   nblock->number_of_tests = number_of_tests;
   nblock->tolerance = tolerance;
+  return ADJ_ERR_OK;
+}
+
+int adj_nonlinear_block_set_test_derivative(adj_nonlinear_block* nblock, int test_derivative, int number_of_rounds) 
+{
+  if (test_derivative != ADJ_TRUE && test_derivative != ADJ_FALSE)
+  {
+    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "The test_derivative argument should either be ADJ_TRUE or ADJ_FALSE.");
+    return ADJ_ERR_INVALID_INPUTS;
+  }
+
+  if (number_of_rounds <= 1)
+  {
+    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "The number_of_rounds argument must be at least 2.");
+    return ADJ_ERR_INVALID_INPUTS;
+  }
+
+  nblock->test_derivative = test_derivative;
+  nblock->number_of_rounds = number_of_rounds;
   return ADJ_ERR_OK;
 }
 
