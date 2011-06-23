@@ -66,36 +66,47 @@ void nonlinear_derivative_action_callback(int nvar, adj_variable* variables, adj
   (void) nvar;
   (void) variables;
   (void) dependencies;
-  Vec input_shifted;
+  (void) derivative;
+  Vec input_shifted, input_vec;
   int i, shift = 0, dim;
   PetscScalar  *input_array, *shifted_array;
   Vec *output_vec;
   output_vec = (Vec*) malloc(sizeof(Vec));
 
+  /* Apply the contraction in the non hermitian case */
+  /* The contraction is simply a pointwise multiplication with the contraction vector */ 
+  if (hermitian) 
+  {
+    VecDuplicate(petsc_vec_from_adj_vector(input), &input_vec);
+    VecCopy(petsc_vec_from_adj_vector(input), input_vec);
+  }
+  else
+  {
+    VecDuplicate(petsc_vec_from_adj_vector(input), &input_vec);
+    VecPointwiseMult(input_vec, petsc_vec_from_adj_vector(input), petsc_vec_from_adj_vector(contraction));
+  }
   /* This is the identity operator */
-  VecDuplicate(petsc_vec_from_adj_vector(input), output_vec);
-  VecCopy(petsc_vec_from_adj_vector(input), *output_vec);
-  //if (!hermitian) 
-  //  VecPointwiseMult(*output_vec, *output_vec, petsc_vec_from_adj_vector(contraction));
+  VecDuplicate(input_vec, output_vec);
+  VecCopy(input_vec, *output_vec);
   /* Now, let us add an off diagonal term */
-  VecDuplicate(petsc_vec_from_adj_vector(input), &input_shifted);
-  VecCopy(petsc_vec_from_adj_vector(input), input_shifted);
+  VecDuplicate(input_vec, &input_shifted);
+  VecCopy(input_vec, input_shifted);
   VecGetLocalSize(input_shifted, &dim);
   if (!hermitian) 
     shift = 2;
   else 
     shift = dim - 2;
   VecGetArray(input_shifted, &shifted_array);
-  VecGetArray(petsc_vec_from_adj_vector(input), &input_array);
+  VecGetArray(input_vec, &input_array);
   for (i=0; i<dim; i++) {
       shifted_array[i] = input_array[(i+shift)%dim]; 
   }
   VecRestoreArray(input_shifted, &shifted_array);
  
   VecAXPY(*output_vec, 0.5, input_shifted);
-  /* and finally apply the contraction by simply pointwise multiplication */
-  //if (hermitian) 
-  //  VecPointwiseMult(*output_vec, *output_vec, petsc_vec_from_adj_vector(contraction));
+  /* Apply the contraction in the hermitian case */
+  if (hermitian) 
+    VecPointwiseMult(*output_vec, *output_vec, petsc_vec_from_adj_vector(contraction));
 
   VecScale(*output_vec, (PetscScalar) coefficient);
   *output = petsc_vec_to_adj_vector(output_vec);
