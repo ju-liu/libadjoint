@@ -892,6 +892,9 @@ int adj_find_operator_callback(adj_adjointer* adjointer, int type, char* name, v
   adj_op_callback_list* cb_list_ptr;
   adj_op_callback* cb_ptr;
 
+  char adj_callback_types[6][ADJ_ERROR_MSG_BUF] = {"ADJ_NBLOCK_COLOURING_CB", "ADJ_NBLOCK_ACTION_CB", "ADJ_NBLOCK_DERIVATIVE_ACTION_CB",
+                                                   "ADJ_NBLOCK_DERIVATIVE_ASSEMBLY_CB", "ADJ_BLOCK_ACTION_CB", "ADJ_BLOCK_ASSEMBLY_CB"};
+
   switch(type)
   {
     case ADJ_NBLOCK_COLOURING_CB:
@@ -928,7 +931,7 @@ int adj_find_operator_callback(adj_adjointer* adjointer, int type, char* name, v
     cb_ptr = cb_ptr->next;
   }
 
-  snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Could not find callback type %d for operator %s.", type, name);
+  snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Could not find callback %s for operator %s.", adj_callback_types[type-1], name);
   return ADJ_ERR_NEED_CALLBACK;
 }
 
