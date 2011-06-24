@@ -202,6 +202,7 @@ int adj_test_nonlinear_derivative_action_consistency(adj_adjointer* adjointer, a
   nonlinear_block_derivative.nonlinear_block.test_derivative = ADJ_FALSE;
   nonlinear_block_derivative.nonlinear_block.test_deriv_hermitian = ADJ_FALSE;
   nonlinear_block_derivative.nonlinear_block.coefficient = (adj_scalar) 1.0;
+  nonlinear_block_derivative.hermitian = ADJ_FALSE;
 
   if (adjointer->callbacks.vec_duplicate == NULL)
   {
@@ -323,6 +324,10 @@ int adj_test_nonlinear_derivative_action_consistency(adj_adjointer* adjointer, a
     }
 
     if (grad_errors[i] == (adj_scalar) 0.0 || grad_errors[i+1] == (adj_scalar) 0.0) /* might happen if the function is linear in its dependency */
+    {
+      grad_conv[i] = (adj_scalar) 2.0; /* the order we expect */
+    }
+    else if (grad_errors[i] < ADJ_SCALAR_EPS && grad_errors[i+1] < ADJ_SCALAR_EPS) /* or you might have a perfect gradient, to machine precision */
     {
       grad_conv[i] = (adj_scalar) 2.0; /* the order we expect */
     }
