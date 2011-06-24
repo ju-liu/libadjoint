@@ -1214,7 +1214,9 @@ int adj_iteration_count(adj_adjointer* adjointer, adj_variable variable, int* co
 
   if (*count==0)
   {
-    strncpy(adj_error_msg, "Error in adj_iteration_count: No iteration found for supplied variable.", ADJ_ERROR_MSG_BUF);
+    char buf[ADJ_NAME_LEN];
+    adj_variable_str(variable, buf, ADJ_NAME_LEN);
+    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Error in adj_iteration_count: No iteration found for supplied variable %s.", buf);
     return ADJ_ERR_INVALID_INPUTS;
   }
   return ADJ_ERR_OK;
