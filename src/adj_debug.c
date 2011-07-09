@@ -186,6 +186,7 @@ int adj_test_nonlinear_derivative_action_consistency(adj_adjointer* adjointer, a
   void (*nonlinear_derivative_action_func)(int nvar, adj_variable* variables, adj_vector* dependencies, adj_variable derivative, adj_vector contraction, int hermitian, adj_vector input, adj_scalar coefficient, void* context, adj_vector* output) = NULL;
   void (*nonlinear_action_func)(int nvar, adj_variable* variables, adj_vector* dependencies, adj_vector input, void* context, adj_vector* output) = NULL;
   adj_scalar perturbation; /* the magnitude of the perturbation */
+  adj_scalar* unscaled_perturbation; /* the direction of the perturbation */
   adj_scalar* perturbations; /* an array, with perturbation in each entry */
   adj_scalar* fd_errors; /* the ||J(u + delta_u) - J(u)|| for various ||delta_u||'s */
   adj_scalar* grad_errors; /* the ||J(u + delta_u) - J(u) - grad(J) . delta_u|| for various ||delta_u||'s */
@@ -265,15 +266,24 @@ int adj_test_nonlinear_derivative_action_consistency(adj_adjointer* adjointer, a
   adjointer->callbacks.vec_get_size(original_dependency, &sz);
   perturbations = (adj_scalar*) malloc(sz * sizeof(adj_scalar));
   ADJ_CHKMALLOC(perturbations);
+  unscaled_perturbation = (adj_scalar*) malloc(sz * sizeof(adj_scalar));
+  ADJ_CHKMALLOC(unscaled_perturbation);
 
-  perturbation = (adj_scalar) 2.0e-8;
+  /* initialise the perturbation direction */
+  srandom((unsigned int) time(NULL));
+  for (j = 0; j < sz; j++)
+  {
+    unscaled_perturbation[j] = random() / ((adj_scalar) RAND_MAX) ;
+  }
+
+  perturbation = (adj_scalar) 2.0e-4;
   for (i = 0; i < N; i++)
   {
     perturbation = perturbation / 2.0;
     /* Set dependency_perturbation to have the value perturbation in every entry */
     for (j = 0; j < sz; j++)
     {
-      perturbations[j] = perturbation;
+      perturbations[j] = perturbation * unscaled_perturbation[j];
     }
     adjointer->callbacks.vec_set_values(&dependency_perturbation, perturbations);
 
@@ -293,6 +303,7 @@ int adj_test_nonlinear_derivative_action_consistency(adj_adjointer* adjointer, a
   }
 
   free(perturbations);
+  free(unscaled_perturbation);
   adjointer->callbacks.vec_destroy(&dependency_perturbation);
   adjointer->callbacks.vec_destroy(&original_output);
 
