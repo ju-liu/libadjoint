@@ -250,9 +250,9 @@ int adj_get_adjoint_equation(adj_adjointer* adjointer, int equation, char* funct
         if (ierr != ADJ_ERR_OK) return ierr;
       }
 
-      for (i = 0; i < nderivs; i++)
+      for (l = 0; l < nderivs; l++)
       {
-        ierr = adj_destroy_nonlinear_block_derivative(adjointer, &derivs[i]);
+        ierr = adj_destroy_nonlinear_block_derivative(adjointer, &derivs[l]);
         if (ierr != ADJ_ERR_OK) return ierr;
       }
       free(derivs);
