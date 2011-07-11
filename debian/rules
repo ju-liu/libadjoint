@@ -12,7 +12,10 @@ export PETSC_DIR=/usr/lib/petscdir/3.1
 export PETSC_ARCH=linux-gnu-c-opt
 export prefix=/usr
 export DEB_BUILD_OPTIONS=nostrip
+
+ifeq ($(shell lsb_release -c | awk '{print $$NF}'),maverick)
 export FC=gfortran-4.5
+endif
 
 %:
 	dh --with=python2 $@ 
