@@ -174,8 +174,11 @@ int adj_get_adjoint_equation(adj_adjointer* adjointer, int equation, char* funct
       /* We compute the block of G*, either assembling it, or computing its action, as appropriate. */
       int ndepending_eqn;
       adj_equation depending_eqn;
-      int nderivs;
+      int nderivs; /* these two are the raw derivatives to compute */
       adj_nonlinear_block_derivative* derivs;
+
+      int nnew_derivs; /* and these two are after derivative simplification */
+      adj_nonlinear_block_derivative* new_derivs;
       int l, k;
 
       ndepending_eqn = fwd_data->depending_equations[i];
@@ -223,8 +226,15 @@ int adj_get_adjoint_equation(adj_adjointer* adjointer, int equation, char* funct
         }
       }
 
-      /* OK, Here's where we would do simplifications -- I'll leave this as an optimisation for now */
+      /* OK, Here's where we do our simplifications; this can be a significant optimisation */
       /* .......................................................................................... */
+      ierr = adj_simplify_derivatives(adjointer, nderivs, derivs, &nnew_derivs, &new_derivs);
+      for (l = 0; l < nderivs; l++)
+      {
+        ierr = adj_destroy_nonlinear_block_derivative(adjointer, &derivs[l]);
+        if (ierr != ADJ_ERR_OK) return ierr;
+      }
+      free(derivs);
 
       /* Now, we go and evaluate each one of the derivatives, assembling or acting as appropriate */
       if (ndepending_eqn == equation)
@@ -246,16 +256,16 @@ int adj_get_adjoint_equation(adj_adjointer* adjointer, int equation, char* funct
         if (ierr != ADJ_ERR_OK) return ierr;
 
         /* And now we are ready */
-        ierr = adj_evaluate_nonlinear_derivative_action(adjointer, nderivs, derivs, adj_value, rhs);
+        ierr = adj_evaluate_nonlinear_derivative_action(adjointer, nnew_derivs, new_derivs, adj_value, rhs);
         if (ierr != ADJ_ERR_OK) return ierr;
       }
 
-      for (l = 0; l < nderivs; l++)
+      for (l = 0; l < nnew_derivs; l++)
       {
-        ierr = adj_destroy_nonlinear_block_derivative(adjointer, &derivs[l]);
+        ierr = adj_destroy_nonlinear_block_derivative(adjointer, &new_derivs[l]);
         if (ierr != ADJ_ERR_OK) return ierr;
       }
-      free(derivs);
+      free(new_derivs);
     }
   }
 

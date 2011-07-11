@@ -5,7 +5,8 @@ void adj_chkierr_private(int ierr, char* file, int line)
   char adj_error_codes[9][ADJ_ERROR_MSG_BUF] = {"ADJ_ERR_OK", "ADJ_ERR_INVALID_INPUTS", "ADJ_ERR_HASH_FAILED",
                                                 "ADJ_ERR_NEED_CALLBACK", "ADJ_ERR_NEED_VALUE", "ADJ_ERR_NOT_IMPLEMENTED",
                                                 "ADJ_ERR_DICT_FAILED", "ADJ_ERR_TOLERANCE_EXCEEDED", "ADJ_ERR_MALLOC_FAILED"};
-  char adj_warn_codes[3][ADJ_ERROR_MSG_BUF] = {"ADJ_WARN_ALREADY_RECORDED", "ADJ_WARN_COMPARISON_FAILED", "ADJ_WARN_UNINITIALISED_VALUE"};
+  char adj_warn_codes[4][ADJ_ERROR_MSG_BUF] = {"ADJ_WARN_ALREADY_RECORDED", "ADJ_WARN_COMPARISON_FAILED", "ADJ_WARN_UNINITIALISED_VALUE",
+                                               "ADJ_WARN_NOT_IMPLEMENTED"};
 
   if (ierr > 0)
   {
