@@ -230,7 +230,7 @@ int adj_get_adjoint_equation(adj_adjointer* adjointer, int equation, char* funct
       if (ndepending_eqn == equation)
       {
         /* This G-block is on the diagonal, and so we must assemble it .. later */
-        snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Sorry, we can't handle G-blocks on the diagonal yet.");
+        snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Sorry, we can't handle G-blocks on the diagonal (yet).");
         return ADJ_ERR_NOT_IMPLEMENTED;
       }
       else
@@ -256,6 +256,17 @@ int adj_get_adjoint_equation(adj_adjointer* adjointer, int equation, char* funct
         if (ierr != ADJ_ERR_OK) return ierr;
       }
       free(derivs);
+    }
+  }
+
+  /* --------------------------------------------------------------------------
+   * Computation of J* terms                                                  |
+   * -------------------------------------------------------------------------- */
+  {
+    if (fwd_data->nrhs_equations != 0)
+    {
+      snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Sorry, we can't handle nonlinear right-hand-side terms (yet).");
+      return ADJ_ERR_NOT_IMPLEMENTED;
     }
   }
 
