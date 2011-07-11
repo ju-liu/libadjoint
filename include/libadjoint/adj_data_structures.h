@@ -271,6 +271,7 @@ int adj_variable_equal(adj_variable* var1, adj_variable* var2, int nvars);
 int adj_variable_str(adj_variable var, char* name, size_t namelen);
 int adj_create_nonlinear_block_derivative(adj_adjointer* adjointer, adj_nonlinear_block nblock, adj_variable fwd, adj_vector contraction, int hermitian, adj_nonlinear_block_derivative* deriv);
 int adj_destroy_nonlinear_block_derivative(adj_adjointer* adjointer, adj_nonlinear_block_derivative* deriv);
+int adj_copy_nonlinear_block(adj_nonlinear_block src, adj_nonlinear_block* dest);
 #endif
 
 #endif

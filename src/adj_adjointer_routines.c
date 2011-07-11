@@ -253,9 +253,22 @@ int adj_register_equation(adj_adjointer* adjointer, adj_equation equation)
   /* but for consistency, any libadjoint object that the user creates, he must destroy --
      it's simpler that way. */
   /* so we're going to make our own copies, so that the user can destroy his. */
+
+  /* blocks */
   adjointer->equations[adjointer->nequations - 1].blocks = (adj_block*) malloc(equation.nblocks * sizeof(adj_block));
   ADJ_CHKMALLOC(adjointer->equations[adjointer->nequations - 1].blocks);
   memcpy(adjointer->equations[adjointer->nequations - 1].blocks, equation.blocks, equation.nblocks * sizeof(adj_block));
+  for (i = 0; i < equation.nblocks; i++)
+  {
+    if (equation.blocks[i].has_nonlinear_block)
+    {
+      int ierr;
+      ierr = adj_copy_nonlinear_block(equation.blocks[i].nonlinear_block, &adjointer->equations[adjointer->nequations - 1].blocks[i].nonlinear_block);
+      if (ierr != ADJ_ERR_OK) return ierr;
+    }
+  }
+
+  /* targets */
   adjointer->equations[adjointer->nequations - 1].targets = (adj_variable*) malloc(equation.nblocks * sizeof(adj_variable));
   ADJ_CHKMALLOC(adjointer->equations[adjointer->nequations - 1].targets);
   memcpy(adjointer->equations[adjointer->nequations - 1].targets, equation.targets, equation.nblocks * sizeof(adj_variable));

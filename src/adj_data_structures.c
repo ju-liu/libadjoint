@@ -314,6 +314,15 @@ int adj_create_equation(adj_variable var, int nblocks, adj_block* blocks, adj_va
   equation->nblocks = nblocks;
   equation->blocks = (adj_block*) malloc(nblocks * sizeof(adj_block));
   memcpy(equation->blocks, blocks, nblocks * sizeof(adj_block));
+  for (i = 0; i < nblocks; i++)
+  {
+    if (blocks[i].has_nonlinear_block)
+    {
+      int ierr;
+      ierr = adj_copy_nonlinear_block(blocks[i].nonlinear_block, &equation->blocks[i].nonlinear_block);
+      if (ierr != ADJ_ERR_OK) return ierr;
+    }
+  }
   equation->targets = (adj_variable*) malloc(nblocks * sizeof(adj_variable));
   memcpy(equation->targets, targets, nblocks * sizeof(adj_variable));
 
@@ -341,6 +350,18 @@ int adj_equation_set_rhs_dependencies(adj_equation* equation, int nrhsdeps, adj_
 
 int adj_destroy_equation(adj_equation* equation)
 {
+  int i;
+  int ierr;
+
+  for (i = 0; i < equation->nblocks; i++)
+  {
+    if (equation->blocks[i].has_nonlinear_block)
+    {
+      ierr = adj_destroy_nonlinear_block(&equation->blocks[i].nonlinear_block);
+      if (ierr != ADJ_ERR_OK) return ierr;
+    }
+  }
+
   free(equation->blocks); equation->blocks = NULL;
   free(equation->targets); equation->targets = NULL;
   if (equation->nrhsdeps > 0)
@@ -394,5 +415,17 @@ int adj_destroy_nonlinear_block_derivative(adj_adjointer* adjointer, adj_nonline
   }
 
   adjointer->callbacks.vec_destroy(&(deriv->contraction));
+  return ADJ_ERR_OK;
+}
+
+int adj_copy_nonlinear_block(adj_nonlinear_block src, adj_nonlinear_block* dest)
+{
+  *dest = src; dest->depends = NULL;
+
+  dest->depends = (adj_variable*) malloc(src.ndepends * sizeof(adj_variable));
+  ADJ_CHKMALLOC(dest->depends);
+
+  memcpy(dest->depends, src.depends, src.ndepends * sizeof(adj_variable));
+
   return ADJ_ERR_OK;
 }
