@@ -12,12 +12,18 @@
 \usepackage{float}
 \usepackage{xspace}
 \usepackage{minitoc}
+\usepackage{amsfonts}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage[utf8]{inputenc}
 
 \makeindex
 % Command to enable the labelling of the primary reference. 
 % To do this use \index{term|primary}
 \newcommand{\primary}[1]{\textbf{\hyperpage{#1}}}
 \newcommand{\libadjoint}[0]{{\texttt{libadjoint}}\xspace}
+\newcommand{\m}[0]{{\vec{m}}}
 
 % Cause numbering of subsubsections. 
 \setcounter{secnumdepth}{3}
@@ -50,7 +56,15 @@
 
 \setlength{\parindent}{0.0in} \setlength{\parskip}{0.1in}
 
-\sloppy
+\newcommand{\synopsisname}{Abstract}
+\newenvironment{synopsis}{%
+  \begin{center}%
+    {\bfseries \synopsisname\vspace{-0.5em}}%
+  \end{center}%
+  \begin{quote}
+}{%
+   \end{quote}
+}
 
 \pagestyle{fancy}
 \fancyfoot{} % No footers.
@@ -194,7 +208,7 @@ Version 0.8 trunk (revision \input{version}; \today)
 
 \appendix
 
-\include{about}
+%\include{about}
 %\include{mathematical_notation}
 %\include{useful_numbers}
 %\include{dimensionless}
