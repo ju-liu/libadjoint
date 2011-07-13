@@ -1,0 +1,175 @@
+\documentclass[11pt,a4paper]{book}
+\usepackage{color}
+\usepackage{graphicx}
+\usepackage{subfigure}
+\usepackage{fancyhdr}
+\usepackage{subeqnarray}
+\usepackage[hyperindex,pagebackref=true]{hyperref}
+\usepackage{natbib}
+\usepackage{doi}
+\usepackage{makeidx}
+\usepackage[margin=2cm]{geometry}
+\usepackage{float}
+\usepackage{xspace}
+\usepackage{minitoc}
+
+\makeindex
+% Command to enable the labelling of the primary reference. 
+% To do this use \index{term|primary}
+\newcommand{\primary}[1]{\textbf{\hyperpage{#1}}}
+\newcommand{\libadjoint}[0]{{\texttt{libadjoint}}\xspace}
+
+% Cause numbering of subsubsections. 
+\setcounter{secnumdepth}{3}
+\setcounter{tocdepth}{3}
+\setcounter{minitocdepth}{3}
+
+\definecolor{DarkBlue}{rgb}{0.00,0.00,0.55}
+\definecolor{Black}{rgb}{0.00,0.00,0.00}
+\hypersetup{
+    linkcolor   = DarkBlue,
+    anchorcolor = DarkBlue,
+    citecolor   = DarkBlue,
+    filecolor   = DarkBlue,
+    pagecolor   = DarkBlue,
+    urlcolor    = DarkBlue,
+    colorlinks  = true,
+    pdftitle    = {\libadjoint manual},
+    pdfauthor   = {Patrick Farrell <patrick.farrell06@imperial.ac.uk>}
+}
+
+% Define date in european format
+\def\today{\number\day\space\ifcase\month\or
+ January\or February \or March\or April\or May\or June\or
+ July\or August\or September\or October\or November\or December\fi
+ \space\number\year}
+
+\floatstyle{boxed}
+\newfloat{example}{thp}{leg}[chapter]
+\floatname{example}{Example}
+
+\setlength{\parindent}{0.0in} \setlength{\parskip}{0.1in}
+
+\sloppy
+
+\pagestyle{fancy}
+\fancyfoot{} % No footers.
+\fancyhead[RO,LE]{\thepage}
+\fancyhead[RE]{\rightmark}
+\fancyhead[LO]{\leftmark}
+\renewcommand{\sectionmark}[1]{\renewcommand{\leftmark}{\thesection\qquad #1}}
+\renewcommand{\chaptermark}[1]{\renewcommand{\rightmark}{#1}}
+
+
+\begin{document}
+
+\bibliographystyle{plainnat}
+
+\frontmatter
+
+\begin{titlepage}
+
+\begin{center}
+
+\mbox{}
+
+\vfill
+
+{\bfseries{\huge
+\libadjoint manual
+\\}}
+
+\vspace{40mm}
+
+{\LARGE
+P.E. Farrell and S. W. Funke\\
+Applied Modelling \& Computation Group
+\\}
+
+\vspace{1mm}
+
+
+{\LARGE
+\url{http://amcg.ese.ic.ac.uk/libadjoint}
+}
+
+\vspace{10mm}
+
+{\LARGE
+Department of Earth Science and Engineering,\\
+Royal School of Mines,\\
+Imperial College London,\\
+London, SW7 2AZ, UK
+\\}
+
+\vspace{80mm}
+
+
+{\Large
+Version 0.8 trunk (revision \input{version}; \today)
+\\}
+
+\vfill
+
+\end{center}
+
+\end{titlepage}
+
+\input{overview}
+
+\makeatletter
+% originals from book.cls
+%\newcommand*\l@section{\@dottedtocline{1}{1.5em}{2.3em}}
+%\newcommand*\l@subsection{\@dottedtocline{2}{3.8em}{3.2em}}
+%\newcommand*\l@subsubsection{\@dottedtocline{3}{7.0em}{4.1em}}
+\renewcommand\l@section{\@dottedtocline{1}{1.5em}{2.7em}}
+\renewcommand\l@subsection{\@dottedtocline{2}{4.2em}{3.6em}}
+\renewcommand\l@subsubsection{\@dottedtocline{3}{7.8em}{4.5em}}
+
+\makeatother
+
+{ \setlength{\parskip}{0pt} \tableofcontents}
+
+\newpage \clearpage \thispagestyle{plain}
+
+\mainmatter
+
+\include{introduction}
+%\include{model_equations}
+%\include{numerical_discretisation}
+%\include{parameterisations}
+%\include{embedded_models}
+%\include{adaptivity}
+%\include{mesh_generation}
+%\include{configuring_fluidity}
+%\include{visualisation_and_diagnostics}
+%\include{examples}
+
+% Whole bunch of format hacking because Bibliography isn't a real chapter.
+\cleardoublepage
+\phantomsection
+\renewcommand\leftmark{}
+\renewcommand\rightmark{Bibliography}
+\addcontentsline{toc}{chapter}{Bibliography}
+\bibliography{literature}
+
+\appendix
+
+\include{about}
+%\include{mathematical_notation}
+%\include{useful_numbers}
+%\include{dimensionless}
+%\include{python}
+%\include{external_libraries}
+%\include{parallel}
+%\include{trouble_shooting}
+
+
+\cleardoublepage
+\phantomsection
+\renewcommand\leftmark{}
+\renewcommand\rightmark{Index}
+\addcontentsline{toc}{chapter}{Index}
+\printindex
+
+\end{document}
