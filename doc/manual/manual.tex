@@ -60,10 +60,50 @@
 \renewcommand{\sectionmark}[1]{\renewcommand{\leftmark}{\thesection\qquad #1}}
 \renewcommand{\chaptermark}[1]{\renewcommand{\rightmark}{#1}}
 
+\makeatletter
+\def\thickhrulefill{\leavevmode \leaders \hrule height 1ex \hfill \kern \z@}
+\def\@makechapterhead#1{%
+  %\vspace*{50\p@}%
+  \vspace*{10\p@}%
+  {\parindent \z@ \centering \reset@font
+        \thickhrulefill\quad
+        \scshape \@chapapp{} \thechapter
+        \quad \thickhrulefill
+        \par\nobreak
+        \vspace*{10\p@}%
+        \interlinepenalty\@M
+        \hrule
+        \vspace*{10\p@}%
+        \Huge \bfseries #1\par\nobreak
+        \par
+        \vspace*{10\p@}%
+        \hrule
+    %\vskip 40\p@
+    \vskip 100\p@
+  }}
+\def\@makeschapterhead#1{%
+  %\vspace*{50\p@}%
+  \vspace*{10\p@}%
+  {\parindent \z@ \centering \reset@font
+        \thickhrulefill
+        \par\nobreak
+        \vspace*{10\p@}%
+        \interlinepenalty\@M
+        \hrule
+        \vspace*{10\p@}%
+        \Huge \bfseries #1\par\nobreak
+        \par
+        \vspace*{10\p@}%
+        \hrule
+    %\vskip 40\p@
+    \vskip 50\p@
+  }}
+
 
 \begin{document}
 
 \bibliographystyle{plainnat}
+\dominitoc
 
 \frontmatter
 
@@ -117,7 +157,6 @@ Version 0.8 trunk (revision \input{version}; \today)
 
 \input{overview}
 
-\makeatletter
 % originals from book.cls
 %\newcommand*\l@section{\@dottedtocline{1}{1.5em}{2.3em}}
 %\newcommand*\l@subsection{\@dottedtocline{2}{3.8em}{3.2em}}
