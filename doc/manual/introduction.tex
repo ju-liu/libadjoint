@@ -19,9 +19,9 @@ treatise, see \citet{hinze2009}.
 \section{The fundamental idea of algorithmic differentiation}
 A discrete forward model implements a function that takes in some inputs
 and maps those to some outputs. In practice, that function is described
-by the programmer as a sequence of primitive steps: the function is
+by the developer as a sequence of primitive steps: the function is
 a composition of primitive instructions that the programming environment
-supplies to the programmer, such as addition, multiplication, exponentiation,
+supplies to the developer, such as addition, multiplication, exponentiation,
 and so on.
 
 If we wish to differentiate the model, and the program is the composition
@@ -35,6 +35,14 @@ The fundamental abstraction of \libadjoint is that \emph{a model is a sequence
 of linear solves}. This abstraction shares a similar structure to the fundamental
 idea of algorithmic differentiation, but operates at a much higher level:
 each linear solve may involve billions of primitive operations.
+
+At its heart, \libadjoint is a library that implements this abstraction. The
+forward model is \emph{annotated} with library calls that record the details
+of the linear solves performed. This annotation is analogous to the reverse
+AD concept of a tape; it records all relevant details of the execution of
+the forward model. Each linear solve is annotated to record what is being
+computed, what operators are acting on previously computed values, and what
+nonlinear dependencies those operators have.
 
 Before discussing the advantages and disadvantages of these two abstractions, 
 we should clear up any potential confusion. This abstraction applies equally
@@ -57,4 +65,53 @@ Note that any computer program may be seen as a sequence of primitive operations
 whereas the abstraction of \libadjoint is specific to computational models.
 
 \section{Advantages and disadvantages}
+\subsection{Algorithmic differentiation}
+Algorithmic differentiation is an excellent idea, and it has been enormously
+successful. Let us first consider its strengths:
+\begin{itemize}
+\item In principle, the sequence of primitive instructions is available from
+the existing source code of the model, so developer intervention should
+be minimal.
+\item Algorithmic differentiation is relatively mature: books, commercial
+software and consultancy services are available.
+\item It works very well: consider the impressive success of projects such as the
+MITgcm adjoint \citep{heimbach2002,heimbach2005} and the FLUENT adjoint \citep{bischof2007}.
+\end{itemize}
+
+However, algorithmic differentiation is not perfect; there are weaknesses to
+the approach:
+\begin{itemize}
+\item An AD tool needs to understand the code in the same manner as a compiler.
+However, AD tools typically only support a subset of the language, which rules
+out their use on models which exploit such language features.
+\item A model is typically a lot more than just the sequence of primitive instructions:
+applying AD naively would involve differentiating I/O, linear solvers, dynamic
+memory allocation, MPI calls \citep{utke2009}, etc.
+\item If the control flow passes through external libraries, then these must also be
+differentiated.
+\end{itemize}
+
+The fundamental abstraction of AD is a very low-level one, and this means that it is
+most powerful when applied to smaller, local pieces of code. If a very large
+model is to be differentiated with AD, it typically must be written with this in
+mind, in the subset of the language that the AD tool supports, and large amounts
+of developer time must be devoted to the continual re-application of the AD tool
+as the codebase changes.
+
+\subsection{\libadjoint}
+
+Now let us consider the strengths of the abstraction employed by \libadjoint:
+\begin{itemize}
+\item It is possible to adjoint models which use language features unsupported 
+by AD tools.
+\item Implementation details such as the use of external libraries, I/O, dynamic
+memory allocation, etc. are no longer problematic: \libadjoint does not need to
+know about them.
+\item Whereas an AD tool needs to be re-applied for each change to the model
+codebase, the \libadjoint annotation only needs to change much less often,
+if the fundamental structure of the equations solved changes.
+\item \libadjoint offers powerful debugging facilities that enable adjoint models
+to be developed much faster than if the adjoint were to be written by hand. % FIXME: reference the chapter later on
+\end{itemize}
+
 \section{A strategy for adjoint model development with \libadjoint}
