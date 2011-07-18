@@ -110,8 +110,25 @@ know about them.
 \item Whereas an AD tool needs to be re-applied for each change to the model
 codebase, the \libadjoint annotation only needs to change much less often,
 if the fundamental structure of the equations solved changes.
-\item \libadjoint offers powerful debugging facilities that enable adjoint models
+\item The abstraction makes it possible to offer powerful debugging facilities that enable adjoint models
 to be developed much faster than if the adjoint were to be written by hand. % FIXME: reference the chapter later on
 \end{itemize}
+
+However, nothing in life comes for free:
+\begin{itemize}
+\item Annotating the model must be done by hand, whereas a sufficiently advanced
+AD tool would not require user intervention.
+\item The idea is novel, and it remains to be seen if it becomes a popular approach
+to developing adjoint models.
+\item \libadjoint is under heavy development, although several models have been adjointed
+using it.
+\end{itemize}
+
+The two approaches (AD and \libadjoint) are not competitors; in fact, they complement each
+other very well. \libadjoint requires
+the developer to supply the derivatives of the nonlinear assembly operators with respect to
+their immediate arguments; AD works very well on such small, local pieces of code. By taking
+this approach, the pragmatic model developer can use both abstractions where they are strong,
+and have the best of both worlds.
 
 \section{A strategy for adjoint model development with \libadjoint}
