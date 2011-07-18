@@ -25,6 +25,21 @@
 \newcommand{\libadjoint}[0]{{\texttt{libadjoint}}\xspace}
 \newcommand{\m}[0]{{\vec{m}}}
 
+\newenvironment{block}[1]{%
+  \begin{actionenv}%
+    \def\insertblocktitle{#1}%
+    \par%
+    \usebeamertemplate{block begin}}
+  {\par%
+    \usebeamertemplate{block end}%
+  \end{actionenv}}
+
+\definecolor{Grey}{rgb}{0.96,0.97,0.98}
+\makeatletter\newenvironment{graybox}{%
+   \begin{lrbox}{\@tempboxa}\begin{minipage}{\columnwidth}}{\end{minipage}\end{lrbox}%
+   \colorbox{Grey}{\usebox{\@tempboxa}}
+}\makeatother
+
 % Cause numbering of subsubsections. 
 \setcounter{secnumdepth}{3}
 \setcounter{tocdepth}{3}

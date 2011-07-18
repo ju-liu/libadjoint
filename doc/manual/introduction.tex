@@ -1,130 +1,60 @@
-\chapter{Theoretical introduction}
+\chapter{The fundamental idea}
 
 \begin{synopsis}
-This chapter gives a very brief introduction to the theory of
-adjoints. First, the basic notation used throughout this manual is introduced.
-Then, we show (but do not derive) the fundamental adjoint equation.
-We discuss why adjoints are important in the computational sciences.
-We then mention some of the difficulties involved in developing adjoint models;
-these problems motivate the design of \libadjoint.
+This chapter attempts to describe the fundamental idea behind \libadjoint, 
+and compares and contrasts this idea to the fundamental idea of algorithmic/automatic differentiation (AD).
+A high-level overview of the strategy for developing adjoint models with \libadjoint is discussed.
 \end{synopsis}
-\vspace{3.0cm}
+\vspace{\fill}
 \minitoc
 
-This introduction is intended give the bare minimum of information necessary for
-the successful use of \libadjoint. Other, more thorough, introductions
-to the theory of adjoints are available \citep{giles2000,errico1997,gunzburger2003,hinze2009}.
+This manual presupposes some passing familiarity with algorithmic differentiation (AD),
+and with adjoints. For an introduction to AD, see \citet{rall1996}; for a more mathematical
+treatise, see \citet{griewank2003,griewank2008}. For an introduction to adjoints and how
+they can be used, see \citet{gunzburger2003,giles2000,errico1997}; for a more mathematical
+treatise, see \citet{hinze2009}.
+
 \newpage
 
-\section{Forward and adjoint models}
-Many phenomena of physical interest are described by systems of partial
-differential equations, which are approximately solved by computer models.
-A computer model takes the system state
-at some initial stage and propagates this information forward
-to compute the system state at some later stage; that is, the model propagates cause to effect, and is henceforth referred
-to as the forward model.
+\section{The fundamental idea of algorithmic differentiation}
+A discrete forward model implements a function that takes in some inputs
+and maps those to some outputs. In practice, that function is described
+by the programmer as a sequence of primitive steps: the function is
+a composition of primitive instructions that the programming environment
+supplies to the programmer, such as addition, multiplication, exponentiation,
+and so on.
 
-Associated with every forward model is an adjoint model that does the opposite: the adjoint propagates effect back to cause,
-modelling the flow of information in the forward problem. For time-dependent forward problems, this means that
-the adjoint runs backwards in time. As we shall see, adjoint models have many important applications,
-but developing adjoint models is extremely difficult. \libadjoint exists to make developing adjoint models
-as easy as possible, and so to bring the power of adjoints to more applications across the computational
-sciences.
+If we wish to differentiate the model, and the program is the composition
+of primitive instructions, then we can simply apply the chain rule:
+differentiate each primitive instruction in turn and compose the derivatives
+appropriately. The fundamental abstraction of algorithmic differentiation
+is that \emph{a model is a sequence of primitive instructions}.
 
-\section{Notation}
-Before moving on, we must introduce some notation:
+\section{The fundamental idea of \libadjoint}
+The fundamental abstraction of \libadjoint is that \emph{a model is a sequence
+of linear solves}. This abstraction shares a similar structure to the fundamental
+idea of algorithmic differentiation, but operates at a much higher level:
+each linear solve may involve billions of primitive operations.
+
+Before discussing the advantages and disadvantages of these two abstractions, 
+we should clear up any potential confusion. This abstraction applies equally
+well regardless of:
 \begin{itemize}
-\item $\m$, a vector of control variables
-\item $u$, a solution
-\item $A(u, \m)$, an operator
-\item $b(\m)$, a source term
-\item $F(u, \m) = A(u, \m)\cdot u - b(\m) = 0$, a partial differential equation
-\item $J(u, \m) \rightarrow \mathbb{R}$, a functional
+\item whether the forward model uses finite difference, finite
+element, or any other discretisation
+\item whether the forward model uses explicit or implicit timestepping
+\item whether the forward model is nonlinear or not.
 \end{itemize}
 
-Suppose we have a set of equations $F(u, \m) = 0$, parameterised by a vector of parameters $\m$. For example,
-$\m$ might be the initial conditions; $u$ might be the
-vector of velocity and pressure, and $F(u, \m)$ might be the Navier-Stokes equations. Or perhaps $\m$ is
-a spatially-varying diffusivity coefficient, $u$ is the electric potential, and $F(u, \m)$ the steady diffusion
-equation. 
-Suppose further that we are interested in a specific
-question of this physical state: this question we are interested in is represented by a functional $J(u, \m)$.
-For example, $J(u, \m)$ could be the drag of flow past an airfoil, or the amount of oil extracted in a reservoir simulation,
-or the misfit between physical observations and the computed approximation, etc. To talk sensibly about adjoints, one needs to choose a functional
-$J$, but it is entirely possible to talk about adjoints without any free parameters $\m$.
+In the case where explicit timestepping is used, the linear solves
+will have the identity matrix on the left hand side; but they can still
+be considered as linear solves. In the nonlinear case, all techniques for
+solving such systems (such as Newton iteration or Picard iteration) also
+boil down to performing a sequence of linear solves for successively better
+approximations to the solution.
 
-\section{Applications of adjoints}
-Let us motivate this entire business with some applications of adjoints. Why are adjoints important?
-You should care because adjoints can be used for a great
-range of extremely useful applications across the quantitative sciences. Here are a few:
-\begin{itemize}
-\item Design optimisation: suppose you wish to minimise or maximise $J(u,\m)$, and can vary the parameters $\m$.
-In order to solve this optimisation problem, it is necessary to compute
-\begin{equation}
-\left.\frac{dJ}{d\m}\right|_{(u, \m)}
-\end{equation}
-at every optimisation iteration to decide where next to move in parameter space. The adjoint greatly facilitates this
-computation.
-\item Error estimation: physical experiments come with error bars, but most computational experiments do not. With the
-adjoint, it is possible to estimate the error in a quantity of interest $J(u,\m)$.
-\item Data assimilation: it is frequently desirable to incorporate physical data (such as atmospheric observations)
-into computational simulations, to constrain the simulation towards a physically realistic trajectory. Adjoints are
-essential in variational data assimilation.
-\item Inverse problems: suppose the equation governing some physical process is known, but the parameters
-are unknown. With the adjoint, it is possible to estimate these parameters
-from physical data.
-\end{itemize}
+Note that any computer program may be seen as a sequence of primitive operations, 
+whereas the abstraction of \libadjoint is specific to computational models.
 
-\section{Discrete and continuous adjoint approaches}
-When computing the adjoint of a model, there are two possible approaches. The first approach is to derive the adjoint
-system of partial differential equations from the forward system of partial differential equations, and then discretise
-the adjoint PDEs separately. This approach is referred to as the continuous adjoint approach. The second approach is to discretise
-the forward model, and then adjoint this discrete model. This approach is referred to as the discrete adjoint approach.
-Both approaches have symmetric advantages and disadvantages; for details, see \citet{gunzburger2003}. \libadjoint focusses exclusively
-on the discrete adjoint approach.
-
-\section{The adjoint equation}
-The derivation of the adjoint equation for this abstract example is beyond the scope of this introduction;
-for an excellent introduction, see \citet{gunzburger2003}. The adjoint equation is given by
-\begin{equation} \label{eqn:abstract_adjoint}
-\left(\left.\frac{\partial F}{\partial u}\right|_{(u,\m)}\right)^{*} \lambda = \left.\frac{\partial J}{\partial u}\right|_{(u,\m)},
-\end{equation}
-where $\lambda$ is the adjoint solution.
-
-Let us write equation (\ref{eqn:abstract_adjoint}) for the case of a nonlinear discretised model.
-The forward model can be written as
-\begin{equation}
-A(u,\m)\cdot u = b(\m),
-\end{equation}
-where $A(u,\m)$ is a matrix depending on the solution variables $u$ and the control variables $\m$. Note that for time-dependent problems,
-this matrix $A$ encodes all of the equations for all of the timesteps, and has a block structure that is
-lower triangular.
-
-By applying equation (\ref{eqn:abstract_adjoint}), the corresponding discrete adjoint model is given by
-\begin{equation} \label{eqn:discrete_adjoint}
-\left(A + G\right)^{*}\lambda = \left.\frac{\partial J}{\partial u}\right|_{(u,\m)},
-\end{equation}
-where $A$ is the forward operator again, $G$ is given by
-\begin{equation}
-G = \left.\frac{\partial A(u,\m)}{\partial u}\right|_{(u,\m)} u.
-\end{equation}
-
-Let us now make some observations:
-\begin{itemize}
-\item The adjoint equation is linear in the adjoint variable $\lambda$.
-\item If the forward operator is linear (i.e., has no dependence on $u$), then $G = 0$.
-\item Since $A$ is lower triangular, it can be solved by forward substitution; that is, it can be
-solved forward in time. If $A$ is lower triangular, then $(A+G)^{*}$ is upper triangular, and can be solved
-by backward substitution; that is, it must be solved backward in time.
-\end{itemize}
-
-Some major difficulties present themselves:
-\begin{itemize}
-\item Since $A$ is never explicitly computed, working out the form of $A^*$ can be quite challenging.
-\item The assembly of the operator $A$ must be differentiated to compute $G$.
-\item Working out the form of $G^*$, i.e. what must be differentiated when, can be quite difficult.
-\item Managing the life cycle of forward and adjoint variables becomes quite difficult: when must a
-variable be stored, and when may it be forgotten?
-\end{itemize}
-
-\libadjoint addresses all of these problems.
+\section{Advantages and disadvantages}
+\section{A strategy for adjoint model development with \libadjoint}

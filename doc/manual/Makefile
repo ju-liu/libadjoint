@@ -14,3 +14,6 @@ manual.tex: version.tex overview.tex about.tex introduction.tex
 
 version.tex:
 	echo $(shell bzr revision-info | awk '{print $$1}') > version.tex
+
+bib:
+	cp /data/pfarrell/svn/literature/literature.bib .
