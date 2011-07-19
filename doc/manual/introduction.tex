@@ -133,4 +133,35 @@ their immediate arguments; AD works very well on such small, local pieces of cod
 this approach, the pragmatic model developer can use both abstractions where they are strong,
 and have the best of both worlds.
 
+\section{The structure of \libadjoint}
+The fundamental object of \libadjoint is an \adjointer. The forward model is annotated
+to record the sequence of linear solves that the model has executed (\texttt{adj\_record\_equation}); the \adjointer is
+the object that holds the record. When the \adjointer has this information, it can derive
+the structure of each adjoint equation: what should be assembled or differentiated for each linear
+solve in the adjoint run. If the model developer then
+supplies callbacks to the \adjointer (\texttt{adj\_register\_operator\_callback}) to allow \libadjoint to assemble each
+operator that appears in the forward equation, \libadjoint is
+able to assemble each adjoint equation as it is to be solved (\texttt{adj\_get\_adjoint\_equation}).
+
+\libadjoint is organised in a data-structure-neutral manner, inspired by the design
+of Zoltan \citep{devine2002}. \libadjoint frequently needs to manipulate vectors
+and matrices, but the objects that represent these (\texttt{adj\_vector} and \texttt{adj\_matrix})
+are wrappers around user data types that are opaque to \libadjoint. \libadjoint manipulates
+these opaque data types through data callbacks supplied by the developer. Currently, \libadjoint
+comes with data callbacks to interoperate with the PETSc \texttt{Vec} and \texttt{Mat} types \citep{balay2010}.
+If your model uses other data types, then a handful of callbacks must be supplied to \libadjoint (\texttt{adj\_register\_data\_callback}).
+If these types are not specific to your model, then please consider contributing them back!
+
+Great care has been taken to make the API of \libadjoint as consistent as possible. All functions
+return an error code. \texttt{ADJ\_OK} means that the function worked as normal. A negative
+return code means that a warning was issued; a positive return code means that an error occurred.
+Every call to \libadjoint should be followed by \texttt{adj\_chkierr}, which inspects the return
+code and prints out a helpful error message.
+
+\libadjoint is written in C, and currently offers bindings for C, Fortran 90 and Python. The Fortran 90 bindings
+are implemented using the \texttt{iso\_c\_binding} facility \citep{metcalf2004}, and therefore require a modern
+Fortran compiler. This facility is supported by the latest releases of all major Fortran compilers; in particular,
+if you are developing using \texttt{gfortran}, you must use version 4.5 or greater.
+Of course, bindings to other languages are very welcome, especially C++.
+
 \section{The process of adjoint model development with \libadjoint}
