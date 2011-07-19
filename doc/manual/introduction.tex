@@ -107,7 +107,7 @@ Now let us consider the strengths of the abstraction employed by \libadjoint:
 \item It is possible to adjoint models which use language features unsupported 
 by AD tools.
 \item Implementation details such as the use of external libraries, I/O, dynamic
-memory allocation, etc. are no longer problematic: \libadjoint does not need to
+memory allocation, etc\. are no longer problematic: \libadjoint does not need to
 know about them.
 \item Whereas an AD tool needs to be re-applied for each change to the model
 codebase, the \libadjoint annotation only needs to change much less often,
@@ -165,3 +165,61 @@ if you are developing using \texttt{gfortran}, you must use version 4.5 or great
 Of course, bindings to other languages are very welcome, especially C++.
 
 \section{The process of adjoint model development with \libadjoint}
+One of the advantages of using \libadjoint to develop an adjoint model is that the process
+is very systematic and incremental. 
+
+Firstly, if the core data types of your model are unknown to \libadjoint, then you
+should write the data callbacks so that \libadjoint can allocate, destroy, and add
+vectors and matrices.
+
+Secondly, annotate the first equation in your model, and write the operator
+callbacks for the matrices that appear. Here, you should start to
+exploit the powerful debugging and development facilities in \libadjoint. The
+annotation builds a ``tape'' of the model execution, and \libadjoint uses this
+to rewind the model. But \libadjoint can use this tape to replay the forward
+model back again; furthermore, \libadjoint can automatically compare the output
+of the replay against the values of your original forward model. Therefore,
+annotate the first equation, and then check the consistency of the tape with the
+forward model; once you are happy with the first equation, iterate untl you have
+successfully annotated all equations, and can replay the model run in its
+entirety.
+
+When the forward replay works correctly, the adjoint model is almost ready.
+There are two other major sources of developer error: inconsistency of
+transposed operators, and incorrectness of derivative code. \libadjoint
+offers debugging tools to eliminate both classes of error. 
+
+\pagebreak[4]
+In order to 
+check the correctness of operator transposition, we employ the identity
+that
+\begin{equation*}
+\langle y, Ax \rangle = \langle A^T y, x \rangle
+\end{equation*}
+for any suitable vectors $x, y$ and an operator $A$. \libadjoint computes both
+sides of the identity and checks that they are equal to machine precision. This
+check is particularly useful for operators which are never explicitly
+represented as matrices.
+
+In order to assemble the adjoint equation, \libadjoint also requires
+callbacks which compute the derivative of the nonlinear assembly operators
+with respect to their immediate inputs. (As we will see later, these
+derivative routines can be generated easily by applying algorithmic
+differentiation.) In order to check the consistency of any derivative,
+we employ the identity that
+\begin{equation*}
+\left|\left| f(x + \delta x) - f(x) \right|\right|
+\end{equation*}
+converges at $O(\left|\left| \delta x \right|\right|)$, whereas
+\begin{equation*}
+\left|\left| f(x + \delta x) - f(x) - \nabla f(x)\cdot \delta x\right|\right|
+\end{equation*}
+converges at $O(\left|\left| \delta x \right|\right|^2)$. This check is
+particularly useful when the nonlinear assembly routine had to be
+modified so that an algorithmic differentiation tool could be applied,
+as it asserts the correspondence between the original model code
+and the derivative of the modified model code.
+
+Once the forward replay works correctly, and these checks have been
+passed, then the assembled adjoint equations are almost certainly correct.
+
