@@ -11,7 +11,7 @@
 \usepackage[margin=2cm]{geometry}
 \usepackage{float}
 \usepackage{xspace}
-\usepackage{minitoc}
+\usepackage[tight]{minitoc}
 \usepackage{amsfonts}
 \usepackage{amsmath}
 \usepackage{amssymb}
@@ -73,12 +73,14 @@
 
 \newcommand{\synopsisname}{Abstract}
 \newenvironment{synopsis}{%
+  \vspace{-2.0cm}
   \begin{center}%
-    {\bfseries \synopsisname\vspace{-0.5em}}%
+    {\bfseries \synopsisname\vspace{-0.7cm}}%
   \end{center}%
   \begin{quote}
 }{%
    \end{quote}
+  \vspace{-0.5cm}
 }
 
 \pagestyle{fancy}
