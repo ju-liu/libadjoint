@@ -132,7 +132,7 @@
 \begin{document}
 
 \bibliographystyle{plainnat}
-\dominitoc
+\dominitoc[c]
 
 \frontmatter
 
@@ -193,6 +193,7 @@ Version 0.8 trunk (revision \input{version}; \today)
 \renewcommand\l@section{\@dottedtocline{1}{1.5em}{2.7em}}
 \renewcommand\l@subsection{\@dottedtocline{2}{4.2em}{3.6em}}
 \renewcommand\l@subsubsection{\@dottedtocline{3}{7.8em}{4.5em}}
+\renewcommand\mtctitle{Contents}
 
 \makeatother
 
@@ -203,15 +204,7 @@ Version 0.8 trunk (revision \input{version}; \today)
 \mainmatter
 
 \include{introduction}
-%\include{model_equations}
-%\include{numerical_discretisation}
-%\include{parameterisations}
-%\include{embedded_models}
-%\include{adaptivity}
-%\include{mesh_generation}
-%\include{configuring_fluidity}
-%\include{visualisation_and_diagnostics}
-%\include{examples}
+\include{annotation}
 
 % Whole bunch of format hacking because Bibliography isn't a real chapter.
 \cleardoublepage

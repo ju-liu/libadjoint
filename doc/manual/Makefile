@@ -4,12 +4,13 @@
 	@echo "        PDF $<"
 	pdflatex -shell-escape $<
 	bibtex $(shell echo $< | sed -e 's/.tex//')
+	makeindex $(shell echo $< | sed -e 's/.tex//')
 	pdflatex -shell-escape $<
 	pdflatex -shell-escape $<
 
 default: manual.pdf
 
-manual.tex: version.tex overview.tex about.tex introduction.tex
+manual.tex: version.tex overview.tex about.tex introduction.tex annotation.tex
 	touch manual.tex
 
 version.tex:

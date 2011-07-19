@@ -5,8 +5,8 @@ This chapter attempts to describe the fundamental idea behind \libadjoint,
 and compares and contrasts this idea to the fundamental idea of algorithmic/automatic differentiation (AD).
 A high-level overview of the strategy for developing adjoint models with \libadjoint is discussed.
 \end{synopsis}
-\vspace{\fill}
 \minitoc
+\vspace{\fill}
 
 This manual presupposes some passing familiarity with algorithmic differentiation (AD),
 and with adjoints. For an introduction to AD, see \citet{rall1996}; for a more mathematical
@@ -28,6 +28,8 @@ If we wish to differentiate the model, and the program is the composition
 of primitive instructions, then we can simply apply the chain rule:
 differentiate each primitive instruction in turn and compose the derivatives
 appropriately. The fundamental abstraction of algorithmic differentiation
+\index{algorithmic differentation!fundamental idea}
+%\index{automatic differentiation|see{algorithmic differentiation}
 is that \emph{a model is a sequence of primitive instructions}.
 
 \section{The fundamental idea of \libadjoint}
@@ -131,4 +133,4 @@ their immediate arguments; AD works very well on such small, local pieces of cod
 this approach, the pragmatic model developer can use both abstractions where they are strong,
 and have the best of both worlds.
 
-\section{A strategy for adjoint model development with \libadjoint}
+\section{The process of adjoint model development with \libadjoint}
