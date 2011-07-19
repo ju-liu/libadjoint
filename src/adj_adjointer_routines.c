@@ -50,7 +50,7 @@ int adj_create_adjointer(adj_adjointer* adjointer)
   for (i = 0; i < ADJ_NO_OPTIONS; i++)
     adjointer->options[i] = 0; /* 0 is the default for all options */
 
-  return ADJ_ERR_OK;
+  return ADJ_OK;
 }
 
 int adj_destroy_adjointer(adj_adjointer* adjointer)
@@ -71,7 +71,7 @@ int adj_destroy_adjointer(adj_adjointer* adjointer)
   for (i = 0; i < adjointer->nequations; i++)
   {
     ierr = adj_destroy_equation(&(adjointer->equations[i]));
-    if (ierr != ADJ_ERR_OK) return ierr;
+    if (ierr != ADJ_OK) return ierr;
   }
   if (adjointer->equations != NULL) free(adjointer->equations);
 
@@ -93,7 +93,7 @@ int adj_destroy_adjointer(adj_adjointer* adjointer)
   while (data_ptr != NULL)
   {
     ierr = adj_destroy_variable_data(adjointer, data_ptr);
-    if (ierr != ADJ_ERR_OK) return ierr;
+    if (ierr != ADJ_OK) return ierr;
     data_ptr_tmp = data_ptr;
     data_ptr = data_ptr->next;
     free(data_ptr_tmp);
@@ -164,7 +164,7 @@ int adj_destroy_adjointer(adj_adjointer* adjointer)
   }
 
   adj_create_adjointer(adjointer);
-  return ADJ_ERR_OK;
+  return ADJ_OK;
 }
 
 int adj_register_equation(adj_adjointer* adjointer, adj_equation equation)
@@ -174,7 +174,7 @@ int adj_register_equation(adj_adjointer* adjointer, adj_equation equation)
   int i;
   int j;
 
-  if (adjointer->options[ADJ_ACTIVITY] == ADJ_ACTIVITY_NOTHING) return ADJ_ERR_OK;
+  if (adjointer->options[ADJ_ACTIVITY] == ADJ_ACTIVITY_NOTHING) return ADJ_OK;
 
   /* Let's check we haven't solved for this variable before */
   ierr = adj_find_variable_data(&(adjointer->varhash), &(equation.variable), &data_ptr);
@@ -222,7 +222,7 @@ int adj_register_equation(adj_adjointer* adjointer, adj_equation equation)
   if (ierr == ADJ_ERR_HASH_FAILED)
   {
     ierr = adj_add_new_hash_entry(adjointer, &(equation.variable), &data_ptr);
-    if (ierr != ADJ_ERR_OK) return ierr;
+    if (ierr != ADJ_OK) return ierr;
   }
   data_ptr->equation = adjointer->nequations;
   /* OK. Next create an entry for the adj_equation in the adjointer. */
@@ -242,7 +242,7 @@ int adj_register_equation(adj_adjointer* adjointer, adj_equation equation)
   if (adjointer->ntimesteps < equation.variable.timestep + 1) /* adjointer->ntimesteps should be at least equation.variable.timestep + 1 */
   {
     ierr = adj_extend_timestep_data(adjointer, equation.variable.timestep + 1); /* extend the array as necessary */
-    if (ierr != ADJ_ERR_OK) return ierr;
+    if (ierr != ADJ_OK) return ierr;
   }
   if (adjointer->timestep_data[equation.variable.timestep].start_equation == -1) /* -1 is the sentinel value for unset */
   {
@@ -264,7 +264,7 @@ int adj_register_equation(adj_adjointer* adjointer, adj_equation equation)
     {
       int ierr;
       ierr = adj_copy_nonlinear_block(equation.blocks[i].nonlinear_block, &adjointer->equations[adjointer->nequations - 1].blocks[i].nonlinear_block);
-      if (ierr != ADJ_ERR_OK) return ierr;
+      if (ierr != ADJ_OK) return ierr;
     }
   }
 
@@ -285,7 +285,7 @@ int adj_register_equation(adj_adjointer* adjointer, adj_equation equation)
   for (i = 0; i < equation.nblocks; i++)
   {
     ierr = adj_find_variable_data(&(adjointer->varhash), &(equation.targets[i]), &data_ptr);
-    if (ierr != ADJ_ERR_OK)
+    if (ierr != ADJ_OK)
     {
       char buf[ADJ_NAME_LEN];
       adj_variable_str(equation.targets[i], buf, ADJ_NAME_LEN);
@@ -310,7 +310,7 @@ int adj_register_equation(adj_adjointer* adjointer, adj_equation equation)
       /* It's ok if it's auxiliary -- it legitimately can be the first time we've seen it */
       adj_variable_data* new_data;
       ierr = adj_add_new_hash_entry(adjointer, &(equation.rhsdeps[i]), &new_data);
-      if (ierr != ADJ_ERR_OK) return ierr;
+      if (ierr != ADJ_OK) return ierr;
       new_data->equation = -1; /* it doesn't have an equation */
       data_ptr = new_data;
     }
@@ -321,7 +321,7 @@ int adj_register_equation(adj_adjointer* adjointer, adj_equation equation)
 
     /* Now data_ptr points to the data we're storing */
     ierr = adj_append_unique(&(data_ptr->rhs_equations), &(data_ptr->nrhs_equations), adjointer->nequations - 1);
-    if (ierr != ADJ_ERR_OK) return ierr;
+    if (ierr != ADJ_OK) return ierr;
   }
 
   /* Now we need to record what we need for which adjoint equation from the rhs dependencies */
@@ -340,7 +340,7 @@ int adj_register_equation(adj_adjointer* adjointer, adj_equation equation)
     }
 
     ierr = adj_find_variable_data(&(adjointer->varhash), &(equation.rhsdeps[i]), &data_ptr);
-    if (ierr != ADJ_ERR_OK) return ierr;
+    if (ierr != ADJ_OK) return ierr;
 
     eqn_no = data_ptr->equation;
     assert(eqn_no >= 0);
@@ -348,9 +348,9 @@ int adj_register_equation(adj_adjointer* adjointer, adj_equation equation)
     for (j = 0; j < equation.nrhsdeps; j++)
     {
       ierr = adj_find_variable_data(&(adjointer->varhash), &(equation.rhsdeps[j]), &data_ptr);
-      if (ierr != ADJ_ERR_OK) return ierr;
+      if (ierr != ADJ_OK) return ierr;
       ierr = adj_append_unique(&(data_ptr->adjoint_equations), &(data_ptr->nadjoint_equations), eqn_no); /* dependency j is necessary for equation i */
-      if (ierr != ADJ_ERR_OK) return ierr;
+      if (ierr != ADJ_OK) return ierr;
     }
   }
 
@@ -369,7 +369,7 @@ int adj_register_equation(adj_adjointer* adjointer, adj_equation equation)
           /* It's ok if it's auxiliary -- it legitimately can be the first time we've seen it */
           adj_variable_data* new_data;
           ierr = adj_add_new_hash_entry(adjointer, &(equation.blocks[i].nonlinear_block.depends[j]), &new_data);
-          if (ierr != ADJ_ERR_OK) return ierr;
+          if (ierr != ADJ_OK) return ierr;
           new_data->equation = -1; /* it doesn't have an equation */
           data_ptr = new_data;
         }
@@ -378,7 +378,7 @@ int adj_register_equation(adj_adjointer* adjointer, adj_equation equation)
           return ierr;
         }
         ierr = adj_append_unique(&(data_ptr->depending_equations), &(data_ptr->ndepending_equations), adjointer->nequations - 1);
-        if (ierr != ADJ_ERR_OK) return ierr;
+        if (ierr != ADJ_OK) return ierr;
       }
     }
   }
@@ -392,7 +392,7 @@ int adj_register_equation(adj_adjointer* adjointer, adj_equation equation)
     {
       adj_variable_data* block_target_data; /* fetch the hash entry associated with the target of this block */
       ierr = adj_find_variable_data(&(adjointer->varhash), &(equation.targets[i]), &block_target_data);
-      if (ierr != ADJ_ERR_OK) return ierr;
+      if (ierr != ADJ_OK) return ierr;
 
       for (j = 0; j < equation.blocks[i].nonlinear_block.ndepends; j++)
       {
@@ -401,15 +401,15 @@ int adj_register_equation(adj_adjointer* adjointer, adj_equation equation)
 
         /* j_data ALWAYS refers to the data associated with the j'th dependency, throughout this whole loop */
         ierr = adj_find_variable_data(&(adjointer->varhash), &(equation.blocks[i].nonlinear_block.depends[j]), &j_data);
-        if (ierr != ADJ_ERR_OK) return ierr;
+        if (ierr != ADJ_OK) return ierr;
 
         /* One set of dependencies: the (adjoint equation of) (the target of this block) (needs) (this dependency) */
         ierr = adj_append_unique(&(j_data->adjoint_equations), &(j_data->nadjoint_equations), block_target_data->equation);
-        if (ierr != ADJ_ERR_OK) return ierr;
+        if (ierr != ADJ_OK) return ierr;
 
         /* Another set of dependencies: the (adjoint equation of) (the j'th dependency) (needs) (the target of this block) */
         ierr = adj_append_unique(&(block_target_data->adjoint_equations), &(block_target_data->nadjoint_equations), j_data->equation);
-        if (ierr != ADJ_ERR_OK) return ierr;
+        if (ierr != ADJ_OK) return ierr;
 
         /* Now we loop over all the dependencies again and fill in the cross-dependencies */
         for (k = 0; k < equation.blocks[i].nonlinear_block.ndepends; k++)
@@ -418,16 +418,16 @@ int adj_register_equation(adj_adjointer* adjointer, adj_equation equation)
 
           /* k_data ALWAYS refers to the data associated with the k'th dependency, throughout this whole loop */
           ierr = adj_find_variable_data(&(adjointer->varhash), &(equation.blocks[i].nonlinear_block.depends[k]), &k_data);
-          if (ierr != ADJ_ERR_OK) return ierr;
+          if (ierr != ADJ_OK) return ierr;
 
           /* Another set of dependencies: the (adjoint equation of) (the j'th dependency) (needs) (the k'th dependency) */
           ierr = adj_append_unique(&(k_data->adjoint_equations), &(k_data->nadjoint_equations), j_data->equation);
-          if (ierr != ADJ_ERR_OK) return ierr;
+          if (ierr != ADJ_OK) return ierr;
         }
       }
     }
   }
-  return ADJ_ERR_OK;
+  return ADJ_OK;
 }
 
 int adj_set_option(adj_adjointer* adjointer, int option, int choice)
@@ -439,13 +439,13 @@ int adj_set_option(adj_adjointer* adjointer, int option, int choice)
   }
 
   adjointer->options[option] = choice;
-  return ADJ_ERR_OK;
+  return ADJ_OK;
 }
 
 int adj_equation_count(adj_adjointer* adjointer, int* count)
 {
   *count = adjointer->nequations;
-  return ADJ_ERR_OK;
+  return ADJ_OK;
 }
 
 int adj_record_variable(adj_adjointer* adjointer, adj_variable var, adj_storage_data storage)
@@ -454,17 +454,17 @@ int adj_record_variable(adj_adjointer* adjointer, adj_variable var, adj_storage_
   int ierr;
   int compare_ierr;
 
-  if (adjointer->options[ADJ_ACTIVITY] == ADJ_ACTIVITY_NOTHING) return ADJ_ERR_OK;
+  if (adjointer->options[ADJ_ACTIVITY] == ADJ_ACTIVITY_NOTHING) return ADJ_OK;
 
   ierr = adj_find_variable_data(&(adjointer->varhash), &var, &data_ptr);
-  if (ierr != ADJ_ERR_OK && ierr != ADJ_ERR_HASH_FAILED) return ierr;
+  if (ierr != ADJ_OK && ierr != ADJ_ERR_HASH_FAILED) return ierr;
 
   if (ierr == ADJ_ERR_HASH_FAILED)
   {
     /* it's alright that this is the first time we've ever seen it */
     adj_variable_data* new_data;
     ierr = adj_add_new_hash_entry(adjointer, &var, &new_data);
-    if (ierr != ADJ_ERR_OK) return ierr;
+    if (ierr != ADJ_OK) return ierr;
     new_data->equation = -1; /* it doesn't have an equation */
     data_ptr = new_data;
   }
@@ -503,12 +503,12 @@ int adj_record_variable(adj_adjointer* adjointer, adj_variable var, adj_storage_
         int record_ierr;
 
         ierr = adj_forget_variable_value(adjointer, data_ptr);
-        if (ierr != ADJ_ERR_OK) return ierr;
+        if (ierr != ADJ_OK) return ierr;
 
         record_ierr = adj_record_variable_core(adjointer, data_ptr, storage); /* Overwrite the result anyway */
         /* If no error happened from the recording, return the warning that the comparison failed;
            otherwise, return the (presumably more serious) error from the recording */
-        if (record_ierr == ADJ_ERR_OK)
+        if (record_ierr == ADJ_OK)
           return compare_ierr;
         else
           return record_ierr;
@@ -523,7 +523,7 @@ int adj_record_variable(adj_adjointer* adjointer, adj_variable var, adj_storage_
       if (storage.overwrite)
       {
         ierr = adj_forget_variable_value(adjointer, data_ptr);
-        if (ierr != ADJ_ERR_OK) return ierr;
+        if (ierr != ADJ_OK) return ierr;
         return adj_record_variable_core(adjointer, data_ptr, storage);
       }
       else /* We don't have the overwrite flag */
@@ -536,7 +536,7 @@ int adj_record_variable(adj_adjointer* adjointer, adj_variable var, adj_storage_
     }
   }
 
-  return ADJ_ERR_OK; /* Should never get here, but keep the compiler quiet */
+  return ADJ_OK; /* Should never get here, but keep the compiler quiet */
 }
 
 int adj_record_variable_core(adj_adjointer* adjointer, adj_variable_data* data_ptr, adj_storage_data storage)
@@ -569,7 +569,7 @@ int adj_record_variable_core(adj_adjointer* adjointer, adj_variable_data* data_p
       return ADJ_ERR_NOT_IMPLEMENTED;
   }
 
-  return ADJ_ERR_OK;
+  return ADJ_OK;
 }
 
 int adj_record_variable_compare(adj_adjointer* adjointer, adj_variable_data* data_ptr, adj_variable var, adj_storage_data storage)
@@ -621,12 +621,12 @@ int adj_record_variable_compare(adj_adjointer* adjointer, adj_variable_data* dat
     }
     else
     {
-      return ADJ_ERR_OK;
+      return ADJ_OK;
     }
   }
   else
   {
-    return ADJ_ERR_OK;
+    return ADJ_OK;
   }
 }
 
@@ -635,7 +635,7 @@ int adj_register_operator_callback(adj_adjointer* adjointer, int type, char* nam
   adj_op_callback_list* cb_list_ptr;
   adj_op_callback* cb_ptr;
 
-  if (adjointer->options[ADJ_ACTIVITY] == ADJ_ACTIVITY_NOTHING) return ADJ_ERR_OK;
+  if (adjointer->options[ADJ_ACTIVITY] == ADJ_ACTIVITY_NOTHING) return ADJ_OK;
 
   switch(type)
   {
@@ -668,7 +668,7 @@ int adj_register_operator_callback(adj_adjointer* adjointer, int type, char* nam
     if (strncmp(cb_ptr->name, name, ADJ_NAME_LEN) == 0)
     {
       cb_ptr->callback = fn;
-      return ADJ_ERR_OK;
+      return ADJ_OK;
     }
     cb_ptr = cb_ptr->next;
   }
@@ -692,12 +692,12 @@ int adj_register_operator_callback(adj_adjointer* adjointer, int type, char* nam
     cb_list_ptr->lastnode = cb_ptr;
   }
 
-  return ADJ_ERR_OK;
+  return ADJ_OK;
 }
 
 int adj_register_data_callback(adj_adjointer* adjointer, int type, void (*fn)(void))
 {
-  if (adjointer->options[ADJ_ACTIVITY] == ADJ_ACTIVITY_NOTHING) return ADJ_ERR_OK;
+  if (adjointer->options[ADJ_ACTIVITY] == ADJ_ACTIVITY_NOTHING) return ADJ_OK;
 
   switch (type)
   {
@@ -744,7 +744,7 @@ int adj_register_data_callback(adj_adjointer* adjointer, int type, void (*fn)(vo
       return ADJ_ERR_INVALID_INPUTS;
   }
 
-  return ADJ_ERR_OK;
+  return ADJ_OK;
 }
 
 int adj_register_functional_callback(adj_adjointer* adjointer, char* name, void (*fn)(adj_adjointer* adjointer, int timestep, int nb_variables, adj_variable* variables, adj_vector* dependencies, char* name, adj_scalar* output))
@@ -752,7 +752,7 @@ int adj_register_functional_callback(adj_adjointer* adjointer, char* name, void 
   adj_func_callback_list* cb_list_ptr;
   adj_func_callback* cb_ptr;
 
-  if (adjointer->options[ADJ_ACTIVITY] == ADJ_ACTIVITY_NOTHING) return ADJ_ERR_OK;
+  if (adjointer->options[ADJ_ACTIVITY] == ADJ_ACTIVITY_NOTHING) return ADJ_OK;
 
   cb_list_ptr = &(adjointer->functional_list);
 
@@ -763,7 +763,7 @@ int adj_register_functional_callback(adj_adjointer* adjointer, char* name, void 
     if (strncmp(cb_ptr->name, name, ADJ_NAME_LEN) == 0)
     {
       cb_ptr->callback = (void (*)(void* adjointer, int timestep, int nb_variables, adj_variable* variables, adj_vector* dependencies, char* name, adj_scalar* output)) fn;
-      return ADJ_ERR_OK;
+      return ADJ_OK;
     }
     cb_ptr = cb_ptr->next;
   }
@@ -787,7 +787,7 @@ int adj_register_functional_callback(adj_adjointer* adjointer, char* name, void 
     cb_list_ptr->lastnode = cb_ptr;
   }
 
-  return ADJ_ERR_OK;
+  return ADJ_OK;
 }
 
 int adj_register_functional_derivative_callback(adj_adjointer* adjointer, char* name, void (*fn)(adj_adjointer* adjointer, adj_variable variable, int nb_variables, adj_variable* variables, adj_vector* dependencies, char* name, adj_vector* output))
@@ -795,7 +795,7 @@ int adj_register_functional_derivative_callback(adj_adjointer* adjointer, char* 
   adj_func_deriv_callback_list* cb_list_ptr;
   adj_func_deriv_callback* cb_ptr;
 
-  if (adjointer->options[ADJ_ACTIVITY] == ADJ_ACTIVITY_NOTHING) return ADJ_ERR_OK;
+  if (adjointer->options[ADJ_ACTIVITY] == ADJ_ACTIVITY_NOTHING) return ADJ_OK;
 
   cb_list_ptr = &(adjointer->functional_derivative_list);
 
@@ -806,7 +806,7 @@ int adj_register_functional_derivative_callback(adj_adjointer* adjointer, char* 
     if (strncmp(cb_ptr->name, name, ADJ_NAME_LEN) == 0)
     {
       cb_ptr->callback = (void (*)(void* adjointer, adj_variable variable, int nb_variables, adj_variable* variables, adj_vector* dependencies, char* name, adj_vector* output)) fn;
-      return ADJ_ERR_OK;
+      return ADJ_OK;
     }
     cb_ptr = cb_ptr->next;
   }
@@ -830,14 +830,14 @@ int adj_register_functional_derivative_callback(adj_adjointer* adjointer, char* 
     cb_list_ptr->lastnode = cb_ptr;
   }
 
-  return ADJ_ERR_OK;
+  return ADJ_OK;
 }
 
 int adj_register_forward_source_callback(adj_adjointer* adjointer, void (*fn)(adj_adjointer* adjointer, adj_variable variable, int nb_variables, adj_variable* variables, adj_vector* dependencies, void* context, adj_vector* output, int* has_output))
 {
-  if (adjointer->options[ADJ_ACTIVITY] == ADJ_ACTIVITY_NOTHING) return ADJ_ERR_OK;
+  if (adjointer->options[ADJ_ACTIVITY] == ADJ_ACTIVITY_NOTHING) return ADJ_OK;
   adjointer->forward_source_callback = fn;
-  return ADJ_ERR_OK;
+  return ADJ_OK;
 }
 
 int adj_forget_adjoint_equation(adj_adjointer* adjointer, int equation)
@@ -848,7 +848,7 @@ int adj_forget_adjoint_equation(adj_adjointer* adjointer, int equation)
   int ierr;
   int min_timestep;
 
-  if (adjointer->options[ADJ_ACTIVITY] == ADJ_ACTIVITY_NOTHING) return ADJ_ERR_OK;
+  if (adjointer->options[ADJ_ACTIVITY] == ADJ_ACTIVITY_NOTHING) return ADJ_OK;
 
   if (equation >= adjointer->nequations)
   {
@@ -879,7 +879,7 @@ int adj_forget_adjoint_equation(adj_adjointer* adjointer, int equation)
         int start_equation;
         min_timestep = adj_minval(data->depending_timesteps, data->ndepending_timesteps);
         ierr = adj_timestep_start_equation(adjointer, min_timestep, &start_equation);
-        assert(ierr == ADJ_ERR_OK);
+        assert(ierr == ADJ_OK);
 
         if (equation > start_equation)
         {
@@ -890,14 +890,14 @@ int adj_forget_adjoint_equation(adj_adjointer* adjointer, int equation)
       if (should_we_delete)
       {
         ierr = adj_forget_variable_value(adjointer, data);
-        if (ierr != ADJ_ERR_OK) return ierr;
+        if (ierr != ADJ_OK) return ierr;
       }
     }
 
     data = data->next;
   }
 
-  return ADJ_ERR_OK;
+  return ADJ_OK;
 }
 
 int adj_find_operator_callback(adj_adjointer* adjointer, int type, char* name, void (**fn)(void))
@@ -939,7 +939,7 @@ int adj_find_operator_callback(adj_adjointer* adjointer, int type, char* name, v
     if (strncmp(cb_ptr->name, name, ADJ_NAME_LEN) == 0)
     {
       *fn = cb_ptr->callback;
-      return ADJ_ERR_OK;
+      return ADJ_OK;
     }
     cb_ptr = cb_ptr->next;
   }
@@ -961,7 +961,7 @@ int adj_find_functional_callback(adj_adjointer* adjointer, char* name, void (**f
     if (strncmp(cb_ptr->name, name, ADJ_NAME_LEN) == 0)
     {
       *fn = (void (*)(adj_adjointer* adjointer, int timestep, int nb_variables, adj_variable* variables, adj_vector* dependencies, char* name, adj_scalar* output)) cb_ptr->callback;
-      return ADJ_ERR_OK;
+      return ADJ_OK;
     }
     cb_ptr = cb_ptr->next;
   }
@@ -983,7 +983,7 @@ int adj_find_functional_derivative_callback(adj_adjointer* adjointer, char* name
     if (strncmp(cb_ptr->name, name, ADJ_NAME_LEN) == 0)
     {
       *fn = (void (*)(adj_adjointer* adjointer, adj_variable variable, int nb_variables, adj_variable* variables, adj_vector* dependencies, char* name, adj_vector* output)) cb_ptr->callback;
-      return ADJ_ERR_OK;
+      return ADJ_OK;
     }
     cb_ptr = cb_ptr->next;
   }
@@ -998,7 +998,7 @@ int adj_get_variable_value(adj_adjointer* adjointer, adj_variable var, adj_vecto
   adj_variable_data* data_ptr;
 
   ierr = adj_find_variable_data(&(adjointer->varhash), &var, &data_ptr);
-  if (ierr != ADJ_ERR_OK) return ierr;
+  if (ierr != ADJ_OK) return ierr;
 
   if (!data_ptr->storage.has_value)
   {
@@ -1018,7 +1018,7 @@ int adj_get_variable_value(adj_adjointer* adjointer, adj_variable var, adj_vecto
   }
 
   *value = data_ptr->storage.value;
-  return ADJ_ERR_OK;
+  return ADJ_OK;
 }
 
 int adj_has_variable_value(adj_adjointer* adjointer, adj_variable var)
@@ -1027,7 +1027,7 @@ int adj_has_variable_value(adj_adjointer* adjointer, adj_variable var)
   adj_variable_data* data_ptr;
 
   ierr = adj_find_variable_data(&(adjointer->varhash), &var, &data_ptr);
-  if (ierr != ADJ_ERR_OK)
+  if (ierr != ADJ_OK)
   {
     char buf[ADJ_NAME_LEN];
     adj_variable_str(var, buf, ADJ_NAME_LEN);
@@ -1044,7 +1044,7 @@ int adj_has_variable_value(adj_adjointer* adjointer, adj_variable var)
     snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Need a value for %s, but don't have one recorded.", buf);
     return ierr;
   }
-  return ADJ_ERR_OK;
+  return ADJ_OK;
 }
 
 int adj_forget_variable_value(adj_adjointer* adjointer, adj_variable_data* data)
@@ -1059,7 +1059,7 @@ int adj_forget_variable_value(adj_adjointer* adjointer, adj_variable_data* data)
 
   data->storage.has_value = 0;
   adjointer->callbacks.vec_destroy(&(data->storage.value));
-  return ADJ_ERR_OK;
+  return ADJ_OK;
 }
 
 int adj_destroy_variable_data(adj_adjointer* adjointer, adj_variable_data* data)
@@ -1092,7 +1092,7 @@ int adj_destroy_variable_data(adj_adjointer* adjointer, adj_variable_data* data)
   if (data->storage.has_value)
     return adj_forget_variable_value(adjointer, data);
 
-  return ADJ_ERR_OK;
+  return ADJ_OK;
 }
 
 int adj_storage_memory_copy(adj_vector value, adj_storage_data* data)
@@ -1103,7 +1103,7 @@ int adj_storage_memory_copy(adj_vector value, adj_storage_data* data)
   data->compare = ADJ_FALSE;
   data->comparison_tolerance = (adj_scalar)0.0;
   data->overwrite = ADJ_FALSE;
-  return ADJ_ERR_OK;
+  return ADJ_OK;
 }
 
 int adj_storage_memory_incref(adj_vector value, adj_storage_data* data)
@@ -1114,7 +1114,7 @@ int adj_storage_memory_incref(adj_vector value, adj_storage_data* data)
   data->compare = ADJ_FALSE;
   data->comparison_tolerance = (adj_scalar)0.0;
   data->overwrite = ADJ_FALSE;
-  return ADJ_ERR_OK;
+  return ADJ_OK;
 }
 
 int adj_storage_set_compare(adj_storage_data* data, int compare, adj_scalar comparison_tolerance)
@@ -1133,7 +1133,7 @@ int adj_storage_set_compare(adj_storage_data* data, int compare, adj_scalar comp
 
   data->compare = compare;
   data->comparison_tolerance = comparison_tolerance;
-  return ADJ_ERR_OK;
+  return ADJ_OK;
 }
 
 int adj_storage_set_overwrite(adj_storage_data* data, int overwrite)
@@ -1145,7 +1145,7 @@ int adj_storage_set_overwrite(adj_storage_data* data, int overwrite)
   }
 
   data->overwrite = overwrite;
-  return ADJ_ERR_OK;
+  return ADJ_OK;
 }
 
 int adj_add_new_hash_entry(adj_adjointer* adjointer, adj_variable* var, adj_variable_data** data)
@@ -1189,7 +1189,7 @@ int adj_add_new_hash_entry(adj_adjointer* adjointer, adj_variable* var, adj_vari
 
   /* add to the hash table */
   ierr = adj_add_variable_data(&(adjointer->varhash), var, *data);
-  if (ierr != ADJ_ERR_OK) return ierr;
+  if (ierr != ADJ_OK) return ierr;
 
   /* and add to the data list */
   if (adjointer->vardata.firstnode == NULL)
@@ -1203,13 +1203,13 @@ int adj_add_new_hash_entry(adj_adjointer* adjointer, adj_variable* var, adj_vari
     adjointer->vardata.lastnode = *data;
   }
 
-  return ADJ_ERR_OK;
+  return ADJ_OK;
 }
 
 int adj_timestep_count(adj_adjointer* adjointer, int* count)
 {
   *count = adjointer->ntimesteps;
-  return ADJ_ERR_OK;
+  return ADJ_OK;
 }
 
 int adj_iteration_count(adj_adjointer* adjointer, adj_variable variable, int* count)
@@ -1223,7 +1223,7 @@ int adj_iteration_count(adj_adjointer* adjointer, adj_variable variable, int* co
     variable.iteration = *count;
     ierr = adj_find_variable_data(&(adjointer->varhash), &variable, &data);
   }
-  while (ierr == ADJ_ERR_OK);
+  while (ierr == ADJ_OK);
 
   if (*count==0)
   {
@@ -1232,7 +1232,7 @@ int adj_iteration_count(adj_adjointer* adjointer, adj_variable variable, int* co
     snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Error in adj_iteration_count: No iteration found for supplied variable %s.", buf);
     return ADJ_ERR_INVALID_INPUTS;
   }
-  return ADJ_ERR_OK;
+  return ADJ_OK;
 }
 
 int adj_timestep_start_equation(adj_adjointer* adjointer, int timestep, int* start)
@@ -1244,7 +1244,7 @@ int adj_timestep_start_equation(adj_adjointer* adjointer, int timestep, int* sta
   }
 
   *start = adjointer->timestep_data[timestep].start_equation;
-  return ADJ_ERR_OK;
+  return ADJ_OK;
 }
 
 int adj_timestep_end_equation(adj_adjointer* adjointer, int timestep, int* end)
@@ -1263,7 +1263,7 @@ int adj_timestep_end_equation(adj_adjointer* adjointer, int timestep, int* end)
   {
     *end = adjointer->nequations - 1;
   }
-  return ADJ_ERR_OK;
+  return ADJ_OK;
 }
 
 int adj_timestep_set_times(adj_adjointer* adjointer, int timestep, adj_scalar start, adj_scalar end)
@@ -1285,13 +1285,13 @@ int adj_timestep_set_times(adj_adjointer* adjointer, int timestep, adj_scalar st
   if (adjointer->ntimesteps <= timestep)
   {
     ierr = adj_extend_timestep_data(adjointer, timestep + 1);
-    if (ierr != ADJ_ERR_OK) return ierr;
+    if (ierr != ADJ_OK) return ierr;
   }
 
   adjointer->timestep_data[timestep].start_time = start;
   adjointer->timestep_data[timestep].end_time = end;
 
-  return ADJ_ERR_OK;
+  return ADJ_OK;
 }
 
 int adj_timestep_get_times(adj_adjointer* adjointer, int timestep, adj_scalar* start, adj_scalar* end)
@@ -1323,7 +1323,7 @@ int adj_timestep_get_times(adj_adjointer* adjointer, int timestep, adj_scalar* s
     return ADJ_ERR_INVALID_INPUTS;
   }
   else
-    return ADJ_ERR_OK;
+    return ADJ_OK;
 }
 
 int adj_timestep_set_functional_dependencies(adj_adjointer* adjointer, int timestep, char* functional, int ndepends, adj_variable* dependencies)
@@ -1356,7 +1356,7 @@ int adj_timestep_set_functional_dependencies(adj_adjointer* adjointer, int times
   if (adjointer->ntimesteps <= timestep)
   {
     ierr = adj_extend_timestep_data(adjointer, timestep + 1);
-    if (ierr != ADJ_ERR_OK) return ierr;
+    if (ierr != ADJ_OK) return ierr;
   }
 
   /* Make sure that the dependencies for this timestep have not been set before */
@@ -1397,15 +1397,15 @@ int adj_timestep_set_functional_dependencies(adj_adjointer* adjointer, int times
     if (ierr == ADJ_ERR_HASH_FAILED)
     {
       ierr = adj_add_new_hash_entry(adjointer, &(dependencies[i]), &data_ptr);
-      if (ierr != ADJ_ERR_OK) return ierr;
+      if (ierr != ADJ_OK) return ierr;
     }
 
     /* Record that this variable is necessary for the functional evaluation at this point in time */
     ierr = adj_append_unique(&(data_ptr->depending_timesteps), &(data_ptr->ndepending_timesteps), timestep);
-    if (ierr != ADJ_ERR_OK) return ierr;
+    if (ierr != ADJ_OK) return ierr;
   }
   /* We are done */
-  return ADJ_ERR_OK;
+  return ADJ_OK;
 }
 
 int adj_append_unique(int** array, int* array_sz, int value)
@@ -1414,14 +1414,14 @@ int adj_append_unique(int** array, int* array_sz, int value)
 
   for (i = 0; i < *array_sz; i++)
     if ((*array)[i] == value)
-      return ADJ_ERR_OK;
+      return ADJ_OK;
 
   /* So if we got here, we really do need to append it */
   *array_sz = *array_sz + 1;
   *array = (int*) realloc(*array, *array_sz * sizeof(int));
   ADJ_CHKMALLOC(*array);
   (*array)[*array_sz - 1] = value;
-  return ADJ_ERR_OK;
+  return ADJ_OK;
 }
 
 int adj_extend_timestep_data(adj_adjointer* adjointer, int extent)
@@ -1444,7 +1444,7 @@ int adj_extend_timestep_data(adj_adjointer* adjointer, int extent)
   }
   adjointer->ntimesteps = extent;
 
-  return ADJ_ERR_OK;
+  return ADJ_OK;
 }
 
 int adj_minval(int* array, int array_sz)
@@ -1474,7 +1474,7 @@ int adj_variable_get_ndepending_timesteps(adj_adjointer* adjointer, adj_variable
   int k;
 
   ierr = adj_find_variable_data(&(adjointer->varhash), &variable, &data_ptr);
-  if (ierr != ADJ_ERR_OK) return ierr;
+  if (ierr != ADJ_OK) return ierr;
 
   *ntimesteps = 0;
   for (k = 0; k < data_ptr->ndepending_timesteps; k++)
@@ -1505,7 +1505,7 @@ int adj_variable_get_ndepending_timesteps(adj_adjointer* adjointer, adj_variable
     }
   }
 
-  return ADJ_ERR_OK;
+  return ADJ_OK;
 }
 
 /* Provides the timesteps that need this variable for the computation of the specified functional */
@@ -1517,7 +1517,7 @@ int adj_variable_get_depending_timestep(adj_adjointer* adjointer, adj_variable v
   int ntimesteps;
 
   ierr = adj_find_variable_data(&(adjointer->varhash), &variable, &data_ptr);
-  if (ierr != ADJ_ERR_OK) return ierr;
+  if (ierr != ADJ_OK) return ierr;
 
   ntimesteps = 0;
   for (k = 0; k < data_ptr->ndepending_timesteps; k++)
@@ -1538,7 +1538,7 @@ int adj_variable_get_depending_timestep(adj_adjointer* adjointer, adj_variable v
             if (i == ntimesteps)
             {
               *timestep = data_ptr->depending_timesteps[k];
-              return ADJ_ERR_OK;
+              return ADJ_OK;
             }
             else
             {

@@ -9,7 +9,7 @@
 
 char adj_error_msg[ADJ_ERROR_MSG_BUF];
 
-#define ADJ_ERR_OK 0
+#define ADJ_OK 0
 #define ADJ_ERR_INVALID_INPUTS 1
 #define ADJ_ERR_HASH_FAILED 2
 #define ADJ_ERR_NEED_CALLBACK 3

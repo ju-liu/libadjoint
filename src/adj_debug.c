@@ -23,7 +23,7 @@ int adj_adjointer_check_consistency(adj_adjointer* adjointer)
     hash_ptr = hash_ptr->hh.next;
   }
 
-  return ADJ_ERR_OK;
+  return ADJ_OK;
 }
 
 int adj_test_block_action_transpose(adj_adjointer* adjointer, adj_block block, adj_vector model_input, adj_vector model_output, int N, adj_scalar tol)
@@ -56,7 +56,7 @@ int adj_test_block_action_transpose(adj_adjointer* adjointer, adj_block block, a
   }
 
   ierr = adj_find_operator_callback(adjointer, ADJ_BLOCK_ACTION_CB, block.name, (void (**)(void)) &block_action_func);
-  if (ierr != ADJ_ERR_OK)
+  if (ierr != ADJ_OK)
     return ierr;
 
 
@@ -70,12 +70,12 @@ int adj_test_block_action_transpose(adj_adjointer* adjointer, adj_block block, a
     adjointer->callbacks.vec_set_random(&y);
 
     ierr = adj_evaluate_block_action(adjointer, block, x, &Ax);
-    if (ierr != ADJ_ERR_OK)
+    if (ierr != ADJ_OK)
       break;
 
     block.hermitian = !block.hermitian;
     ierr = adj_evaluate_block_action(adjointer, block, y, &ATy);
-    if (ierr != ADJ_ERR_OK)
+    if (ierr != ADJ_OK)
       break;
     block.hermitian = !block.hermitian;
 
@@ -128,7 +128,7 @@ int adj_test_nonlinear_derivative_action_transpose(adj_adjointer* adjointer, adj
   }
 
   ierr = adj_find_operator_callback(adjointer, ADJ_NBLOCK_DERIVATIVE_ACTION_CB, nonlinear_block_derivative.nonlinear_block.name, (void (**)(void)) &nonlinear_derivative_action_func);
-  if (ierr != ADJ_ERR_OK)
+  if (ierr != ADJ_OK)
     return ierr;
 
 
@@ -145,12 +145,12 @@ int adj_test_nonlinear_derivative_action_transpose(adj_adjointer* adjointer, adj
     adjointer->callbacks.vec_duplicate(model_input, &GTy);
 
     ierr = adj_evaluate_nonlinear_derivative_action(adjointer, 1, &nonlinear_block_derivative, x, &Gx);
-    if (ierr != ADJ_ERR_OK)
+    if (ierr != ADJ_OK)
       break;
 
     nonlinear_block_derivative.hermitian = !nonlinear_block_derivative.hermitian;
     ierr = adj_evaluate_nonlinear_derivative_action(adjointer, 1, &nonlinear_block_derivative, y, &GTy);
-    if (ierr != ADJ_ERR_OK)
+    if (ierr != ADJ_OK)
       break;
     nonlinear_block_derivative.hermitian = !nonlinear_block_derivative.hermitian;
 
@@ -237,11 +237,11 @@ int adj_test_nonlinear_derivative_action_consistency(adj_adjointer* adjointer, a
   }
 
   ierr = adj_find_operator_callback(adjointer, ADJ_NBLOCK_ACTION_CB, nonlinear_block_derivative.nonlinear_block.name, (void (**)(void)) &nonlinear_action_func);
-  if (ierr != ADJ_ERR_OK)
+  if (ierr != ADJ_OK)
     return ierr;
 
   ierr = adj_find_operator_callback(adjointer, ADJ_NBLOCK_DERIVATIVE_ACTION_CB, nonlinear_block_derivative.nonlinear_block.name, (void (**)(void)) &nonlinear_derivative_action_func);
-  if (ierr != ADJ_ERR_OK)
+  if (ierr != ADJ_OK)
     return ierr;
 
   if (N < 2) 
@@ -251,11 +251,11 @@ int adj_test_nonlinear_derivative_action_consistency(adj_adjointer* adjointer, a
   }
 
   ierr = adj_get_variable_value(adjointer, deriv_var, &original_dependency);
-  if (ierr != ADJ_ERR_OK) return ierr;
+  if (ierr != ADJ_OK) return ierr;
 
   /* Compute the unperturbed quantity we'll need through the loop */
   ierr = adj_evaluate_nonlinear_action(adjointer, nonlinear_action_func, nonlinear_block_derivative.nonlinear_block, nonlinear_block_derivative.contraction, NULL, NULL, &original_output);
-  if (ierr != ADJ_ERR_OK) return ierr;
+  if (ierr != ADJ_OK) return ierr;
 
   adjointer->callbacks.vec_duplicate(original_dependency, &dependency_perturbation);
   fd_errors = (adj_scalar*) malloc(N * sizeof(adj_scalar));
@@ -288,7 +288,7 @@ int adj_test_nonlinear_derivative_action_consistency(adj_adjointer* adjointer, a
     adjointer->callbacks.vec_set_values(&dependency_perturbation, perturbations);
 
     ierr = adj_evaluate_nonlinear_action(adjointer, nonlinear_action_func, nonlinear_block_derivative.nonlinear_block, nonlinear_block_derivative.contraction, &deriv_var, &dependency_perturbation, &perturbed_output);
-    if (ierr != ADJ_ERR_OK) return ierr;
+    if (ierr != ADJ_OK) return ierr;
 
     adjointer->callbacks.vec_axpy(&perturbed_output, (adj_scalar) -1.0, original_output);
     adjointer->callbacks.vec_get_norm(perturbed_output, &fd_errors[i]);
@@ -314,7 +314,7 @@ int adj_test_nonlinear_derivative_action_consistency(adj_adjointer* adjointer, a
   grad_conv = (adj_scalar*) malloc((N-1) * sizeof(adj_scalar));
   ADJ_CHKMALLOC(grad_conv);
 
-  return_ierr = ADJ_ERR_OK;
+  return_ierr = ADJ_OK;
   for (i = 0; i < N - 1; i++)
   {
     if (fd_errors[i+1] == (adj_scalar) 0.0 || fd_errors[i] == (adj_scalar) 0.0)

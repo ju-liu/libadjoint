@@ -17,15 +17,15 @@ void test_adj_add_variable_data(void)
   adj_create_variable("Velocity", 0, 0, ADJ_NORMAL_VARIABLE, &a);
 
   ierr=adj_add_variable_data(&hash, &a, data);
-  adj_test_assert(ierr==ADJ_ERR_OK, "Should have worked");
+  adj_test_assert(ierr==ADJ_OK, "Should have worked");
   data = NULL;
 
   ierr=adj_find_variable_data(&hash, &a, &data);
-  adj_test_assert(ierr==ADJ_ERR_OK, "Should have worked");
+  adj_test_assert(ierr==ADJ_OK, "Should have worked");
   adj_test_assert(data->equation == 19, "Should have worked");
 
   ierr=adj_add_variable_data(&hash, &a, data);
-  adj_test_assert(ierr!=ADJ_ERR_OK, "Should not have worked");
+  adj_test_assert(ierr!=ADJ_OK, "Should not have worked");
   
   adj_destroy_hash(&hash);
   free(data);

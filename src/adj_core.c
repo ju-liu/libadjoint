@@ -31,13 +31,13 @@ int adj_get_adjoint_equation(adj_adjointer* adjointer, int equation, char* funct
   strncpy(adj_error_msg, "", ADJ_ERROR_MSG_BUF);
 
   ierr = adj_find_functional_derivative_callback(adjointer, functional, &functional_derivative_func);
-  if (ierr != ADJ_ERR_OK) return ierr;
+  if (ierr != ADJ_OK) return ierr;
 
   fwd_eqn = adjointer->equations[equation];
   fwd_var = fwd_eqn.variable;
 
   ierr = adj_find_variable_data(&(adjointer->varhash), &fwd_var, &fwd_data);
-  assert(ierr == ADJ_ERR_OK);
+  assert(ierr == ADJ_OK);
 
   /* Check that we have all the adjoint values we need, before we start allocating stuff */
   for (i = 0; i < fwd_data->ntargeting_equations; i++)
@@ -52,7 +52,7 @@ int adj_get_adjoint_equation(adj_adjointer* adjointer, int equation, char* funct
     other_adj_var = other_fwd_eqn.variable; other_adj_var.type = ADJ_ADJOINT; strncpy(other_adj_var.functional, functional, ADJ_NAME_LEN);
     /* and now get its value */
     ierr = adj_has_variable_value(adjointer, other_adj_var);
-    if (ierr != ADJ_ERR_OK)
+    if (ierr != ADJ_OK)
     {
       char buf[255];
       adj_variable_str(other_adj_var, buf, 255);
@@ -63,7 +63,7 @@ int adj_get_adjoint_equation(adj_adjointer* adjointer, int equation, char* funct
 
   /* Create the associated adjoint variable */
   ierr = adj_create_variable(fwd_var.name, fwd_var.timestep, fwd_var.iteration, fwd_var.auxiliary, adj_var);
-  if (ierr != ADJ_ERR_OK) return ierr;
+  if (ierr != ADJ_OK) return ierr;
   adj_var->type = ADJ_ADJOINT;
   strncpy(adj_var->functional, functional, ADJ_NAME_LEN);
 
@@ -73,7 +73,7 @@ int adj_get_adjoint_equation(adj_adjointer* adjointer, int equation, char* funct
   {
     /* It might not fail, if we have tried to fetch this equation already */
     ierr = adj_add_new_hash_entry(adjointer, adj_var, &adj_data);
-    if (ierr != ADJ_ERR_OK) return ierr;
+    if (ierr != ADJ_OK) return ierr;
   }
 
   /* Now let's fill in its data */
@@ -87,14 +87,14 @@ int adj_get_adjoint_equation(adj_adjointer* adjointer, int equation, char* funct
   {
     adj_variable_data* block_target_data;
     ierr = adj_find_variable_data(&(adjointer->varhash), &(fwd_eqn.targets[i]), &block_target_data);
-    if (ierr != ADJ_ERR_OK) return ierr;
+    if (ierr != ADJ_OK) return ierr;
     adj_append_unique(&(adj_data->adjoint_equations), &(adj_data->nadjoint_equations), block_target_data->equation);
 
     for (j = 0; j < fwd_eqn.blocks[i].nonlinear_block.ndepends; j++)
     {
       adj_variable_data* j_data;
       ierr = adj_find_variable_data(&(adjointer->varhash), &(fwd_eqn.blocks[i].nonlinear_block.depends[j]), &j_data);
-      if (ierr != ADJ_ERR_OK) return ierr;
+      if (ierr != ADJ_OK) return ierr;
       adj_append_unique(&(adj_data->adjoint_equations), &(adj_data->nadjoint_equations), j_data->equation);
     }
   }
@@ -121,7 +121,7 @@ int adj_get_adjoint_equation(adj_adjointer* adjointer, int equation, char* funct
     }
     block.hermitian = !block.hermitian;
     ierr = adj_evaluate_block_assembly(adjointer, block, lhs, rhs);
-    if (ierr != ADJ_ERR_OK) return ierr;
+    if (ierr != ADJ_OK) return ierr;
   }
 
   /* Great! Now let's assemble the RHS contributions of A*. */
@@ -154,10 +154,10 @@ int adj_get_adjoint_equation(adj_adjointer* adjointer, int equation, char* funct
     other_adj_var = other_fwd_eqn.variable; other_adj_var.type = ADJ_ADJOINT; strncpy(other_adj_var.functional, functional, ADJ_NAME_LEN);
     /* and now get its value */
     ierr = adj_get_variable_value(adjointer, other_adj_var, &adj_value);
-    assert(ierr == ADJ_ERR_OK); /* we should have them all, we checked for them earlier */
+    assert(ierr == ADJ_OK); /* we should have them all, we checked for them earlier */
 
     ierr = adj_evaluate_block_action(adjointer, block, adj_value, &rhs_tmp);
-    if (ierr != ADJ_ERR_OK) return ierr;
+    if (ierr != ADJ_OK) return ierr;
     adjointer->callbacks.vec_axpy(rhs, (adj_scalar)-1.0, rhs_tmp);
     adjointer->callbacks.vec_destroy(&rhs_tmp);
   }
@@ -216,10 +216,10 @@ int adj_get_adjoint_equation(adj_adjointer* adjointer, int equation, char* funct
             {
               adj_vector target;
               ierr = adj_get_variable_value(adjointer, depending_eqn.targets[j], &target);
-              if (ierr != ADJ_ERR_OK) return ierr;
+              if (ierr != ADJ_OK) return ierr;
 
               ierr = adj_create_nonlinear_block_derivative(adjointer, depending_eqn.blocks[j].nonlinear_block, fwd_var, target, ADJ_TRUE, &derivs[l]);
-              if (ierr != ADJ_ERR_OK) return ierr;
+              if (ierr != ADJ_OK) return ierr;
               l++;
             }
           }
@@ -232,7 +232,7 @@ int adj_get_adjoint_equation(adj_adjointer* adjointer, int equation, char* funct
       for (l = 0; l < nderivs; l++)
       {
         ierr = adj_destroy_nonlinear_block_derivative(adjointer, &derivs[l]);
-        if (ierr != ADJ_ERR_OK) return ierr;
+        if (ierr != ADJ_OK) return ierr;
       }
       free(derivs);
 
@@ -253,17 +253,17 @@ int adj_get_adjoint_equation(adj_adjointer* adjointer, int equation, char* funct
         adj_associated.type = ADJ_ADJOINT;
         strncpy(adj_associated.functional, functional, ADJ_NAME_LEN);
         ierr = adj_get_variable_value(adjointer, adj_associated, &adj_value);
-        if (ierr != ADJ_ERR_OK) return ierr;
+        if (ierr != ADJ_OK) return ierr;
 
         /* And now we are ready */
         ierr = adj_evaluate_nonlinear_derivative_action(adjointer, nnew_derivs, new_derivs, adj_value, rhs);
-        if (ierr != ADJ_ERR_OK) return ierr;
+        if (ierr != ADJ_OK) return ierr;
       }
 
       for (l = 0; l < nnew_derivs; l++)
       {
         ierr = adj_destroy_nonlinear_block_derivative(adjointer, &new_derivs[l]);
-        if (ierr != ADJ_ERR_OK) return ierr;
+        if (ierr != ADJ_OK) return ierr;
       }
       free(new_derivs);
     }
@@ -285,7 +285,7 @@ int adj_get_adjoint_equation(adj_adjointer* adjointer, int equation, char* funct
     adj_vector rhs_tmp;
     int has_djdu;
     ierr = adj_evaluate_functional_derivative(adjointer, fwd_var, functional, &rhs_tmp, &has_djdu);
-    if (ierr != ADJ_ERR_OK) return ierr;
+    if (ierr != ADJ_OK) return ierr;
     if (has_djdu)
     {
       adjointer->callbacks.vec_axpy(rhs, (adj_scalar)1.0, rhs_tmp);
@@ -293,7 +293,7 @@ int adj_get_adjoint_equation(adj_adjointer* adjointer, int equation, char* funct
     }
   }
 
-  return ADJ_ERR_OK;
+  return ADJ_OK;
 }
 
 int adj_get_forward_equation(adj_adjointer* adjointer, int equation, adj_matrix* lhs, adj_vector* rhs, adj_variable* fwd_var)
@@ -334,7 +334,7 @@ int adj_get_forward_equation(adj_adjointer* adjointer, int equation, adj_matrix*
   *fwd_var = fwd_eqn.variable;
 
   ierr = adj_find_variable_data(&(adjointer->varhash), fwd_var, &fwd_data);
-  assert(ierr == ADJ_ERR_OK);
+  assert(ierr == ADJ_OK);
 
   /* Check that we have all the forward values we need, before we start allocating stuff */
   for (i = 0; i < fwd_eqn.nblocks; i++)
@@ -346,7 +346,7 @@ int adj_get_forward_equation(adj_adjointer* adjointer, int equation, adj_matrix*
     if (adj_variable_equal(fwd_var, &other_adj_var, 1)) continue; /* that term goes in the lhs */
     /* and now check it has a value */
     ierr = adj_has_variable_value(adjointer, other_adj_var);
-    if (ierr != ADJ_ERR_OK)
+    if (ierr != ADJ_OK)
     {
       char buf[255];
       adj_variable_str(other_adj_var, buf, 255);
@@ -373,7 +373,7 @@ int adj_get_forward_equation(adj_adjointer* adjointer, int equation, adj_matrix*
       }
     }
     ierr = adj_evaluate_block_assembly(adjointer, block, lhs, rhs);
-    if (ierr != ADJ_ERR_OK) return ierr;
+    if (ierr != ADJ_OK) return ierr;
   }
 
   /* Great! Now let's assemble the RHS contributions of A. */
@@ -396,17 +396,17 @@ int adj_get_forward_equation(adj_adjointer* adjointer, int equation, adj_matrix*
 
     /* and now get its value */
     ierr = adj_get_variable_value(adjointer, other_var, &value);
-    assert(ierr == ADJ_ERR_OK); /* we should have them all, we checked for them earlier */
+    assert(ierr == ADJ_OK); /* we should have them all, we checked for them earlier */
 
     ierr = adj_evaluate_block_action(adjointer, block, value, &rhs_tmp);
-    if (ierr != ADJ_ERR_OK) return ierr;
+    if (ierr != ADJ_OK) return ierr;
     adjointer->callbacks.vec_axpy(rhs, (adj_scalar)-1.0, rhs_tmp);
     adjointer->callbacks.vec_destroy(&rhs_tmp);
   }
 
   /* And any forward source terms */
   ierr = adj_evaluate_forward_source(adjointer, equation, &rhs_tmp, &has_output);
-  if (ierr != ADJ_ERR_OK) return ierr;
+  if (ierr != ADJ_OK) return ierr;
 
   if (has_output)
   {
@@ -414,7 +414,7 @@ int adj_get_forward_equation(adj_adjointer* adjointer, int equation, adj_matrix*
     adjointer->callbacks.vec_destroy(&rhs_tmp);
   }
 
-  return ADJ_ERR_OK;
+  return ADJ_OK;
 
 }
 

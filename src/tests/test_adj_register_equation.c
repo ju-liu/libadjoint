@@ -18,30 +18,30 @@ void test_adj_register_equation(void)
   adj_create_block("IdentityOperator", NULL, NULL, &blocks[1]);
 
   ierr=adj_create_equation(vars[0], 1, &blocks[0], &vars[1], &equation); /* nonsense */
-  adj_test_assert(ierr!=ADJ_ERR_OK, "Should not work");
+  adj_test_assert(ierr!=ADJ_OK, "Should not work");
 
   ierr=adj_create_equation(vars[0], 1, &blocks[0], &vars[0], &equation); 
-  adj_test_assert(ierr==ADJ_ERR_OK, "Should work");
+  adj_test_assert(ierr==ADJ_OK, "Should work");
   adj_register_equation(&adjointer, equation);
-  adj_test_assert(ierr==ADJ_ERR_OK, "Should work");
+  adj_test_assert(ierr==ADJ_OK, "Should work");
 
   adj_equation_count(&adjointer, &cnt);
   adj_test_assert(cnt == 1, "equation count");
 
   ierr=adj_register_equation(&adjointer, equation);
-  adj_test_assert(ierr!= ADJ_ERR_OK, "Can't register again");
+  adj_test_assert(ierr!= ADJ_OK, "Can't register again");
   ierr=adj_destroy_equation(&equation);
-  adj_test_assert(ierr==ADJ_ERR_OK, "Should work");
+  adj_test_assert(ierr==ADJ_OK, "Should work");
 
   adj_equation_count(&adjointer, &cnt);
   adj_test_assert(cnt == 1, "Wrong equation count");
 
   ierr=adj_create_equation(vars[1], 2, blocks, vars, &equation); 
-  adj_test_assert(ierr== ADJ_ERR_OK, "Should work");
+  adj_test_assert(ierr== ADJ_OK, "Should work");
   ierr=adj_register_equation(&adjointer, equation);
-  adj_test_assert(ierr == ADJ_ERR_OK, "Register equation");
+  adj_test_assert(ierr == ADJ_OK, "Register equation");
   ierr=adj_destroy_equation(&equation);
-  adj_test_assert(ierr==ADJ_ERR_OK, "Should work");
+  adj_test_assert(ierr==ADJ_OK, "Should work");
 
   adj_equation_count(&adjointer, &cnt);
   adj_test_assert(cnt == 2, "Wrong equation count");

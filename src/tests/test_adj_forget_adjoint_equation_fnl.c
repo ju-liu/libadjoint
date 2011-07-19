@@ -44,22 +44,22 @@ void test_adj_forget_adjoint_equation_fnl(void)
 
   adj_create_block("IdentityOperator", NULL, NULL, &I);
   ierr = adj_create_equation(u[0], 1, &I, &u[0], &eqn);
-  adj_test_assert(ierr == ADJ_ERR_OK, "Should have worked");
+  adj_test_assert(ierr == ADJ_OK, "Should have worked");
   ierr = adj_register_equation(&adjointer, eqn);
-  adj_test_assert(ierr == ADJ_ERR_OK, "Should have worked");
+  adj_test_assert(ierr == ADJ_OK, "Should have worked");
   ierr = adj_destroy_equation(&eqn);
-  adj_test_assert(ierr == ADJ_ERR_OK, "Should have worked");
+  adj_test_assert(ierr == ADJ_OK, "Should have worked");
 
   adj_create_nonlinear_block("AdvectionOperator", 1, &u[0], NULL, &V);
   adj_nonlinear_block_set_coefficient(&V, 0.5);
   adj_create_block("TimesteppingOperator", &V, NULL, &B[0]);
   adj_create_block("BurgersOperator", &V, NULL, &B[1]);
   ierr = adj_create_equation(u[1], 2, B, u, &eqn);
-  adj_test_assert(ierr == ADJ_ERR_OK, "Should have worked");
+  adj_test_assert(ierr == ADJ_OK, "Should have worked");
   ierr = adj_register_equation(&adjointer, eqn);
-  adj_test_assert(ierr == ADJ_ERR_OK, "Should have worked");
+  adj_test_assert(ierr == ADJ_OK, "Should have worked");
   ierr = adj_destroy_equation(&eqn);
-  adj_test_assert(ierr == ADJ_ERR_OK, "Should have worked");
+  adj_test_assert(ierr == ADJ_OK, "Should have worked");
   adj_destroy_nonlinear_block(&V);
   adj_destroy_block(&B[0]);
   adj_destroy_block(&B[1]);
@@ -71,11 +71,11 @@ void test_adj_forget_adjoint_equation_fnl(void)
   u_tmp[0] = u[0];
   u_tmp[1] = u[2];
   ierr = adj_create_equation(u[2], 2, B, u_tmp, &eqn);
-  adj_test_assert(ierr == ADJ_ERR_OK, "Should have worked");
+  adj_test_assert(ierr == ADJ_OK, "Should have worked");
   ierr = adj_register_equation(&adjointer, eqn);
-  adj_test_assert(ierr == ADJ_ERR_OK, "Should have worked");
+  adj_test_assert(ierr == ADJ_OK, "Should have worked");
   ierr = adj_destroy_equation(&eqn);
-  adj_test_assert(ierr == ADJ_ERR_OK, "Should have worked");
+  adj_test_assert(ierr == ADJ_OK, "Should have worked");
   adj_destroy_nonlinear_block(&V);
   adj_destroy_block(&B[0]);
   adj_destroy_block(&B[1]);
@@ -85,11 +85,11 @@ void test_adj_forget_adjoint_equation_fnl(void)
   adj_create_block("TimesteppingOperator", &V, NULL, &B[0]);
   adj_create_block("BurgersOperator", &V, NULL, &B[1]);
   ierr = adj_create_equation(u[3], 2, B, &u[2], &eqn);
-  adj_test_assert(ierr == ADJ_ERR_OK, "Should have worked");
+  adj_test_assert(ierr == ADJ_OK, "Should have worked");
   ierr = adj_register_equation(&adjointer, eqn);
-  adj_test_assert(ierr == ADJ_ERR_OK, "Should have worked");
+  adj_test_assert(ierr == ADJ_OK, "Should have worked");
   ierr = adj_destroy_equation(&eqn);
-  adj_test_assert(ierr == ADJ_ERR_OK, "Should have worked");
+  adj_test_assert(ierr == ADJ_OK, "Should have worked");
   adj_destroy_nonlinear_block(&V);
   adj_destroy_block(&B[0]);
   adj_destroy_block(&B[1]);
@@ -101,11 +101,11 @@ void test_adj_forget_adjoint_equation_fnl(void)
   u_tmp[0] = u[2];
   u_tmp[1] = u[4];
   ierr = adj_create_equation(u[4], 2, B, u_tmp, &eqn);
-  adj_test_assert(ierr == ADJ_ERR_OK, "Should have worked");
+  adj_test_assert(ierr == ADJ_OK, "Should have worked");
   ierr = adj_register_equation(&adjointer, eqn);
-  adj_test_assert(ierr == ADJ_ERR_OK, "Should have worked");
+  adj_test_assert(ierr == ADJ_OK, "Should have worked");
   ierr = adj_destroy_equation(&eqn);
-  adj_test_assert(ierr == ADJ_ERR_OK, "Should have worked");
+  adj_test_assert(ierr == ADJ_OK, "Should have worked");
   adj_destroy_nonlinear_block(&V);
   adj_destroy_block(&B[0]);
   adj_destroy_block(&B[1]);
@@ -118,12 +118,12 @@ void test_adj_forget_adjoint_equation_fnl(void)
   for (i = 0; i < 5; i++)
   {
     ierr = adj_record_variable(&adjointer, u[i], storage);
-    adj_test_assert(ierr == ADJ_ERR_OK, "Should have worked");
+    adj_test_assert(ierr == ADJ_OK, "Should have worked");
   }
 
   /* One last spanner in the works. Claim that u20 is necessary for timestep 1's functional computation. */
   ierr = adj_timestep_set_functional_dependencies(&adjointer, 1, "Drag", 1, &u[3]);
-  adj_test_assert(ierr == ADJ_ERR_OK, "Should have worked fine");
+  adj_test_assert(ierr == ADJ_OK, "Should have worked fine");
 
   has_val = has_values(&adjointer, 5, u);
   adj_test_assert(memcmp(has_val, before_2, 5 * sizeof(int)) == 0, "Should be {1, 1, 1, 1, 1}");
@@ -133,31 +133,31 @@ void test_adj_forget_adjoint_equation_fnl(void)
   adj_test_assert(ierr == ADJ_ERR_INVALID_INPUTS, "Should not have worked");
 
   ierr = adj_forget_adjoint_equation(&adjointer, 4);
-  adj_test_assert(ierr == ADJ_ERR_OK, "Should have worked");
+  adj_test_assert(ierr == ADJ_OK, "Should have worked");
   has_val = has_values(&adjointer, 5, u);
   adj_test_assert(memcmp(has_val, before_2, 5 * sizeof(int)) == 0, "Should be {1, 1, 1, 1, 1}");
   free(has_val);
 
   ierr = adj_forget_adjoint_equation(&adjointer, 3);
-  adj_test_assert(ierr == ADJ_ERR_OK, "Should have worked");
+  adj_test_assert(ierr == ADJ_OK, "Should have worked");
   has_val = has_values(&adjointer, 5, u);
   adj_test_assert(memcmp(has_val, before_2, 5 * sizeof(int)) == 0, "Should be {1, 1, 1, 1, 1}");
   free(has_val);
 
   ierr = adj_forget_adjoint_equation(&adjointer, 2);
-  adj_test_assert(ierr == ADJ_ERR_OK, "Should have worked");
+  adj_test_assert(ierr == ADJ_OK, "Should have worked");
   has_val = has_values(&adjointer, 5, u);
   adj_test_assert(memcmp(has_val, after_2, 5 * sizeof(int)) == 0, "Should be {1, 1, 1, 1, 0}");
   free(has_val);
 
   ierr = adj_forget_adjoint_equation(&adjointer, 1);
-  adj_test_assert(ierr == ADJ_ERR_OK, "Should have worked");
+  adj_test_assert(ierr == ADJ_OK, "Should have worked");
   has_val = has_values(&adjointer, 5, u);
   adj_test_assert(memcmp(has_val, after_1, 5 * sizeof(int)) == 0, "Should be {1, 1, 1, 0, 0}");
   free(has_val);
 
   ierr = adj_forget_adjoint_equation(&adjointer, 0);
-  adj_test_assert(ierr == ADJ_ERR_OK, "Should have worked");
+  adj_test_assert(ierr == ADJ_OK, "Should have worked");
   has_val = has_values(&adjointer, 5, u);
   adj_test_assert(memcmp(has_val, after_0, 5 * sizeof(int)) == 0, "Should be {0, 0, 0, 0, 0}");
   free(has_val);
@@ -171,7 +171,7 @@ int* has_values(adj_adjointer *adjointer, int nb_vars, adj_variable *vars)
   for (i = 0;  i < nb_vars; i++)
   {
     ierr = adj_find_variable_data(&(adjointer->varhash), &vars[i], &data_ptr);
-    if (ierr != ADJ_ERR_OK) adj_test_assert(ierr == ADJ_ERR_OK, "Should have passed");
+    if (ierr != ADJ_OK) adj_test_assert(ierr == ADJ_OK, "Should have passed");
     ret[i] = data_ptr->storage.has_value;
   }
 

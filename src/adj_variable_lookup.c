@@ -18,7 +18,7 @@ int adj_add_variable_data(adj_variable_hash** hash, adj_variable* var, adj_varia
   entry->data = data;
 
   HASH_ADD(hh, *hash, variable, sizeof(adj_variable), entry);
-  return ADJ_ERR_OK;
+  return ADJ_OK;
 }
 
 int adj_find_variable_data(adj_variable_hash** hash, adj_variable* var, adj_variable_data** data)
@@ -31,7 +31,7 @@ int adj_find_variable_data(adj_variable_hash** hash, adj_variable* var, adj_vari
     return ADJ_ERR_HASH_FAILED;
 
   *data = check->data;
-  return ADJ_ERR_OK;
+  return ADJ_OK;
 }
 
 void adj_print_hash(adj_variable_hash** hash)
@@ -56,5 +56,5 @@ int adj_destroy_hash(adj_variable_hash** hash)
     HASH_DEL(*hash, entry);
     free(entry);
   }
-  return ADJ_ERR_OK;
+  return ADJ_OK;
 }

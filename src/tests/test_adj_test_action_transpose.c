@@ -33,7 +33,7 @@ void test_adj_test_action_transpose(void)
   VecCreateSeq(PETSC_COMM_SELF, dim, &output);
  
   ierr = adj_test_block_action_transpose(&adjointer, matrix, petsc_vec_to_adj_vector(&input), petsc_vec_to_adj_vector(&output), number_of_tests, tol);
-  adj_test_assert(ierr==ADJ_ERR_OK, "Should have worked");
+  adj_test_assert(ierr==ADJ_OK, "Should have worked");
 }
 
 void matrix_action_callback(int nb_variables, adj_variable* variables, adj_vector* dependencies, int hermitian, adj_scalar coefficient, adj_vector input, void* context, adj_vector* output)

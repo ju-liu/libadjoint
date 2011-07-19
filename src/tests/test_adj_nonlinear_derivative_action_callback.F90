@@ -233,15 +233,15 @@ subroutine test_adj_nonlinear_derivative_action_callback
   ! Register the callback for the block action
   ierr = adj_register_operator_callback(adjointer, ADJ_BLOCK_ACTION_CB, "NonlinearOperator", &
          & c_funloc(block_action_callback))
-  call adj_test_assert(ierr == ADJ_ERR_OK, "Should have worked")
+  call adj_test_assert(ierr == ADJ_OK, "Should have worked")
 
   ierr = adj_get_adjoint_equation(adjointer, functional="Drag", equation=0, lhs=lhs, rhs=rhs, variable=adj_var0)
-  call adj_test_assert(ierr /= ADJ_ERR_OK, "Should not have worked")
+  call adj_test_assert(ierr /= ADJ_OK, "Should not have worked")
 
   ! Register the callback for the nonlinear derivative action
   ierr = adj_register_operator_callback(adjointer, ADJ_NBLOCK_DERIVATIVE_ACTION_CB, "NonlinearOperator", &
                            & c_funloc(nonlinear_derivative_action_callback))
-  call adj_test_assert(ierr == ADJ_ERR_OK, "Should have worked")
+  call adj_test_assert(ierr == ADJ_OK, "Should have worked")
 
   ierr = adj_get_adjoint_equation(adjointer, functional="Drag", equation=0, lhs=lhs, rhs=rhs, variable=adj_var0)
   call adj_test_assert(ierr == 0, "Should have worked")

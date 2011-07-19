@@ -912,7 +912,7 @@ module libadjoint
       end if
     end do
 
-    ierr = ADJ_ERR_OK
+    ierr = ADJ_OK
   end function adj_variable_get_name
 
   function adj_create_nonlinear_block(name, depends, coefficient, context, nblock) result(ierr)
@@ -942,7 +942,7 @@ module libadjoint
     endif
 
     ierr = adj_create_nonlinear_block_c(name_c, size(depends), depends, context_c, nblock)
-    if (ierr /= ADJ_ERR_OK) return;
+    if (ierr /= ADJ_OK) return;
 
     if (present(coefficient)) then
       ierr = adj_nonlinear_block_set_coefficient(nblock, coefficient)
@@ -1216,7 +1216,7 @@ module libadjoint
     ierr = adj_dict_find_c(dict, key_c, ptr)
     value = " "
 
-    if (ierr == ADJ_ERR_OK) then
+    if (ierr == ADJ_OK) then
       call c_f_pointer(ptr, value_c, (/ADJ_DICT_LEN/))
       j = 1
       do while(j <= min(ADJ_DICT_LEN, len(value)) .and. value_c(j) /= c_null_char)

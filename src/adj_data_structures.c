@@ -33,25 +33,25 @@ int adj_create_variable(char* name, int timestep, int iteration, int auxiliary, 
   var->auxiliary = auxiliary;
   var->type = ADJ_FORWARD;
 
-  return ADJ_ERR_OK;
+  return ADJ_OK;
 }
 
 int adj_variable_get_name(adj_variable var, char** name)
 {
   *name = var.name;
-  return ADJ_ERR_OK;
+  return ADJ_OK;
 }
 
 int adj_variable_get_timestep(adj_variable var, int* timestep)
 {
   *timestep = var.timestep;
-  return ADJ_ERR_OK;
+  return ADJ_OK;
 }
 
 int adj_variable_get_iteration(adj_variable var, int* iteration)
 {
   *iteration = var.iteration;
-  return ADJ_ERR_OK;
+  return ADJ_OK;
 }
 
 int adj_create_nonlinear_block(char* name, int ndepends, adj_variable* depends, void* context, adj_nonlinear_block* nblock)
@@ -86,19 +86,19 @@ int adj_create_nonlinear_block(char* name, int ndepends, adj_variable* depends, 
   nblock->tolerance = (adj_scalar) 0.0;
   nblock->test_derivative = ADJ_FALSE;
   nblock->number_of_rounds = 0;
-  return ADJ_ERR_OK;
+  return ADJ_OK;
 }
 
 int adj_destroy_nonlinear_block(adj_nonlinear_block* nblock)
 {
   free(nblock->depends);
-  return ADJ_ERR_OK;
+  return ADJ_OK;
 }
 
 int adj_nonlinear_block_set_coefficient(adj_nonlinear_block* nblock, adj_scalar coefficient)
 {
   nblock->coefficient = coefficient;
-  return ADJ_ERR_OK;
+  return ADJ_OK;
 }
 
 int adj_create_block(char* name, adj_nonlinear_block* nblock, void* context, adj_block* block)
@@ -134,20 +134,20 @@ int adj_create_block(char* name, adj_nonlinear_block* nblock, void* context, adj
   block->number_of_tests = 0;
   block->tolerance = (adj_scalar) 0.0;
 
-  return ADJ_ERR_OK;
+  return ADJ_OK;
 }
 
 int adj_destroy_block(adj_block* block)
 {
   /* Dummy to fool the compiler into not printing a warning */
   (void) block;
-  return ADJ_ERR_OK;
+  return ADJ_OK;
 }
 
 int adj_block_set_coefficient(adj_block* block, adj_scalar coefficient)
 {
   block->coefficient = coefficient;
-  return ADJ_ERR_OK;
+  return ADJ_OK;
 }
 
 int adj_block_set_hermitian(adj_block* block, int hermitian)
@@ -159,7 +159,7 @@ int adj_block_set_hermitian(adj_block* block, int hermitian)
   }
 
   block->hermitian = hermitian;
-  return ADJ_ERR_OK;
+  return ADJ_OK;
 }
 
 int adj_block_set_test_hermitian(adj_block* block, int test_hermitian, int number_of_tests, adj_scalar tolerance) 
@@ -185,7 +185,7 @@ int adj_block_set_test_hermitian(adj_block* block, int test_hermitian, int numbe
   block->test_hermitian = test_hermitian;
   block->number_of_tests = number_of_tests;
   block->tolerance = tolerance;
-  return ADJ_ERR_OK;
+  return ADJ_OK;
 }
 
 int adj_nonlinear_block_set_test_hermitian(adj_nonlinear_block* nblock, int test_deriv_hermitian, int number_of_tests, adj_scalar tolerance) 
@@ -211,7 +211,7 @@ int adj_nonlinear_block_set_test_hermitian(adj_nonlinear_block* nblock, int test
   nblock->test_deriv_hermitian = test_deriv_hermitian;
   nblock->number_of_tests = number_of_tests;
   nblock->tolerance = tolerance;
-  return ADJ_ERR_OK;
+  return ADJ_OK;
 }
 
 int adj_nonlinear_block_set_test_derivative(adj_nonlinear_block* nblock, int test_derivative, int number_of_rounds) 
@@ -230,7 +230,7 @@ int adj_nonlinear_block_set_test_derivative(adj_nonlinear_block* nblock, int tes
 
   nblock->test_derivative = test_derivative;
   nblock->number_of_rounds = number_of_rounds;
-  return ADJ_ERR_OK;
+  return ADJ_OK;
 }
 
 int adj_variable_equal(adj_variable* var1, adj_variable* var2, int nvars)
@@ -259,7 +259,7 @@ int adj_variable_str(adj_variable var, char* name, size_t namelen)
     assert(0);
   }
   snprintf(name, namelen, "%s:%d:%d%s", var.name, var.timestep, var.iteration, buf);
-  return ADJ_ERR_OK;
+  return ADJ_OK;
 }
 
 int adj_create_equation(adj_variable var, int nblocks, adj_block* blocks, adj_variable* targets, adj_equation* equation)
@@ -320,7 +320,7 @@ int adj_create_equation(adj_variable var, int nblocks, adj_block* blocks, adj_va
     {
       int ierr;
       ierr = adj_copy_nonlinear_block(blocks[i].nonlinear_block, &equation->blocks[i].nonlinear_block);
-      if (ierr != ADJ_ERR_OK) return ierr;
+      if (ierr != ADJ_OK) return ierr;
     }
   }
   equation->targets = (adj_variable*) malloc(nblocks * sizeof(adj_variable));
@@ -330,7 +330,7 @@ int adj_create_equation(adj_variable var, int nblocks, adj_block* blocks, adj_va
   equation->rhsdeps = NULL;
   equation->rhs_context = NULL;
 
-  return ADJ_ERR_OK;
+  return ADJ_OK;
 }
 
 int adj_equation_set_rhs_dependencies(adj_equation* equation, int nrhsdeps, adj_variable* rhsdeps, void* context)
@@ -345,7 +345,7 @@ int adj_equation_set_rhs_dependencies(adj_equation* equation, int nrhsdeps, adj_
   equation->rhsdeps = (adj_variable*) malloc(nrhsdeps * sizeof(adj_variable));
   memcpy(equation->rhsdeps, rhsdeps, nrhsdeps * sizeof(adj_variable));
   equation->rhs_context = context;
-  return ADJ_ERR_OK;
+  return ADJ_OK;
 }
 
 int adj_destroy_equation(adj_equation* equation)
@@ -358,7 +358,7 @@ int adj_destroy_equation(adj_equation* equation)
     if (equation->blocks[i].has_nonlinear_block)
     {
       ierr = adj_destroy_nonlinear_block(&equation->blocks[i].nonlinear_block);
-      if (ierr != ADJ_ERR_OK) return ierr;
+      if (ierr != ADJ_OK) return ierr;
     }
   }
 
@@ -369,13 +369,13 @@ int adj_destroy_equation(adj_equation* equation)
     free(equation->rhsdeps); equation->rhsdeps = NULL;
   }
 
-  return ADJ_ERR_OK;
+  return ADJ_OK;
 }
 
 int adj_variable_set_auxiliary(adj_variable* var, int auxiliary)
 {
   var->auxiliary = auxiliary;
-  return ADJ_ERR_OK;
+  return ADJ_OK;
 }
 
 int adj_create_nonlinear_block_derivative(adj_adjointer* adjointer, adj_nonlinear_block nblock, adj_variable fwd, adj_vector contraction, int hermitian, adj_nonlinear_block_derivative* deriv)
@@ -403,7 +403,7 @@ int adj_create_nonlinear_block_derivative(adj_adjointer* adjointer, adj_nonlinea
   adjointer->callbacks.vec_duplicate(contraction, &(deriv->contraction));
   adjointer->callbacks.vec_axpy(&(deriv->contraction), (adj_scalar) 1.0, contraction);
 
-  return ADJ_ERR_OK;
+  return ADJ_OK;
 }
 
 int adj_destroy_nonlinear_block_derivative(adj_adjointer* adjointer, adj_nonlinear_block_derivative* deriv)
@@ -415,7 +415,7 @@ int adj_destroy_nonlinear_block_derivative(adj_adjointer* adjointer, adj_nonline
   }
 
   adjointer->callbacks.vec_destroy(&(deriv->contraction));
-  return ADJ_ERR_OK;
+  return ADJ_OK;
 }
 
 int adj_copy_nonlinear_block(adj_nonlinear_block src, adj_nonlinear_block* dest)
@@ -427,5 +427,5 @@ int adj_copy_nonlinear_block(adj_nonlinear_block src, adj_nonlinear_block* dest)
 
   memcpy(dest->depends, src.depends, src.ndepends * sizeof(adj_variable));
 
-  return ADJ_ERR_OK;
+  return ADJ_OK;
 }

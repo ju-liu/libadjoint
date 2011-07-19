@@ -87,7 +87,7 @@ int adj_simplify_derivatives(adj_adjointer* adjointer, int ninput, adj_nonlinear
            very soon. */
         int ierr;
         ierr = adj_create_nonlinear_block_derivative(adjointer, copy[i].nonlinear_block, copy[i].variable, copy[i].contraction, copy[i].hermitian, &(*output)[j]);
-        if (ierr != ADJ_ERR_OK) return ierr;
+        if (ierr != ADJ_OK) return ierr;
       }
       j++;
     }
@@ -101,7 +101,7 @@ int adj_simplify_derivatives(adj_adjointer* adjointer, int ninput, adj_nonlinear
   }
   else
   {
-    return_ierr = ADJ_ERR_OK;
+    return_ierr = ADJ_OK;
   }
 
   return return_ierr;

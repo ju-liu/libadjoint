@@ -4,7 +4,7 @@
 int adj_dict_init(adj_dictionary* dict)
 {
   dict->dict = NULL;
-  return ADJ_ERR_OK;
+  return ADJ_OK;
 }
 
 int adj_dict_set(adj_dictionary* dict, char* key, char* value)
@@ -16,7 +16,7 @@ int adj_dict_set(adj_dictionary* dict, char* key, char* value)
   if (check != NULL)
   {
     strncpy(check->value, value, ADJ_DICT_LEN);
-    return ADJ_ERR_OK;
+    return ADJ_OK;
   }
 
   entry = (adj_dictionary_entry*) malloc(sizeof(adj_dictionary_entry));
@@ -25,7 +25,7 @@ int adj_dict_set(adj_dictionary* dict, char* key, char* value)
   strncpy(entry->value, value, ADJ_DICT_LEN * sizeof(char));
 
   HASH_ADD(hh, dict->dict, key, ADJ_DICT_LEN * sizeof(char), entry);
-  return ADJ_ERR_OK;
+  return ADJ_OK;
 }
 
 int adj_dict_find(adj_dictionary* dict, char* key, char** value)
@@ -40,7 +40,7 @@ int adj_dict_find(adj_dictionary* dict, char* key, char** value)
   }
 
   *value = check->value;
-  return ADJ_ERR_OK;
+  return ADJ_OK;
 }
 
 void adj_dict_print(adj_dictionary* dict)
@@ -62,5 +62,5 @@ int adj_dict_destroy(adj_dictionary* dict)
     HASH_DEL(dict->dict, entry);
     free(entry);
   }
-  return ADJ_ERR_OK;
+  return ADJ_OK;
 }

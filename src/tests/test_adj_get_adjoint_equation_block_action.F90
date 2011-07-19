@@ -146,34 +146,34 @@ subroutine test_adj_get_adjoint_equation_block_action
   
   ! Test the html output
   ierr = adj_adjointer_to_html(adjointer, "test_adj_get_adjoint_equation_block_action_0_forward.html", ADJ_FORWARD)
-  call adj_test_assert(ierr == ADJ_ERR_OK, "html output should have worked")
+  call adj_test_assert(ierr == ADJ_OK, "html output should have worked")
   ierr = adj_adjointer_to_html(adjointer, "test_adj_get_adjoint_equation_block_action_0_adjoint.html", ADJ_ADJOINT)
-  call adj_test_assert(ierr == ADJ_ERR_OK, "html output should have worked")
+  call adj_test_assert(ierr == ADJ_OK, "html output should have worked")
   
   call adj_chkierr(ierr)
   ierr = adj_set_petsc_data_callbacks(adjointer)
   call adj_chkierr(ierr)
   ierr = adj_register_operator_callback(adjointer, ADJ_BLOCK_ASSEMBLY_CB, "IdentityOperator", c_funloc(identity_assembly_callback))
-  call adj_test_assert(ierr == ADJ_ERR_OK, "Should have worked")
+  call adj_test_assert(ierr == ADJ_OK, "Should have worked")
 
   ierr = adj_create_block("IdentityOperator", block=I)
-  call adj_test_assert(ierr == ADJ_ERR_OK, "Should have worked")
+  call adj_test_assert(ierr == ADJ_OK, "Should have worked")
   ierr = adj_create_variable("Velocity", timestep=0, iteration=0, auxiliary=.false., variable=u0)
-  call adj_test_assert(ierr == ADJ_ERR_OK, "Should have worked")
+  call adj_test_assert(ierr == ADJ_OK, "Should have worked")
   ierr = adj_create_variable("Velocity", timestep=1, iteration=0, auxiliary=.false., variable=u1)
-  call adj_test_assert(ierr == ADJ_ERR_OK, "Should have worked")
+  call adj_test_assert(ierr == ADJ_OK, "Should have worked")
 
   ierr = adj_create_equation(u0, (/I/), (/u0/), equation)
-  call adj_test_assert(ierr == ADJ_ERR_OK, "Should have worked")
+  call adj_test_assert(ierr == ADJ_OK, "Should have worked")
   ierr = adj_register_equation(adjointer, equation)
-  call adj_test_assert(ierr == ADJ_ERR_OK, "Should have worked")
+  call adj_test_assert(ierr == ADJ_OK, "Should have worked")
   ierr = adj_destroy_equation(equation)
   call adj_chkierr(ierr)
 
   ierr = adj_create_equation(u1, (/I, I/), (/u0, u1/), equation)
-  call adj_test_assert(ierr == ADJ_ERR_OK, "Should have worked")
+  call adj_test_assert(ierr == ADJ_OK, "Should have worked")
   ierr = adj_register_equation(adjointer, equation)
-  call adj_test_assert(ierr == ADJ_ERR_OK, "Should have worked")
+  call adj_test_assert(ierr == ADJ_OK, "Should have worked")
   ierr = adj_destroy_equation(equation)
   call adj_chkierr(ierr)
 
@@ -184,12 +184,12 @@ subroutine test_adj_get_adjoint_equation_block_action
   call adj_test_assert(ierr == ADJ_ERR_NEED_CALLBACK, "Need the functional callback")
 
   ierr = adj_register_functional_derivative_callback(adjointer, "Drag", c_funloc(functional_derivative_callback))
-  call adj_test_assert(ierr == ADJ_ERR_OK, "Should have worked")
+  call adj_test_assert(ierr == ADJ_OK, "Should have worked")
 
   ierr = adj_timestep_set_functional_dependencies(adjointer, timestep=0, functional="Drag", dependencies=(/u0/))
-  call adj_test_assert(ierr == ADJ_ERR_OK, "Should have worked")
+  call adj_test_assert(ierr == ADJ_OK, "Should have worked")
   ierr = adj_timestep_set_functional_dependencies(adjointer, timestep=1, functional="Drag", dependencies=(/u0/))
-  call adj_test_assert(ierr == ADJ_ERR_OK, "Should have worked")
+  call adj_test_assert(ierr == ADJ_OK, "Should have worked")
 
   ierr = adj_get_adjoint_equation(adjointer, equation=0, functional="Drag", lhs=lhs, rhs=rhs, variable=adj_var1)
   call adj_test_assert(ierr == ADJ_ERR_NEED_VALUE, "We should need the value for u0")
@@ -199,20 +199,20 @@ subroutine test_adj_get_adjoint_equation_block_action
 
   ! Test the html output
   ierr = adj_adjointer_to_html(adjointer, "test_adj_get_adjoint_equation_block_action_1_forward.html", ADJ_FORWARD)
-  call adj_test_assert(ierr == ADJ_ERR_OK, "html output should have worked")
+  call adj_test_assert(ierr == ADJ_OK, "html output should have worked")
   ierr = adj_adjointer_to_html(adjointer, "test_adj_get_adjoint_equation_block_action_1_adjoint.html", ADJ_ADJOINT)
 
-  call adj_test_assert(ierr == ADJ_ERR_OK, "html output should have worked")
+  call adj_test_assert(ierr == ADJ_OK, "html output should have worked")
 
   ! Record a value for u0
   call VecCreateSeq(PETSC_COMM_SELF, m, u0_vec, ierr)
   call VecZeroEntries(u0_vec, ierr)
   ierr = adj_storage_memory_copy(petsc_vec_to_adj_vector(u0_vec), storage)
   ierr = adj_record_variable(adjointer, u0, storage)
-  call adj_test_assert(ierr == ADJ_ERR_OK, "Should have worked")
+  call adj_test_assert(ierr == ADJ_OK, "Should have worked")
 
   ierr = adj_get_adjoint_equation(adjointer, equation=1, functional="Drag", lhs=lhs, rhs=rhs, variable=adj_var1)
-  call adj_test_assert(ierr == ADJ_ERR_OK, "Should have worked")
+  call adj_test_assert(ierr == ADJ_OK, "Should have worked")
 
   ! We don't actually need the memory for lhs and rhs, so we'll delete them now
   call petsc_vec_destroy_proc(rhs)
@@ -233,16 +233,16 @@ subroutine test_adj_get_adjoint_equation_block_action
   lambda1_vec%ptr = c_loc(lambda1)
   ierr = adj_storage_memory_copy(lambda1_vec, storage)
   ierr = adj_record_variable(adjointer, adj_var1, storage)
-  call adj_test_assert(ierr == ADJ_ERR_OK, "Should have worked")
+  call adj_test_assert(ierr == ADJ_OK, "Should have worked")
 
   ierr = adj_get_adjoint_equation(adjointer, equation=0, functional="Drag", lhs=lhs, rhs=rhs, variable=adj_var1)
   call adj_test_assert(ierr == ADJ_ERR_NEED_CALLBACK, "Should need the block_action_callback")
 
   ierr = adj_register_operator_callback(adjointer, ADJ_BLOCK_ACTION_CB, "IdentityOperator", c_funloc(identity_action_callback))
-  call adj_test_assert(ierr == ADJ_ERR_OK, "Should have worked")
+  call adj_test_assert(ierr == ADJ_OK, "Should have worked")
 
   ierr = adj_get_adjoint_equation(adjointer, equation=0, functional="Drag", lhs=lhs, rhs=rhs, variable=adj_var1)
-  call adj_test_assert(ierr == ADJ_ERR_OK, "Should have worked")
+  call adj_test_assert(ierr == ADJ_OK, "Should have worked")
 
   ! So now solve lhs . lambda0 = rhs
   ! With this setup, lambda0 = -1 * lambda1.

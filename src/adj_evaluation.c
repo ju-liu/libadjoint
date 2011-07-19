@@ -9,7 +9,7 @@ int adj_evaluate_block_action(adj_adjointer* adjointer, adj_block block, adj_vec
   adj_variable* variables = NULL;
 
   ierr = adj_find_operator_callback(adjointer, ADJ_BLOCK_ACTION_CB, block.name, (void (**)(void)) &block_action_func);
-  if (ierr != ADJ_ERR_OK)
+  if (ierr != ADJ_OK)
     return ierr;
 
   /* We have the right callback, so let's call it already */ 
@@ -24,14 +24,14 @@ int adj_evaluate_block_action(adj_adjointer* adjointer, adj_block block, adj_vec
     for (i = 0; i < nb_variables; i++)
     {
       ierr = adj_get_variable_value(adjointer, variables[i], &dependencies[i]);
-      if (ierr != ADJ_ERR_OK)
+      if (ierr != ADJ_OK)
         return ierr;
     }
   }
 
   block_action_func(nb_variables, variables, dependencies, block.hermitian, block.coefficient, input, block.context, output );
 
-  ierr = ADJ_ERR_OK;
+  ierr = ADJ_OK;
   /* Run the hermitian tests if specified */
   if (block.test_hermitian) 
     ierr = adj_test_block_action_transpose(adjointer, block, input, *output, block.number_of_tests, block.tolerance);
@@ -52,7 +52,7 @@ int adj_evaluate_block_assembly(adj_adjointer* adjointer, adj_block block, adj_m
   adj_variable* variables = NULL;
 
   ierr = adj_find_operator_callback(adjointer, ADJ_BLOCK_ASSEMBLY_CB, block. name, (void (**)(void)) &block_assembly_func);
-  if (ierr != ADJ_ERR_OK)
+  if (ierr != ADJ_OK)
     return ierr;
 
   /* We have the right callback, so let's call it already */ 
@@ -67,7 +67,7 @@ int adj_evaluate_block_assembly(adj_adjointer* adjointer, adj_block block, adj_m
     for (i = 0; i < nb_variables; i++)
     {
       ierr = adj_get_variable_value(adjointer, variables[i], &dependencies[i]);
-      if (ierr != ADJ_ERR_OK)
+      if (ierr != ADJ_OK)
         return ierr;
     }
   }
@@ -77,7 +77,7 @@ int adj_evaluate_block_assembly(adj_adjointer* adjointer, adj_block block, adj_m
   if (block.has_nonlinear_block)
     free(dependencies);
 
-  return ADJ_ERR_OK;
+  return ADJ_OK;
 }
 
 
@@ -102,7 +102,7 @@ int adj_evaluate_nonlinear_derivative_action(adj_adjointer* adjointer, int nderi
     for (i = 0; i < derivatives[deriv].nonlinear_block.ndepends; i++)
     {
       ierr = adj_has_variable_value(adjointer, derivatives[deriv].nonlinear_block.depends[i]);
-      if (ierr != ADJ_ERR_OK) return ierr;
+      if (ierr != ADJ_OK) return ierr;
     }
   }
 
@@ -110,21 +110,21 @@ int adj_evaluate_nonlinear_derivative_action(adj_adjointer* adjointer, int nderi
   {
     /* First, try to find a routine supplied by the user. */
     ierr = adj_find_operator_callback(adjointer, ADJ_NBLOCK_DERIVATIVE_ACTION_CB, derivatives[deriv].nonlinear_block.name, (void (**)(void)) &nonlinear_derivative_action_func);
-    if (ierr == ADJ_ERR_OK)
+    if (ierr == ADJ_OK)
     {
       if (derivatives[deriv].nonlinear_block.test_deriv_hermitian)
       {
         ierr = adj_test_nonlinear_derivative_action_transpose(adjointer, derivatives[deriv], value, *rhs, derivatives[deriv].nonlinear_block.number_of_tests, derivatives[deriv].nonlinear_block.tolerance);
-        if (ierr != ADJ_ERR_OK) return ierr;
+        if (ierr != ADJ_OK) return ierr;
       }
 	  if (derivatives[deriv].nonlinear_block.test_derivative)
       {
         ierr = adj_test_nonlinear_derivative_action_consistency(adjointer, derivatives[deriv], derivatives[deriv].variable, derivatives[deriv].nonlinear_block.number_of_rounds);
-        if (ierr != ADJ_ERR_OK) return ierr;
+        if (ierr != ADJ_OK) return ierr;
       }
       adj_vector rhs_tmp;
       ierr = adj_evaluate_nonlinear_derivative_action_supplied(adjointer, nonlinear_derivative_action_func, derivatives[deriv], value, &rhs_tmp);
-      if (ierr != ADJ_ERR_OK) return ierr;
+      if (ierr != ADJ_OK) return ierr;
       adjointer->callbacks.vec_axpy(rhs, (adj_scalar) -1.0, rhs_tmp);
       adjointer->callbacks.vec_destroy(&rhs_tmp);
     }
@@ -137,21 +137,21 @@ int adj_evaluate_nonlinear_derivative_action(adj_adjointer* adjointer, int nderi
 
       void (*nonlinear_action_func)(int nvar, adj_variable* variables, adj_vector* dependencies, adj_vector input, void* context, adj_vector* output) = NULL;
       ierr = adj_find_operator_callback(adjointer, ADJ_NBLOCK_ACTION_CB, derivatives[deriv].nonlinear_block.name, (void (**)(void)) &nonlinear_action_func);
-      if (ierr != ADJ_ERR_OK)
+      if (ierr != ADJ_OK)
       {
         snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Could not find a nonlinear derivative action callback, nor a nonlinear action callback, for operator %s.", derivatives[deriv].nonlinear_block.name);
         return ierr;
       }
       adjointer->callbacks.vec_duplicate(model_rhs, &rhs_tmp);
       ierr = adj_evaluate_nonlinear_derivative_action_isp(adjointer, nonlinear_action_func, derivatives[deriv], value, &rhs_tmp);
-      if (ierr != ADJ_ERR_OK) return ierr;
+      if (ierr != ADJ_OK) return ierr;
       adjointer->callbacks.vec_axpy(rhs, (adj_scalar) 1.0, rhs_tmp);
       adjointer->callbacks.vec_destroy(&rhs_tmp);
 */
     }
   }
 
-  return ADJ_ERR_OK;
+  return ADJ_OK;
 }
 
 int adj_evaluate_nonlinear_derivative_action_supplied(adj_adjointer* adjointer, void (*nonlinear_derivative_action_func)(int nvar, adj_variable* variables, 
@@ -167,14 +167,14 @@ int adj_evaluate_nonlinear_derivative_action_supplied(adj_adjointer* adjointer, 
   for (i = 0; i < derivative.nonlinear_block.ndepends; i++)
   {
     ierr = adj_get_variable_value(adjointer, derivative.nonlinear_block.depends[i], &(dependencies[i]));
-    assert(ierr == ADJ_ERR_OK); /* We checked for them earlier */
+    assert(ierr == ADJ_OK); /* We checked for them earlier */
   }
 
   nonlinear_derivative_action_func(derivative.nonlinear_block.ndepends, derivative.nonlinear_block.depends, dependencies, derivative.variable,
                                    derivative.contraction, derivative.hermitian, value, derivative.nonlinear_block.coefficient, derivative.nonlinear_block.context, rhs);
 
   free(dependencies);
-  return ADJ_ERR_OK;
+  return ADJ_OK;
 }
 
 int adj_evaluate_nonlinear_derivative_action_isp(adj_adjointer* adjointer, void (*nonlinear_action_func)(int nvar, adj_variable*
@@ -206,24 +206,24 @@ int adj_evaluate_nonlinear_derivative_action_isp(adj_adjointer* adjointer, void 
   strncpy(adj_error_msg, "", ADJ_ERROR_MSG_BUF);
 
   ierr = adj_has_variable_value(adjointer, derivative.variable);
-  if (ierr != ADJ_ERR_OK) return ierr;
+  if (ierr != ADJ_OK) return ierr;
 
   /* Step 1. Compute the action at the unperturbed state. */
   ierr = adj_evaluate_nonlinear_action(adjointer, nonlinear_action_func, derivative.nonlinear_block, derivative.contraction, NULL, NULL, &unperturbed);
-  if (ierr != ADJ_ERR_OK) return ierr;
+  if (ierr != ADJ_OK) return ierr;
 
   /* Step 2. Colour the graph. */
   /* Firstly, get the value associated with the variable to be perturbed, and then fetch its size. */
   ierr = adj_get_variable_value(adjointer, derivative.variable, &dependency);
-  assert(ierr == ADJ_ERR_OK); /* we checked for it earlier */
+  assert(ierr == ADJ_OK); /* we checked for it earlier */
   adjointer->callbacks.vec_get_size(dependency, &sz);
 
   ierr = adj_find_operator_callback(adjointer, ADJ_NBLOCK_COLOURING_CB, derivative.nonlinear_block.name, (void (**)(void)) &nonlinear_colouring_func);
-  if (ierr != ADJ_ERR_OK) return ierr;
+  if (ierr != ADJ_OK) return ierr;
   colouring = (int*) malloc(sz * sizeof(int));
   ADJ_CHKMALLOC(colouring);
   ierr = adj_evaluate_nonlinear_colouring(adjointer, derivative.nonlinear_block, derivative.variable, nonlinear_colouring_func, sz, colouring);
-  if (ierr != ADJ_ERR_OK)
+  if (ierr != ADJ_OK)
   {
     free(colouring);
     return ierr;
@@ -265,7 +265,7 @@ int adj_evaluate_nonlinear_derivative_action_isp(adj_adjointer* adjointer, void 
 
     /* Step 4b. Compute the action at the perturbed state. */
     ierr = adj_evaluate_nonlinear_action(adjointer, nonlinear_action_func, derivative.nonlinear_block, derivative.contraction, &derivative.variable, &perturbation_vector, &perturbed);
-    if (ierr != ADJ_ERR_OK) return ierr;
+    if (ierr != ADJ_OK) return ierr;
 
     /* Step 4c. Subtract off the unperturbed result. */
     adjointer->callbacks.vec_axpy(&perturbed, (adj_scalar) -1.0, unperturbed);
@@ -285,7 +285,7 @@ int adj_evaluate_nonlinear_derivative_action_isp(adj_adjointer* adjointer, void 
   adjointer->callbacks.vec_destroy(&unperturbed);
   adjointer->callbacks.vec_destroy(&perturbation_vector);
   free(perturbation_scalars);
-  return ADJ_ERR_OK;
+  return ADJ_OK;
 }
 
 int adj_evaluate_nonlinear_colouring(adj_adjointer* adjointer, adj_nonlinear_block nonlinear_block, adj_variable derivative,
@@ -301,13 +301,13 @@ int adj_evaluate_nonlinear_colouring(adj_adjointer* adjointer, adj_nonlinear_blo
   for (i = 0; i < nonlinear_block.ndepends; i++)
   {
     ierr = adj_get_variable_value(adjointer, nonlinear_block.depends[i], &(dependencies[i]));
-    assert(ierr == ADJ_ERR_OK); /* We checked for them earlier */
+    assert(ierr == ADJ_OK); /* We checked for them earlier */
   }
 
   nonlinear_colouring_func(nonlinear_block.ndepends, nonlinear_block.depends, dependencies, derivative, nonlinear_block.context, sz, colouring);
 
   free(dependencies);
-  return ADJ_ERR_OK;
+  return ADJ_OK;
 }
 
 int adj_evaluate_nonlinear_action(adj_adjointer* adjointer, void (*nonlinear_action_func)(int nvar, adj_variable* variables, adj_vector* dependencies,
@@ -340,7 +340,7 @@ int adj_evaluate_nonlinear_action(adj_adjointer* adjointer, void (*nonlinear_act
   for (i = 0; i < nonlinear_block.ndepends; i++)
   {
     ierr = adj_get_variable_value(adjointer, nonlinear_block.depends[i], &(dependencies[i]));
-    assert(ierr == ADJ_ERR_OK); /* We checked for them earlier */
+    assert(ierr == ADJ_OK); /* We checked for them earlier */
 
     /* Check if this is the variable we want to perturb */
     if (perturbed_var != NULL)
@@ -376,7 +376,7 @@ int adj_evaluate_nonlinear_action(adj_adjointer* adjointer, void (*nonlinear_act
     adjointer->callbacks.vec_destroy(&perturbed_dependency);
 
   free(dependencies);
-  return ADJ_ERR_OK;
+  return ADJ_OK;
 }
 
 int adj_evaluate_functional(adj_adjointer* adjointer, int timestep, char* functional, adj_scalar* output)
@@ -389,7 +389,7 @@ int adj_evaluate_functional(adj_adjointer* adjointer, int timestep, char* functi
   adj_functional_data* functional_data_ptr = NULL;
 
   ierr = adj_find_functional_callback(adjointer, functional, &functional_func);
-  if (ierr != ADJ_ERR_OK)
+  if (ierr != ADJ_OK)
     return ierr;
 
   if (adjointer->ntimesteps <= timestep) 
@@ -412,7 +412,7 @@ int adj_evaluate_functional(adj_adjointer* adjointer, int timestep, char* functi
       for (k = 0; k < nb_variables; k++)
       {
         ierr = adj_get_variable_value(adjointer, variables[k], &(dependencies[k]));
-        if (ierr != ADJ_ERR_OK) return ierr;
+        if (ierr != ADJ_OK) return ierr;
       }
     }
     functional_data_ptr = functional_data_ptr->next;
@@ -427,7 +427,7 @@ int adj_evaluate_functional(adj_adjointer* adjointer, int timestep, char* functi
   functional_func(adjointer, timestep, nb_variables, variables, dependencies, functional, output);
 
   free(dependencies);
-  return ADJ_ERR_OK;
+  return ADJ_OK;
 }
 
 int adj_evaluate_functional_derivative(adj_adjointer* adjointer, adj_variable variable, char* functional, adj_vector* output, int* has_output)
@@ -445,12 +445,12 @@ int adj_evaluate_functional_derivative(adj_adjointer* adjointer, adj_variable va
   int* timesteps_to_consider;
 
   ierr = adj_variable_get_ndepending_timesteps(adjointer, variable, functional, &ntimesteps);
-  if (ierr != ADJ_ERR_OK)
+  if (ierr != ADJ_OK)
     return ierr;
   if (ntimesteps == 0)
   {
     *has_output = ADJ_FALSE;
-    return ADJ_ERR_OK;
+    return ADJ_OK;
   }
   else
   {
@@ -458,7 +458,7 @@ int adj_evaluate_functional_derivative(adj_adjointer* adjointer, adj_variable va
   }
 
   ierr = adj_find_functional_derivative_callback(adjointer, functional, &functional_derivative_func);
-  if (ierr != ADJ_ERR_OK)
+  if (ierr != ADJ_OK)
     return ierr;
 
   if (adjointer->ntimesteps <= variable.timestep) 
@@ -468,7 +468,7 @@ int adj_evaluate_functional_derivative(adj_adjointer* adjointer, adj_variable va
   }
 
   ierr = adj_find_variable_data((&adjointer->varhash), &variable, &data_ptr);
-  if (ierr != ADJ_ERR_OK)
+  if (ierr != ADJ_OK)
     return ierr;
 
   /* Create the dependency list for the functional derivative evaluation. */
@@ -496,7 +496,7 @@ int adj_evaluate_functional_derivative(adj_adjointer* adjointer, adj_variable va
           /* We're going to use this hash as a set, to see if we've seen this variable before */
           /* as we want to not pass any duplicates to the user code */
           ierr = adj_add_variable_data(&hash, &(functional_data_ptr->dependencies[k]), &tmp_data);
-          if (ierr == ADJ_ERR_OK)
+          if (ierr == ADJ_OK)
           {
             /* that means the addition went fine, i.e. we haven't seen it before, so we increment nb_variables */
             nb_variables++;
@@ -514,7 +514,7 @@ int adj_evaluate_functional_derivative(adj_adjointer* adjointer, adj_variable va
   ADJ_CHKMALLOC(dependencies);
   nb_variables = 0;
   ierr = adj_destroy_hash(&hash);
-  if (ierr != ADJ_ERR_OK) return ierr;
+  if (ierr != ADJ_OK) return ierr;
 
   for (i = 0; i < ntimesteps_to_consider; i++)
   {
@@ -529,12 +529,12 @@ int adj_evaluate_functional_derivative(adj_adjointer* adjointer, adj_variable va
         {
           adj_variable_data tmp_data;
           ierr = adj_add_variable_data(&hash, &(functional_data_ptr->dependencies[k]), &tmp_data);
-          if (ierr == ADJ_ERR_OK)
+          if (ierr == ADJ_OK)
           {
             /* this variable is one we should add */
             memcpy(&(variables[nb_variables]), &(functional_data_ptr->dependencies[k]), sizeof(adj_variable));
             ierr = adj_get_variable_value(adjointer, variables[nb_variables], &(dependencies[nb_variables]));
-            if (ierr != ADJ_ERR_OK) return ierr;
+            if (ierr != ADJ_OK) return ierr;
             nb_variables++;
           }
         }
@@ -546,7 +546,7 @@ int adj_evaluate_functional_derivative(adj_adjointer* adjointer, adj_variable va
 
   ierr = adj_destroy_hash(&hash);
   free(timesteps_to_consider);
-  if (ierr != ADJ_ERR_OK) return ierr;
+  if (ierr != ADJ_OK) return ierr;
 
   /* We have the right callback, so let's call it already */ 
   functional_derivative_func(adjointer, variable, nb_variables, variables, dependencies, functional, output);
@@ -554,7 +554,7 @@ int adj_evaluate_functional_derivative(adj_adjointer* adjointer, adj_variable va
   free(dependencies);
   free(variables);
 
-  return ADJ_ERR_OK;
+  return ADJ_OK;
 }
 
 int adj_evaluate_forward_source(adj_adjointer* adjointer, int equation, adj_vector* output, int* has_output)
@@ -574,11 +574,11 @@ int adj_evaluate_forward_source(adj_adjointer* adjointer, int equation, adj_vect
   for (j=0 ; j < nrhsdeps; j++)
   {
     ierr = adj_get_variable_value(adjointer, variables[j], &(dependencies[j]));
-    if (ierr != ADJ_ERR_OK) return ierr;
+    if (ierr != ADJ_OK) return ierr;
   }
 
   adjointer->forward_source_callback(adjointer, adjointer->equations[equation].variable, nrhsdeps, variables, dependencies, adjointer->equations[equation].rhs_context, output, has_output);
 
   free(dependencies);
-  return ADJ_ERR_OK;
+  return ADJ_OK;
 }

@@ -84,7 +84,7 @@ int adj_html_find_column_index(adj_adjointer* adjointer, adj_variable* variable,
     if (adj_variable_equal(&adj_eqn->variable, variable, 1))
     {
       *col = i;
-      return ADJ_ERR_OK;
+      return ADJ_OK;
     }
   }
   strncpy(adj_error_msg, "Variable not found.", ADJ_ERROR_MSG_BUF);
@@ -133,7 +133,7 @@ int adj_html_eqn(FILE* fp, adj_adjointer* adjointer, adj_equation adj_eqn, int d
   for (i = 0; i < adj_eqn.nblocks; i++)
   {
     ierr = adj_html_find_column_index(adjointer, &adj_eqn.targets[i], &col);
-    if (ierr != ADJ_ERR_OK)
+    if (ierr != ADJ_OK)
       return ierr;
 
     strncpy(row[col], adj_eqn.blocks[i].name, ADJ_NAME_LEN);
@@ -187,7 +187,7 @@ int adj_html_eqn(FILE* fp, adj_adjointer* adjointer, adj_equation adj_eqn, int d
     free(row[i]);
     free(desc[i]);
   }
-  return ADJ_ERR_OK;
+  return ADJ_OK;
 }
 
 /* Writes a html row containing the supplied adjoint equation into fp */
@@ -215,7 +215,7 @@ int adj_html_adjoint_eqn(FILE* fp, adj_adjointer* adjointer, adj_equation fwd_eq
 
   fwd_var = fwd_eqn.variable;
   ierr = adj_find_variable_data(&(adjointer->varhash), &fwd_var, &fwd_data);
-  assert(ierr == ADJ_ERR_OK);
+  assert(ierr == ADJ_OK);
 
   /* Each targeting equation corresponds to one column in the considered row */
   for (i = 0; i < fwd_data->ntargeting_equations; i++)
@@ -235,7 +235,7 @@ int adj_html_adjoint_eqn(FILE* fp, adj_adjointer* adjointer, adj_equation fwd_eq
 
       /* find the column in which this blocks belongs */
       ierr = adj_html_find_column_index(adjointer, &other_fwd_eqn.variable, &col);
-      if (ierr != ADJ_ERR_OK)
+      if (ierr != ADJ_OK)
         return ierr;
 
       other_adj_var = other_fwd_eqn.targets[j];
@@ -294,7 +294,7 @@ int adj_html_adjoint_eqn(FILE* fp, adj_adjointer* adjointer, adj_equation fwd_eq
     free(row[i]);
     free(desc[i]);
   }
-  return ADJ_ERR_OK;
+  return ADJ_OK;
 }
 
 int adj_html_adjoint_system(adj_adjointer* adjointer, char* filename)
@@ -314,7 +314,7 @@ int adj_html_adjoint_system(adj_adjointer* adjointer, char* filename)
 
   fprintf(fp, "<h1>Adjoint system</h1>\n");
   if (adjointer->nequations==0)
-    return ADJ_ERR_OK;
+    return ADJ_OK;
   timestep = adjointer->equations[0].variable.timestep-1;
   iteration = adjointer->equations[0].variable.iteration - 1 ;
 
@@ -338,7 +338,7 @@ int adj_html_adjoint_system(adj_adjointer* adjointer, char* filename)
     }
 
     ierr = adj_html_adjoint_eqn(fp, adjointer, adj_eqn, i);
-    if (ierr != ADJ_ERR_OK)
+    if (ierr != ADJ_OK)
     {
       fclose(fp);
       return ierr;
@@ -351,7 +351,7 @@ int adj_html_adjoint_system(adj_adjointer* adjointer, char* filename)
 
   adj_html_footer(fp);
   fclose(fp);
-  return ADJ_ERR_OK;
+  return ADJ_OK;
 }
 
 
@@ -372,7 +372,7 @@ int adj_html_forward_system(adj_adjointer* adjointer, char* filename)
 
   fprintf(fp, "<h1>Forward system</h1>\n");
   if (adjointer->nequations==0)
-    return ADJ_ERR_OK;
+    return ADJ_OK;
   timestep = adjointer->equations[0].variable.timestep - 1;
   iteration = adjointer->equations[0].variable.iteration - 1 ;
 
@@ -396,7 +396,7 @@ int adj_html_forward_system(adj_adjointer* adjointer, char* filename)
     }
 
     ierr = adj_html_eqn(fp, adjointer, adj_eqn, i);
-    if (ierr != ADJ_ERR_OK)
+    if (ierr != ADJ_OK)
     {
       fclose(fp);
       return ierr;
@@ -409,7 +409,7 @@ int adj_html_forward_system(adj_adjointer* adjointer, char* filename)
 
   adj_html_footer(fp);
   fclose(fp);
-  return ADJ_ERR_OK;
+  return ADJ_OK;
 }
 
 int adj_adjointer_to_html(adj_adjointer* adjointer, char* filename, int type)
