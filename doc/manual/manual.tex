@@ -26,6 +26,8 @@
 \newcommand{\libadjoint}[0]{{\texttt{libadjoint}}\xspace}
 \newcommand{\m}[0]{{\vec{m}}}
 \newcommand{\adjointer}[0]{\texttt{adj\_adjointer}\xspace}
+\newcommand{\defapi}[1]{\subsubsection{\texttt{#1}} \label{api:#1}}
+\newcommand{\refapi}[1]{\hyperref[#1]{\texttt{#1}}}
 
 \newenvironment{block}[1]{%
   \begin{actionenv}%
@@ -207,6 +209,7 @@ Version 0.8 trunk (revision \input{version}; \today)
 
 \include{introduction}
 \include{annotation}
+\include{callbacks}
 
 % Whole bunch of format hacking because Bibliography isn't a real chapter.
 \cleardoublepage

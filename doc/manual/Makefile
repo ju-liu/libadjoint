@@ -10,7 +10,7 @@
 
 default: manual.pdf
 
-manual.tex: version.tex overview.tex about.tex introduction.tex annotation.tex
+manual.tex: version.tex $(shell grep include manual.tex | grep -v ^% | awk -F '{' '{print $$2}' | awk -F '}' '{print $$1}' | sed 's/$$/.tex/')
 	touch manual.tex
 
 version.tex:
