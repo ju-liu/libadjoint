@@ -17,7 +17,10 @@
 \usepackage{amssymb}
 \usepackage{amsthm}
 \usepackage[utf8]{inputenc}
-\usepackage{underscore}
+\newcommand{\defapiss}[1]{\subsubsection{\texttt{#1}\label{api:#1}}}
+\newcommand{\refapi}[1]{\hyperref[api:#1]{\texttt{#1}}}
+\newcommand{\UnderscoreCommands}{\do\refapi}
+\usepackage[strings]{underscore}
 
 \makeindex
 % Command to enable the labelling of the primary reference. 
@@ -26,8 +29,6 @@
 \newcommand{\libadjoint}[0]{{\texttt{libadjoint}}\xspace}
 \newcommand{\m}[0]{{\vec{m}}}
 \newcommand{\adjointer}[0]{\texttt{adj\_adjointer}\xspace}
-\newcommand{\defapi}[1]{\subsubsection{\texttt{#1}} \label{api:#1}}
-\newcommand{\refapi}[1]{\hyperref[#1]{\texttt{#1}}}
 
 \newenvironment{block}[1]{%
   \begin{actionenv}%

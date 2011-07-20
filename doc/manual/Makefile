@@ -18,3 +18,6 @@ version.tex:
 
 bib:
 	cp /data/pfarrell/svn/literature/literature.bib .
+
+clean:
+	cp manual.tex manualbak.tex; rm -f manual.* *.aux; mv manualbak.tex manual.tex
