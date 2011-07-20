@@ -16,8 +16,9 @@
 \usepackage{amssymb}
 \usepackage{amsthm}
 \usepackage[utf8]{inputenc}
-\newcommand{\defapiss}[1]{\subsubsection{\texttt{#1}\label{api:#1}}\index{#1}}
-\newcommand{\defapis}[1]{\subsection{\texttt{#1}\label{api:#1}}\index{#1}}
+\newcommand{\defapiss}[1]{\subsubsection{\texttt{#1}\label{api:#1}}\index{\texttt{#1}}}
+\newcommand{\defapis}[1]{\subsection{\texttt{#1}\label{api:#1}}\index{\texttt{#1}}}
+\newcommand{\defapi}[1]{\section{\texttt{#1}\label{api:#1}}\index{\texttt{#1}}}
 \newcommand{\refapi}[1]{\hyperref[api:#1]{\texttt{#1}}}
 %\newcommand{\defapiss}[1]{\subsubsection{\texttt{#1}}\index{#1}}
 %\newcommand{\defapis}[1]{\subsection{\texttt{#1}}\index{#1}}
@@ -215,6 +216,8 @@ Version 0.8 trunk (revision \input{version}; \today)
 \include{introduction}
 \include{annotation}
 \include{callbacks}
+\include{assembly}
+\include{debugging}
 
 % Whole bunch of format hacking because Bibliography isn't a real chapter.
 \cleardoublepage
@@ -226,6 +229,7 @@ Version 0.8 trunk (revision \input{version}; \today)
 
 \appendix
 
+\include{misc}
 \include{todo}
 \include{error_codes}
 
