@@ -17,8 +17,12 @@
 \usepackage{amssymb}
 \usepackage{amsthm}
 \usepackage[utf8]{inputenc}
-\newcommand{\defapiss}[1]{\subsubsection{\texttt{#1}\label{api:#1}}}
+\newcommand{\defapiss}[1]{\subsubsection{\texttt{#1}\label{api:#1}}\index{#1}}
+\newcommand{\defapis}[1]{\subsection{\texttt{#1}\label{api:#1}}\index{#1}}
 \newcommand{\refapi}[1]{\hyperref[api:#1]{\texttt{#1}}}
+%\newcommand{\defapiss}[1]{\subsubsection{\texttt{#1}}\index{#1}}
+%\newcommand{\defapis}[1]{\subsection{\texttt{#1}}\index{#1}}
+%\newcommand{\refapi}[1]{\texttt{#1}}
 \newcommand{\UnderscoreCommands}{\do\refapi}
 \usepackage[strings]{underscore}
 
@@ -222,15 +226,8 @@ Version 0.8 trunk (revision \input{version}; \today)
 
 \appendix
 
-%\include{about}
-%\include{mathematical_notation}
-%\include{useful_numbers}
-%\include{dimensionless}
-%\include{python}
-%\include{external_libraries}
-%\include{parallel}
-%\include{trouble_shooting}
-
+\include{todo}
+\include{error_codes}
 
 \cleardoublepage
 \phantomsection
