@@ -146,8 +146,8 @@ clean:
 	@echo "  RM bin/tests/*"
 	@rm -f include/libadjoint/*.mod include/*.mod *.mod
 	@echo "  RM include/libadjoint/*.mod"
-	@rm -f doc/*.pdf doc/*.bbl doc/*.log doc/*.aux doc/*.blg doc/*.spl doc/*.brf doc/*.out doc/*.toc
-	@echo "  RM doc/*.pdf"
+	@rm -f doc/*/*.pdf doc/*/*.bbl doc/*/*.log doc/*/*.blg doc/*/*.spl doc/*/*.brf doc/*/*.out doc/*/*.toc
+	@echo "  RM doc/*/*.pdf"
 	@rm -f lib/*.a
 	@echo "  RM lib/*.a"
 	@rm -f lib/*.so
