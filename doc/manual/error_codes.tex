@@ -36,10 +36,21 @@ compares both of these numbers to their expected values, and if they differ, iss
 In particular, if your supplied derivative code is incorrect, then this warning will be issued.
 
 \defapis{ADJ_WARN_UNINITIALISED_VALUE}
+This warning is issued by \refapi{adj_evaluate_functional} if no dependencies have been
+registered for that particular functional at that timestep. A functional by definition must depend on the solution. To fix this, you must register the dependencies with
+\refapi{adj_timestep_set_functional_dependencies}.
+
 \defapis{ADJ_WARN_NOT_IMPLEMENTED}
+This warning is issued when a na\"ive algorithm is used in place of a more complex,
+faster algorithm that is not yet implemented. At present, the only routine where
+this is used is in an internal function called \texttt{adj_simplify_derivatives}, which uses a simple quadratic
+algorithm in place of a linear algorithm that is much more difficult to code.
+However, the quadratic algorithm should be sufficiently fast for all realistic
+use cases, and so developers should never see this.
+
 \section{Errors}
 Errors are indicated by a positive return code. When passed to \refapi{adj_chkierr},
-a warning message will be printed, and execution will stop.
+an error message will be printed, and execution will stop.
 
 \defapis{ADJ_ERR_INVALID_INPUTS}
 \defapis{ADJ_ERR_HASH_FAILED}
