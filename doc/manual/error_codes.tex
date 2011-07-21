@@ -57,6 +57,19 @@ an error message will be printed, and execution will stop.
 \defapis{ADJ_ERR_NEED_CALLBACK}
 \defapis{ADJ_ERR_NEED_VALUE}
 \defapis{ADJ_ERR_NOT_IMPLEMENTED}
+This error is issued when a feature which is necessary for the correct assembly
+of the adjoint equations has not yet been implemented. See \autoref{chap:todo}
+for the current list of unimplemented features. Development assistance on
+\libadjoint is always welcome!
+
 \defapis{ADJ_ERR_DICT_FAILED}
 \defapis{ADJ_ERR_TOLERANCE_EXCEEDED}
 \defapis{ADJ_ERR_MALLOC_FAILED}
+\libadjoint dynamically allocates memory to store information that the developer
+has passed. Every time \libadjoint allocates memory with \texttt{malloc} and
+similar functions, it checks that the memory allocation was successful. If the memory
+allocation was not successful, this error is issued. Note that the raising of this
+issue may leave the \refapi{adj_adjointer} in an undefined state; further work would
+be required to ensure that the \refapi{adj_adjointer} is always in a consistent state
+regardless of memory allocation failure, but this error is so infrequent that 
+this improvement is not a \libadjoint development priority.

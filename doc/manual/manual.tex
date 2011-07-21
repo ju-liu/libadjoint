@@ -27,10 +27,7 @@
 % Command to reference an API section
 \newcommand{\refapi}[1]{\hyperref[api:#1]{\texttt{#1}}\index{\texttt{#1}}}
 
-%\newcommand{\adjointer}[0]{\index{\texttt{adj_adjointer}}\texttt{adj_adjointer}\xspace}
-\newcommand{\adjointer}[0]{\index{\texttt{adj_adjointer}}\hyperref[api:adj_adjointer]{\texttt{adj\_adjointer}}\xspace}
-
-\newcommand{\UnderscoreCommands}{\do\refapi \do\adjointer \do\autoref}
+\newcommand{\UnderscoreCommands}{\do\refapi \do\autoref}
 \usepackage[strings]{underscore}
 \usepackage[tight]{minitoc}
 

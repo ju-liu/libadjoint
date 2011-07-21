@@ -183,12 +183,12 @@ complicated lifecycle management, and greatly simplifies the process of adjoint 
 development.
 
 \section{The structure of \libadjoint}
-The fundamental object of \libadjoint is an \adjointer. The forward model is annotated
-to record the sequence of linear solves that the model has executed (\refapi{adj_register_equation}); the \adjointer\ is
-the object that holds the record. When the \adjointer\ has this information, it can derive
+The fundamental object of \libadjoint is an \refapi{adj_adjointer}. The forward model is annotated
+to record the sequence of linear solves that the model has executed (\refapi{adj_register_equation}); the \refapi{adj_adjointer} is
+the object that holds the record. When the \refapi{adj_adjointer} has this information, it can derive
 the structure of each adjoint equation: what should be assembled or differentiated for each linear
 solve in the adjoint run. If the model developer then
-supplies callbacks to the \adjointer\ (\refapi{adj_register_operator_callback}) to allow \libadjoint to assemble each
+supplies callbacks to the \refapi{adj_adjointer} (\refapi{adj_register_operator_callback}) to allow \libadjoint to assemble each
 operator that appears in the forward equation, \libadjoint is
 able to assemble each adjoint equation as it is to be solved (\refapi{adj_get_adjoint_equation}).
 
