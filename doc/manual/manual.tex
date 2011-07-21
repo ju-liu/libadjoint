@@ -16,21 +16,22 @@
 \usepackage{amssymb}
 \usepackage{amsthm}
 \usepackage[utf8]{inputenc}
-\newcommand{\defapiss}[1]{\subsubsection{\texttt{#1}\label{api:#1}}\index{\texttt{#1}}}
-\newcommand{\defapis}[1]{\subsection{\texttt{#1}\label{api:#1}}\index{\texttt{#1}}}
-\newcommand{\defapi}[1]{\section{\texttt{#1}\label{api:#1}}\index{\texttt{#1}}}
-\newcommand{\refapi}[1]{\hyperref[api:#1]{\texttt{#1}}}
-%\newcommand{\defapiss}[1]{\subsubsection{\texttt{#1}}\index{#1}}
-%\newcommand{\defapis}[1]{\subsection{\texttt{#1}}\index{#1}}
-%\newcommand{\refapi}[1]{\texttt{#1}}
+% Command to enable the labelling of the primary reference. 
+% To do this use \index{term|primary}
+\newcommand{\primary}[1]{\textbf{\hyperpage{#1}}}
+
+% Commands to define API sections
+\newcommand{\defapiss}[1]{\subsubsection{\texttt{#1}\label{api:#1}}\index{\texttt{#1}|primary}}
+\newcommand{\defapis}[1]{\subsection{\texttt{#1}\label{api:#1}}\index{\texttt{#1}|primary}}
+\newcommand{\defapi}[1]{\section{\texttt{#1}\label{api:#1}}\index{\texttt{#1}|primary}}
+% Command to reference an API section
+\newcommand{\refapi}[1]{\hyperref[api:#1]{\texttt{#1}}\index{\texttt{#1}}}
+
 \newcommand{\UnderscoreCommands}{\do\refapi}
 \usepackage[strings]{underscore}
 \usepackage[tight]{minitoc}
 
 \makeindex
-% Command to enable the labelling of the primary reference. 
-% To do this use \index{term|primary}
-\newcommand{\primary}[1]{\textbf{\hyperpage{#1}}}
 \newcommand{\libadjoint}[0]{{\texttt{libadjoint}}\xspace}
 \newcommand{\m}[0]{{\vec{m}}}
 \newcommand{\adjointer}[0]{\texttt{adj\_adjointer}\xspace}
