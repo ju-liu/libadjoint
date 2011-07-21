@@ -53,9 +53,35 @@ Errors are indicated by a positive return code. When passed to \refapi{adj_chkie
 an error message will be printed, and execution will stop.
 
 \defapis{ADJ_ERR_INVALID_INPUTS}
+All \libadjoint routines do as much error checking as possible
+on the developer-supplied inputs. This error is issued whenever a \libadjoint routine
+detects that some input is invalid. For example, if the developer attempts to create
+an \refapi{adj_variable} with a negative iteration number, this error will be issued. Or
+if a hermitian argument is neither \texttt{ADJ_TRUE} nor \texttt{ADJ_FALSE}, then this warning
+will be issued. For more details, read the error message printed by \refapi{adj_chkierr}.
+
 \defapis{ADJ_ERR_HASH_FAILED}
+At the core of an \refapi{adj_adjointer}, there is a hash table that maps an
+\refapi{adj_variable} to the data that the \refapi{adj_adjointer} records about it.
+This table is referenced for almost every operation that \libadjoint performs. This error
+is issued if an \refapi{adj_variable} has been supplied that the hash table was
+unable to find. Check all \refapi{adj_variable} inputs.
+
 \defapis{ADJ_ERR_NEED_CALLBACK}
+This error is issued when \libadjoint wants to perform an operation, but does
+not have the necessary function to do it. See \autoref{chap:callbacks}. You
+must register a function pointer for the necessary callback with \refapi{adj_register_data_callback},
+\refapi{adj_register_operator_callback} or similar.
+
 \defapis{ADJ_ERR_NEED_VALUE}
+This error is issued when \libadjoint needs a value for a variable, but
+does not have one available. Common examples are: it is necessary to assemble
+a nonlinear operator but the dependencies are not available; it is necessary to compute
+the derivative of the functional but the dependencies are not available; in order to
+assemble an adjoint equation, a block must be applied to a previously computed
+adjoint solution, but it has not been recorded. Record the value of the variable
+with \refapi{adj_record_variable}.
+
 \defapis{ADJ_ERR_NOT_IMPLEMENTED}
 This error is issued when a feature which is necessary for the correct assembly
 of the adjoint equations has not yet been implemented. See \autoref{chap:todo}
