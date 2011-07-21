@@ -1,12 +1,46 @@
 \chapter{Return codes}
 
+All public functions offered by \libadjoint return a return code indicating
+success or failure. The only exception to this is \refapi{adj_chkierr}, which
+takes in that return code and prints an informative message if the function was
+not successful.
+
 \defapi{ADJ_OK}
+\texttt{ADJ_OK} is the expected return code, which indicates that the function
+worked as expected.
+
 \section{Warnings}
+Warnings are indicated by a negative return code. When passed to \refapi{adj_chkierr},
+a warning message will be printed, but execution will continue as normal.
+
 \defapis{ADJ_WARN_ALREADY_RECORDED}
+If you attempt to record a variable with \refapi{adj_record_variable}, and that variable
+already has a value recorded, then \refapi{ADJ_WARN_ALREADY_RECORDED} will be returned.
+Note that if you wish to overwrite a previously-recorded value, set the overwrite flag
+with \refapi{adj_storage_set_overwrite}.
+
 \defapis{ADJ_WARN_COMPARISON_FAILED}
+When recording a variable which has already has a recorded value, it is possible to activate the
+compare flag with \refapi{adj_storage_set_compare}. When this is detected by \refapi{adj_record_variable},
+it will compare the recorded value against the newly supplied one; if they differ by more than
+the developer-specified tolerance, this warning is issued. The primary purpose of this is to detect
+inconsistencies between the original forward run and the forward replay run through \libadjoint,
+as discussed in \autoref{sec:replay}.
+
+This warning can also be issued by \refapi{adj_get_forward_equation} or \refapi{adj_get_adjoint_equation},
+if the derivative test flag has been set on a nonlinear block with \refapi{adj_nonlinear_block_set_test_derivative}.
+As discussed in \autoref{sec:derivative_test}, this flag indicates that \libadjoint should apply the derivative
+test to the supplied derivative routine. In the derivative test, the finite difference error should converge
+at first order, whereas when corrected with the gradient it should converge at second order. The derivative test
+compares both of these numbers to their expected values, and if they differ, issues a \refapi{ADJ_WARN_COMPARISON_FAILED}.\index{algorithmic differentiation!derivative test}
+In particular, if your supplied derivative code is incorrect, then this warning will be issued.
+
 \defapis{ADJ_WARN_UNINITIALISED_VALUE}
 \defapis{ADJ_WARN_NOT_IMPLEMENTED}
 \section{Errors}
+Errors are indicated by a positive return code. When passed to \refapi{adj_chkierr},
+a warning message will be printed, and execution will stop.
+
 \defapis{ADJ_ERR_INVALID_INPUTS}
 \defapis{ADJ_ERR_HASH_FAILED}
 \defapis{ADJ_ERR_NEED_CALLBACK}
