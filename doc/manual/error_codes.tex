@@ -15,7 +15,7 @@ a warning message will be printed, but execution will continue as normal.
 
 \defapis{ADJ_WARN_ALREADY_RECORDED}
 If you attempt to record a variable with \refapi{adj_record_variable}, and that variable
-already has a value recorded, then \refapi{ADJ_WARN_ALREADY_RECORDED} will be returned.
+already has a value recorded, then this warning will be returned.
 Note that if you wish to overwrite a previously-recorded value, set the overwrite flag
 with \refapi{adj_storage_set_overwrite}.
 
@@ -27,12 +27,12 @@ the developer-specified tolerance, this warning is issued. The primary purpose o
 inconsistencies between the original forward run and the forward replay run through \libadjoint,
 as discussed in \autoref{sec:replay}.
 
-This warning can also be issued by \refapi{adj_get_forward_equation} or \refapi{adj_get_adjoint_equation},
-if the derivative test flag has been set on a nonlinear block with \refapi{adj_nonlinear_block_set_test_derivative}.
+This warning can also be issued by \refapi{adj_get_adjoint_equation},
+if the derivative test flag has been activated on an \refapi{adj_nonlinear_block} with the \refapi{adj_nonlinear_block_set_test_derivative} function.
 As discussed in \autoref{sec:derivative_test}, this flag indicates that \libadjoint should apply the derivative
 test to the supplied derivative routine. In the derivative test, the finite difference error should converge
 at first order, whereas when corrected with the gradient it should converge at second order. The derivative test
-compares both of these numbers to their expected values, and if they differ, issues a \refapi{ADJ_WARN_COMPARISON_FAILED}.\index{algorithmic differentiation!derivative test}
+compares both of these numbers to their expected values, and if they differ, issues this warning.\index{algorithmic differentiation!derivative test}
 In particular, if your supplied derivative code is incorrect, then this warning will be issued.
 
 \defapis{ADJ_WARN_UNINITIALISED_VALUE}
