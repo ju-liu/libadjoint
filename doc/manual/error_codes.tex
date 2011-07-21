@@ -63,7 +63,15 @@ for the current list of unimplemented features. Development assistance on
 \libadjoint is always welcome!
 
 \defapis{ADJ_ERR_DICT_FAILED}
+This error is issued when \refapi{adj_dict_find} is called on an \refapi{adj_dict}
+which does not have the relevant key.
+
 \defapis{ADJ_ERR_TOLERANCE_EXCEEDED}
+This error is issued if the transpose test fails. The transpose test is activated
+with the functions \\\refapi{adj_block_set_test_hermitian} and \refapi{adj_nonlinear_block_set_test_hermitian}.
+This failure\\ means that the developer has an inconsistency between the \texttt{hermitian == ADJ_TRUE}
+and \\\texttt{hermitian == ADJ_FALSE} cases in an operator callback.
+
 \defapis{ADJ_ERR_MALLOC_FAILED}
 \libadjoint dynamically allocates memory to store information that the developer
 has passed. Every time \libadjoint allocates memory with \texttt{malloc} and
