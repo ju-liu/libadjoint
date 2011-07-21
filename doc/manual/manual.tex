@@ -27,15 +27,16 @@
 % Command to reference an API section
 \newcommand{\refapi}[1]{\hyperref[api:#1]{\texttt{#1}}\index{\texttt{#1}}}
 
-\newcommand{\UnderscoreCommands}{\do\refapi}
+%\newcommand{\adjointer}[0]{\index{\texttt{adj_adjointer}}\texttt{adj_adjointer}\xspace}
+\newcommand{\adjointer}[0]{\index{\texttt{adj_adjointer}}\hyperref[api:adj_adjointer]{\texttt{adj\_adjointer}}\xspace}
+
+\newcommand{\UnderscoreCommands}{\do\refapi \do\adjointer}
 \usepackage[strings]{underscore}
 \usepackage[tight]{minitoc}
 
 \makeindex
 \newcommand{\libadjoint}[0]{{\texttt{libadjoint}}\xspace}
 \newcommand{\m}[0]{{\vec{m}}}
-%\newcommand{\adjointer}[0]{\hyperref[api:adj_adjointer]{\texttt{adj\_adjointer}}\xspace\index{api:adj_adjointer}}
-\newcommand{\adjointer}[0]{\texttt{adj\_adjointer}\xspace\index{api:adj_adjointer}}
 
 \newenvironment{block}[1]{%
   \begin{actionenv}%

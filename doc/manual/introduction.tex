@@ -8,7 +8,7 @@ A high-level overview of the strategy for developing adjoint models with \libadj
 \minitoc
 \vspace{\fill}
 
-\index{adjoints!introduction to}
+\index{adjoints!introductory references}
 This manual presupposes some passing familiarity with algorithmic differentiation (AD),
 and with adjoints. For an introduction to AD, see \citet{rall1996}; for a more mathematical
 treatise, see \citet{griewank2003,griewank2008}. For an introduction to adjoints and how
@@ -28,9 +28,7 @@ and so on.
 If we wish to differentiate the model, and the program is the composition
 of primitive instructions, then we can simply apply the chain rule:
 differentiate each primitive instruction in turn and compose the derivatives
-appropriately. The fundamental abstraction of algorithmic differentiation
-\index{algorithmic differentiation!fundamental idea}
-\index{automatic differentiation|see{\\algorithmic differentiation}}
+appropriately. The fundamental abstraction of algorithmic differentiation\index{algorithmic differentiation!fundamental idea}\index{automatic differentiation|see{\\algorithmic differentiation}}
 is that \emph{a model is a sequence of primitive instructions}.
 
 \section{The fundamental idea of \libadjoint}
@@ -186,11 +184,11 @@ development.
 
 \section{The structure of \libadjoint}
 The fundamental object of \libadjoint is an \adjointer. The forward model is annotated
-to record the sequence of linear solves that the model has executed (\refapi{adj_register_equation}); the \adjointer is
-the object that holds the record. When the \adjointer has this information, it can derive
+to record the sequence of linear solves that the model has executed (\refapi{adj_register_equation}); the \adjointer\ is
+the object that holds the record. When the \adjointer\ has this information, it can derive
 the structure of each adjoint equation: what should be assembled or differentiated for each linear
 solve in the adjoint run. If the model developer then
-supplies callbacks to the \adjointer (\refapi{adj_register_operator_callback}) to allow \libadjoint to assemble each
+supplies callbacks to the \adjointer\ (\refapi{adj_register_operator_callback}) to allow \libadjoint to assemble each
 operator that appears in the forward equation, \libadjoint is
 able to assemble each adjoint equation as it is to be solved (\refapi{adj_get_adjoint_equation}).
 
@@ -241,12 +239,11 @@ There are two other major sources of developer error: inconsistency of
 transposed operators, and incorrectness of derivative code. \libadjoint
 offers debugging tools to eliminate both classes of error. 
 
-\pagebreak[4]
 In order to 
 check the correctness of operator transposition, we employ the identity
 that
 \begin{equation*}
-\langle y, Ax \rangle = \langle A^T y, x \rangle
+\langle y, Ax \rangle = \langle A^* y, x \rangle
 \end{equation*}
 for any suitable vectors $x, y$ and an operator $A$. \libadjoint computes both
 sides of the identity and checks that they are equal to machine precision. This
@@ -257,12 +254,12 @@ In order to assemble the adjoint equation, \libadjoint also requires
 callbacks which compute the derivative of the nonlinear assembly operators
 with respect to their immediate inputs. (As we will see later, these
 derivative routines can be generated easily by applying algorithmic
-differentiation.) In order to check the consistency of any derivative,
+differentiation.) In order to check the consistency of any derivative,\index{algorithmic differentiation!derivative test}
 we employ the identity that
 \begin{equation*}
 \left|\left| f(x + \delta x) - f(x) \right|\right|
 \end{equation*}
-converges at $O(\left|\left| \delta x \right|\right|)$, whereas
+converges to zero at $O(\left|\left| \delta x \right|\right|)$ as $\left|\left|\delta x\right|\right| \rightarrow 0$, whereas
 \begin{equation*}
 \left|\left| f(x + \delta x) - f(x) - \nabla f(x)\cdot \delta x\right|\right|
 \end{equation*}
