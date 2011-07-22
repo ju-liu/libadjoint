@@ -98,18 +98,17 @@ When necessary: this data callback is necessary when the derivative test flag
 is activated on an \refapi{adj_nonlinear_block} with \refapi{adj_nonlinear_block_set_test_derivative}.
 \defapiss{ADJ_VEC_GET_SIZE_CB}
 \begin{framed}
-\vspace{-0.7cm}
+\begin{minipage}{\columnwidth}
 \begin{ccode}
   void vec_get_norm_proc(adj_vector x, int* sz);
 \end{ccode}
-\vspace{-1.0cm}
 \begin{fortrancode}
   subroutine vec_get_size_proc(vec, sz) bind(c)
     type(adj_vector), intent(in), value :: vec
     integer(kind=c_int), intent(out) :: sz
   end subroutine vec_get_size_proc
 \end{fortrancode}
-\vspace{-0.5cm}
+\end{minipage}
 \end{framed}
 This data callback returns the number of degrees of freedom in a given \refapi{adj_vector}. The
 vector space of all such \refapi{adj_vector}s should be isomorphic to $\mathbb{R}^n$ for some $n$;
