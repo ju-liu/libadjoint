@@ -95,8 +95,28 @@ of \texttt{adj_scalar}s. The length of the array is the output of
 the \refapi{ADJ_VEC_GET_SIZE_CB} data callback.
 
 When necessary: this data callback is necessary when the derivative test flag
-is activated on an \refapi{adj_nonlinear_block} with \refapi{adj_nonlinear_block_set_derivative_test}.
+is activated on an \refapi{adj_nonlinear_block} with \refapi{adj_nonlinear_block_set_test_derivative}.
 \defapiss{ADJ_VEC_GET_SIZE_CB}
+\begin{framed}
+\vspace{-0.7cm}
+\begin{minted}{c}
+  void vec_get_norm_proc(adj_vector x, int* sz);
+\end{minted}
+\vspace{-1.0cm}
+\begin{minted}{fortran}
+  subroutine vec_get_size_proc(vec, sz) bind(c)
+    type(adj_vector), intent(in), value :: vec
+    integer(kind=c_int), intent(out) :: sz
+  end subroutine vec_get_size_proc
+\end{minted}
+\vspace{-0.5cm}
+\end{framed}
+This data callback returns the number of degrees of freedom in a given \refapi{adj_vector}. The
+vector space of all such \refapi{adj_vector}s should be isomorphic to $\mathbb{R}^n$ for some $n$;
+this callback returns $n$.
+
+When necessary: this data callback is necessary when the derivative test flag
+is activated on an \refapi{adj_nonlinear_block} with \refapi{adj_nonlinear_block_set_test_derivative}.
 \defapiss{ADJ_VEC_GET_NORM_CB}
 \begin{framed}
 \vspace{-0.7cm}
@@ -116,7 +136,7 @@ This data callback computes the norm of a given vector. It does not matter
 which norm is chosen, so long as it satisfies the usual axioms for a norm.
 
 When necessary: this data callback is necessary when the derivative test flag
-is activated on an \refapi{adj_nonlinear_block} with \refapi{adj_nonlinear_block_set_derivative_test}.
+is activated on an \refapi{adj_nonlinear_block} with \refapi{adj_nonlinear_block_set_test_derivative}.
 \defapiss{ADJ_VEC_SET_RANDOM_CB}
 \defapiss{ADJ_VEC_DOT_PRODUCT_CB}
 \subsection{Matrix callbacks}

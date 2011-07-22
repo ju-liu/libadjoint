@@ -168,12 +168,12 @@ module libadjoint
       type(adj_vector), intent(inout) :: x
     end subroutine adj_vec_destroy_proc
 
-    subroutine adj_vec_setvalues_proc(vec, scalars) bind(c)
+    subroutine adj_vec_set_values_proc(vec, scalars) bind(c)
       use iso_c_binding
       use libadjoint_data_structures
       type(adj_vector), intent(inout) :: vec
       adj_scalar_f, dimension(*), intent(in) :: scalars
-    end subroutine adj_vec_setvalues_proc
+    end subroutine adj_vec_set_values_proc
 
     subroutine adj_vec_pointwisedivide_proc(numerator, denominator) bind(c)
       use libadjoint_data_structures
