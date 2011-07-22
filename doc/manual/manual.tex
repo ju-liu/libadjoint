@@ -10,29 +10,32 @@
 \usepackage{makeidx}
 \usepackage[margin=2cm]{geometry}
 \usepackage{float}
+\usepackage{framed}
 \usepackage{xspace}
+\usepackage{minted}
 \usepackage{amsfonts}
 \usepackage{amsmath}
 \usepackage{amssymb}
 \usepackage{amsthm}
 \usepackage[utf8]{inputenc}
-\newcommand{\defapiss}[1]{\subsubsection{\texttt{#1}\label{api:#1}}\index{#1}}
-\newcommand{\defapis}[1]{\subsection{\texttt{#1}\label{api:#1}}\index{#1}}
-\newcommand{\refapi}[1]{\hyperref[api:#1]{\texttt{#1}}}
-%\newcommand{\defapiss}[1]{\subsubsection{\texttt{#1}}\index{#1}}
-%\newcommand{\defapis}[1]{\subsection{\texttt{#1}}\index{#1}}
-%\newcommand{\refapi}[1]{\texttt{#1}}
-\newcommand{\UnderscoreCommands}{\do\refapi}
+% Command to enable the labelling of the primary reference. 
+% To do this use \index{term|primary}
+\newcommand{\primary}[1]{\textbf{\hyperpage{#1}}}
+
+% Commands to define API sections
+\newcommand{\defapiss}[1]{\subsubsection{\texttt{#1}\label{api:#1}}\index{\texttt{#1}|primary}}
+\newcommand{\defapis}[1]{\subsection{\texttt{#1}\label{api:#1}}\index{\texttt{#1}|primary}}
+\newcommand{\defapi}[1]{\section{\texttt{#1}\label{api:#1}}\index{\texttt{#1}|primary}}
+% Command to reference an API section
+\newcommand{\refapi}[1]{\hyperref[api:#1]{\texttt{#1}}\index{\texttt{#1}}}
+
+\newcommand{\UnderscoreCommands}{\do\refapi \do\autoref}
 \usepackage[strings]{underscore}
 \usepackage[tight]{minitoc}
 
 \makeindex
-% Command to enable the labelling of the primary reference. 
-% To do this use \index{term|primary}
-\newcommand{\primary}[1]{\textbf{\hyperpage{#1}}}
 \newcommand{\libadjoint}[0]{{\texttt{libadjoint}}\xspace}
 \newcommand{\m}[0]{{\vec{m}}}
-\newcommand{\adjointer}[0]{\texttt{adj\_adjointer}\xspace}
 
 \newenvironment{block}[1]{%
   \begin{actionenv}%
@@ -54,19 +57,27 @@
 \setcounter{tocdepth}{3}
 \setcounter{minitocdepth}{3}
 
-\definecolor{DarkBlue}{rgb}{0.00,0.00,0.55}
+\definecolor{linkcolour}{RGB}{32,74,135}
 \definecolor{Black}{rgb}{0.00,0.00,0.00}
 \hypersetup{
-    linkcolor   = DarkBlue,
-    anchorcolor = DarkBlue,
-    citecolor   = DarkBlue,
-    filecolor   = DarkBlue,
-    pagecolor   = DarkBlue,
-    urlcolor    = DarkBlue,
+    linkcolor   = linkcolour,
+    anchorcolor = linkcolour,
+    citecolor   = linkcolour,
+    filecolor   = linkcolour,
+    pagecolor   = linkcolour,
+    urlcolor    = linkcolour,
     colorlinks  = true,
     pdftitle    = {\libadjoint manual},
     pdfauthor   = {Patrick Farrell <patrick.farrell06@imperial.ac.uk>}
 }
+
+\usemintedstyle{tango}
+\definecolor{c}{RGB}{117,80,123}
+\definecolor{fortran}{RGB}{143,89,2}
+\definecolor{framecolour}{RGB}{211,215,207}
+\newminted{c}{frame=leftline,rulecolor=\color{c},framerule=3.0pt}
+\newminted{fortran}{frame=leftline,rulecolor=\color{fortran},framerule=3.0pt}
+
 
 % Define date in european format
 \def\today{\number\day\space\ifcase\month\or
@@ -184,7 +195,7 @@ London, SW7 2AZ, UK
 
 
 {\Large
-Version 0.8 trunk (revision \input{version}; \today)
+Version 0.8 (revision \input{version}\hspace{-0.14cm}; \today)
 \\}
 
 \vfill
@@ -215,6 +226,9 @@ Version 0.8 trunk (revision \input{version}; \today)
 \include{introduction}
 \include{annotation}
 \include{callbacks}
+\include{types}
+\include{assembly}
+\include{debugging}
 
 % Whole bunch of format hacking because Bibliography isn't a real chapter.
 \cleardoublepage
@@ -226,8 +240,8 @@ Version 0.8 trunk (revision \input{version}; \today)
 
 \appendix
 
-\include{todo}
 \include{error_codes}
+\include{todo}
 
 \cleardoublepage
 \phantomsection

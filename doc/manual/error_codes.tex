@@ -1,16 +1,109 @@
-\chapter{Error codes}
+\chapter{Return codes}
+
+All public functions offered by \libadjoint return a return code indicating
+success or failure. The only exception to this is \refapi{adj_chkierr}, which
+takes in that return code and prints an informative message if the function was
+not successful.
+
+\defapi{ADJ_OK}
+\texttt{ADJ_OK} is the expected return code, which indicates that the function
+worked as expected.
 
 \section{Warnings}
+Warnings are indicated by a negative return code. When passed to \refapi{adj_chkierr},
+a warning message will be printed, but execution will continue as normal.
+
 \defapis{ADJ_WARN_ALREADY_RECORDED}
+If you attempt to record a variable with \refapi{adj_record_variable}, and that variable
+already has a value recorded, then this warning will be returned.
+Note that if you wish to overwrite a previously-recorded value, set the overwrite flag
+with \refapi{adj_storage_set_overwrite}.
+
 \defapis{ADJ_WARN_COMPARISON_FAILED}
+When recording a variable which has already has a recorded value, it is possible to activate the
+compare flag with \refapi{adj_storage_set_compare}. When this is detected by \refapi{adj_record_variable},
+it will compare the recorded value against the newly supplied one; if they differ by more than
+the developer-specified tolerance, this warning is issued. The primary purpose of this is to detect
+inconsistencies between the original forward run and the forward replay run through \libadjoint,
+as discussed in \autoref{sec:replay}.
+
+This warning can also be issued by \refapi{adj_get_adjoint_equation},
+if the derivative test flag has been activated on an \refapi{adj_nonlinear_block} with the \refapi{adj_nonlinear_block_set_test_derivative} function.
+As discussed in \autoref{sec:derivative_test}, this flag indicates that \libadjoint should apply the derivative
+test to the supplied derivative routine. In the derivative test, the finite difference error should converge
+at first order, whereas when corrected with the gradient it should converge at second order. The derivative test
+compares both of these numbers to their expected values, and if they differ, issues this warning.\index{algorithmic differentiation!derivative test}
+In particular, if your supplied derivative code is incorrect, then this warning will be issued.
+
 \defapis{ADJ_WARN_UNINITIALISED_VALUE}
+This warning is issued by \refapi{adj_evaluate_functional} if no dependencies have been
+registered for that particular functional at that timestep. A functional by definition must depend on the solution. To fix this, you must register the dependencies with
+\refapi{adj_timestep_set_functional_dependencies}.
+
 \defapis{ADJ_WARN_NOT_IMPLEMENTED}
+This warning is issued when a na\"ive algorithm is used in place of a more complex,
+faster algorithm that is not yet implemented. At present, the only routine where
+this is used is in an internal function called \texttt{adj_simplify_derivatives}, which uses a simple quadratic
+algorithm in place of a linear algorithm that is much more difficult to code.
+However, the quadratic algorithm should be sufficiently fast for all realistic
+use cases, and so developers should never see this.
+
 \section{Errors}
+Errors are indicated by a positive return code. When passed to \refapi{adj_chkierr},
+an error message will be printed, and execution will stop.
+
 \defapis{ADJ_ERR_INVALID_INPUTS}
+All \libadjoint routines do as much error checking as possible
+on the developer-supplied inputs. This error is issued whenever a \libadjoint routine
+detects that some input is invalid. For example, if the developer attempts to create
+an \refapi{adj_variable} with a negative iteration number, this error will be issued. Or
+if a hermitian argument is neither \texttt{ADJ_TRUE} nor \texttt{ADJ_FALSE}, then this warning
+will be issued. For more details, read the error message printed by \refapi{adj_chkierr}.
+
 \defapis{ADJ_ERR_HASH_FAILED}
+At the core of an \refapi{adj_adjointer}, there is a hash table that maps an
+\refapi{adj_variable} to the data that the \refapi{adj_adjointer} records about it.
+This table is referenced for almost every operation that \libadjoint performs. This error
+is issued if an \refapi{adj_variable} has been supplied that the hash table was
+unable to find. Check all \refapi{adj_variable} inputs.
+
 \defapis{ADJ_ERR_NEED_CALLBACK}
+This error is issued when \libadjoint wants to perform an operation, but does
+not have the necessary function to do it. See \autoref{chap:callbacks}. You
+must register a function pointer for the necessary callback with \refapi{adj_register_data_callback},
+\refapi{adj_register_operator_callback} or similar.
+
 \defapis{ADJ_ERR_NEED_VALUE}
+This error is issued when \libadjoint needs a value for a variable, but
+does not have one available. Common examples are: it is necessary to assemble
+a nonlinear operator but the dependencies are not available; it is necessary to compute
+the derivative of the functional but the dependencies are not available; in order to
+assemble an adjoint equation, a block must be applied to a previously computed
+adjoint solution, but it has not been recorded. Record the value of the variable
+with \refapi{adj_record_variable}.
+
 \defapis{ADJ_ERR_NOT_IMPLEMENTED}
+This error is issued when a feature which is necessary for the correct assembly
+of the adjoint equations has not yet been implemented. See \autoref{chap:todo}
+for the current list of unimplemented features. Development assistance on
+\libadjoint is always welcome!
+
 \defapis{ADJ_ERR_DICT_FAILED}
+This error is issued when \refapi{adj_dict_find} is called on an \refapi{adj_dict}
+which does not have the relevant key.
+
 \defapis{ADJ_ERR_TOLERANCE_EXCEEDED}
+This error is issued if the transpose test fails. The transpose test is activated
+with the functions \\\refapi{adj_block_set_test_hermitian} and \refapi{adj_nonlinear_block_set_test_hermitian}.
+This failure\\ means that the developer has an inconsistency between the \texttt{hermitian == ADJ_TRUE}
+and \\\texttt{hermitian == ADJ_FALSE} cases in an operator callback.
+
 \defapis{ADJ_ERR_MALLOC_FAILED}
+\libadjoint dynamically allocates memory to store information that the developer
+has passed. Every time \libadjoint allocates memory with \texttt{malloc} and
+similar functions, it checks that the memory allocation was successful. If the memory
+allocation was not successful, this error is issued. Note that the raising of this
+issue may leave the \refapi{adj_adjointer} in an undefined state; further work would
+be required to ensure that the \refapi{adj_adjointer} is always in a consistent state
+regardless of memory allocation failure, but this error is so infrequent that 
+this improvement is not a \libadjoint development priority.

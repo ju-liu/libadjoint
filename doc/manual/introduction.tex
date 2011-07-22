@@ -2,12 +2,13 @@
 
 \begin{synopsis}
 This chapter attempts to describe the fundamental idea behind \libadjoint, 
-and compares and contrasts this idea to the fundamental idea of algorithmic/automatic differentiation (AD).
+and compares and contrasts this to the fundamental idea of algorithmic/automatic differentiation (AD).
 A high-level overview of the strategy for developing adjoint models with \libadjoint is discussed.
 \end{synopsis}
 \minitoc
 \vspace{\fill}
 
+\index{adjoints!introductory references}
 This manual presupposes some passing familiarity with algorithmic differentiation (AD),
 and with adjoints. For an introduction to AD, see \citet{rall1996}; for a more mathematical
 treatise, see \citet{griewank2003,griewank2008}. For an introduction to adjoints and how
@@ -27,16 +28,15 @@ and so on.
 If we wish to differentiate the model, and the program is the composition
 of primitive instructions, then we can simply apply the chain rule:
 differentiate each primitive instruction in turn and compose the derivatives
-appropriately. The fundamental abstraction of algorithmic differentiation
-\index{algorithmic differentiation!fundamental idea}
-%\index{automatic differentiation|see{algorithmic differentiation}
+appropriately. The fundamental abstraction of algorithmic differentiation\index{algorithmic differentiation!fundamental idea}\index{automatic differentiation|see{\\algorithmic differentiation}}
 is that \emph{a model is a sequence of primitive instructions}.
 
 \section{The fundamental idea of \libadjoint}
+\index{libadjoint@\libadjoint!fundamental idea}
 The fundamental abstraction of \libadjoint is that \emph{a model is a sequence
 of linear solves}. This abstraction shares a similar structure to the fundamental
 idea of algorithmic differentiation, but operates at a much higher level:
-each linear solve may involve billions of primitive operations.
+the assembly and solution of each equation may involve billions of primitive operations.
 
 At its heart, \libadjoint is a library that implements this abstraction. The
 forward model is \emph{annotated} with library calls that record the details
@@ -57,8 +57,10 @@ element, or any other discretisation
 \end{itemize}
 
 In the case where explicit timestepping is used, the linear solves
+\index{libadjoint@\libadjoint!explicit timestepping}
 will have the identity matrix on the left hand side; but they can still
 be considered as linear solves. In the nonlinear case, all techniques for
+\index{libadjoint@\libadjoint!nonlinear iterations}
 solving such systems (such as Newton iteration or Picard iteration) also
 boil down to performing a sequence of linear solves for successively better
 approximations to the solution.
@@ -68,29 +70,33 @@ whereas the abstraction of \libadjoint is specific to computational models.
 
 \section{Advantages and disadvantages}
 \subsection{Algorithmic differentiation}
-Algorithmic differentiation is an excellent idea, and it has been enormously
+\index{algorithmic differentiation!advantages}
+Algorithmic differentiation has been enormously
 successful. Let us first consider its strengths:
 \begin{itemize}
-\item In principle, the sequence of primitive instructions is available from
-the existing source code of the model, so developer intervention should
-be minimal.
 \item Algorithmic differentiation is relatively mature: books, commercial
 software and consultancy services are available.
 \item It works very well: consider the impressive success of projects such as the
 MITgcm adjoint \citep{heimbach2002,heimbach2005} and the FLUENT adjoint \citep{bischof2007}.
+\item In principle, the sequence of primitive instructions is available from
+the existing source code of the model, so developer intervention \emph{should
+be} minimal. (In practice, applying algorithmic differentiation can involve a significant
+amount of developer intervention.)
 \end{itemize}
 
 However, algorithmic differentiation is not perfect; there are weaknesses to
 the approach:
+\index{algorithmic differentiation!disadvantages}
 \begin{itemize}
 \item An AD tool needs to understand the code in the same manner as a compiler.
 However, AD tools typically only support a subset of the language, which rules
-out their use on models which exploit such language features.
+out their use on models which exploit complex, advanced or unsupported language features.
 \item A model is typically a lot more than just the sequence of primitive instructions:
-applying AD naively would involve differentiating I/O, linear solvers, dynamic
+applying AD na\"ively would involve differentiating I/O, linear solvers, dynamic
 memory allocation, MPI calls \citep{utke2009}, etc.
 \item If the control flow passes through external libraries, then these must also be
-differentiated.
+differentiated. Often, the source code to these libraries is unavailable; even if they
+are available, differentiating them involves significant development effort.
 \end{itemize}
 
 The fundamental abstraction of AD is a very low-level one, and this means that it is
@@ -102,66 +108,114 @@ as the codebase changes.
 
 \subsection{\libadjoint}
 
+\index{libadjoint@\libadjoint!advantages}
 Now let us consider the strengths of the abstraction employed by \libadjoint:
 \begin{itemize}
 \item It is possible to adjoint models which use language features unsupported 
 by AD tools.
 \item Implementation details such as the use of external libraries, I/O, dynamic
-memory allocation, etc\. are no longer problematic: \libadjoint does not need to
+memory allocation, etc.\ are no longer problematic: \libadjoint does not need to
 know about them.
 \item Whereas an AD tool needs to be re-applied for each change to the model
-codebase, the \libadjoint annotation only needs to change much less often,
-if the fundamental structure of the equations solved changes.
+codebase, the \libadjoint annotation needs to change much less often; the annotation changes
+only if the fundamental structure of the equations solved has changed.
 \item The abstraction makes it possible to offer powerful debugging facilities that enable adjoint models
 to be developed much faster than if the adjoint were to be written by hand. % FIXME: reference the chapter later on
+\item The adjoint model could potentially be much faster than na\"ively applying AD, although
+there is no quantitative evidence for this yet.
 \end{itemize}
 
 However, nothing in life comes for free:
+\index{libadjoint@\libadjoint!disadvantages}
 \begin{itemize}
 \item Annotating the model must be done by hand, whereas a sufficiently advanced
-AD tool would not require user intervention.
+AD tool would not require developer intervention.
 \item The idea is novel, and it remains to be seen if it becomes a popular approach
 to developing adjoint models.
 \item \libadjoint is under heavy development, although several models have been adjointed
 using it.
 \end{itemize}
 
-The two approaches (AD and \libadjoint) are not competitors; in fact, they complement each
-other very well. \libadjoint requires
+\index{libadjoint@\libadjoint!use of algorithmic differentiation}
+The two approaches (AD and \libadjoint) are not competitors; in fact, they complement one
+another well. \libadjoint requires
 the developer to supply the derivatives of the nonlinear assembly operators with respect to
 their immediate arguments; AD works very well on such small, local pieces of code. By taking
 this approach, the pragmatic model developer can use both abstractions where they are strong,
 and have the best of both worlds.
 
 \section{The problem \libadjoint solves}
+Suppose we have a discrete forward problem
+\begin{equation*}
+A(u)\cdot u = b(u),
+\end{equation*}
+where $u$ is the vector of unknown variables, $A(u)$ is the discretised operator,
+and $b(u$) is the source term. $A$ might depend on $u$ if the PDE is nonlinear,
+and $b$ might depend on $u$ if the data is nonlinear (e.g., if an equation of
+state is nonlinear).  As we will see in section~\ref{sec:examples}, every discrete model
+can be written in this form, including time-dependent, nonlinear problems.
+
+Let $J(u)$ be a functional of interest. Then it can be shown \citep{gunzburger2003} that
+the discrete adjoint equation is given by
+\index{adjoints!discrete adjoint equation}
+\begin{equation*}
+(A + G - R)^* \lambda = \frac{\partial J}{\partial u},
+\end{equation*}
+where $\lambda$ is the adjoint solution, $A$ is the original forward operator, $G$ is the derivative of $A$ given by
+\begin{equation*}
+G = \left({\frac{\partial A}{\partial u}}\right)_{ijk} u_j,
+\end{equation*}
+$R$ is the Jacobian of the right-hand-side given by
+\begin{equation*}
+R = \frac{\partial b}{\partial u},
+\end{equation*}
+and $^*$ indicates the Hermitian (transpose and take the complex conjugate). If $A$ does not depend on
+$u$ (i.e., the operator is linear), then $G \equiv 0$. If $b$ does not depend on
+$u$, then $R \equiv 0$.
+
+For a time-dependent problem, $A(u)$ has a lower triangular triangular structure,
+corresponding to the temporal flow of information from the start of the simulation
+to the end. By transposition, $(A + G - R)^*$ has an upper triangular structure, where
+information propagates from the end of time to the beginning. This is why time-dependent adjoint
+models run backwards in time.
+
+With \libadjoint you describe the block-structure of $A(u)$,
+and supply functions which assemble or compute the action of each block in $A$.
+With this information, \libadjoint can automatically derive the adjoint equations
+and assemble each equation in turn. \libadjoint also keeps track of when each
+variable of the forward and adjoint equations are needed, and can automatically
+forget them when nothing further depends on them. This frees the developer from
+complicated lifecycle management, and greatly simplifies the process of adjoint model
+development.
 
 \section{The structure of \libadjoint}
-The fundamental object of \libadjoint is an \adjointer. The forward model is annotated
-to record the sequence of linear solves that the model has executed (\texttt{adj_record_equation}); the \adjointer is
-the object that holds the record. When the \adjointer has this information, it can derive
+The fundamental object of \libadjoint is an \refapi{adj_adjointer}. The forward model is annotated
+to record the sequence of linear solves that the model has executed (\refapi{adj_register_equation}); the \refapi{adj_adjointer} is
+the object that holds the record. When the \refapi{adj_adjointer} has this information, it can derive
 the structure of each adjoint equation: what should be assembled or differentiated for each linear
 solve in the adjoint run. If the model developer then
-supplies callbacks to the \adjointer (\texttt{adj_register_operator_callback}) to allow \libadjoint to assemble each
+supplies callbacks to the \refapi{adj_adjointer} (\refapi{adj_register_operator_callback}) to allow \libadjoint to assemble each
 operator that appears in the forward equation, \libadjoint is
-able to assemble each adjoint equation as it is to be solved (\texttt{adj_get_adjoint_equation}).
+able to assemble each adjoint equation when it is required (\refapi{adj_get_adjoint_equation}).
 
 \libadjoint is organised in a data-structure-neutral manner, inspired by the design
 of Zoltan \citep{devine2002}. \libadjoint frequently needs to manipulate vectors
 and matrices, but the objects that represent these (\refapi{adj_vector} and \refapi{adj_matrix})
-are wrappers around user data types that are opaque to \libadjoint. \libadjoint manipulates
+are wrappers around model data types that are opaque to \libadjoint. \libadjoint manipulates
 these opaque data types through data callbacks supplied by the developer. Currently, \libadjoint
+\index{PETSc!data types}
 comes with data callbacks to interoperate with the PETSc \texttt{Vec} and \texttt{Mat} types \citep{balay2010}.
-If your model uses other data types, then a handful of callbacks must be supplied to \libadjoint (\texttt{adj_register_data_callback}).
-If these types are not specific to your model, then please consider contributing them back!
+If the model uses other data types, then a handful of callbacks must be supplied to \libadjoint (\refapi{adj_register_data_callback}).
+If these types are not specific to the model, then please consider contributing them back!
 
 Great care has been taken to make the API of \libadjoint as consistent as possible. All functions
-return an error code. \texttt{ADJ_OK} means that the function worked as normal. A negative
+return an error code. \refapi{ADJ_OK} means that the function worked as normal. A negative
 return code means that a warning was issued; a positive return code means that an error occurred.
-Every call to \libadjoint should be followed by \texttt{adj_chkierr}, which inspects the return
+Every call to \libadjoint should be followed by \refapi{adj_chkierr}, which inspects the return
 code and prints out a helpful error message.
 
 \libadjoint is written in C, and currently offers bindings for C, Fortran 90 and Python. The Fortran 90 bindings
-are implemented using the \texttt{iso_c_binding} facility \citep{metcalf2004}, and therefore require a modern
+are implemented using the \texttt{iso_c_binding} facility \citep{metcalf2004}, and therefore require a recent
 Fortran compiler. This facility is supported by the latest releases of all major Fortran compilers; in particular,
 if you are developing using \texttt{gfortran}, you must use version 4.5 or greater.
 Of course, bindings to other languages are very welcome, especially C++.
@@ -170,17 +224,17 @@ Of course, bindings to other languages are very welcome, especially C++.
 One of the advantages of using \libadjoint to develop an adjoint model is that the process
 is very systematic and incremental. 
 
-Firstly, if the core data types of your model are unknown to \libadjoint, then you
+Firstly, if the core data types of the model are unknown to \libadjoint, then you
 should write the data callbacks so that \libadjoint can allocate, destroy, and add
 vectors and matrices.
 
-Secondly, annotate the first equation in your model, and write the operator
+Secondly, annotate the first equation in the model, and write the operator
 callbacks for the matrices that appear. Here, you should start to
 exploit the powerful debugging and development facilities in \libadjoint. The
 annotation builds a ``tape'' of the model execution, and \libadjoint uses this
 to rewind the model. But \libadjoint can use this tape to replay the forward
 model back again; furthermore, \libadjoint can automatically compare the output
-of the replay against the values of your original forward model. Therefore,
+of the replay against the values of the original forward model. Therefore,
 annotate the first equation, and then check the consistency of the tape with the
 forward model; once you are happy with the first equation, iterate until you have
 successfully annotated all equations, and can replay the model run in its
@@ -191,12 +245,11 @@ There are two other major sources of developer error: inconsistency of
 transposed operators, and incorrectness of derivative code. \libadjoint
 offers debugging tools to eliminate both classes of error. 
 
-\pagebreak[4]
 In order to 
 check the correctness of operator transposition, we employ the identity
 that
 \begin{equation*}
-\langle y, Ax \rangle = \langle A^T y, x \rangle
+\langle y, Ax \rangle = \langle A^* y, x \rangle,
 \end{equation*}
 for any suitable vectors $x, y$ and an operator $A$. \libadjoint computes both
 sides of the identity and checks that they are equal to machine precision. This
@@ -207,12 +260,12 @@ In order to assemble the adjoint equation, \libadjoint also requires
 callbacks which compute the derivative of the nonlinear assembly operators
 with respect to their immediate inputs. (As we will see later, these
 derivative routines can be generated easily by applying algorithmic
-differentiation.) In order to check the consistency of any derivative,
+differentiation.) In order to check the consistency of any derivative,\index{algorithmic differentiation!derivative test}
 we employ the identity that
 \begin{equation*}
 \left|\left| f(x + \delta x) - f(x) \right|\right|
 \end{equation*}
-converges at $O(\left|\left| \delta x \right|\right|)$, whereas
+converges to zero at $O(\left|\left| \delta x \right|\right|)$ as $\left|\left|\delta x\right|\right| \rightarrow 0$, whereas
 \begin{equation*}
 \left|\left| f(x + \delta x) - f(x) - \nabla f(x)\cdot \delta x\right|\right|
 \end{equation*}
@@ -223,5 +276,5 @@ as it asserts the correspondence between the original model code
 and the derivative of the modified model code.
 
 Once the forward replay works correctly, and these checks have been
-passed, then the assembled adjoint equations are almost certainly correct.
+successfully passed, then the assembled adjoint equations are almost certainly correct.
 
