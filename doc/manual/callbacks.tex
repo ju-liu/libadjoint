@@ -17,13 +17,13 @@
 \begin{framed}
 \begin{minipage}{\columnwidth}
 \begin{ccode}
-  void vec_duplicate_proc(adj_vector x, adj_vector *newx);
+  void vec_duplicate(adj_vector x, adj_vector *newx);
 \end{ccode}
 \begin{fortrancode}
-  subroutine vec_duplicate_proc(x, newx) bind(c)
+  subroutine vec_duplicate(x, newx) bind(c)
     type(adj_vector), intent(in), value :: x
     type(adj_vector), intent(out) :: newx
-  end subroutine vec_duplicate_proc
+  end subroutine vec_duplicate
 \end{fortrancode}
 \end{minipage}
 \end{framed}
@@ -37,14 +37,14 @@ When necessary: always.
 \begin{framed}
 \begin{minipage}{\columnwidth}
 \begin{ccode}
-  void vec_axpy_proc(adj_vector *y, adj_scalar alpha, adj_vector x);
+  void vec_axpy(adj_vector *y, adj_scalar alpha, adj_vector x);
 \end{ccode}
 \begin{fortrancode}
-  subroutine vec_axpy_proc(y, alpha, x) bind(c)
+  subroutine vec_axpy(y, alpha, x) bind(c)
     type(adj_vector), intent(inout) :: y
     adj_scalar_f, intent(in), value :: alpha
     type(adj_vector), intent(in), value :: x
-  end subroutine vec_axpy_proc
+  end subroutine vec_axpy
 \end{fortrancode}
 \end{minipage}
 \end{framed}
@@ -58,12 +58,12 @@ When necessary: always.
 \begin{framed}
 \begin{minipage}{\columnwidth}
 \begin{ccode}
-  void vec_destroy_proc(adj_vector *x);
+  void vec_destroy(adj_vector *x);
 \end{ccode}
 \begin{fortrancode}
-  subroutine vec_destroy_proc(x) bind(c)
+  subroutine vec_destroy(x) bind(c)
     type(adj_vector), intent(inout) :: x
-  end subroutine adj_vec_destroy_proc
+  end subroutine adj_vec_destroy
 \end{fortrancode}
 \end{minipage}
 \end{framed}
@@ -79,10 +79,10 @@ When necessary: always.
   void vec_set_values(adj_vector *x, adj_scalar* scalars);
 \end{ccode}
 \begin{fortrancode}
-  subroutine vec_set_values_proc(vec, scalars) bind(c)
+  subroutine vec_set_values(vec, scalars) bind(c)
     type(adj_vector), intent(inout) :: vec
     adj_scalar_f, dimension(*), intent(in) :: scalars
-  end subroutine vec_set_values_proc
+  end subroutine vec_set_values
 \end{fortrancode}
 \end{minipage}
 \end{framed}
@@ -96,13 +96,13 @@ is activated on an \refapi{adj_nonlinear_block} with \refapi{adj_nonlinear_block
 \begin{framed}
 \begin{minipage}{\columnwidth}
 \begin{ccode}
-  void vec_get_norm_proc(adj_vector x, int* sz);
+  void vec_get_norm(adj_vector x, int* sz);
 \end{ccode}
 \begin{fortrancode}
-  subroutine vec_get_size_proc(vec, sz) bind(c)
+  subroutine vec_get_size(vec, sz) bind(c)
     type(adj_vector), intent(in), value :: vec
     integer(kind=c_int), intent(out) :: sz
-  end subroutine vec_get_size_proc
+  end subroutine vec_get_size
 \end{fortrancode}
 \end{minipage}
 \end{framed}
@@ -116,13 +116,13 @@ is activated on an \refapi{adj_nonlinear_block} with \refapi{adj_nonlinear_block
 \begin{framed}
 \begin{minipage}{\columnwidth}
 \begin{ccode}
-  void vec_get_norm_proc(adj_vector x, adj_scalar* norm);
+  void vec_get_norm(adj_vector x, adj_scalar* norm);
 \end{ccode}
 \begin{fortrancode}
-  subroutine vec_norm_proc(x, norm) bind(c)
+  subroutine vec_norm(x, norm) bind(c)
     type(adj_vector), intent(in), value :: x
     adj_scalar_f, intent(out) :: norm
-  end subroutine vec_norm_proc
+  end subroutine vec_norm
 \end{fortrancode}
 \end{minipage}
 \end{framed}
@@ -131,8 +131,45 @@ which norm is chosen, so long as it satisfies the usual axioms for a norm.
 
 When necessary: this data callback is necessary when the derivative test flag
 is activated on an \refapi{adj_nonlinear_block} with \refapi{adj_nonlinear_block_set_test_derivative}.
+
 \defapiss{ADJ_VEC_SET_RANDOM_CB}
+\begin{framed}
+\begin{minipage}{\columnwidth}
+\begin{ccode}
+  void vec_set_random(adj_vector *x);
+\end{ccode}
+\begin{fortrancode}
+  subroutine vec_set_random(x) bind(c)
+    type(adj_vector), intent(inout) :: x
+  end subroutine vec_set_random
+\end{fortrancode}
+\end{minipage}
+\end{framed}
+This data callback sets the entries of a given vector \texttt{x} to pseudo-random values.
+
+When necessary: this data callback is necessary when the hermitian test flag is
+activated on an \refapi{adj_block} with \refapi{adj_block_set_test_hermitian},
+or on an \refapi{adj_nonlinear_block} with \\\refapi{adj_nonlinear_block_set_test_hermitian}.
+
 \defapiss{ADJ_VEC_DOT_PRODUCT_CB}
+\begin{framed}
+\begin{minipage}{\columnwidth}
+\begin{ccode}
+  void vec_dot_product(adj_vector x, adj_vector y, adj_scalar* val);
+\end{ccode}
+\begin{fortrancode}
+  subroutine vec_dot_product(x, y, val) bind(c)
+    type(adj_vector), intent(in), value :: x, y
+    adj_scalar_f, intent(out) :: val
+  end subroutine vec_dot_product
+\end{fortrancode}
+\end{minipage}
+\end{framed}
+This data callback computes the dot product (inner product) of two \refapi{adj_vector}s.
+
+When necessary: this data callback is necessary when the hermitian test flag is
+activated on an \refapi{adj_block} with \refapi{adj_block_set_test_hermitian},
+or on an \refapi{adj_nonlinear_block} with \\\refapi{adj_nonlinear_block_set_test_hermitian}.
 \subsection{Matrix callbacks}
 \defapiss{ADJ_MAT_DUPLICATE_CB}
 \defapiss{ADJ_MAT_AXPY_CB}
