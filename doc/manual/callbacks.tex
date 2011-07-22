@@ -14,6 +14,20 @@
 \defapiss{adj_register_data_callback}
 \subsection{Vector callbacks}
 \defapiss{ADJ_VEC_DUPLICATE_CB}
+\definterface{
+  void vec_duplicate_proc(adj_vector x, adj_vector *newx);
+}{
+  subroutine adj_vec_duplicate_proc(x, newx) bind(c)
+    type(adj_vector), intent(in), value :: x
+    type(adj_vector), intent(out) :: newx
+  end subroutine adj_vec_duplicate_proc
+}
+This data callback is the fundamental allocation callback. \libadjoint
+often needs to create new vectors for various tasks; \texttt{x} is an
+input model \refapi{adj_vector} to be duplicated, while \texttt{newx} is the new vector
+to be allocated. Note that this callback \textbf{must initialise the contents of \texttt{newx} to zero}.
+
+When necessary: always.
 \defapiss{ADJ_VEC_AXPY_CB}
 \defapiss{ADJ_VEC_DESTROY_CB}
 \defapiss{ADJ_VEC_SET_VALUES_CB}

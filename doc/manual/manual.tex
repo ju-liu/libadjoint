@@ -10,7 +10,9 @@
 \usepackage{makeidx}
 \usepackage[margin=2cm]{geometry}
 \usepackage{float}
+\usepackage{framed}
 \usepackage{xspace}
+\usepackage{minted}
 \usepackage{amsfonts}
 \usepackage{amsmath}
 \usepackage{amssymb}
@@ -26,8 +28,21 @@
 \newcommand{\defapi}[1]{\section{\texttt{#1}\label{api:#1}}\index{\texttt{#1}|primary}}
 % Command to reference an API section
 \newcommand{\refapi}[1]{\hyperref[api:#1]{\texttt{#1}}\index{\texttt{#1}}}
+\newcommand{\definterface}[2]{
+%\vspace{-5.0cm}
+\begin{framed}
+\vspace{-0.7cm}
+\begin{minted}{c}
+#1
+\end{minted}
+\vspace{-1.0cm}
+#2
+\vspace{-0.5cm}
+\end{framed}
+%\vspace{-4.0cm}
+}
 
-\newcommand{\UnderscoreCommands}{\do\refapi \do\autoref}
+\newcommand{\UnderscoreCommands}{\do\refapi \do\autoref \do\definterface}
 \usepackage[strings]{underscore}
 \usepackage[tight]{minitoc}
 
@@ -43,6 +58,8 @@
   {\par%
     \usebeamertemplate{block end}%
   \end{actionenv}}
+
+\usemintedstyle{tango}
 
 \definecolor{Grey}{rgb}{0.96,0.97,0.98}
 \makeatletter\newenvironment{graybox}{%
