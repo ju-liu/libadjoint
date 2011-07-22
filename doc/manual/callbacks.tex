@@ -231,7 +231,92 @@ its resources.
 
 When necessary: always.
 \subsection{Supplied data callbacks}
+If the model uses a common library for its fundamental datatypes, rather than
+writing its own, it is possible to distribute the data callbacks with \libadjoint,
+so that other model developers do not have to re-write them from scratch. At present, the
+only data types with supplied data callbacks are the PETSc \texttt{Vec} and \texttt{Mat} types.
+Other data type callbacks for common libraries are very welcome!
+
+\subsection{PETSc data callbacks}
 \defapiss{adj_set_petsc_data_callbacks}
+\begin{framed}
+\begin{minipage}{\columnwidth}
+\begin{ccode}
+  int adj_set_petsc_data_callbacks(adj_adjointer* adjointer);
+\end{ccode}
+\begin{fortrancode}
+  function adj_set_petsc_data_callbacks(adjointer) result(ierr)
+    type(adj_adjointer), intent(inout) :: adjointer
+    integer(kind=c_int) :: ierr
+  end function adj_set_petsc_data_callbacks
+\end{fortrancode}
+\end{minipage}
+\end{framed}
+This function registers the data callbacks for the PETSc \texttt{Vec} and \texttt{Mat} types
+supplied with \libadjoint.
+
+\libadjoint also supplies utility functions to convert between \texttt{Vec} and \texttt{Mat}
+types and the \texttt{adj_vector} and \texttt{adj_matrix} types that wrap them.
+\defapiss{petsc_vec_to_adj_vector}
+\begin{framed}
+\begin{minipage}{\columnwidth}
+\begin{ccode}
+  adj_vector petsc_vec_to_adj_vector(Vec* input);
+\end{ccode}
+\begin{fortrancode}
+  function petsc_vec_to_adj_vector(input) result(output)
+    Vec, intent(in), target :: input
+    type(adj_vector) :: output
+  end function petsc_vec_to_adj_vector
+\end{fortrancode}
+\end{minipage}
+\end{framed}
+Given a \texttt{Vec}, return an \refapi{adj_vector} that wraps it.
+\defapiss{petsc_vec_from_adj_vector}
+\begin{framed}
+\begin{minipage}{\columnwidth}
+\begin{ccode}
+  Vec petsc_vec_from_adj_vector(adj_vector input);
+\end{ccode}
+\begin{fortrancode}
+  function petsc_vec_from_adj_vector(input) result(output)
+    type(adj_vector), intent(in) :: input
+    Vec :: output
+  end function petsc_vec_from_adj_vector
+\end{fortrancode}
+\end{minipage}
+\end{framed}
+Given an \refapi{adj_vector}, return the \texttt{Vec} that it wraps.
+\defapiss{petsc_mat_to_adj_matrix}
+\begin{framed}
+\begin{minipage}{\columnwidth}
+\begin{ccode}
+  adj_matrix petsc_mat_to_adj_matrix(Mat* input);
+\end{ccode}
+\begin{fortrancode}
+  function petsc_mat_to_adj_matrix(input) result(output)
+    Mat, intent(in), target :: input
+    type(adj_matrix) :: output
+  end function petsc_mat_to_adj_matrix
+\end{fortrancode}
+\end{minipage}
+\end{framed}
+Given a \texttt{Mat}, return an \refapi{adj_matrix} that wraps it.
+\defapiss{petsc_mat_from_adj_matrix}
+\begin{framed}
+\begin{minipage}{\columnwidth}
+\begin{ccode}
+  Mat petsc_mat_from_adj_matrix(adj_matrix input);
+\end{ccode}
+\begin{fortrancode}
+  function petsc_mat_from_adj_matrix(input) result(output)
+    type(adj_matrix), intent(in) :: input
+    Mat :: output
+  end function petsc_mat_from_adj_matrix
+\end{fortrancode}
+\end{minipage}
+\end{framed}
+Given an \refapi{adj_matrix}, return the \texttt{Mat} that it wraps.
 
 \section{Operator callbacks}
 \defapis{adj_register_operator_callback}
