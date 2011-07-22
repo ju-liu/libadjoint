@@ -204,4 +204,19 @@ Vec petsc_vec_from_adj_vector(adj_vector vv)
   v = *(Vec*) vv.ptr;
   return v;
 }
+
+adj_matrix petsc_mat_to_adj_matrix(Mat* v)
+{
+  adj_matrix vv;
+  vv.ptr = (void*)v;
+  vv.klass = 0;
+  return vv;
+}
+
+Mat petsc_mat_from_adj_matrix(adj_matrix vv)
+{
+  Mat v;
+  v = *(Mat*) vv.ptr;
+  return v;
+}
 #endif
