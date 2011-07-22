@@ -99,16 +99,16 @@ is activated on an \refapi{adj_nonlinear_block} with \refapi{adj_nonlinear_block
 \defapiss{ADJ_VEC_GET_SIZE_CB}
 \begin{framed}
 \vspace{-0.7cm}
-\begin{minted}{c}
+\begin{ccode}
   void vec_get_norm_proc(adj_vector x, int* sz);
-\end{minted}
+\end{ccode}
 \vspace{-1.0cm}
-\begin{minted}{fortran}
+\begin{fortrancode}
   subroutine vec_get_size_proc(vec, sz) bind(c)
     type(adj_vector), intent(in), value :: vec
     integer(kind=c_int), intent(out) :: sz
   end subroutine vec_get_size_proc
-\end{minted}
+\end{fortrancode}
 \vspace{-0.5cm}
 \end{framed}
 This data callback returns the number of degrees of freedom in a given \refapi{adj_vector}. The

@@ -59,19 +59,26 @@
 \setcounter{tocdepth}{3}
 \setcounter{minitocdepth}{3}
 
-\definecolor{DarkBlue}{rgb}{0.00,0.00,0.55}
+%\definecolor{linkcolor}{rgb}{0.33,0.09,0.33}
+\definecolor{linkcolor}{RGB}{52,101,164}
 \definecolor{Black}{rgb}{0.00,0.00,0.00}
 \hypersetup{
-    linkcolor   = DarkBlue,
-    anchorcolor = DarkBlue,
-    citecolor   = DarkBlue,
-    filecolor   = DarkBlue,
-    pagecolor   = DarkBlue,
-    urlcolor    = DarkBlue,
+    linkcolor   = linkcolor,
+    anchorcolor = linkcolor,
+    citecolor   = linkcolor,
+    filecolor   = linkcolor,
+    pagecolor   = linkcolor,
+    urlcolor    = linkcolor,
     colorlinks  = true,
     pdftitle    = {\libadjoint manual},
     pdfauthor   = {Patrick Farrell <patrick.farrell06@imperial.ac.uk>}
 }
+
+\definecolor{c}{RGB}{117,80,123}
+\definecolor{fortran}{RGB}{193,125,17}
+\newminted{c}{frame=leftline,rulecolor=\color{c},framerule=2.0pt}
+\newminted{fortran}{frame=leftline,rulecolor=\color{fortran},framerule=2.0pt}
+
 
 % Define date in european format
 \def\today{\number\day\space\ifcase\month\or
