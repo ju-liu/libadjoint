@@ -14,14 +14,20 @@
 \defapiss{adj_register_data_callback}
 \subsection{Vector callbacks}
 \defapiss{ADJ_VEC_DUPLICATE_CB}
-\definterface{
+\begin{framed}
+\vspace{-0.7cm}
+\begin{minted}{c}
   void vec_duplicate_proc(adj_vector x, adj_vector *newx);
-}{
-  subroutine adj_vec_duplicate_proc(x, newx) bind(c)
+\end{minted}
+\vspace{-1.0cm}
+\begin{minted}{fortran}
+  subroutine vec_duplicate_proc(x, newx) bind(c)
     type(adj_vector), intent(in), value :: x
     type(adj_vector), intent(out) :: newx
-  end subroutine adj_vec_duplicate_proc
-}
+  end subroutine vec_duplicate_proc
+\end{minted}
+\vspace{-0.5cm}
+\end{framed}
 This data callback is the fundamental allocation callback. \libadjoint
 often needs to create new vectors for various tasks; \texttt{x} is an
 input model \refapi{adj_vector} to be duplicated, while \texttt{newx} is the new vector
@@ -29,7 +35,46 @@ to be allocated. Note that this callback \textbf{must initialise the contents of
 
 When necessary: always.
 \defapiss{ADJ_VEC_AXPY_CB}
+\begin{framed}
+\vspace{-0.7cm}
+\begin{minted}{c}
+  void vec_axpy_proc(adj_vector *y, adj_scalar alpha, adj_vector x);
+\end{minted}
+\vspace{-1.0cm}
+\begin{minted}{fortran}
+  subroutine vec_axpy_proc(y, alpha, x) bind(c)
+    type(adj_vector), intent(inout) :: y
+    adj_scalar_f, intent(in), value :: alpha
+    type(adj_vector), intent(in), value :: x
+  end subroutine vec_axpy_proc
+\end{minted}
+\vspace{-0.5cm}
+\end{framed}
+This data callback adds one vector to another, i.e.\ executes
+\begin{equation*}
+y \leftarrow y + \alpha x.
+\end{equation*}
+
+When necessary: always.
 \defapiss{ADJ_VEC_DESTROY_CB}
+\begin{framed}
+\vspace{-0.7cm}
+\begin{minted}{c}
+  void vec_destroy_proc(adj_vector *x);
+\end{minted}
+\vspace{-1.0cm}
+\begin{minted}{fortran}
+  subroutine vec_destroy_proc(x) bind(c)
+    type(adj_vector), intent(inout) :: x
+  end subroutine adj_vec_destroy_proc
+\end{minted}
+\vspace{-0.5cm}
+\end{framed}
+This data callback is called when \libadjoint is finished
+with a vector; it is used to deallocate its memory and free
+its resources.
+
+When necessary: always.
 \defapiss{ADJ_VEC_SET_VALUES_CB}
 \defapiss{ADJ_VEC_DIVIDE_CB}
 \defapiss{ADJ_VEC_GET_NORM_CB}
