@@ -27,7 +27,7 @@
 \end{fortrancode}
 \end{minipage}
 \end{framed}
-This data callback is the fundamental allocation callback. \libadjoint
+This data callback is the fundamental allocation callback for the \refapi{adj_vector} type. \libadjoint
 often needs to create new vectors for various tasks; \texttt{x} is an
 input model \refapi{adj_vector} to be duplicated, while \texttt{newx} is the new vector
 to be allocated. Note that this callback \textbf{must initialise the contents of \texttt{newx} to zero}.
@@ -63,7 +63,7 @@ When necessary: always.
 \begin{fortrancode}
   subroutine vec_destroy(x) bind(c)
     type(adj_vector), intent(inout) :: x
-  end subroutine adj_vec_destroy
+  end subroutine vec_destroy
 \end{fortrancode}
 \end{minipage}
 \end{framed}
@@ -172,8 +172,64 @@ activated on an \refapi{adj_block} with \refapi{adj_block_set_test_hermitian},
 or on an \refapi{adj_nonlinear_block} with \\\refapi{adj_nonlinear_block_set_test_hermitian}.
 \subsection{Matrix callbacks}
 \defapiss{ADJ_MAT_DUPLICATE_CB}
+\begin{framed}
+\begin{minipage}{\columnwidth}
+\begin{ccode}
+  void mat_duplicate(adj_matrix X, adj_matrix *newX);
+\end{ccode}
+\begin{fortrancode}
+  subroutine mat_duplicate(X, newX) bind(c)
+    type(adj_matrix), intent(in), value :: X
+    type(adj_matrix), intent(out) :: newX
+  end subroutine mat_duplicate
+\end{fortrancode}
+\end{minipage}
+\end{framed}
+This data callback is the fundamental allocation callback for the \refapi{adj_matrix} type. \libadjoint
+often needs to create new matrices for various tasks; \texttt{X} is an
+input model \refapi{adj_matrix} to be duplicated, while \texttt{newX} is the new matrix
+to be allocated. Note that this callback \textbf{must initialise the contents of \texttt{newX} to zero}.
+
+When necessary: always.
 \defapiss{ADJ_MAT_AXPY_CB}
+\begin{framed}
+\begin{minipage}{\columnwidth}
+\begin{ccode}
+  void mat_axpy(adj_matrix *Y, adj_scalar alpha, adj_matrix X);
+\end{ccode}
+\begin{fortrancode}
+  subroutine mat_axpy(Y, alpha, X) bind(c)
+    type(adj_matrix), intent(inout) :: Y
+    adj_scalar_f, intent(in), value :: alpha
+    type(adj_matrix), intent(in), value :: X
+  end subroutine mat_axpy
+\end{fortrancode}
+\end{minipage}
+\end{framed}
+This data callback adds one matrix to another, i.e.\ executes
+\begin{equation*}
+Y \leftarrow Y + \alpha X.
+\end{equation*}
+
+When necessary: always.
 \defapiss{ADJ_MAT_DESTROY_CB}
+\begin{framed}
+\begin{minipage}{\columnwidth}
+\begin{ccode}
+  void mat_destroy(adj_matrix *X);
+\end{ccode}
+\begin{fortrancode}
+  subroutine mat_destroy(X) bind(c)
+    type(adj_matrix), intent(inout) :: X
+  end subroutine mat_destroy
+\end{fortrancode}
+\end{minipage}
+\end{framed}
+This data callback is called when \libadjoint is finished
+with a matrix; it is used to deallocate its memory and free
+its resources.
+
+When necessary: always.
 \subsection{Supplied data callbacks}
 \defapiss{adj_set_petsc_data_callbacks}
 
