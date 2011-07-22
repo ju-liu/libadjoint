@@ -15,18 +15,17 @@
 \subsection{Vector callbacks}
 \defapiss{ADJ_VEC_DUPLICATE_CB}
 \begin{framed}
-\vspace{-0.7cm}
-\begin{minted}{c}
+\begin{minipage}{\columnwidth}
+\begin{ccode}
   void vec_duplicate_proc(adj_vector x, adj_vector *newx);
-\end{minted}
-\vspace{-1.0cm}
-\begin{minted}{fortran}
+\end{ccode}
+\begin{fortrancode}
   subroutine vec_duplicate_proc(x, newx) bind(c)
     type(adj_vector), intent(in), value :: x
     type(adj_vector), intent(out) :: newx
   end subroutine vec_duplicate_proc
-\end{minted}
-\vspace{-0.5cm}
+\end{fortrancode}
+\end{minipage}
 \end{framed}
 This data callback is the fundamental allocation callback. \libadjoint
 often needs to create new vectors for various tasks; \texttt{x} is an
@@ -36,19 +35,18 @@ to be allocated. Note that this callback \textbf{must initialise the contents of
 When necessary: always.
 \defapiss{ADJ_VEC_AXPY_CB}
 \begin{framed}
-\vspace{-0.7cm}
-\begin{minted}{c}
+\begin{minipage}{\columnwidth}
+\begin{ccode}
   void vec_axpy_proc(adj_vector *y, adj_scalar alpha, adj_vector x);
-\end{minted}
-\vspace{-1.0cm}
-\begin{minted}{fortran}
+\end{ccode}
+\begin{fortrancode}
   subroutine vec_axpy_proc(y, alpha, x) bind(c)
     type(adj_vector), intent(inout) :: y
     adj_scalar_f, intent(in), value :: alpha
     type(adj_vector), intent(in), value :: x
   end subroutine vec_axpy_proc
-\end{minted}
-\vspace{-0.5cm}
+\end{fortrancode}
+\end{minipage}
 \end{framed}
 This data callback adds one vector to another, i.e.\ executes
 \begin{equation*}
@@ -58,17 +56,16 @@ y \leftarrow y + \alpha x.
 When necessary: always.
 \defapiss{ADJ_VEC_DESTROY_CB}
 \begin{framed}
-\vspace{-0.7cm}
-\begin{minted}{c}
+\begin{minipage}{\columnwidth}
+\begin{ccode}
   void vec_destroy_proc(adj_vector *x);
-\end{minted}
-\vspace{-1.0cm}
-\begin{minted}{fortran}
+\end{ccode}
+\begin{fortrancode}
   subroutine vec_destroy_proc(x) bind(c)
     type(adj_vector), intent(inout) :: x
   end subroutine adj_vec_destroy_proc
-\end{minted}
-\vspace{-0.5cm}
+\end{fortrancode}
+\end{minipage}
 \end{framed}
 This data callback is called when \libadjoint is finished
 with a vector; it is used to deallocate its memory and free
@@ -77,18 +74,17 @@ its resources.
 When necessary: always.
 \defapiss{ADJ_VEC_SET_VALUES_CB}
 \begin{framed}
-\vspace{-0.7cm}
-\begin{minted}{c}
+\begin{minipage}{\columnwidth}
+\begin{ccode}
   void vec_set_values(adj_vector *x, adj_scalar* scalars);
-\end{minted}
-\vspace{-1.0cm}
-\begin{minted}{fortran}
+\end{ccode}
+\begin{fortrancode}
   subroutine vec_set_values_proc(vec, scalars) bind(c)
     type(adj_vector), intent(inout) :: vec
     adj_scalar_f, dimension(*), intent(in) :: scalars
   end subroutine vec_set_values_proc
-\end{minted}
-\vspace{-0.5cm}
+\end{fortrancode}
+\end{minipage}
 \end{framed}
 This data callback sets a given \refapi{adj_vector} from an array
 of \texttt{adj_scalar}s. The length of the array is the output of
@@ -118,18 +114,17 @@ When necessary: this data callback is necessary when the derivative test flag
 is activated on an \refapi{adj_nonlinear_block} with \refapi{adj_nonlinear_block_set_test_derivative}.
 \defapiss{ADJ_VEC_GET_NORM_CB}
 \begin{framed}
-\vspace{-0.7cm}
-\begin{minted}{c}
+\begin{minipage}{\columnwidth}
+\begin{ccode}
   void vec_get_norm_proc(adj_vector x, adj_scalar* norm);
-\end{minted}
-\vspace{-1.0cm}
-\begin{minted}{fortran}
+\end{ccode}
+\begin{fortrancode}
   subroutine vec_norm_proc(x, norm) bind(c)
     type(adj_vector), intent(in), value :: x
     adj_scalar_f, intent(out) :: norm
   end subroutine vec_norm_proc
-\end{minted}
-\vspace{-0.5cm}
+\end{fortrancode}
+\end{minipage}
 \end{framed}
 This data callback computes the norm of a given vector. It does not matter
 which norm is chosen, so long as it satisfies the usual axioms for a norm.
