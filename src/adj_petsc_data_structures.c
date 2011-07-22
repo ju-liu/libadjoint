@@ -5,7 +5,6 @@ int adj_set_petsc_data_callbacks(adj_adjointer* adjointer)
   int ierr;
 #ifdef HAVE_PETSC
   PetscInitializeNoArguments();
-#endif
   ierr = adj_register_data_callback(adjointer, ADJ_VEC_DUPLICATE_CB, (void (*)(void)) petsc_vec_duplicate_proc);
   adj_chkierr(ierr);
   ierr = adj_register_data_callback(adjointer, ADJ_VEC_AXPY_CB,(void (*)(void)) petsc_vec_axpy_proc);
@@ -28,6 +27,10 @@ int adj_set_petsc_data_callbacks(adj_adjointer* adjointer)
   adj_chkierr(ierr);
   ierr = adj_register_data_callback(adjointer, ADJ_MAT_DUPLICATE_CB,(void (*)(void)) petsc_mat_duplicate_proc);
   adj_chkierr(ierr);
+#else
+  ierr = ADJ_ERR_INVALID_INPUTS;
+  snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Sorry, libadjoint was compiled without PETSc support.");
+#endif
 
   return ierr;
 }
