@@ -8,6 +8,45 @@
 
 \section{Data callbacks}
 \subsection{The \texttt{adj_vector} and \texttt{adj_matrix} types}
+\libadjoint needs to manipulate vectors and matrices. After all, the entire
+purpose of the main output function \refapi{adj_get_adjoint_equation} is to
+assemble a left-hand-side matrix and a right-hand-side vector. Therefore,
+\libadjoint needs to have classes representing the concepts of vectors and matrices.
+
+However, one of the
+design goals of \libadjoint is to be applicable to many different models,
+using very different data structures. How, then, should the \libadjoint
+vector and matrix classes work?
+
+One approach is for \libadjoint to define its own vector and matrix classes,
+to which the model developer must convert the model data structures. However,
+writing yet another linear algebra API is highly undesirable; the world
+has enough of these.
+
+A second approach would be to standardise on some common linear algebra
+API such as PETSc \citep{balay1997,balay2010} or Trilinos \citep{heroux2003}. However,
+this would introduce a large hard dependency on such a library to any project which uses \libadjoint;
+the aim for \libadjoint is to be small, lightweight, portable, and easy to install. Furthermore,
+it would entail having the same data around in memory in two different formats (the format blessed by \libadjoint,
+and the model's own), which would be very inefficient.
+
+\libadjoint settles on third approach, inspired by the example of the Zoltan
+graph partitioning library \citep{devine2002}. The \libadjoint vector and matrix
+classes are merely thin wrappers around the user's own data structures;
+at their core, they are nothing but a void pointer. While this approach has the
+great advantage that it can be used with any and all pre-existing data structures,
+it means that \libadjoint has a problem: how can it manipulate these objects,
+when it knows nothing about them? The answer is for the model developer to supply
+\emph{data callbacks} to \libadjoint, to give \libadjoint the power to manipulate
+these objects as necessary.
+
+This approach entails some extra work on the part of
+the model developer; however, this extra work is once-off for each sort of data
+structure employed, and can easily be shared between model developers by incorporating
+the various sets of data callbacks in \libadjoint itself. Already, \libadjoint includes
+data callbacks for interfacing with the PETSc \texttt{Vec} and \texttt{Mat} types (\autoref{sec:petsc_callbacks}),
+and contributions in this regard are very welcome.
+
 \defapiss{adj_vector}
 \defapiss{adj_matrix}
 
@@ -287,7 +326,7 @@ so that other model developers do not have to re-write them from scratch. At pre
 only data types with supplied data callbacks are the PETSc \texttt{Vec} and \texttt{Mat} types.
 Other data type callbacks for common libraries are very welcome!
 
-\subsection{PETSc data callbacks}
+\subsection{PETSc data callbacks} \label{sec:petsc_callbacks}
 \defapiss{adj_set_petsc_data_callbacks}
 \begin{framed}
 \begin{minipage}{\columnwidth}
