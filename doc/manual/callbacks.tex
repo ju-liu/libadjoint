@@ -30,7 +30,7 @@ the aim for \libadjoint is to be small, lightweight, portable, and easy to insta
 it would entail having the same data around in memory in two different formats (the format blessed by \libadjoint,
 and the model's own), which would be very inefficient.
 
-\libadjoint settles on third approach, inspired by the example of the Zoltan
+\libadjoint settles on a third approach, inspired by the example of the Zoltan
 graph partitioning library \citep{devine2002}. The \libadjoint vector and matrix
 classes are merely thin wrappers around the user's own data structures;
 at their core, they are nothing but a void pointer. While this approach has the
