@@ -138,6 +138,10 @@ appropriately.
 This function registers a given data callback with an \refapi{adj_adjointer} so that
 \libadjoint can manipulate \refapi{adj_vector} and \refapi{adj_matrix} types. For a list of the
 valid values of \texttt{type}, see \autoref{sec:vector_callbacks} and \autoref{sec:matrix_callbacks}.
+If an operator callback
+has not been registered, and \libadjoint needs it to perform some task that the model
+developer has requested, the function will return an \refapi{ADJ_ERR_NEED_CALLBACK}
+error.
 
 Example usage in C:
 \begin{framed}

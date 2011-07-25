@@ -4,7 +4,86 @@
 \newpage
 
 \section{Operator callbacks}
+When the developer annotates a model, he must give a label to each
+block that appears in the annotation, e.g.\ \mint{c}|"MassMatrix"|, \mint{c}|"Identity"|,
+\mint{c}|"AdvectionOperator"|, etc. \libadjoint is capable of the formal manipulation
+of this annotation to say how the adjoint equation should be assembled;
+but it is not possible for \libadjoint to actually assemble the adjoint
+equations while these names are merely abstract labels.
+
+However, if the model developer associates each name appearing in the annotation
+with a function that allows \libadjoint to use that block, then \libadjoint
+can actually assemble each adjoint equation. 
+
+This suggests a clean division
+of labour: the model developer describes the model in an annotation, and supplies
+callbacks for each individual component of that annotation; \libadjoint manipulates
+the annotation to decide how the individual components should all be put together
+to assemble each adjoint equation. This division of labour turns out to be
+an excellent way to write an adjoint model: the complex manipulation of the annotation
+can be written in \libadjoint precisely once, and the model developer can automatically
+test the correctness of the annotation and operator callbacks (\autoref{chap:debugging}).
+
 \defapis{adj_register_operator_callback}
+\begin{framed}
+\begin{minipage}{\columnwidth}
+\begin{ccode}
+int adj_register_operator_callback(adj_adjointer* adjointer, int type,
+                                   char* name, void (*fn)(void));
+\end{ccode}
+\begin{fortrancode}
+  function adj_register_operator_callback(adjointer, type, name, fnptr) 
+           result(ierr)
+    type(adj_adjointer), intent(inout) :: adjointer
+    integer(kind=c_int), intent(in) :: type
+    character(len=*), intent(in) :: name
+    type(c_funptr), intent(in), value :: fnptr
+    integer(kind=c_int) :: ierr
+  end function adj_register_operator_callback
+\end{fortrancode}
+\end{minipage}
+\end{framed}
+This function registers a given operator callback with blocks of name \texttt{name}
+so that \libadjoint can use it when necessary. For a list of the valid values of
+\texttt{type}, see \autoref{sec:operator_callback_types}. If an operator callback
+has not been registered, and \libadjoint needs it to perform some task that the model
+developer has requested, the function will return an \refapi{ADJ_ERR_NEED_CALLBACK}
+error.
+
+Example usage in C:
+\begin{framed}
+\begin{minipage}{\columnwidth}
+\begin{ccode}
+  ierr = adj_register_operator_callback(adjointer, ADJ_NBLOCK_ACTION_CB, 
+                                   "AdvectionOperator",
+                                   (void (*)(void)) advection_action_proc);
+  adj_chkierr(ierr);
+\end{ccode}
+\end{minipage}
+\end{framed}
+
+Example usage in Fortran:
+\begin{framed}
+\begin{minipage}{\columnwidth}
+\begin{fortrancode}
+  ierr = adj_register_operator_callback(adjointer, ADJ_BLOCK_ASSEMBLY_CB, 
+                                    "MassMatrix",
+                                    c_funloc(mass_matrix_assembly_proc));
+  call adj_chkierr(ierr);
+\end{fortrancode}
+\end{minipage}
+\end{framed}
+
+As \libadjoint is only given the function pointer to the operator callback, it cannot check that the
+interface of the given function is correct. If you register a function which is declared to take 
+in an interface different to that which \libadjoint expects, then the model will segfault when
+\libadjoint calls that function (or worse, smash the stack). Be very careful when writing operator callbacks to use exactly
+the interface documented in this manual!
+\subsection{Operator callback types} \label{sec:operator_callback_types}
+\defapiss{ADJ_BLOCK_ACTION_CB}
+\defapiss{ADJ_BLOCK_ASSEMBLY_CB}
+\defapiss{ADJ_NBLOCK_DERIVATIVE_ACTION_CB}
+\defapiss{ADJ_NBLOCK_ACTION_CB}
 
 \section{Source-term callbacks}
 \defapis{adj_register_forward_source_callback}
