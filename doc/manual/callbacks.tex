@@ -47,8 +47,78 @@ the various sets of data callbacks in \libadjoint itself. Already, \libadjoint i
 data callbacks for interfacing with the PETSc \texttt{Vec} and \texttt{Mat} types (\autoref{sec:petsc_callbacks}),
 and contributions in this regard are very welcome.
 
+\newpage
 \defapiss{adj_vector}
+The \texttt{adj_vector} type is public, i.e.\ it is intended that model developers will read and
+write its components. Its definition:
+\begin{framed}
+\begin{minipage}{\columnwidth}
+\begin{ccode}
+typedef struct
+{
+  void* ptr; /* a pointer to the model's data */
+  int klass; /* a field to be set by the user 
+                in case adj_vector wraps multiple
+                separate types */
+  int flags; /* for any flags the user might like to set */
+} adj_vector;
+\end{ccode}
+\begin{fortrancode}
+  type, bind(c) :: adj_vector
+    type(c_ptr) :: ptr ! a pointer to the model's data
+    integer(kind=c_int) :: klass ! a field to be set by the user
+                                 ! in case adj_vector wraps multiple
+                                 ! separate types
+    integer(kind=c_int) :: flags ! for any flags the user might like to set
+  end type adj_vector
+\end{fortrancode}
+\end{minipage}
+\end{framed}
+
+The \texttt{ptr} attribute takes the address of the model vector to be wrapped; note that
+since the \refapi{adj_vector} only has the address of the model vector, the model
+vector must not be deallocated before the \refapi{adj_vector} has been used.
+
+The \texttt{klass} attribute exists because it may be desirable to wrap more than
+one model datatype as an \refapi{adj_vector}. For example, the Fluidity/ICOM model
+\citep{piggott2008} has separate data types \texttt{type(scalar_field)}, \texttt{type(vector_field)}
+and \texttt{type(tensor_field)} representing scalar, vector and tensor fields respectively; all
+of these can be wrapped by the same \refapi{adj_vector} class, by setting the \texttt{klass} attribute
+differently.
+
+The \texttt{flags} attribute stores any flags about the vector that the user wishes to record.
 \defapiss{adj_matrix}
+Like the \refapi{adj_vector} type, The \texttt{adj_matrix} type is public. As it takes the same
+approach to wrapping model matrix types as \refapi{adj_vector} takes to wrapping model vectors,
+it has the exact same definition:
+\begin{framed}
+\begin{minipage}{\columnwidth}
+\begin{ccode}
+typedef struct
+{
+  void* ptr; /* a pointer to the model's data */
+  int klass; /* a field to be set by the developer
+                in case adj_matrix wraps multiple
+                separate types */
+  int flags; /* for any flags one might like to set */
+} adj_matrix;
+\end{ccode}
+\begin{fortrancode}
+  type, bind(c) :: adj_matrix
+    type(c_ptr) :: ptr ! a pointer to the model's data
+    integer(kind=c_int) :: klass ! a field to be set by the developer
+                                 ! in case adj_matrix wraps multiple
+                                 ! separate types
+    integer(kind=c_int) :: flags ! for any flags one might like to set
+  end type adj_matrix
+\end{fortrancode}
+\end{minipage}
+\end{framed}
+Again, the \texttt{klass} attribute exists because it may be desirable to wrap more than
+one model datatype as an \refapi{adj_matrix}. For example, the Fluidity/ICOM model
+\citep{piggott2008} has separate data types representing CSR, block CSR and matrix-free matrix formats,
+all of which can be wrapped by the same \refapi{adj_matrix} class by setting the \texttt{klass} attribute
+appropriately.
 
 \subsection{Registering data callbacks}
 \defapiss{adj_register_data_callback}
@@ -56,7 +126,7 @@ and contributions in this regard are very welcome.
 \begin{minipage}{\columnwidth}
 \begin{ccode}
   int adj_register_data_callback(adj_adjointer* adjointer, int type, 
-                                 void (*fn)(void));
+                                 void (*fnptr)(void));
 \end{ccode}
 \begin{fortrancode}
   function adj_register_data_callback(adjointer, type, fnptr) result(ierr)
