@@ -143,6 +143,64 @@ targets an \refapi{adj_variable} in an \refapi{adj_equation} that is not the var
 \refapi{adj_equation}.
 
 \defapiss{ADJ_BLOCK_ASSEMBLY_CB}
+\begin{framed}
+\begin{minipage}{\columnwidth}
+\begin{ccode}
+  void block_assembly(int nvar, adj_variable* variables, adj_vector* dependencies,
+                    int hermitian, adj_scalar coefficient, void* context,
+                    adj_matrix* output, adj_vector* rhs);
+\end{ccode}
+\begin{fortrancode}
+  subroutine block_assembly(nvar, variables, dependencies, hermitian, coefficient,
+                            context, output, rhs) bind(c)
+    integer(kind=c_int), intent(in), value :: nvar
+    type(adj_variable), dimension(nvar), intent(in) :: variables
+    type(adj_vector), dimension(nvar), intent(in) :: dependencies
+    integer(kind=c_int), intent(in), value :: hermitian
+    adj_scalar_f, intent(in), value :: coefficient
+    type(c_ptr), intent(in), value :: context
+    type(adj_matrix), intent(out) :: output
+    type(adj_vector), intent(out) :: rhs
+  end subroutine block_assembly
+\end{fortrancode}
+\end{minipage}
+\end{framed}
+This callback assembles a given block, and also creates a model vector for its output.
+
+\begin{framed}
+Mathematical description: let $V$ represent the block with which this routine is associated. Then,
+if \texttt{hermitian == ADJ_FALSE}, this routine must compute
+\begin{equation*}
+\texttt{output} = \texttt{coefficient} \cdot V(d_1,d_2,\dots,d_{\texttt{nvar}}),
+\end{equation*}
+and if \texttt{hermitian == ADJ_TRUE}, this routine must compute
+\begin{equation*}
+\texttt{output} = \texttt{coefficient} \cdot V(d_1,d_2,\dots,d_{\texttt{nvar}})^*,
+\end{equation*}
+where $(d_1, d_2, \dots, d_{\texttt{nvar}})$ are the nonlinear dependencies of this block supplied in the \texttt{dependencies} array.
+\end{framed}
+
+\begin{framed}
+Detailed argument list:
+\begin{description}
+\item[\texttt{nvar}] The number of variables that this block depends on.
+\item[\texttt{variables}] An array of \refapi{adj_variable}s indicating which dependencies are being supplied to this routine. The length of the
+array is given by \texttt{nvar}. The first entry of the \texttt{variables} array
+tells the model developer what the first entry of the \texttt{dependencies} is, the second pairs with the second, and so on.
+\item[\texttt{dependencies}] An array of \refapi{adj_vector}s containing the values of the dependencies of this block. The dependencies supplied
+here are the same as those which were registered during the annotation.
+\item[\texttt{hermitian}] A flag indicating whether the routine is to compute the action of the block, or the action of the Hermitian of the
+block. It will either be \texttt{ADJ_TRUE} or \texttt{ADJ_FALSE}.
+\item[\texttt{coefficient}] A coefficient by which the routine must scale the output.
+\item[\texttt{context}] This is a pointer to arbitrary model data, supplied at the time that the block was created during the annotation.
+\item[\texttt{output}] This is an \refapi{adj_matrix} which is to contain the matrix assembled at these dependencies.
+\item[\texttt{rhs}] This is a model \refapi{adj_vector} which lies in the output space of the operator to be assembled. 
+\end{description}
+\end{framed}
+
+When necessary: this callback is necessary for all blocks that appear on the diagonal of the annotation; i.e., the block
+targets an \refapi{adj_variable} in an \refapi{adj_equation} that is the variable being solved for in that
+\refapi{adj_equation}.
 \defapiss{ADJ_NBLOCK_DERIVATIVE_ACTION_CB}
 \defapiss{ADJ_NBLOCK_ACTION_CB}
 
