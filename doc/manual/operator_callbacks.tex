@@ -25,7 +25,7 @@ can be written in \libadjoint precisely once, and the model developer can automa
 test the correctness of the annotation and operator callbacks (\autoref{chap:debugging}).
 
 \defapis{adj_register_operator_callback}
-\begin{framed}
+\begin{boxwithtitle}{\texttt{adj_register_operator_callback}}
 \begin{minipage}{\columnwidth}
 \begin{ccode}
 int adj_register_operator_callback(adj_adjointer* adjointer, int type,
@@ -42,7 +42,7 @@ int adj_register_operator_callback(adj_adjointer* adjointer, int type,
   end function adj_register_operator_callback
 \end{fortrancode}
 \end{minipage}
-\end{framed}
+\end{boxwithtitle}
 This function registers a given operator callback with blocks of name \texttt{name}
 so that \libadjoint can use it when necessary. For a list of the valid values of
 \texttt{type}, see \autoref{sec:operator_callback_types}. If an operator callback
@@ -51,7 +51,8 @@ developer has requested, the function will return an \refapi{ADJ_ERR_NEED_CALLBA
 error.
 
 Example usage in C:
-\begin{framed}
+
+\begin{boxwithtitle}{\texttt{adj_register_operator_callback} (C example)}
 \begin{minipage}{\columnwidth}
 \begin{ccode}
   ierr = adj_register_operator_callback(adjointer, ADJ_NBLOCK_ACTION_CB, 
@@ -60,10 +61,11 @@ Example usage in C:
   adj_chkierr(ierr);
 \end{ccode}
 \end{minipage}
-\end{framed}
+\end{boxwithtitle}
 
 Example usage in Fortran:
-\begin{framed}
+
+\begin{boxwithtitle}{\texttt{adj_register_operator_callback} (Fortran example)}
 \begin{minipage}{\columnwidth}
 \begin{fortrancode}
   ierr = adj_register_operator_callback(adjointer, ADJ_BLOCK_ASSEMBLY_CB, 
@@ -72,7 +74,7 @@ Example usage in Fortran:
   call adj_chkierr(ierr);
 \end{fortrancode}
 \end{minipage}
-\end{framed}
+\end{boxwithtitle}
 
 As \libadjoint is only given the function pointer to the operator callback, it cannot check that the
 interface of the given function is correct. If you register a function which is declared to take 
@@ -81,7 +83,7 @@ in an interface different to that which \libadjoint expects, then the model will
 the interface documented in this manual!
 \subsection{Operator callback types} \label{sec:operator_callback_types}
 \defapiss{ADJ_BLOCK_ACTION_CB}
-\begin{framed}
+\begin{boxwithtitle}{\texttt{ADJ_BLOCK_ACTION_CB}}
 \begin{minipage}{\columnwidth}
 \begin{ccode}
   void block_action(int nvar, adj_variable* variables, adj_vector* dependencies,
@@ -102,11 +104,10 @@ the interface documented in this manual!
   end subroutine block_action
 \end{fortrancode}
 \end{minipage}
-\end{framed}
+\end{boxwithtitle}
 This callback computes the action of a block on a specified input vector \texttt{input}.
 
-\begin{boxwithtitle}{Mathematical description}
-%\begin{minipage}
+\begin{boxwithtitle}{Mathematical description (\texttt{ADJ_BLOCK_ACTION_CB})}
 Let $V$ represent the block with which this routine is associated. Then,
 if \texttt{hermitian == ADJ_FALSE}, this routine must compute
 \begin{equation*}
@@ -117,11 +118,9 @@ and if \texttt{hermitian == ADJ_TRUE}, this routine must compute
 \texttt{output} = \texttt{coefficient} \cdot V(d_1,d_2,\dots,d_{\texttt{nvar}})^* \cdot \texttt{input},
 \end{equation*}
 where $(d_1, d_2, \dots, d_{\texttt{nvar}})$ are the nonlinear dependencies of this block supplied in the \texttt{dependencies} array.
-%\end{minipage}
 \end{boxwithtitle}
 
-\begin{framed}
-Detailed argument list:
+\begin{boxwithtitle}{Detailed argument list (\texttt{ADJ_BLOCK_ACTION_CB})}
 \begin{description}
 \item[\texttt{nvar}] The number of variables that this block depends on.
 \item[\texttt{variables}] An array of \refapi{adj_variable}s indicating which dependencies are being supplied to this routine. The length of the
@@ -136,14 +135,14 @@ block. It will either be \texttt{ADJ_TRUE} or \texttt{ADJ_FALSE}.
 \item[\texttt{context}] This is a pointer to arbitrary model data, supplied at the time that the block was created during the annotation.
 \item[\texttt{output}] This is an \refapi{adj_vector} which is to contain the output of the matrix-vector action.
 \end{description}
-\end{framed}
+\end{boxwithtitle}
 
 When necessary: this callback is necessary for all blocks that appear off the diagonal of the annotation; i.e., the block
 targets an \refapi{adj_variable} in an \refapi{adj_equation} that is not the variable being solved for in that
 \refapi{adj_equation}.
 
 \defapiss{ADJ_BLOCK_ASSEMBLY_CB}
-\begin{framed}
+\begin{boxwithtitle}{\texttt{ADJ_BLOCK_ASSEMBLY_CB}}
 \begin{minipage}{\columnwidth}
 \begin{ccode}
   void block_assembly(int nvar, adj_variable* variables, adj_vector* dependencies,
@@ -164,11 +163,11 @@ targets an \refapi{adj_variable} in an \refapi{adj_equation} that is not the var
   end subroutine block_assembly
 \end{fortrancode}
 \end{minipage}
-\end{framed}
+\end{boxwithtitle}
 This callback assembles a given block, and also creates a model vector for its output.
 
-\begin{framed}
-Mathematical description: let $V$ represent the block with which this routine is associated. Then,
+\begin{boxwithtitle}{Mathematical description (\texttt{ADJ_BLOCK_ASSEMBLY_CB})}
+Let $V$ represent the block with which this routine is associated. Then,
 if \texttt{hermitian == ADJ_FALSE}, this routine must compute
 \begin{equation*}
 \texttt{output} = \texttt{coefficient} \cdot V(d_1,d_2,\dots,d_{\texttt{nvar}}),
@@ -178,10 +177,9 @@ and if \texttt{hermitian == ADJ_TRUE}, this routine must compute
 \texttt{output} = \texttt{coefficient} \cdot V(d_1,d_2,\dots,d_{\texttt{nvar}})^*,
 \end{equation*}
 where $(d_1, d_2, \dots, d_{\texttt{nvar}})$ are the nonlinear dependencies of this block supplied in the \texttt{dependencies} array.
-\end{framed}
+\end{boxwithtitle}
 
-\begin{framed}
-Detailed argument list:
+\begin{boxwithtitle}{Detailed argument list (\texttt{ADJ_BLOCK_ASSEMBLY_CB})}
 \begin{description}
 \item[\texttt{nvar}] The number of variables that this block depends on.
 \item[\texttt{variables}] An array of \refapi{adj_variable}s indicating which dependencies are being supplied to this routine. The length of the
@@ -196,7 +194,7 @@ block. It will either be \texttt{ADJ_TRUE} or \texttt{ADJ_FALSE}.
 \item[\texttt{output}] This is an \refapi{adj_matrix} which is to contain the matrix assembled at these dependencies.
 \item[\texttt{rhs}] This is a model \refapi{adj_vector} which lies in the output space of the operator to be assembled. 
 \end{description}
-\end{framed}
+\end{boxwithtitle}
 
 When necessary: this callback is necessary for all blocks that appear on the diagonal of the annotation; i.e., the block
 targets an \refapi{adj_variable} in an \refapi{adj_equation} that is the variable being solved for in that
