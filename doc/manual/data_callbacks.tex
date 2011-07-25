@@ -48,7 +48,8 @@ and contributions in this regard are very welcome.
 \defapiss{adj_vector}
 The \texttt{adj_vector} type is public, i.e.\ it is intended that model developers will read and
 write its components. Its definition:
-\begin{framed}
+
+\begin{boxwithtitle}{\texttt{adj_vector}}
 \begin{minipage}{\columnwidth}
 \begin{ccode}
 typedef struct
@@ -70,7 +71,7 @@ typedef struct
   end type adj_vector
 \end{fortrancode}
 \end{minipage}
-\end{framed}
+\end{boxwithtitle}
 
 The \texttt{ptr} attribute takes the address of the model vector to be wrapped; note that
 since the \refapi{adj_vector} only has the address of the model vector, the model
@@ -84,11 +85,13 @@ of these can be wrapped by the same \refapi{adj_vector} class, by setting the \t
 differently.
 
 The \texttt{flags} attribute stores any flags about the vector that the user wishes to record.
+\newpage
 \defapiss{adj_matrix}
 Like the \refapi{adj_vector} type, the \texttt{adj_matrix} type is public. As it takes the same
 approach to wrapping model matrix types as \refapi{adj_vector} takes to wrapping model vectors,
 it has exactly the same definition:
-\begin{framed}
+
+\begin{boxwithtitle}{\texttt{adj_matrix}}
 \begin{minipage}{\columnwidth}
 \begin{ccode}
 typedef struct
@@ -110,7 +113,8 @@ typedef struct
   end type adj_matrix
 \end{fortrancode}
 \end{minipage}
-\end{framed}
+\end{boxwithtitle}
+
 Again, the \texttt{klass} attribute exists because it may be desirable to wrap more than
 one model datatype as an \refapi{adj_matrix}. For example, the Fluidity/ICOM model
 \citep{piggott2008} has separate data types representing CSR, block CSR and matrix-free matrix formats,
@@ -119,7 +123,7 @@ appropriately.
 
 \subsection{Registering data callbacks}
 \defapiss{adj_register_data_callback}
-\begin{framed}
+\begin{boxwithtitle}{\texttt{adj_register_data_callback}}
 \begin{minipage}{\columnwidth}
 \begin{ccode}
   int adj_register_data_callback(adj_adjointer* adjointer, int type, 
@@ -134,7 +138,7 @@ appropriately.
   end function adj_register_data_callback
 \end{fortrancode}
 \end{minipage}
-\end{framed}
+\end{boxwithtitle}
 This function registers a given data callback with an \refapi{adj_adjointer} so that
 \libadjoint can manipulate \refapi{adj_vector} and \refapi{adj_matrix} types. For a list of the
 valid values of \texttt{type}, see \autoref{sec:vector_callbacks} and \autoref{sec:matrix_callbacks}.
@@ -144,26 +148,24 @@ developer has requested, the function will return an \refapi{ADJ_ERR_NEED_CALLBA
 error.
 
 Example usage in C:
-\begin{framed}
-\begin{minipage}{\columnwidth}
+
+\begin{boxwithtitle}{\texttt{adj_register_data_callback} (C example)}
 \begin{ccode}
   ierr = adj_register_data_callback(adjointer, ADJ_VEC_DUPLICATE_CB, 
                                    (void (*)(void)) my_vec_duplicate_proc);
   adj_chkierr(ierr);
 \end{ccode}
-\end{minipage}
-\end{framed}
+\end{boxwithtitle}
 
 Example usage in Fortran:
-\begin{framed}
-\begin{minipage}{\columnwidth}
+
+\begin{boxwithtitle}{\texttt{adj_register_data_callback} (Fortran example)}
 \begin{fortrancode}
   ierr = adj_register_data_callback(adjointer, ADJ_VEC_DUPLICATE_CB, 
                                     c_funloc(my_vec_duplicate_proc));
   call adj_chkierr(ierr);
 \end{fortrancode}
-\end{minipage}
-\end{framed}
+\end{boxwithtitle}
 
 As \libadjoint is only given the function pointer to the data callback, it cannot check that the
 interface of the given function is correct. If you register a function which is declared to take 
