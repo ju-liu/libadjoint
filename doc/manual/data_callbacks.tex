@@ -175,7 +175,7 @@ the interface documented in this manual!
 
 \subsection{Vector callbacks} \label{sec:vector_callbacks}
 \defapiss{ADJ_VEC_DUPLICATE_CB}
-\begin{framed}
+\begin{boxwithtitle}{\texttt{ADJ_VEC_DUPLICATE_CB}}
 \begin{minipage}{\columnwidth}
 \begin{ccode}
   void vec_duplicate(adj_vector x, adj_vector *newx);
@@ -187,7 +187,7 @@ the interface documented in this manual!
   end subroutine vec_duplicate
 \end{fortrancode}
 \end{minipage}
-\end{framed}
+\end{boxwithtitle}
 This data callback is the fundamental allocation callback for the \refapi{adj_vector} type. \libadjoint
 often needs to create new vectors for various tasks; \texttt{x} is an
 input model \refapi{adj_vector} to be duplicated, while \texttt{newx} is the new vector
@@ -195,7 +195,7 @@ to be allocated. Note that this callback \textbf{must initialise the contents of
 
 When necessary: always.
 \defapiss{ADJ_VEC_AXPY_CB}
-\begin{framed}
+\begin{boxwithtitle}{\texttt{ADJ_VEC_AXPY_CB}}
 \begin{minipage}{\columnwidth}
 \begin{ccode}
   void vec_axpy(adj_vector *y, adj_scalar alpha, adj_vector x);
@@ -208,7 +208,7 @@ When necessary: always.
   end subroutine vec_axpy
 \end{fortrancode}
 \end{minipage}
-\end{framed}
+\end{boxwithtitle}
 This data callback adds one vector to another, i.e.\ executes
 \begin{equation*}
 y \leftarrow y + \alpha x.
@@ -216,7 +216,7 @@ y \leftarrow y + \alpha x.
 
 When necessary: always.
 \defapiss{ADJ_VEC_DESTROY_CB}
-\begin{framed}
+\begin{boxwithtitle}{\texttt{ADJ_VEC_DESTROY_CB}}
 \begin{minipage}{\columnwidth}
 \begin{ccode}
   void vec_destroy(adj_vector *x);
@@ -227,14 +227,14 @@ When necessary: always.
   end subroutine vec_destroy
 \end{fortrancode}
 \end{minipage}
-\end{framed}
+\end{boxwithtitle}
 This data callback is called when \libadjoint is finished
 with a vector; it is used to deallocate its memory and free
 its resources.
 
 When necessary: always.
 \defapiss{ADJ_VEC_SET_VALUES_CB}
-\begin{framed}
+\begin{boxwithtitle}{\texttt{ADJ_VEC_SET_VALUES_CB}}
 \begin{minipage}{\columnwidth}
 \begin{ccode}
   void vec_set_values(adj_vector *x, adj_scalar* scalars);
@@ -246,7 +246,7 @@ When necessary: always.
   end subroutine vec_set_values
 \end{fortrancode}
 \end{minipage}
-\end{framed}
+\end{boxwithtitle}
 This data callback sets a given \refapi{adj_vector} from an array
 of \texttt{adj_scalar}s. The length of the array is the output of
 the \refapi{ADJ_VEC_GET_SIZE_CB} data callback.
@@ -254,7 +254,7 @@ the \refapi{ADJ_VEC_GET_SIZE_CB} data callback.
 When necessary: this data callback is necessary when the derivative test flag
 is activated on an \refapi{adj_nonlinear_block} with \refapi{adj_nonlinear_block_set_test_derivative}.
 \defapiss{ADJ_VEC_GET_SIZE_CB}
-\begin{framed}
+\begin{boxwithtitle}{\texttt{ADJ_VEC_GET_SIZE_CB}}
 \begin{minipage}{\columnwidth}
 \begin{ccode}
   void vec_get_norm(adj_vector x, int* sz);
@@ -266,7 +266,7 @@ is activated on an \refapi{adj_nonlinear_block} with \refapi{adj_nonlinear_block
   end subroutine vec_get_size
 \end{fortrancode}
 \end{minipage}
-\end{framed}
+\end{boxwithtitle}
 This data callback returns the number of degrees of freedom in a given \refapi{adj_vector}. The
 vector space of all such \refapi{adj_vector}s should be isomorphic to $\mathbb{R}^n$ for some $n$;
 this callback returns $n$.
@@ -274,7 +274,7 @@ this callback returns $n$.
 When necessary: this data callback is necessary when the derivative test flag
 is activated on an \refapi{adj_nonlinear_block} with \refapi{adj_nonlinear_block_set_test_derivative}.
 \defapiss{ADJ_VEC_GET_NORM_CB}
-\begin{framed}
+\begin{boxwithtitle}{\texttt{ADJ_VEC_GET_NORM_CB}}
 \begin{minipage}{\columnwidth}
 \begin{ccode}
   void vec_get_norm(adj_vector x, adj_scalar* norm);
@@ -286,7 +286,7 @@ is activated on an \refapi{adj_nonlinear_block} with \refapi{adj_nonlinear_block
   end subroutine vec_norm
 \end{fortrancode}
 \end{minipage}
-\end{framed}
+\end{boxwithtitle}
 This data callback computes the norm of a given vector. It does not matter
 which norm is chosen, so long as it satisfies the usual axioms for a norm.
 
@@ -294,7 +294,7 @@ When necessary: this data callback is necessary when the derivative test flag
 is activated on an \refapi{adj_nonlinear_block} with \refapi{adj_nonlinear_block_set_test_derivative}.
 
 \defapiss{ADJ_VEC_SET_RANDOM_CB}
-\begin{framed}
+\begin{boxwithtitle}{\texttt{ADJ_VEC_SET_RANDOM_CB}}
 \begin{minipage}{\columnwidth}
 \begin{ccode}
   void vec_set_random(adj_vector *x);
@@ -305,7 +305,7 @@ is activated on an \refapi{adj_nonlinear_block} with \refapi{adj_nonlinear_block
   end subroutine vec_set_random
 \end{fortrancode}
 \end{minipage}
-\end{framed}
+\end{boxwithtitle}
 This data callback sets the entries of a given vector \texttt{x} to pseudo-random values.
 
 When necessary: this data callback is necessary when the Hermitian test flag is
@@ -313,7 +313,7 @@ activated on an \refapi{adj_block} with \refapi{adj_block_set_test_hermitian},
 or on an \refapi{adj_nonlinear_block} with \\\refapi{adj_nonlinear_block_set_test_hermitian}.
 
 \defapiss{ADJ_VEC_DOT_PRODUCT_CB}
-\begin{framed}
+\begin{boxwithtitle}{\texttt{ADJ_VEC_DOT_PRODUCT_CB}}
 \begin{minipage}{\columnwidth}
 \begin{ccode}
   void vec_dot_product(adj_vector x, adj_vector y, adj_scalar* val);
@@ -325,7 +325,7 @@ or on an \refapi{adj_nonlinear_block} with \\\refapi{adj_nonlinear_block_set_tes
   end subroutine vec_dot_product
 \end{fortrancode}
 \end{minipage}
-\end{framed}
+\end{boxwithtitle}
 This data callback computes the dot product (inner product) of two \refapi{adj_vector}s.
 
 When necessary: this data callback is necessary when the Hermitian test flag is
@@ -334,7 +334,7 @@ or on an \refapi{adj_nonlinear_block} with \\\refapi{adj_nonlinear_block_set_tes
 
 \subsection{Matrix callbacks} \label{sec:matrix_callbacks}
 \defapiss{ADJ_MAT_DUPLICATE_CB}
-\begin{framed}
+\begin{boxwithtitle}{\texttt{ADJ_MAT_DUPLICATE_CB}}
 \begin{minipage}{\columnwidth}
 \begin{ccode}
   void mat_duplicate(adj_matrix X, adj_matrix *newX);
@@ -346,7 +346,7 @@ or on an \refapi{adj_nonlinear_block} with \\\refapi{adj_nonlinear_block_set_tes
   end subroutine mat_duplicate
 \end{fortrancode}
 \end{minipage}
-\end{framed}
+\end{boxwithtitle}
 This data callback is the fundamental allocation callback for the \refapi{adj_matrix} type. \libadjoint
 often needs to create new matrices for various tasks; \texttt{X} is an
 input model \refapi{adj_matrix} to be duplicated, while \texttt{newX} is the new matrix
@@ -354,7 +354,7 @@ to be allocated. Note that this callback \textbf{must initialise the contents of
 
 When necessary: always.
 \defapiss{ADJ_MAT_AXPY_CB}
-\begin{framed}
+\begin{boxwithtitle}{\texttt{ADJ_MAT_AXPY_CB}}
 \begin{minipage}{\columnwidth}
 \begin{ccode}
   void mat_axpy(adj_matrix *Y, adj_scalar alpha, adj_matrix X);
@@ -367,7 +367,7 @@ When necessary: always.
   end subroutine mat_axpy
 \end{fortrancode}
 \end{minipage}
-\end{framed}
+\end{boxwithtitle}
 This data callback adds one matrix to another, i.e.\ executes
 \begin{equation*}
 Y \leftarrow Y + \alpha X.
@@ -375,7 +375,7 @@ Y \leftarrow Y + \alpha X.
 
 When necessary: always.
 \defapiss{ADJ_MAT_DESTROY_CB}
-\begin{framed}
+\begin{boxwithtitle}{\texttt{ADJ_MAT_DESTROY_CB}}
 \begin{minipage}{\columnwidth}
 \begin{ccode}
   void mat_destroy(adj_matrix *X);
@@ -386,7 +386,7 @@ When necessary: always.
   end subroutine mat_destroy
 \end{fortrancode}
 \end{minipage}
-\end{framed}
+\end{boxwithtitle}
 This data callback is called when \libadjoint is finished
 with a matrix; it is used to deallocate its memory and free
 its resources.
