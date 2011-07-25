@@ -38,7 +38,7 @@ In particular, if your supplied derivative code is incorrect, then this warning 
 
 \defapis{ADJ_WARN_UNINITIALISED_VALUE}
 This warning is issued by \refapi{adj_evaluate_functional} if no dependencies have been
-registered for that particular functional at that timestep. A functional by definition must depend on the solution. To fix this, you must register the dependencies with
+registered for that particular functional at that timestep. A functional, by definition, must depend on the solution. To fix this, you must register the dependencies with
 \refapi{adj_timestep_set_functional_dependencies}.
 
 \defapis{ADJ_WARN_NOT_IMPLEMENTED}

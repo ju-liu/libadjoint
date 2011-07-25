@@ -10,9 +10,58 @@
 \subsection{The \texttt{adj_vector} and \texttt{adj_matrix} types}
 \defapiss{adj_vector}
 \defapiss{adj_matrix}
+
 \subsection{Registering data callbacks}
 \defapiss{adj_register_data_callback}
-\subsection{Vector callbacks}
+\begin{framed}
+\begin{minipage}{\columnwidth}
+\begin{ccode}
+  int adj_register_data_callback(adj_adjointer* adjointer, int type, 
+                                 void (*fn)(void));
+\end{ccode}
+\begin{fortrancode}
+  function adj_register_data_callback(adjointer, type, fnptr) result(ierr)
+    type(adj_adjointer), intent(inout) :: adjointer
+    integer(kind=c_int), intent(in), value :: type
+    type(c_funptr), intent(in), value :: fnptr
+    integer(kind=c_int) :: ierr
+  end function adj_register_data_callback
+\end{fortrancode}
+\end{minipage}
+\end{framed}
+This function registers a given data callback with an \refapi{adj_adjointer} so that
+\libadjoint can manipulate \refapi{adj_vector} and \refapi{adj_matrix} types. For a list of the
+valid values of \texttt{type}, see \autoref{sec:vector_callbacks} and \autoref{sec:matrix_callbacks}.
+
+Example usage in C:
+\begin{framed}
+\begin{minipage}{\columnwidth}
+\begin{ccode}
+  ierr = adj_register_data_callback(adjointer, ADJ_VEC_DUPLICATE_CB, 
+                                   (void (*)(void)) my_vec_duplicate_proc);
+  adj_chkierr(ierr);
+\end{ccode}
+\end{minipage}
+\end{framed}
+
+Example usage in Fortran:
+\begin{framed}
+\begin{minipage}{\columnwidth}
+\begin{fortrancode}
+  ierr = adj_register_data_callback(adjointer, ADJ_VEC_DUPLICATE_CB, 
+                                    c_funloc(my_vec_duplicate_proc));
+  call adj_chkierr(ierr);
+\end{fortrancode}
+\end{minipage}
+\end{framed}
+
+As \libadjoint is only given the function pointer to the data callback, it cannot check that the
+interface of the given function is correct. If you register a function which is declared to take 
+in an interface different to that which \libadjoint expects, then the model will segfault when
+\libadjoint calls that function (or worse, smash the stack). Be very careful when writing data callbacks to use exactly
+the interface documented in this manual!
+
+\subsection{Vector callbacks} \label{sec:vector_callbacks}
 \defapiss{ADJ_VEC_DUPLICATE_CB}
 \begin{framed}
 \begin{minipage}{\columnwidth}
@@ -170,7 +219,8 @@ This data callback computes the dot product (inner product) of two \refapi{adj_v
 When necessary: this data callback is necessary when the Hermitian test flag is
 activated on an \refapi{adj_block} with \refapi{adj_block_set_test_hermitian},
 or on an \refapi{adj_nonlinear_block} with \\\refapi{adj_nonlinear_block_set_test_hermitian}.
-\subsection{Matrix callbacks}
+
+\subsection{Matrix callbacks} \label{sec:matrix_callbacks}
 \defapiss{ADJ_MAT_DUPLICATE_CB}
 \begin{framed}
 \begin{minipage}{\columnwidth}
