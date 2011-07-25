@@ -1,5 +1,6 @@
 \documentclass[11pt,a4paper]{book}
 \usepackage{color}
+\usepackage{tikz}
 \usepackage{graphicx}
 \usepackage{subfigure}
 \usepackage{fancyhdr}
@@ -46,11 +47,7 @@
     \usebeamertemplate{block end}%
   \end{actionenv}}
 
-\definecolor{Grey}{rgb}{0.96,0.97,0.98}
-\makeatletter\newenvironment{graybox}{%
-   \begin{lrbox}{\@tempboxa}\begin{minipage}{\columnwidth}}{\end{minipage}\end{lrbox}%
-   \colorbox{Grey}{\usebox{\@tempboxa}}
-}\makeatother
+\usemintedstyle{tango}
 
 % Cause numbering of subsubsections. 
 \setcounter{secnumdepth}{3}
@@ -109,7 +106,25 @@
 \renewcommand{\sectionmark}[1]{\renewcommand{\leftmark}{\thesection\qquad #1}}
 \renewcommand{\chaptermark}[1]{\renewcommand{\rightmark}{#1}}
 
+\definecolor{fillcolor}{HTML}{CC0000}
+\definecolor{titlecolor}{HTML}{FFFFFF}
 \makeatletter
+\newcommand{\tmp@title}{\@empty}
+\newenvironment{boxwithtitle}[1]{%
+  \renewcommand{\tmp@title}{#1}
+  \begin{tikzpicture}
+    \node[anchor=north, draw=black, thin, inner ysep=0.5em](box)\bgroup%
+    \begin{minipage}{\textwidth}%
+    }
+    {%
+    \end{minipage}
+    \egroup;%
+    \node[fill=fillcolor,anchor=south, draw=black, thin] at (box.north)%
+    {\begin{minipage}{\textwidth}
+        \textcolor{titlecolor}{\tmp@title}
+      \end{minipage}};
+  \end{tikzpicture}
+}
 \def\thickhrulefill{\leavevmode \leaders \hrule height 1ex \hfill \kern \z@}
 \def\@makechapterhead#1{%
   %\vspace*{50\p@}%
@@ -225,7 +240,8 @@ Version 0.8 (revision \input{version}\hspace{-0.14cm}; \today)
 
 \include{introduction}
 \include{annotation}
-\include{callbacks}
+\include{data_callbacks}
+\include{operator_callbacks}
 \include{types}
 \include{assembly}
 \include{debugging}

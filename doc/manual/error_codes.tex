@@ -5,7 +5,8 @@ success or failure. The only exception to this is \refapi{adj_chkierr}, which
 takes in that return code and prints an informative message if the function was
 not successful.
 
-\defapi{ADJ_OK}
+\section{Success}
+\defapis{ADJ_OK}
 \texttt{ADJ_OK} is the expected return code, which indicates that the function
 worked as expected.
 
@@ -20,7 +21,7 @@ Note that if you wish to overwrite a previously-recorded value, set the overwrit
 with \refapi{adj_storage_set_overwrite}.
 
 \defapis{ADJ_WARN_COMPARISON_FAILED}
-When recording a variable which has already has a recorded value, it is possible to activate the
+When recording a variable which already has a recorded value, it is possible to activate the
 compare flag with \refapi{adj_storage_set_compare}. When this is detected by \refapi{adj_record_variable},
 it will compare the recorded value against the newly supplied one; if they differ by more than
 the developer-specified tolerance, this warning is issued. The primary purpose of this is to detect
@@ -32,12 +33,12 @@ if the derivative test flag has been activated on an \refapi{adj_nonlinear_block
 As discussed in \autoref{sec:derivative_test}, this flag indicates that \libadjoint should apply the derivative
 test to the supplied derivative routine. In the derivative test, the finite difference error should converge
 at first order, whereas when corrected with the gradient it should converge at second order. The derivative test
-compares both of these numbers to their expected values, and if they differ, issues this warning.\index{algorithmic differentiation!derivative test}
+compares both of these convergence rates to their expected values, and if they differ by more than 0.1, issues this warning.\index{algorithmic differentiation!derivative test}
 In particular, if your supplied derivative code is incorrect, then this warning will be issued.
 
 \defapis{ADJ_WARN_UNINITIALISED_VALUE}
 This warning is issued by \refapi{adj_evaluate_functional} if no dependencies have been
-registered for that particular functional at that timestep. A functional by definition must depend on the solution. To fix this, you must register the dependencies with
+registered for that particular functional at that timestep. A functional, by definition, must depend on the solution. To fix this, you must register the dependencies with
 \refapi{adj_timestep_set_functional_dependencies}.
 
 \defapis{ADJ_WARN_NOT_IMPLEMENTED}
@@ -57,7 +58,7 @@ All \libadjoint routines do as much error checking as possible
 on the developer-supplied inputs. This error is issued whenever a \libadjoint routine
 detects that some input is invalid. For example, if the developer attempts to create
 an \refapi{adj_variable} with a negative iteration number, this error will be issued. Or
-if a hermitian argument is neither \texttt{ADJ_TRUE} nor \texttt{ADJ_FALSE}, then this warning
+if a Hermitian argument is neither \texttt{ADJ_TRUE} nor \texttt{ADJ_FALSE}, then this warning
 will be issued. For more details, read the error message printed by \refapi{adj_chkierr}.
 
 \defapis{ADJ_ERR_HASH_FAILED}
@@ -65,11 +66,12 @@ At the core of an \refapi{adj_adjointer}, there is a hash table that maps an
 \refapi{adj_variable} to the data that the \refapi{adj_adjointer} records about it.
 This table is referenced for almost every operation that \libadjoint performs. This error
 is issued if an \refapi{adj_variable} has been supplied that the hash table was
-unable to find. Check all \refapi{adj_variable} inputs.
+unable to find. Check all \refapi{adj_variable} inputs to the function that failed to ensure that they have been
+initialised correctly.
 
 \defapis{ADJ_ERR_NEED_CALLBACK}
 This error is issued when \libadjoint wants to perform an operation, but does
-not have the necessary function to do it. See \autoref{chap:callbacks}. You
+not have the necessary function to do it; see \autoref{chap:callbacks}. You
 must register a function pointer for the necessary callback with \refapi{adj_register_data_callback},
 \refapi{adj_register_operator_callback} or similar.
 

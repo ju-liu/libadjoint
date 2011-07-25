@@ -1,20 +1,181 @@
 \chapter{Callbacks} \label{chap:callbacks}
-
-\begin{synopsis}
-\end{synopsis}
 \minitoc
 \vspace{\fill}
 \newpage
 
 \section{Data callbacks}
 \subsection{The \texttt{adj_vector} and \texttt{adj_matrix} types}
+\libadjoint needs to manipulate vectors and matrices. After all, the entire
+purpose of the main output function \refapi{adj_get_adjoint_equation} is to
+assemble a left-hand-side matrix and a right-hand-side vector. Therefore,
+\libadjoint needs to have classes representing the concepts of vectors and matrices.
+
+However, one of the
+design goals of \libadjoint is to be applicable to many different models,
+using very different data structures. How, then, should the \libadjoint
+vector and matrix classes work?
+
+One approach is for \libadjoint to define its own vector and matrix classes,
+to which the model developer must convert the model data structures. However,
+writing yet another linear algebra API is highly undesirable; the world
+has enough of these.
+
+A second approach would be to standardise on some common linear algebra
+API such as PETSc \citep{balay1997,balay2010} or Trilinos \citep{heroux2003}. However,
+this would introduce a large hard dependency on such a library to any project which uses \libadjoint;
+the aim for \libadjoint is to be small, lightweight, portable, and easy to install. Furthermore,
+it would entail having the same data around in memory in two different formats (the format blessed by \libadjoint,
+and the model's own), which would be very inefficient.
+
+\libadjoint settles on a third approach, inspired by the example of the Zoltan
+graph partitioning library \citep{devine2002}. The \libadjoint vector and matrix
+classes are merely thin wrappers around the user's own data structures;
+at their core, they are nothing but a void pointer. While this approach has the
+great advantage that it can be used with any and all pre-existing data structures,
+it means that \libadjoint has a problem: how can it manipulate these objects,
+when it knows nothing about them? The answer is for the model developer to supply
+\emph{data callbacks} to \libadjoint, to give \libadjoint the power to manipulate
+these objects as necessary.
+
+This approach entails some extra work on the part of
+the model developer; however, this extra work is once-off for each sort of data
+structure employed, and can easily be shared between model developers by incorporating
+the various sets of data callbacks in \libadjoint itself. Already, \libadjoint includes
+data callbacks for interfacing with the PETSc \texttt{Vec} and \texttt{Mat} types (\autoref{sec:petsc_callbacks}),
+and contributions in this regard are very welcome.
+
+\newpage
 \defapiss{adj_vector}
+The \texttt{adj_vector} type is public, i.e.\ it is intended that model developers will read and
+write its components. Its definition:
+
+\begin{boxwithtitle}{\texttt{adj_vector}}
+\begin{minipage}{\columnwidth}
+\begin{ccode}
+typedef struct
+{
+  void* ptr; /* a pointer to the model's data */
+  int klass; /* a field to be set by the user 
+                in case adj_vector wraps multiple
+                separate types */
+  int flags; /* for any flags the user might like to set */
+} adj_vector;
+\end{ccode}
+\begin{fortrancode}
+  type, bind(c) :: adj_vector
+    type(c_ptr) :: ptr ! a pointer to the model's data
+    integer(kind=c_int) :: klass ! a field to be set by the user
+                                 ! in case adj_vector wraps multiple
+                                 ! separate types
+    integer(kind=c_int) :: flags ! for any flags the user might like to set
+  end type adj_vector
+\end{fortrancode}
+\end{minipage}
+\end{boxwithtitle}
+
+The \texttt{ptr} attribute takes the address of the model vector to be wrapped; note that
+since the \refapi{adj_vector} only has the address of the model vector, the model
+vector must not be deallocated before the \refapi{adj_vector} has been used.
+
+The \texttt{klass} attribute exists because it may be desirable to wrap more than
+one model datatype as an \refapi{adj_vector}. For example, the Fluidity/ICOM model
+\citep{piggott2008} has separate data types \texttt{type(scalar_field)}, \texttt{type(vector_field)}
+and \texttt{type(tensor_field)} representing scalar, vector and tensor fields respectively; all
+of these can be wrapped by the same \refapi{adj_vector} class, by setting the \texttt{klass} attribute
+differently.
+
+The \texttt{flags} attribute stores any flags about the vector that the user wishes to record.
+\newpage
 \defapiss{adj_matrix}
+Like the \refapi{adj_vector} type, the \texttt{adj_matrix} type is public. As it takes the same
+approach to wrapping model matrix types as \refapi{adj_vector} takes to wrapping model vectors,
+it has exactly the same definition:
+
+\begin{boxwithtitle}{\texttt{adj_matrix}}
+\begin{minipage}{\columnwidth}
+\begin{ccode}
+typedef struct
+{
+  void* ptr; /* a pointer to the model's data */
+  int klass; /* a field to be set by the developer
+                in case adj_matrix wraps multiple
+                separate types */
+  int flags; /* for any flags one might like to set */
+} adj_matrix;
+\end{ccode}
+\begin{fortrancode}
+  type, bind(c) :: adj_matrix
+    type(c_ptr) :: ptr ! a pointer to the model's data
+    integer(kind=c_int) :: klass ! a field to be set by the developer
+                                 ! in case adj_matrix wraps multiple
+                                 ! separate types
+    integer(kind=c_int) :: flags ! for any flags one might like to set
+  end type adj_matrix
+\end{fortrancode}
+\end{minipage}
+\end{boxwithtitle}
+
+Again, the \texttt{klass} attribute exists because it may be desirable to wrap more than
+one model datatype as an \refapi{adj_matrix}. For example, the Fluidity/ICOM model
+\citep{piggott2008} has separate data types representing CSR, block CSR and matrix-free matrix formats,
+all of which can be wrapped by the same \refapi{adj_matrix} class by setting the \texttt{klass} attribute
+appropriately.
+
 \subsection{Registering data callbacks}
 \defapiss{adj_register_data_callback}
-\subsection{Vector callbacks}
+\begin{boxwithtitle}{\texttt{adj_register_data_callback}}
+\begin{minipage}{\columnwidth}
+\begin{ccode}
+  int adj_register_data_callback(adj_adjointer* adjointer, int type, 
+                                 void (*fnptr)(void));
+\end{ccode}
+\begin{fortrancode}
+  function adj_register_data_callback(adjointer, type, fnptr) result(ierr)
+    type(adj_adjointer), intent(inout) :: adjointer
+    integer(kind=c_int), intent(in), value :: type
+    type(c_funptr), intent(in), value :: fnptr
+    integer(kind=c_int) :: ierr
+  end function adj_register_data_callback
+\end{fortrancode}
+\end{minipage}
+\end{boxwithtitle}
+This function registers a given data callback with an \refapi{adj_adjointer} so that
+\libadjoint can manipulate \refapi{adj_vector} and \refapi{adj_matrix} types. For a list of the
+valid values of \texttt{type}, see \autoref{sec:vector_callbacks} and \autoref{sec:matrix_callbacks}.
+If an operator callback
+has not been registered, and \libadjoint needs it to perform some task that the model
+developer has requested, the function will return an \refapi{ADJ_ERR_NEED_CALLBACK}
+error.
+
+Example usage in C:
+
+\begin{boxwithtitle}{\texttt{adj_register_data_callback} (C example)}
+\begin{ccode}
+  ierr = adj_register_data_callback(adjointer, ADJ_VEC_DUPLICATE_CB, 
+                                   (void (*)(void)) my_vec_duplicate_proc);
+  adj_chkierr(ierr);
+\end{ccode}
+\end{boxwithtitle}
+
+Example usage in Fortran:
+
+\begin{boxwithtitle}{\texttt{adj_register_data_callback} (Fortran example)}
+\begin{fortrancode}
+  ierr = adj_register_data_callback(adjointer, ADJ_VEC_DUPLICATE_CB, 
+                                    c_funloc(my_vec_duplicate_proc));
+  call adj_chkierr(ierr);
+\end{fortrancode}
+\end{boxwithtitle}
+
+As \libadjoint is only given the function pointer to the data callback, it cannot check that the
+interface of the given function is correct. If you register a function which is declared to take 
+in an interface different to that which \libadjoint expects, then the model will segfault when
+\libadjoint calls that function (or worse, smash the stack). Be very careful when writing data callbacks to use exactly
+the interface documented in this manual!
+
+\subsection{Vector callbacks} \label{sec:vector_callbacks}
 \defapiss{ADJ_VEC_DUPLICATE_CB}
-\begin{framed}
+\begin{boxwithtitle}{\texttt{ADJ_VEC_DUPLICATE_CB}}
 \begin{minipage}{\columnwidth}
 \begin{ccode}
   void vec_duplicate(adj_vector x, adj_vector *newx);
@@ -26,7 +187,7 @@
   end subroutine vec_duplicate
 \end{fortrancode}
 \end{minipage}
-\end{framed}
+\end{boxwithtitle}
 This data callback is the fundamental allocation callback for the \refapi{adj_vector} type. \libadjoint
 often needs to create new vectors for various tasks; \texttt{x} is an
 input model \refapi{adj_vector} to be duplicated, while \texttt{newx} is the new vector
@@ -34,7 +195,7 @@ to be allocated. Note that this callback \textbf{must initialise the contents of
 
 When necessary: always.
 \defapiss{ADJ_VEC_AXPY_CB}
-\begin{framed}
+\begin{boxwithtitle}{\texttt{ADJ_VEC_AXPY_CB}}
 \begin{minipage}{\columnwidth}
 \begin{ccode}
   void vec_axpy(adj_vector *y, adj_scalar alpha, adj_vector x);
@@ -47,7 +208,7 @@ When necessary: always.
   end subroutine vec_axpy
 \end{fortrancode}
 \end{minipage}
-\end{framed}
+\end{boxwithtitle}
 This data callback adds one vector to another, i.e.\ executes
 \begin{equation*}
 y \leftarrow y + \alpha x.
@@ -55,7 +216,7 @@ y \leftarrow y + \alpha x.
 
 When necessary: always.
 \defapiss{ADJ_VEC_DESTROY_CB}
-\begin{framed}
+\begin{boxwithtitle}{\texttt{ADJ_VEC_DESTROY_CB}}
 \begin{minipage}{\columnwidth}
 \begin{ccode}
   void vec_destroy(adj_vector *x);
@@ -66,14 +227,14 @@ When necessary: always.
   end subroutine vec_destroy
 \end{fortrancode}
 \end{minipage}
-\end{framed}
+\end{boxwithtitle}
 This data callback is called when \libadjoint is finished
 with a vector; it is used to deallocate its memory and free
 its resources.
 
 When necessary: always.
 \defapiss{ADJ_VEC_SET_VALUES_CB}
-\begin{framed}
+\begin{boxwithtitle}{\texttt{ADJ_VEC_SET_VALUES_CB}}
 \begin{minipage}{\columnwidth}
 \begin{ccode}
   void vec_set_values(adj_vector *x, adj_scalar* scalars);
@@ -85,7 +246,7 @@ When necessary: always.
   end subroutine vec_set_values
 \end{fortrancode}
 \end{minipage}
-\end{framed}
+\end{boxwithtitle}
 This data callback sets a given \refapi{adj_vector} from an array
 of \texttt{adj_scalar}s. The length of the array is the output of
 the \refapi{ADJ_VEC_GET_SIZE_CB} data callback.
@@ -93,7 +254,7 @@ the \refapi{ADJ_VEC_GET_SIZE_CB} data callback.
 When necessary: this data callback is necessary when the derivative test flag
 is activated on an \refapi{adj_nonlinear_block} with \refapi{adj_nonlinear_block_set_test_derivative}.
 \defapiss{ADJ_VEC_GET_SIZE_CB}
-\begin{framed}
+\begin{boxwithtitle}{\texttt{ADJ_VEC_GET_SIZE_CB}}
 \begin{minipage}{\columnwidth}
 \begin{ccode}
   void vec_get_norm(adj_vector x, int* sz);
@@ -105,7 +266,7 @@ is activated on an \refapi{adj_nonlinear_block} with \refapi{adj_nonlinear_block
   end subroutine vec_get_size
 \end{fortrancode}
 \end{minipage}
-\end{framed}
+\end{boxwithtitle}
 This data callback returns the number of degrees of freedom in a given \refapi{adj_vector}. The
 vector space of all such \refapi{adj_vector}s should be isomorphic to $\mathbb{R}^n$ for some $n$;
 this callback returns $n$.
@@ -113,7 +274,7 @@ this callback returns $n$.
 When necessary: this data callback is necessary when the derivative test flag
 is activated on an \refapi{adj_nonlinear_block} with \refapi{adj_nonlinear_block_set_test_derivative}.
 \defapiss{ADJ_VEC_GET_NORM_CB}
-\begin{framed}
+\begin{boxwithtitle}{\texttt{ADJ_VEC_GET_NORM_CB}}
 \begin{minipage}{\columnwidth}
 \begin{ccode}
   void vec_get_norm(adj_vector x, adj_scalar* norm);
@@ -125,7 +286,7 @@ is activated on an \refapi{adj_nonlinear_block} with \refapi{adj_nonlinear_block
   end subroutine vec_norm
 \end{fortrancode}
 \end{minipage}
-\end{framed}
+\end{boxwithtitle}
 This data callback computes the norm of a given vector. It does not matter
 which norm is chosen, so long as it satisfies the usual axioms for a norm.
 
@@ -133,7 +294,7 @@ When necessary: this data callback is necessary when the derivative test flag
 is activated on an \refapi{adj_nonlinear_block} with \refapi{adj_nonlinear_block_set_test_derivative}.
 
 \defapiss{ADJ_VEC_SET_RANDOM_CB}
-\begin{framed}
+\begin{boxwithtitle}{\texttt{ADJ_VEC_SET_RANDOM_CB}}
 \begin{minipage}{\columnwidth}
 \begin{ccode}
   void vec_set_random(adj_vector *x);
@@ -144,15 +305,15 @@ is activated on an \refapi{adj_nonlinear_block} with \refapi{adj_nonlinear_block
   end subroutine vec_set_random
 \end{fortrancode}
 \end{minipage}
-\end{framed}
+\end{boxwithtitle}
 This data callback sets the entries of a given vector \texttt{x} to pseudo-random values.
 
-When necessary: this data callback is necessary when the hermitian test flag is
+When necessary: this data callback is necessary when the Hermitian test flag is
 activated on an \refapi{adj_block} with \refapi{adj_block_set_test_hermitian},
 or on an \refapi{adj_nonlinear_block} with \\\refapi{adj_nonlinear_block_set_test_hermitian}.
 
 \defapiss{ADJ_VEC_DOT_PRODUCT_CB}
-\begin{framed}
+\begin{boxwithtitle}{\texttt{ADJ_VEC_DOT_PRODUCT_CB}}
 \begin{minipage}{\columnwidth}
 \begin{ccode}
   void vec_dot_product(adj_vector x, adj_vector y, adj_scalar* val);
@@ -164,15 +325,16 @@ or on an \refapi{adj_nonlinear_block} with \\\refapi{adj_nonlinear_block_set_tes
   end subroutine vec_dot_product
 \end{fortrancode}
 \end{minipage}
-\end{framed}
+\end{boxwithtitle}
 This data callback computes the dot product (inner product) of two \refapi{adj_vector}s.
 
-When necessary: this data callback is necessary when the hermitian test flag is
+When necessary: this data callback is necessary when the Hermitian test flag is
 activated on an \refapi{adj_block} with \refapi{adj_block_set_test_hermitian},
 or on an \refapi{adj_nonlinear_block} with \\\refapi{adj_nonlinear_block_set_test_hermitian}.
-\subsection{Matrix callbacks}
+
+\subsection{Matrix callbacks} \label{sec:matrix_callbacks}
 \defapiss{ADJ_MAT_DUPLICATE_CB}
-\begin{framed}
+\begin{boxwithtitle}{\texttt{ADJ_MAT_DUPLICATE_CB}}
 \begin{minipage}{\columnwidth}
 \begin{ccode}
   void mat_duplicate(adj_matrix X, adj_matrix *newX);
@@ -184,7 +346,7 @@ or on an \refapi{adj_nonlinear_block} with \\\refapi{adj_nonlinear_block_set_tes
   end subroutine mat_duplicate
 \end{fortrancode}
 \end{minipage}
-\end{framed}
+\end{boxwithtitle}
 This data callback is the fundamental allocation callback for the \refapi{adj_matrix} type. \libadjoint
 often needs to create new matrices for various tasks; \texttt{X} is an
 input model \refapi{adj_matrix} to be duplicated, while \texttt{newX} is the new matrix
@@ -192,7 +354,7 @@ to be allocated. Note that this callback \textbf{must initialise the contents of
 
 When necessary: always.
 \defapiss{ADJ_MAT_AXPY_CB}
-\begin{framed}
+\begin{boxwithtitle}{\texttt{ADJ_MAT_AXPY_CB}}
 \begin{minipage}{\columnwidth}
 \begin{ccode}
   void mat_axpy(adj_matrix *Y, adj_scalar alpha, adj_matrix X);
@@ -205,7 +367,7 @@ When necessary: always.
   end subroutine mat_axpy
 \end{fortrancode}
 \end{minipage}
-\end{framed}
+\end{boxwithtitle}
 This data callback adds one matrix to another, i.e.\ executes
 \begin{equation*}
 Y \leftarrow Y + \alpha X.
@@ -213,7 +375,7 @@ Y \leftarrow Y + \alpha X.
 
 When necessary: always.
 \defapiss{ADJ_MAT_DESTROY_CB}
-\begin{framed}
+\begin{boxwithtitle}{\texttt{ADJ_MAT_DESTROY_CB}}
 \begin{minipage}{\columnwidth}
 \begin{ccode}
   void mat_destroy(adj_matrix *X);
@@ -224,7 +386,7 @@ When necessary: always.
   end subroutine mat_destroy
 \end{fortrancode}
 \end{minipage}
-\end{framed}
+\end{boxwithtitle}
 This data callback is called when \libadjoint is finished
 with a matrix; it is used to deallocate its memory and free
 its resources.
@@ -237,9 +399,9 @@ so that other model developers do not have to re-write them from scratch. At pre
 only data types with supplied data callbacks are the PETSc \texttt{Vec} and \texttt{Mat} types.
 Other data type callbacks for common libraries are very welcome!
 
-\subsection{PETSc data callbacks}
+\subsection{PETSc data callbacks} \label{sec:petsc_callbacks}
 \defapiss{adj_set_petsc_data_callbacks}
-\begin{framed}
+\begin{boxwithtitle}{\texttt{adj_set_petsc_data_callbacks}}
 \begin{minipage}{\columnwidth}
 \begin{ccode}
   int adj_set_petsc_data_callbacks(adj_adjointer* adjointer);
@@ -251,14 +413,14 @@ Other data type callbacks for common libraries are very welcome!
   end function adj_set_petsc_data_callbacks
 \end{fortrancode}
 \end{minipage}
-\end{framed}
+\end{boxwithtitle}
 This function registers the data callbacks for the PETSc \texttt{Vec} and \texttt{Mat} types
 supplied with \libadjoint.
 
 \libadjoint also supplies utility functions to convert between \texttt{Vec} and \texttt{Mat}
 types and the \texttt{adj_vector} and \texttt{adj_matrix} types that wrap them.
 \defapiss{petsc_vec_to_adj_vector}
-\begin{framed}
+\begin{boxwithtitle}{\texttt{petsc_vec_to_adj_vector}}
 \begin{minipage}{\columnwidth}
 \begin{ccode}
   adj_vector petsc_vec_to_adj_vector(Vec* input);
@@ -270,10 +432,10 @@ types and the \texttt{adj_vector} and \texttt{adj_matrix} types that wrap them.
   end function petsc_vec_to_adj_vector
 \end{fortrancode}
 \end{minipage}
-\end{framed}
+\end{boxwithtitle}
 Given a \texttt{Vec}, return an \refapi{adj_vector} that wraps it.
 \defapiss{petsc_vec_from_adj_vector}
-\begin{framed}
+\begin{boxwithtitle}{\texttt{petsc_vec_from_adj_vector}}
 \begin{minipage}{\columnwidth}
 \begin{ccode}
   Vec petsc_vec_from_adj_vector(adj_vector input);
@@ -285,10 +447,10 @@ Given a \texttt{Vec}, return an \refapi{adj_vector} that wraps it.
   end function petsc_vec_from_adj_vector
 \end{fortrancode}
 \end{minipage}
-\end{framed}
+\end{boxwithtitle}
 Given an \refapi{adj_vector}, return the \texttt{Vec} that it wraps.
 \defapiss{petsc_mat_to_adj_matrix}
-\begin{framed}
+\begin{boxwithtitle}{\texttt{petsc_mat_to_adj_matrix}}
 \begin{minipage}{\columnwidth}
 \begin{ccode}
   adj_matrix petsc_mat_to_adj_matrix(Mat* input);
@@ -300,10 +462,10 @@ Given an \refapi{adj_vector}, return the \texttt{Vec} that it wraps.
   end function petsc_mat_to_adj_matrix
 \end{fortrancode}
 \end{minipage}
-\end{framed}
+\end{boxwithtitle}
 Given a \texttt{Mat}, return an \refapi{adj_matrix} that wraps it.
 \defapiss{petsc_mat_from_adj_matrix}
-\begin{framed}
+\begin{boxwithtitle}{\texttt{petsc_mat_from_adj_matrix}}
 \begin{minipage}{\columnwidth}
 \begin{ccode}
   Mat petsc_mat_from_adj_matrix(adj_matrix input);
@@ -315,15 +477,5 @@ Given a \texttt{Mat}, return an \refapi{adj_matrix} that wraps it.
   end function petsc_mat_from_adj_matrix
 \end{fortrancode}
 \end{minipage}
-\end{framed}
+\end{boxwithtitle}
 Given an \refapi{adj_matrix}, return the \texttt{Mat} that it wraps.
-
-\section{Operator callbacks}
-\defapis{adj_register_operator_callback}
-
-\section{Source-term callbacks}
-\defapis{adj_register_forward_source_callback}
-\defapis{adj_register_functional_derivative_callback}
-
-\section{Functional evaluation callbacks}
-\defapis{adj_register_functional_callback}

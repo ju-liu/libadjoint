@@ -1,0 +1,210 @@
+\chapter{Operator callbacks}
+\minitoc
+\vspace{\fill}
+\newpage
+
+\section{Operator callbacks}
+When the developer annotates a model, he must give a label to each
+block that appears in the annotation, e.g.\ \mint{c}|"MassMatrix"|, \mint{c}|"Identity"|,
+\mint{c}|"AdvectionOperator"|, etc. \libadjoint is capable of the formal manipulation
+of this annotation to say how the adjoint equation should be assembled;
+but it is not possible for \libadjoint to actually assemble the adjoint
+equations while these names are merely abstract labels.
+
+However, if the model developer associates each name appearing in the annotation
+with a function that allows \libadjoint to use that block, then \libadjoint
+can actually assemble each adjoint equation. 
+
+This suggests a clean division
+of labour: the model developer describes the model in an annotation, and supplies
+callbacks for each individual component of that annotation; \libadjoint manipulates
+the annotation to decide how the individual components should all be put together
+to assemble each adjoint equation. This division of labour turns out to be
+an excellent way to write an adjoint model: the complex manipulation of the annotation
+can be written in \libadjoint precisely once, and the model developer can automatically
+test the correctness of the annotation and operator callbacks (\autoref{chap:debugging}).
+
+\defapis{adj_register_operator_callback}
+\begin{boxwithtitle}{\texttt{adj_register_operator_callback}}
+\begin{minipage}{\columnwidth}
+\begin{ccode}
+int adj_register_operator_callback(adj_adjointer* adjointer, int type,
+                                   char* name, void (*fn)(void));
+\end{ccode}
+\begin{fortrancode}
+  function adj_register_operator_callback(adjointer, type, name, fnptr) 
+           result(ierr)
+    type(adj_adjointer), intent(inout) :: adjointer
+    integer(kind=c_int), intent(in) :: type
+    character(len=*), intent(in) :: name
+    type(c_funptr), intent(in), value :: fnptr
+    integer(kind=c_int) :: ierr
+  end function adj_register_operator_callback
+\end{fortrancode}
+\end{minipage}
+\end{boxwithtitle}
+This function registers a given operator callback with blocks of name \texttt{name}
+so that \libadjoint can use it when necessary. For a list of the valid values of
+\texttt{type}, see \autoref{sec:operator_callback_types}. If an operator callback
+has not been registered, and \libadjoint needs it to perform some task that the model
+developer has requested, the function will return an \refapi{ADJ_ERR_NEED_CALLBACK}
+error.
+
+Example usage in C:
+
+\begin{boxwithtitle}{\texttt{adj_register_operator_callback} (C example)}
+\begin{minipage}{\columnwidth}
+\begin{ccode}
+  ierr = adj_register_operator_callback(adjointer, ADJ_NBLOCK_ACTION_CB, 
+                                   "AdvectionOperator",
+                                   (void (*)(void)) advection_action_proc);
+  adj_chkierr(ierr);
+\end{ccode}
+\end{minipage}
+\end{boxwithtitle}
+
+Example usage in Fortran:
+
+\begin{boxwithtitle}{\texttt{adj_register_operator_callback} (Fortran example)}
+\begin{minipage}{\columnwidth}
+\begin{fortrancode}
+  ierr = adj_register_operator_callback(adjointer, ADJ_BLOCK_ASSEMBLY_CB, 
+                                    "MassMatrix",
+                                    c_funloc(mass_matrix_assembly_proc));
+  call adj_chkierr(ierr);
+\end{fortrancode}
+\end{minipage}
+\end{boxwithtitle}
+
+As \libadjoint is only given the function pointer to the operator callback, it cannot check that the
+interface of the given function is correct. If you register a function which is declared to take 
+in an interface different to that which \libadjoint expects, then the model will segfault when
+\libadjoint calls that function (or worse, smash the stack). Be very careful when writing operator callbacks to use exactly
+the interface documented in this manual!
+\subsection{Operator callback types} \label{sec:operator_callback_types}
+\defapiss{ADJ_BLOCK_ACTION_CB}
+\begin{boxwithtitle}{\texttt{ADJ_BLOCK_ACTION_CB}}
+\begin{minipage}{\columnwidth}
+\begin{ccode}
+  void block_action(int nvar, adj_variable* variables, adj_vector* dependencies,
+                    int hermitian, adj_scalar coefficient, adj_vector input,
+                    void* context, adj_vector* output);
+\end{ccode}
+\begin{fortrancode}
+  subroutine block_action(nvar, variables, dependencies, hermitian, coefficient,
+                          input, context, output) bind(c)
+    integer(kind=c_int), intent(in), value :: nvar
+    type(adj_variable), dimension(nvar), intent(in) :: variables
+    type(adj_vector), dimension(nvar), intent(in) :: dependencies
+    integer(kind=c_int), intent(in), value :: hermitian
+    adj_scalar_f, intent(in), value :: coefficient
+    type(adj_vector), intent(in), value :: input
+    type(c_ptr), intent(in), value :: context
+    type(adj_vector), intent(out) :: output
+  end subroutine block_action
+\end{fortrancode}
+\end{minipage}
+\end{boxwithtitle}
+This callback computes the action of a block on a specified input vector \texttt{input}.
+
+\begin{boxwithtitle}{Mathematical description (\texttt{ADJ_BLOCK_ACTION_CB})}
+Let $V$ represent the block with which this routine is associated. Then,
+if \texttt{hermitian == ADJ_FALSE}, this routine must compute
+\begin{equation*}
+\texttt{output} = \texttt{coefficient} \cdot V(d_1,d_2,\dots,d_{\texttt{nvar}}) \cdot \texttt{input},
+\end{equation*}
+and if \texttt{hermitian == ADJ_TRUE}, this routine must compute
+\begin{equation*}
+\texttt{output} = \texttt{coefficient} \cdot V(d_1,d_2,\dots,d_{\texttt{nvar}})^* \cdot \texttt{input},
+\end{equation*}
+where $(d_1, d_2, \dots, d_{\texttt{nvar}})$ are the nonlinear dependencies of this block supplied in the \texttt{dependencies} array.
+\end{boxwithtitle}
+
+\begin{boxwithtitle}{Detailed argument list (\texttt{ADJ_BLOCK_ACTION_CB})}
+\begin{description}
+\item[\texttt{nvar}] The number of variables that this block depends on.
+\item[\texttt{variables}] An array of \refapi{adj_variable}s indicating which dependencies are being supplied to this routine. The length of the
+array is given by \texttt{nvar}. The first entry of the \texttt{variables} array
+tells the model developer what the first entry of the \texttt{dependencies} is, the second pairs with the second, and so on.
+\item[\texttt{dependencies}] An array of \refapi{adj_vector}s containing the values of the dependencies of this block. The dependencies supplied
+here are the same as those which were registered during the annotation.
+\item[\texttt{hermitian}] A flag indicating whether the routine is to compute the action of the block, or the action of the Hermitian of the
+block. It will either be \texttt{ADJ_TRUE} or \texttt{ADJ_FALSE}.
+\item[\texttt{coefficient}] A coefficient by which the routine must scale the output.
+\item[\texttt{input}] The \refapi{adj_vector} to which the operator should be applied.
+\item[\texttt{context}] This is a pointer to arbitrary model data, supplied at the time that the block was created during the annotation.
+\item[\texttt{output}] This is an \refapi{adj_vector} which is to contain the output of the matrix-vector action.
+\end{description}
+\end{boxwithtitle}
+
+When necessary: this callback is necessary for all blocks that appear off the diagonal of the annotation; i.e., the block
+targets an \refapi{adj_variable} in an \refapi{adj_equation} that is not the variable being solved for in that
+\refapi{adj_equation}.
+
+\defapiss{ADJ_BLOCK_ASSEMBLY_CB}
+\begin{boxwithtitle}{\texttt{ADJ_BLOCK_ASSEMBLY_CB}}
+\begin{minipage}{\columnwidth}
+\begin{ccode}
+  void block_assembly(int nvar, adj_variable* variables, adj_vector* dependencies,
+                    int hermitian, adj_scalar coefficient, void* context,
+                    adj_matrix* output, adj_vector* rhs);
+\end{ccode}
+\begin{fortrancode}
+  subroutine block_assembly(nvar, variables, dependencies, hermitian, coefficient,
+                            context, output, rhs) bind(c)
+    integer(kind=c_int), intent(in), value :: nvar
+    type(adj_variable), dimension(nvar), intent(in) :: variables
+    type(adj_vector), dimension(nvar), intent(in) :: dependencies
+    integer(kind=c_int), intent(in), value :: hermitian
+    adj_scalar_f, intent(in), value :: coefficient
+    type(c_ptr), intent(in), value :: context
+    type(adj_matrix), intent(out) :: output
+    type(adj_vector), intent(out) :: rhs
+  end subroutine block_assembly
+\end{fortrancode}
+\end{minipage}
+\end{boxwithtitle}
+This callback assembles a given block, and also creates a model vector for its output.
+
+\begin{boxwithtitle}{Mathematical description (\texttt{ADJ_BLOCK_ASSEMBLY_CB})}
+Let $V$ represent the block with which this routine is associated. Then,
+if \texttt{hermitian == ADJ_FALSE}, this routine must compute
+\begin{equation*}
+\texttt{output} = \texttt{coefficient} \cdot V(d_1,d_2,\dots,d_{\texttt{nvar}}),
+\end{equation*}
+and if \texttt{hermitian == ADJ_TRUE}, this routine must compute
+\begin{equation*}
+\texttt{output} = \texttt{coefficient} \cdot V(d_1,d_2,\dots,d_{\texttt{nvar}})^*,
+\end{equation*}
+where $(d_1, d_2, \dots, d_{\texttt{nvar}})$ are the nonlinear dependencies of this block supplied in the \texttt{dependencies} array.
+\end{boxwithtitle}
+
+\begin{boxwithtitle}{Detailed argument list (\texttt{ADJ_BLOCK_ASSEMBLY_CB})}
+\begin{description}
+\item[\texttt{nvar}] The number of variables that this block depends on.
+\item[\texttt{variables}] An array of \refapi{adj_variable}s indicating which dependencies are being supplied to this routine. The length of the
+array is given by \texttt{nvar}. The first entry of the \texttt{variables} array
+tells the model developer what the first entry of the \texttt{dependencies} is, the second pairs with the second, and so on.
+\item[\texttt{dependencies}] An array of \refapi{adj_vector}s containing the values of the dependencies of this block. The dependencies supplied
+here are the same as those which were registered during the annotation.
+\item[\texttt{hermitian}] A flag indicating whether the routine is to compute the action of the block, or the action of the Hermitian of the
+block. It will either be \texttt{ADJ_TRUE} or \texttt{ADJ_FALSE}.
+\item[\texttt{coefficient}] A coefficient by which the routine must scale the output.
+\item[\texttt{context}] This is a pointer to arbitrary model data, supplied at the time that the block was created during the annotation.
+\item[\texttt{output}] This is an \refapi{adj_matrix} which is to contain the matrix assembled at these dependencies.
+\item[\texttt{rhs}] This is a model \refapi{adj_vector} which lies in the output space of the operator to be assembled. 
+\end{description}
+\end{boxwithtitle}
+
+When necessary: this callback is necessary for all blocks that appear on the diagonal of the annotation; i.e., the block
+targets an \refapi{adj_variable} in an \refapi{adj_equation} that is the variable being solved for in that
+\refapi{adj_equation}.
+\defapiss{ADJ_NBLOCK_DERIVATIVE_ACTION_CB}
+\defapiss{ADJ_NBLOCK_ACTION_CB}
+
+\section{Source-term callbacks}
+\defapis{adj_register_forward_source_callback}
+\defapis{adj_register_functional_derivative_callback}
+
+\section{Functional evaluation callbacks}
+\defapis{adj_register_functional_callback}

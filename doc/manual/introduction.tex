@@ -199,7 +199,7 @@ operator that appears in the forward equation, \libadjoint is
 able to assemble each adjoint equation when it is required (\refapi{adj_get_adjoint_equation}).
 
 \libadjoint is organised in a data-structure-neutral manner, inspired by the design
-of Zoltan \citep{devine2002}. \libadjoint frequently needs to manipulate vectors
+of the Zoltan graph partitioning library \citep{devine2002}. \libadjoint frequently needs to manipulate vectors
 and matrices, but the objects that represent these (\refapi{adj_vector} and \refapi{adj_matrix})
 are wrappers around model data types that are opaque to \libadjoint. \libadjoint manipulates
 these opaque data types through data callbacks supplied by the developer. Currently, \libadjoint

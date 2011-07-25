@@ -161,11 +161,16 @@ test: $(FTEST) $(CTEST)
 	@echo "  TEST bin/tests"
 	@bin/unittest bin/tests
 
-doc: doc/design.pdf
+doc: doc/design/design.pdf doc/manual/manual.pdf
 
-doc/design.pdf: doc/design.tex doc/literature.bib
+doc/design/design.pdf: doc/design/design.tex doc/design/literature.bib
 	@echo "  PDF $@"
-	@(cd doc && pdflatex -interaction batchmode -shell-escape $(notdir $<) && pdflatex -interaction batchmode -shell-escape $(notdir $<) && bibtex design && pdflatex -interaction batchmode -shell-escape $(notdir $<) && pdflatex -interaction batchmode -shell-escape $(notdir $<)) > /dev/null || \
+	@(cd doc/design && pdflatex -interaction batchmode -shell-escape $(notdir $<) && pdflatex -interaction batchmode -shell-escape $(notdir $<) && bibtex design && pdflatex -interaction batchmode -shell-escape $(notdir $<) && pdflatex -interaction batchmode -shell-escape $(notdir $<)) > /dev/null || \
+		echo "    pdflatex failed. Maybe you need to install python-pygments?"
+
+doc/manual/manual.pdf: doc/manual/manual.tex doc/manual/literature.bib
+	@echo "  PDF $@"
+	@(cd doc/manual && pdflatex -interaction batchmode -shell-escape $(notdir $<) && pdflatex -interaction batchmode -shell-escape $(notdir $<) && bibtex manual && pdflatex -interaction batchmode -shell-escape $(notdir $<) && pdflatex -interaction batchmode -shell-escape $(notdir $<)) > /dev/null || \
 		echo "    pdflatex failed. Maybe you need to install python-pygments?"
 
 ifneq (,$(CTAGS))
