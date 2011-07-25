@@ -105,9 +105,9 @@ the interface documented in this manual!
 \end{framed}
 This callback computes the action of a block on a specified input vector \texttt{input}.
 
-\begin{framed}
+\begin{boxwithtitle}{Mathematical description}
 %\begin{minipage}
-Mathematical description: let $V$ represent the block with which this routine is associated. Then,
+Let $V$ represent the block with which this routine is associated. Then,
 if \texttt{hermitian == ADJ_FALSE}, this routine must compute
 \begin{equation*}
 \texttt{output} = \texttt{coefficient} \cdot V(d_1,d_2,\dots,d_{\texttt{nvar}}) \cdot \texttt{input},
@@ -118,7 +118,7 @@ and if \texttt{hermitian == ADJ_TRUE}, this routine must compute
 \end{equation*}
 where $(d_1, d_2, \dots, d_{\texttt{nvar}})$ are the nonlinear dependencies of this block supplied in the \texttt{dependencies} array.
 %\end{minipage}
-\end{framed}
+\end{boxwithtitle}
 
 \begin{framed}
 Detailed argument list:
