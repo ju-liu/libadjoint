@@ -105,7 +105,7 @@ the interface documented in this manual!
 \end{framed}
 This callback computes the action of a block on a specified input vector \texttt{input}.
 
-%\begin{framed}
+\begin{framed}
 %\begin{minipage}
 Mathematical description: let $V$ represent the block with which this routine is associated. Then,
 if \texttt{hermitian == ADJ_FALSE}, this routine must compute
@@ -118,10 +118,9 @@ and if \texttt{hermitian == ADJ_TRUE}, this routine must compute
 \end{equation*}
 where $(d_1, d_2, \dots, d_{\texttt{nvar}})$ are the nonlinear dependencies of this block supplied in the \texttt{dependencies} array.
 %\end{minipage}
-%\end{framed}
+\end{framed}
 
-%\begin{framed}
-%\begin{minipage}
+\begin{framed}
 Detailed argument list:
 \begin{description}
 \item[\texttt{nvar}] The number of variables that this block depends on.
@@ -134,11 +133,10 @@ here are the same as those which were registered during the annotation.
 block. It will either be \texttt{ADJ_TRUE} or \texttt{ADJ_FALSE}.
 \item[\texttt{coefficient}] A coefficient by which the routine must scale the output.
 \item[\texttt{input}] The \refapi{adj_vector} to which the operator should be applied.
-\item[\texttt{context}] This is an arbitrary pointer to user data, supplied at the time that the block was created during the annotation.
-\item[\texttt{output}] This is an \refapi{adj_vector} which will contain the output of the matrix-vector action.
+\item[\texttt{context}] This is a pointer to arbitrary model data, supplied at the time that the block was created during the annotation.
+\item[\texttt{output}] This is an \refapi{adj_vector} which is to contain the output of the matrix-vector action.
 \end{description}
-%\end{minipage}
-%\end{framed}
+\end{framed}
 
 When necessary: this callback is necessary for all blocks that appear off the diagonal of the annotation; i.e., the block
 targets an \refapi{adj_variable} in an \refapi{adj_equation} that is not the variable being solved for in that
