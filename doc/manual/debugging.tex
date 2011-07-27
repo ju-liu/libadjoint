@@ -52,8 +52,47 @@ A full list of the possible return codes is given in \autoref{chap:return_codes}
 This routine prints a HTML visualisation of the adjointer state to disk. Currently,
 this function supports two constants for \texttt{type}: \texttt{ADJ_FORWARD} and
 \texttt{ADJ_ADJOINT}.
-\section{Comparing against the original forward run} \label{sec:replay}
+\section{Comparing against the original forward run} \label{sec:compare}
+As documented in section \autoref{sec:replay}, \libadjoint can replay the forward
+run. A very powerful debugging strategy is to replay the forward run, \emph{comparing
+each recomputed variable to its value computed during the actual forward model run}.
+To facilitate this, \libadjoint offers two functions that act on the \refapi{adj_storage_data}
+type before it is passed to \refapi{adj_record_variable}.
 \defapis{adj_storage_set_compare}
+\begin{boxwithtitle}{\texttt{adj_storage_set_compare}}
+\begin{minipage}{\columnwidth}
+\begin{ccode}
+  int adj_storage_set_compare(adj_storage_data* data, int compare, 
+                              adj_scalar comparison_tolerance);
+\end{ccode}
+\begin{fortrancode}
+  function adj_storage_set_compare(data, compare, comparison_tolerance)
+           result(ierr)
+    type(adj_storage_data), intent(inout) :: data
+    logical, intent(in) :: compare
+    adj_scalar_f, intent(in) :: comparison_tolerance
+    integer(kind=c_int) :: ierr
+  end function adj_storage_set_compare
+\end{fortrancode}
+\end{minipage}
+\end{boxwithtitle}
+If this flag is set to \texttt{ADJ_TRUE} (C) or \texttt{.true.} (Fortran),
+then \refapi{adj_record_variable} will compare the value supplied with any value
+that had been previously recorded. To ``compare'' means to compute
+\begin{equation*}
+\texttt{diff} = \left|\left| v_{\textrm{new}} - v_{\textrm{old}} \right|\right|,
+\end{equation*}
+and return a warning \refapi{ADJ_WARN_COMPARISON_FAILED} if \texttt{diff} is greater
+than the specified \texttt{comparison_tolerance}.
+
+This feature is most useful if the forward model has been run in a debugging mode that
+recorded the value of every variable computed using \refapi{adj_record_variable}. Then,
+with this feature, \libadjoint can compare its interpretation of the forward model against
+the truth, and issue warnings on any differences that inform the model developer exactly
+where the annotation and the model differ.
+
+The use of this feature requires the \refapi{ADJ_VEC_GET_NORM_CB} data callback.
+
 \defapis{adj_storage_set_overwrite}
 \section{Checking operator transposition}
 \defapis{adj_block_set_test_hermitian}
