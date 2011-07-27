@@ -34,6 +34,24 @@ error message set by \libadjoint, and aborts execution.
 A full list of the possible return codes is given in \autoref{chap:return_codes}.
 \section{HTML output of the adjointer state}
 \defapis{adj_adjointer_to_html}
+\begin{boxwithtitle}{\texttt{adj_adjointer_to_html}}
+\begin{minipage}{\columnwidth}
+\begin{ccode}
+  int adj_adjointer_to_html(adj_adjointer* adjointer, char* filename, int type);
+\end{ccode}
+\begin{fortrancode}
+  function adj_adjointer_to_html(adjointer, filename, type) result(ierr)
+    type(adj_adjointer), intent(in) :: adjointer
+    character(len=*), intent(in) :: filename
+    integer(kind=c_int), intent(in), value :: type
+    integer(kind=c_int) :: ierr
+  end function adj_adjointer_to_html
+\end{fortrancode}
+\end{minipage}
+\end{boxwithtitle}
+This routine prints a HTML visualisation of the adjointer state to disk. Currently,
+this function supports two constants for \texttt{type}: \texttt{ADJ_FORWARD} and
+\texttt{ADJ_ADJOINT}.
 \section{Comparing against the original forward run} \label{sec:replay}
 \defapis{adj_storage_set_compare}
 \defapis{adj_storage_set_overwrite}
