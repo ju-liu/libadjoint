@@ -94,6 +94,32 @@ where the annotation and the model differ.
 The use of this feature requires the \refapi{ADJ_VEC_GET_NORM_CB} data callback.
 
 \defapis{adj_storage_set_overwrite}
+\begin{boxwithtitle}{\texttt{adj_storage_set_overwrite}}
+\begin{minipage}{\columnwidth}
+\begin{ccode}
+  int adj_storage_set_overwrite(adj_storage_data* data, int overwrite);
+\end{ccode}
+\begin{fortrancode}
+  function adj_storage_set_overwrite(data, overwrite)
+           result(ierr)
+    type(adj_storage_data), intent(inout) :: data
+    logical, intent(in) :: overwrite
+    integer(kind=c_int) :: ierr
+  end function adj_storage_set_overwrite
+\end{fortrancode}
+\end{minipage}
+\end{boxwithtitle}
+If this flag is set to \texttt{ADJ_TRUE} (C) or \texttt{.true.} (Fortran),
+then \refapi{adj_record_variable} will overwrite any value previously recorded
+with the value supplied. Without this flag, \refapi{adj_record_variable} will
+return an \refapi{ADJ_WARN_ALREADY_RECORDED} and not replace the previous value.
+
+This feature is useful when comparing the forward replay against the original
+model run. If the forward replay is very slighly wrong, it may pass a comparison
+activated with \refapi{adj_storage_set_compare}, but this initial error will
+not propagate unless the new (incorrect) value is used instead of the old (correct)
+value in previous calculations.
+
 \section{Checking operator transposition}
 \defapis{adj_block_set_test_hermitian}
 \defapis{adj_nonlinear_block_set_test_hermitian}
