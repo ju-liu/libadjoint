@@ -6,7 +6,32 @@
 \vspace{\fill}
 \newpage
 
-\defapi{adj_chkierr}
+\section{Handling return codes}
+Almost all public \libadjoint functions return an integer return code,
+like PETSc or MPI. After every call to a \libadjoint routine, the developer
+should inspect the return code for success or failure. This inspection is
+performed with the \refapi{adj_chkierr} routine.
+\defapis{adj_chkierr}
+\begin{boxwithtitle}{\texttt{adj_chkierr}}
+\begin{minipage}{\columnwidth}
+\begin{ccode}
+  void adj_chkierr(int ierr);
+\end{ccode}
+\begin{fortrancode}
+  subroutine adj_chkierr(ierr)
+    integer(kind=c_int), intent(in), value :: ierr
+  end subroutine adj_chkierr
+\end{fortrancode}
+\end{minipage}
+\end{boxwithtitle}
+This routine inspects the return code from other \libadjoint functions,
+and possibly prints out useful debugging information. If the return code
+indicates success, this routine does nothing. If the return code indicates
+a warning, this routine prints out the error message set by \libadjoint,
+and returns. If the return code indicates an error, this routine prints out the
+error message set by \libadjoint, and aborts execution.
+
+A full list of the possible return codes is given in \autoref{chap:return_codes}.
 \section{HTML output of the adjointer state}
 \defapis{adj_adjointer_to_html}
 \section{Comparing against the original forward run} \label{sec:replay}
