@@ -1307,8 +1307,8 @@ module libadjoint
     ierr = adj_storage_set_compare_c(data, compare_c, comparison_tolerance)
   end function adj_storage_set_compare
 
-  function adj_storage_set_overwrite(mem, overwrite) result(ierr)
-    type(adj_storage_data), intent(inout) :: mem
+  function adj_storage_set_overwrite(data, overwrite) result(ierr)
+    type(adj_storage_data), intent(inout) :: data
     logical, intent(in) :: overwrite
     integer(kind=c_int) :: ierr
 
@@ -1320,7 +1320,7 @@ module libadjoint
       overwrite_c = ADJ_FALSE
     end if
 
-    ierr = adj_storage_set_overwrite_c(mem, overwrite_c)
+    ierr = adj_storage_set_overwrite_c(data, overwrite_c)
   end function adj_storage_set_overwrite
 
   function adj_block_set_test_hermitian(block, test_hermitian, number_of_tests, tolerance) result(ierr)
