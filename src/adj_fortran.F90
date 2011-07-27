@@ -1290,8 +1290,8 @@ module libadjoint
     end if
   end function adj_equation_set_rhs_dependencies
 
-  function adj_storage_set_compare(mem, compare, comparison_tolerance) result(ierr)
-    type(adj_storage_data), intent(inout) :: mem
+  function adj_storage_set_compare(data, compare, comparison_tolerance) result(ierr)
+    type(adj_storage_data), intent(inout) :: data
     logical, intent(in) :: compare
     adj_scalar_f, intent(in) :: comparison_tolerance
     integer(kind=c_int) :: ierr
@@ -1304,7 +1304,7 @@ module libadjoint
       compare_c = ADJ_FALSE
     end if
 
-    ierr = adj_storage_set_compare_c(mem, compare_c, comparison_tolerance)
+    ierr = adj_storage_set_compare_c(data, compare_c, comparison_tolerance)
   end function adj_storage_set_compare
 
   function adj_storage_set_overwrite(mem, overwrite) result(ierr)
