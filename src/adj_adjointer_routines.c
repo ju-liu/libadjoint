@@ -970,7 +970,7 @@ int adj_find_functional_callback(adj_adjointer* adjointer, char* name, void (**f
   return ADJ_ERR_NEED_CALLBACK;
 }
 
-int adj_find_functional_derivative_callback(adj_adjointer* adjointer, char* name, void (**fn)(adj_adjointer* adjointer, adj_variable variable, int ndepends, adj_variable* variables, adj_vector* dependencies, char* name, adj_vector* output))
+int adj_find_functional_derivative_callback(adj_adjointer* adjointer, char* name, void (**fn)(adj_adjointer* adjointer, adj_variable derivative, int ndepends, adj_variable* variables, adj_vector* dependencies, char* name, adj_vector* output))
 {
   adj_func_deriv_callback_list* cb_list_ptr;
   adj_func_deriv_callback* cb_ptr;
@@ -982,7 +982,7 @@ int adj_find_functional_derivative_callback(adj_adjointer* adjointer, char* name
   {
     if (strncmp(cb_ptr->name, name, ADJ_NAME_LEN) == 0)
     {
-      *fn = (void (*)(adj_adjointer* adjointer, adj_variable variable, int ndepends, adj_variable* variables, adj_vector* dependencies, char* name, adj_vector* output)) cb_ptr->callback;
+      *fn = (void (*)(adj_adjointer* adjointer, adj_variable derivative, int ndepends, adj_variable* variables, adj_vector* dependencies, char* name, adj_vector* output)) cb_ptr->callback;
       return ADJ_OK;
     }
     cb_ptr = cb_ptr->next;
