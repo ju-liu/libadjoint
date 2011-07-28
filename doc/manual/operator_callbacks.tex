@@ -199,8 +199,128 @@ block. It will either be \texttt{ADJ_TRUE} or \texttt{ADJ_FALSE}.
 When necessary: this callback is necessary for all blocks that appear on the diagonal of the annotation; i.e., the block
 targets an \refapi{adj_variable} in an \refapi{adj_equation} that is the variable being solved for in that
 \refapi{adj_equation}.
+
 \defapiss{ADJ_NBLOCK_DERIVATIVE_ACTION_CB}
+\begin{boxwithtitle}{\texttt{ADJ_NBLOCK_DERIVATIVE_ACTION_CB}}
+\begin{minipage}{\columnwidth}
+\begin{ccode}
+void nblock_derivative_action(int nvar, adj_variable* variables, 
+                              adj_vector* dependencies, adj_variable derivative, 
+                              adj_vector contraction, int hermitian, 
+                              adj_vector input, adj_scalar coefficient, 
+                              void* context, adj_vector* output);
+\end{ccode}
+\begin{fortrancode}
+subroutine nblock_derivative_action(nvar, variables, dependencies, derivative, 
+                                    contraction, hermitian, input, coefficient, 
+                                    context, output) bind(c)
+  integer(kind=c_int), intent(in), value :: nvar
+  type(adj_variable), dimension(nvar), intent(in) :: variables
+  type(adj_vector), dimension(nvar), intent(in) :: dependencies
+  type(adj_variable), intent(in), value :: derivative
+  type(adj_vector), intent(in), value :: contraction
+  integer(kind=c_int), intent(in), value :: hermitian
+  type(adj_vector), intent(in), value :: input
+  adj_scalar_f, intent(in), value :: coefficient
+  type(c_ptr), intent(in), value :: context
+  type(adj_vector), intent(out) :: output
+end subroutine nblock_derivative_action
+\end{fortrancode}
+\end{minipage}
+\end{boxwithtitle}
+
+\begin{boxwithtitle}{Mathematical description (\texttt{ADJ_NBLOCK_DERIVATIVE_ACTION_CB})}
+Let $V$ represent the nonlinear block with which this routine is associated. 
+Suppose $V$ depends on $\left\{x_0, x_1, \dots, x_N\right\}$. The values of these                                                  
+dependencies are given by the \texttt{dependencies} array, with each corresponding entry in the \texttt{variables} array describing what each variable is. The \texttt{derivative} variable
+is the variable with which the derivative is to be computed. Let $x_i$ denote this variable, and $c$ denote \texttt{contraction}.
+Then, if \texttt{hermitian == ADJ_FALSE}, this routine must compute
+\begin{equation*}
+\texttt{output} = \left(\left.\frac{\partial V}{\partial x_i}\right|_{(x_0, \dots, x_N)}c\right)\texttt{input}, 
+\end{equation*}
+and if \texttt{hermitian == ADJ_TRUE}, this routine must compute
+\begin{equation*}
+\texttt{output} = \left(\left.\frac{\partial V}{\partial x_i}\right|_{(x_0, \dots, x_N)}c\right)^{*}\texttt{input}. 
+\end{equation*}
+\end{boxwithtitle}
+
+\begin{boxwithtitle}{Detailed argument list (\texttt{ADJ_NBLOCK_DERIVATIVE_ACTION_CB})}
+\begin{description}
+\item[\texttt{nvar}] The number of variables that the associated nonlinear block depends on.
+\item[\texttt{variables}] An array of \refapi{adj_variable}s indicating which dependencies are being supplied to this routine. The length of the
+array is given by \texttt{nvar}. The first entry of the \texttt{variables} array
+tells the model developer what the first entry of the \texttt{dependencies} is, the second pairs with the second, and so on.
+\item[\texttt{dependencies}] An array of \refapi{adj_vector}s containing the values of the dependencies of this block. The dependencies supplied
+here are the same as those which were registered during the annotation.
+\item[\texttt{derivative}] The \refapi{adj_variable} with which respect to the derivative is to be computed.
+\item[\texttt{contraction}] The \refapi{adj_vector} with which the derivative is to be contracted.  
+\item[\texttt{hermitian}] A flag indicating whether the routine is to compute the action of the block, or the action of the Hermitian of the
+block. It will either be \texttt{ADJ_TRUE} or \texttt{ADJ_FALSE}.
+\item[\texttt{input}] The \refapi{adj_vector} to which the operator should be applied.
+\item[\texttt{coefficient}] A coefficient by which the routine must scale the output.
+\item[\texttt{context}] This is a pointer to arbitrary model data, supplied at the time that the block was created during the annotation.
+\item[\texttt{output}] This is an \refapi{adj_vector} which is to contain the output of the matrix-vector action.
+\end{description}
+\end{boxwithtitle}
+
+When necessary: usually required for each nonlinear block registered when the
+ADJ DIFFERENTIATION option is set to ADJ DIFFERENTIATION SUPPLIED. If a nonlinear
+block depends on variables computed earlier in the simulation, then only the action is
+required; if a nonlinear block depends on the variable being solved for in that equation,
+then the assembly is required.
+
+
 \defapiss{ADJ_NBLOCK_ACTION_CB}
+\begin{boxwithtitle}{\texttt{ADJ_NBLOCK_ACTION_CB}}
+\begin{minipage}{\columnwidth}
+\begin{ccode}
+void nblock_action(int nvar, adj_variable* variables, adj_vector* dependencies, 
+                 adj_vector input, void* context, adj_vector* output);
+\end{ccode}
+\begin{fortrancode}
+subroutine nblock_action(nvar, variables, dependencies, input, 
+                         context, output) bind(c) 
+  integer(kind=c_int), intent(in), value :: nvar
+  type(adj_variable), dimension(nvar), intent(in) :: variables
+  type(adj_vector), dimension(nvar), intent(in) :: dependencies
+  type(adj_vector), intent(in), value :: input
+  type(c_ptr), intent(in), value :: context
+  type(adj_vector), intent(out) :: output
+end subroutine nblock_action
+\end{fortrancode}
+\end{minipage}
+\end{boxwithtitle}
+
+This callback computes the action of a nonlinear block on a specified input vector \texttt{input}.
+
+\begin{boxwithtitle}{Mathematical description (\texttt{ADJ_NBLOCK_ACTION_CB})}
+Let $V$ represent the nonlinear block with which this routine is associated. 
+Then, this routine must compute
+\begin{equation*}
+\texttt{output} = \texttt{coefficient} \cdot V(d_1,d_2,\dots,d_{\texttt{nvar}}) \cdot \texttt{input},
+\end{equation*}
+where $(d_1, d_2, \dots, d_{\texttt{nvar}})$ are the nonlinear dependencies of this block supplied in the \texttt{dependencies} array.
+\end{boxwithtitle}
+
+\begin{boxwithtitle}{Detailed argument list (\texttt{ADJ_NBLOCK_ACTION_CB})}
+\begin{description}
+\item[\texttt{nvar}] The number of variables that this nonlinear block depends on.
+\item[\texttt{variables}] An array of \refapi{adj_variable}s indicating which dependencies are being supplied to this routine. The length of the
+array is given by \texttt{nvar}. The first entry of the \texttt{variables} array
+tells the model developer what the first entry of the \texttt{dependencies} is, the second pairs with the second, and so on.
+\item[\texttt{dependencies}] An array of \refapi{adj_vector}s containing the values of the dependencies of this nonlinear block. The dependencies supplied
+here are the same as those which were registered during the annotation.
+\item[\texttt{input}] The \refapi{adj_vector} to which the operator should be applied.
+\item[\texttt{context}] This is a pointer to arbitrary model data, supplied at the time that the nonlinear block was created during the annotation.
+\item[\texttt{output}] This is an \refapi{adj_vector} which is to contain the output of the matrix-vector action.
+\end{description}
+\end{boxwithtitle}
+
+When necessary: 
+to compute the action of a nonlinear operator, so that it can be differentiated
+with the ISP approach.
+Required for each nonlinear block registered when the ADJ DIFFERENTIATION option is set to ADJ DIFFERENTIATION ISP.
+
 
 \section{Source-term callbacks}
 \defapis{adj_register_forward_source_callback}
