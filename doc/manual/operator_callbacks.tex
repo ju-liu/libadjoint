@@ -228,6 +228,8 @@ end subroutine nblock_derivative_action
 \end{fortrancode}
 \end{minipage}
 \end{boxwithtitle}
+This callback computes the the derivative of a given nonlinear block with respect \texttt{derivative} and contracted with \texttt{contraction}. 
+The action of this derivative on a specified input vector \texttt{input} is returned.
 
 \begin{boxwithtitle}{Mathematical description (\texttt{ADJ_NBLOCK_DERIVATIVE_ACTION_CB})}
 Let $V$ represent the nonlinear block with which this routine is associated. 
@@ -236,11 +238,11 @@ dependencies are given by the \texttt{dependencies} array, with each correspondi
 is the variable with which the derivative is to be computed. Let $d_i$ denote this variable, and $c$ denote \texttt{contraction}.
 Then, if \texttt{hermitian == ADJ_FALSE}, this routine must compute
 \begin{equation*}
-\texttt{output} = \left(\left.\frac{\partial V}{\partial d_i}\right|_{(d_0, \dots, d_\texttt{ndepends})}c\right)\texttt{input}, 
+\texttt{output} = \left(\left.\frac{\partial V}{\partial d_i}\right|_{(d_0, \dots, d_{\texttt{ndepends}})}c\right)\texttt{input}, 
 \end{equation*}
 and if \texttt{hermitian == ADJ_TRUE}, this routine must compute
 \begin{equation*}
-\texttt{output} = \left(\left.\frac{\partial V}{\partial d_i}\right|_{(d_0, \dots, d_\texttt{ndepends})}c\right)^{*}\texttt{input}. 
+\texttt{output} = \left(\left.\frac{\partial V}{\partial d_i}\right|_{(d_0, \dots, d_{\texttt{ndepends}})}c\right)^{*}\texttt{input}. 
 \end{equation*}
 \end{boxwithtitle}
 
@@ -252,7 +254,7 @@ array is given by \texttt{nvar}. The first entry of the \texttt{variables} array
 tells the model developer what the first entry of the \texttt{dependencies} is, the second pairs with the second, and so on.
 \item[\texttt{dependencies}] An array of \refapi{adj_vector}s containing the values of the dependencies of this block. The dependencies supplied
 here are the same as those which were registered during the annotation.
-\item[\texttt{derivative}] The \refapi{adj_variable} with which respect to the derivative is to be computed.
+\item[\texttt{derivative}] The \refapi{adj_variable} with which respect to the derivative is to be computed. % (TODO)
 \item[\texttt{contraction}] The \refapi{adj_vector} with which the derivative is to be contracted.  
 \item[\texttt{hermitian}] A flag indicating whether the routine is to compute the action of the block, or the action of the Hermitian of the
 block. It will either be \texttt{ADJ_TRUE} or \texttt{ADJ_FALSE}.
@@ -264,7 +266,8 @@ block. It will either be \texttt{ADJ_TRUE} or \texttt{ADJ_FALSE}.
 \end{boxwithtitle}
 
 When necessary: usually required for each nonlinear block registered when the
-ADJ DIFFERENTIATION option is set to ADJ DIFFERENTIATION SUPPLIED. If a nonlinear
+\texttt{ADJ_DIFFERENTIATION} option is set to \texttt{ADJ_DIFFERENTIATION_SUPPLIED}.  %TODO
+If a nonlinear
 block depends on variables computed earlier in the simulation, then only the action is
 required; if a nonlinear block depends on the variable being solved for in that equation,
 then the assembly is required.
@@ -274,15 +277,15 @@ then the assembly is required.
 \begin{minipage}{\columnwidth}
 \begin{ccode}
 void nblock_derivative_assembly(int nvar, adj_variable* variables, 
-                              adj_vector* dependencies, adj_variable derivative, 
-                              adj_vector contraction, int hermitian, 
-                              adj_scalar coefficient, 
-                              void* context, adj_vector* output);
+                                adj_vector* dependencies, adj_variable derivative, 
+                                adj_vector contraction, int hermitian, 
+                                adj_scalar coefficient, 
+                                void* context, adj_vector* output);
 \end{ccode}
 \begin{fortrancode}
 subroutine nblock_derivative_assembly(nvar, variables, dependencies, derivative, 
-                                    contraction, hermitian, coefficient, 
-                                    context, output) 
+                                      contraction, hermitian, coefficient, 
+                                      context, output) 
   integer(kind=c_int), intent(in) :: nvar
   type(adj_variable), dimension(nvar), intent(in) :: variables
   type(adj_vector), dimension(nvar), intent(in) :: dependencies
@@ -295,19 +298,21 @@ end subroutine nblock_derivative_assembly
 \end{fortrancode}
 \end{minipage}
 \end{boxwithtitle}
+This callback assembles the derivative of a given nonlinear block with respect \texttt{derivative} and contracted with \texttt{contraction}.
+
 
 \begin{boxwithtitle}{Mathematical description (\texttt{ADJ_NBLOCK_DERIVATIVE_ASSEMBLY_CB})}
 Let $V$ represent the nonlinear block with which this routine is associated. 
-Suppose $V$ depends on $\left\{x_0, x_1, \dots, x_N\right\}$. The values of these                                                  
+Suppose $V$ depends on $\left\{d_0, d_1, \dots, d_N\right\}$. The values of these                                                  
 dependencies are given by the \texttt{dependencies} array, with each corresponding entry in the \texttt{variables} array describing what each variable is. The \texttt{derivative} variable
-is the variable with which the derivative is to be computed. Let $x_i$ denote this variable, and $c$ denote \texttt{contraction}.
+is the variable with which the derivative is to be computed. Let $d_i$ denote this variable, and $c$ denote \texttt{contraction}.
 Then, if \texttt{hermitian == ADJ_FALSE}, this routine must compute
 \begin{equation*}
-\texttt{output} = \left(\left.\frac{\partial V}{\partial x_i}\right|_{(x_0, \dots, x_N)}c\right),
+\texttt{output} = \left(\left.\frac{\partial V}{\partial d_i}\right|_{(d_0, \dots, d_{\texttt{ndepends}})}c\right),
 \end{equation*}
 and if \texttt{hermitian == ADJ_TRUE}, this routine must compute
 \begin{equation*}
-\texttt{output} = \left(\left.\frac{\partial V}{\partial x_i}\right|_{(x_0, \dots, x_N)}c\right)^{*},
+\texttt{output} = \left(\left.\frac{\partial V}{\partial d_i}\right|_{(d_0, \dots, d_{\texttt{ndepends}})}c\right)^{*},
 \end{equation*}
 \end{boxwithtitle}
 
@@ -386,7 +391,7 @@ here are the same as those which were registered during the annotation.
 When necessary: 
 to compute the action of a nonlinear operator, so that it can be differentiated
 with the ISP approach.
-Required for each nonlinear block registered when the ADJ DIFFERENTIATION option is set to ADJ DIFFERENTIATION ISP.
+Required for each nonlinear block registered when the \texttt{ADJ_DIFFERENTIATION} option is set to \texttt{ADJ_DIFFERENTIATION_ISP}.
 
 
 \section{Source-term callbacks}
@@ -411,7 +416,7 @@ end function adj_register_forward_source_callback
 \end{minipage}
 \end{boxwithtitle}
 
-\begin{boxwithtitle}{\texttt{adj_register_forward_source_callback}}
+\begin{boxwithtitle}{Function interface for \texttt{adj_register_forward_source_callback}}
 \begin{minipage}{\columnwidth}
 \begin{ccode}
 void forward_source(adj_adjointer* adjointer, adj_variable variable, 
@@ -436,7 +441,7 @@ end subroutine forward_source
 
 This callback computes the source vector when solving for \texttt{variable} in the forward model.
 
-\begin{boxwithtitle}{Detailed argument list (\texttt{adj_register_forward_source_callback})}
+\begin{boxwithtitle}{Detailed argument list (\texttt{forward_source})}
 \begin{description}
 \item[\texttt{adjointer}] The associated \refapi{adj_adjointer}.
 \item[\texttt{ndepends}] The number of variables that this nonlinear block depends on.
@@ -476,20 +481,43 @@ int adj_register_functional_callback(adj_adjointer* adjointer, char* name,
 \end{minipage}
 \end{boxwithtitle}
 
-The interface of the supplied function is:
+The interface of the supplied function must be:
 
-\begin{boxwithtitle}{\texttt{interface}}
+\begin{boxwithtitle}{Function interface for \texttt{adj_register_functional_callback}}
 \begin{minipage}{\columnwidth}
 \begin{ccode}
-void functional_callback(adj_adjointer* adjointer, int timestep, 
+void functional(adj_adjointer* adjointer, int timestep, 
                          int ndepends, adj_variable* variables, 
                          adj_vector* dependencies, char* name, 
                          adj_scalar* output);
 \end{ccode}
 \begin{fortrancode}
-TODO
+subroutine functional(adjointer, timestep, ndepends, variables, dependencies, 
+                      name, output) 
+  type(adj_adjointer), intent(in) :: adjointer
+  integer(kind=c_int), intent(in), value :: timestep
+  integer(kind=c_int), intent(in), value :: ndepends
+  type(adj_variable), dimension(ndepends), intent(in) :: variables 
+  type(adj_vector), dimension(ndepends), intent(in) :: dependencies
+  character(kind=c_char), dimension(ADJ_NAME_LEN), intent(in) :: name
+  adj_scalar_f, intent(out) :: output
+end subroutine functional
 \end{fortrancode}
 \end{minipage}
+\end{boxwithtitle}
+
+\begin{boxwithtitle}{Detailed argument list (\texttt{functional})}
+\begin{description}
+\item[\texttt{adjointer}] The associated \refapi{adj_adjointer}.
+\item[\texttt{timestep}] The timestep at which the functional is to be evaluated. The start and end time of this timestep can be obtained with \texttt{adj_timestep_get_times}.
+\item[\texttt{ndepends}] The number of variables that this functional depends on.
+\item[\texttt{variables}] An array of \refapi{adj_variable}s indicating which dependencies are being supplied to this routine. The length of the
+array is given by \texttt{ndepends}. The first entry of the \texttt{variables} array
+tells the model developer what the first entry of the \texttt{dependencies} is, the second pairs with the second, and so on.
+\item[\texttt{dependencies}] An array of \refapi{adj_vector}s containing the values of the dependencies of this functional. The dependencies supplied
+here are the same as those which were registered during the annotation.
+\item[\texttt{output}] This is an \refapi{adj_vector} which is to contain the functional value. 
+\end{description}
 \end{boxwithtitle}
 
 \defapis{adj_register_functional_derivative_callback}
@@ -497,7 +525,8 @@ TODO
 \begin{boxwithtitle}{\texttt{adj_register_functional_derivative_callback}}
 \begin{minipage}{\columnwidth}
 \begin{ccode}
-int adj_register_functional_derivative_callback(adj_adjointer* adjointer, char* name, 
+int adj_register_functional_derivative_callback(
+                    adj_adjointer* adjointer, char* name, 
                     void (*fn)(adj_adjointer* adjointer, 
                                adj_variable variable, int ndepends, 
                                adj_variable* variables, adj_vector* dependencies, 
@@ -515,18 +544,43 @@ end function adj_register_functional_derivative_callback
 \end{minipage}
 \end{boxwithtitle}
 
-The interface of the supplied function is:
+The supplied function must have this interface:
 
-\begin{boxwithtitle}{\texttt{interface}}
+\begin{boxwithtitle}{\texttt{Function interface for \texttt{adj_register_functional_derivative_callback}}}
 \begin{minipage}{\columnwidth}
+% Simon TODO: "derivative" was "variable" -> have to renmae this in the code
 \begin{ccode}
-void functional_derivative_callback(adj_adjointer* adjointer,
-                               adj_variable variable, int ndepends,
+void functional_derivative(adj_adjointer* adjointer,
+                               adj_variable derivative, int ndepends, 
                                adj_variable* variables, adj_vector* dependencies,
                                char* name, adj_vector* output);
 \end{ccode}
 \begin{fortrancode}
-TODO
+subroutine functional_derivative(adjointer, derivative, ndepends, variables, 
+                                 dependencies, name, output) 
+  type(adj_adjointer), intent(in) :: adjointer
+  type(adj_variable), intent(in), value :: derivative 
+  integer(kind=c_int), intent(in), value :: ndepends
+  type(adj_variable), dimension(ndepends), intent(in) :: variables
+  type(adj_vector), dimension(ndepends), intent(in) :: dependencies
+  character(kind=c_char), dimension(ADJ_NAME_LEN), intent(in) :: name
+  type(adj_vector), intent(out) :: output
+end subroutine functional_derivative
 \end{fortrancode}
 \end{minipage}
+\end{boxwithtitle}
+
+\begin{boxwithtitle}{Detailed argument list (\texttt{functional_derivative})}
+\begin{description}
+\item[\texttt{adjointer}] The associated \refapi{adj_adjointer}.
+\item[\texttt{ndepends}] The number of variables that this nonlinear block depends on.
+\item[\texttt{variables}] An array of \refapi{adj_variable}s indicating which dependencies are being supplied to this routine. The length of the
+array is given by \texttt{ndepends}. The first entry of the \texttt{variables} array
+tells the model developer what the first entry of the \texttt{dependencies} is, the second pairs with the second, and so on.
+\item[\texttt{dependencies}] An array of \refapi{adj_vector}s containing the values of the dependencies of this nonlinear block. The dependencies supplied
+here are the same as those which were registered during the annotation.
+\item[\texttt{context}] This is a pointer to arbitrary model data, supplied at the time that the nonlinear block was created during the annotation.
+\item[\texttt{output}] If \texttt{has_output == ADJ_true}, this is an \refapi{adj_vector} which is to contain the output of the matrix-vector action. Otherwise \texttt{output} can be left unallocated.
+\item[\texttt{has_output}] Must be set to \texttt{ADJ_FALSE} if no source is apparent. Otherwise, it must be set to \texttt{ADJ_TRUE}.
+\end{description}
 \end{boxwithtitle}
