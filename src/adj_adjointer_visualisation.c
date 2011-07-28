@@ -91,6 +91,138 @@ int adj_html_find_column_index(adj_adjointer* adjointer, adj_variable* variable,
   return ADJ_ERR_INVALID_INPUTS;
 }
 
+void adj_html_print_statistics(FILE* fp, adj_adjointer* adjointer)
+{
+	fprintf(fp, "<h1>General information</h1>");
+	fprintf(fp, "Number of timesteps: %i<br>", adjointer->ntimesteps);
+	fprintf(fp, "Number of registered equations: %i<br>", adjointer->nequations);
+}
+
+void adj_html_print_callback_information(FILE* fp, adj_adjointer* adjointer)
+{
+	adj_op_callback* cb_ptr;
+	adj_func_callback* func_cb_ptr;
+	adj_func_deriv_callback* func_deriv_cb_ptr;
+	fprintf(fp, "<h1>Callback information</h1>");
+
+	fprintf(fp, "<h2>Data callbacks</h2>");
+
+	if (adjointer->callbacks.vec_duplicate == NULL)
+		fprintf(fp, "<span style='color:red' title='Not registered'>vec_duplicate</span>");
+	else
+		fprintf(fp, "<span style='color:green'>vec_duplicate</span>");
+
+	if (adjointer->callbacks.vec_axpy == NULL)
+		fprintf(fp, ", <span style='color:red' title='Not registered'>vec_axpy</span>");
+	else
+		fprintf(fp, ", <span style='color:green'>vec_axpy</span>");
+
+	if (adjointer->callbacks.vec_destroy == NULL)
+		fprintf(fp, ", <span style='color:red' title='Not registered'>vec_destroy</span>");
+	else
+		fprintf(fp, ", <span style='color:green'>vec_destroy</span>");
+
+	if (adjointer->callbacks.vec_set_values == NULL)
+		fprintf(fp, ", <span style='color:red' title='Not registered'>vec_set_values</span>");
+	else
+		fprintf(fp, ", <span style='color:green'>vec_set_values</span>");
+
+	if (adjointer->callbacks.vec_get_size == NULL)
+		fprintf(fp, ", <span style='color:red' title='Not registered'>vec_get_size</span>");
+	else
+		fprintf(fp, ", <span style='color:green'>vec_get_size</span>");
+
+	if (adjointer->callbacks.vec_divide == NULL)
+		fprintf(fp, ", <span style='color:red' title='Not registered'>vec_divide</span>");
+	else
+		fprintf(fp, ", <span style='color:green'>vec_divide</span>");
+
+	if (adjointer->callbacks.vec_get_norm == NULL)
+		fprintf(fp, ", <span style='color:red' title='Not registered'>vec_get_norm</span>");
+	else
+		fprintf(fp, ", <span style='color:green'>vec_get_norm</span>");
+
+	if (adjointer->callbacks.vec_dot_product == NULL)
+		fprintf(fp, ", <span style='color:red' title='Not registered'>vec_dot_product</span>");
+	else
+		fprintf(fp, ", <span style='color:green'>vec_dot_product</span>");
+
+	if (adjointer->callbacks.vec_set_random == NULL)
+		fprintf(fp, ", <span style='color:red' title='Not registered'>vec_set_random</span>");
+	else
+		fprintf(fp, ", <span style='color:green'>vec_set_random</span>");
+
+	if (adjointer->callbacks.mat_duplicate == NULL)
+		fprintf(fp, ", <span style='color:red' title='Not registered'>mat_duplicate</span>");
+	else
+		fprintf(fp, ", <span style='color:green'>mat_duplicate</span>");
+
+	if (adjointer->callbacks.mat_duplicate == NULL)
+		fprintf(fp, ", <span style='color:red' title='Not registered'>mat_duplicate</span>");
+	else
+		fprintf(fp, ", <span style='color:green'>mat_duplicate</span>");
+
+	if (adjointer->callbacks.mat_axpy == NULL)
+		fprintf(fp, ", <span style='color:red' title='Not registered'>mat_axpy</span>");
+	else
+		fprintf(fp, ", <span style='color:green'>mat_axpy</span>");
+
+	if (adjointer->callbacks.mat_destroy == NULL)
+		fprintf(fp, ", <span style='color:red' title='Not registered'>mat_destroy</span>");
+	else
+		fprintf(fp, ", <span style='color:green'>mat_destroy</span>");
+
+
+	fprintf(fp, "<h2>Block action callbacks</h2>");
+	cb_ptr= adjointer->block_action_list.firstnode;
+	while (cb_ptr != NULL) {
+		fprintf(fp, "%s", cb_ptr->name);
+		cb_ptr = cb_ptr->next;
+	}
+
+	fprintf(fp, "<h2>Block assembly callbacks</h2>");
+	cb_ptr= adjointer->block_assembly_list.firstnode;
+	while (cb_ptr != NULL) {
+		fprintf(fp, "%s", cb_ptr->name);
+		cb_ptr = cb_ptr->next;
+	}
+
+	fprintf(fp, "<h2>Nonlinear block action callbacks</h2>");
+	cb_ptr= adjointer->nonlinear_action_list.firstnode;
+	while (cb_ptr != NULL) {
+		fprintf(fp, "%s", cb_ptr->name);
+		cb_ptr = cb_ptr->next;
+	}
+
+	fprintf(fp, "<h2>Nonlinear derivative block action assembly callbacks</h2>");
+	cb_ptr= adjointer->nonlinear_derivative_action_list.firstnode;
+	while (cb_ptr != NULL) {
+		fprintf(fp, "%s", cb_ptr->name);
+		cb_ptr = cb_ptr->next;
+	}
+
+	fprintf(fp, "<h2>Nonlinear derivative block assembly assembly callbacks</h2>");
+	cb_ptr= adjointer->nonlinear_derivative_assembly_list.firstnode;
+	while (cb_ptr != NULL) {
+		fprintf(fp, "%s", cb_ptr->name);
+		cb_ptr = cb_ptr->next;
+	}
+
+	fprintf(fp, "<h2>Functional callbacks</h2>");
+	func_cb_ptr= adjointer->functional_list.firstnode;
+	while (func_cb_ptr != NULL) {
+		fprintf(fp, "<span style='color:green'>%s</span>", func_cb_ptr->name);
+		func_cb_ptr = func_cb_ptr->next;
+	}
+
+	fprintf(fp, "<h2>Functional derivative callbacks</h2>");
+	func_deriv_cb_ptr= adjointer->functional_derivative_list.firstnode;
+	while (func_deriv_cb_ptr != NULL) {
+		fprintf(fp, "<span style='color:green'>%s</span>", func_deriv_cb_ptr->name);
+		func_deriv_cb_ptr = func_deriv_cb_ptr->next;
+	}
+}
+
 /* Writes a html row containing the adjoint variables into fp */
 void adj_html_vars(FILE* fp, adj_adjointer* adjointer, int type)
 {
@@ -312,6 +444,9 @@ int adj_html_adjoint_system(adj_adjointer* adjointer, char* filename)
 
   adj_html_header(fp);
 
+  adj_html_print_statistics(fp, adjointer);
+  adj_html_print_callback_information(fp, adjointer);
+
   fprintf(fp, "<h1>Adjoint system</h1>\n");
   if (adjointer->nequations==0)
     return ADJ_OK;
@@ -369,6 +504,9 @@ int adj_html_forward_system(adj_adjointer* adjointer, char* filename)
   }
 
   adj_html_header(fp);
+
+  adj_html_print_statistics(fp, adjointer);
+  adj_html_print_callback_information(fp, adjointer);
 
   fprintf(fp, "<h1>Forward system</h1>\n");
   if (adjointer->nequations==0)
