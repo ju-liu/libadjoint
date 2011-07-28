@@ -92,7 +92,7 @@ the interface documented in this manual!
 \end{ccode}
 \begin{fortrancode}
   subroutine block_action(nvar, variables, dependencies, hermitian, coefficient,
-                          input, context, output) bind(c)
+                          input, context, output) 
     integer(kind=c_int), intent(in), value :: nvar
     type(adj_variable), dimension(nvar), intent(in) :: variables
     type(adj_vector), dimension(nvar), intent(in) :: dependencies
@@ -151,7 +151,7 @@ targets an \refapi{adj_variable} in an \refapi{adj_equation} that is not the var
 \end{ccode}
 \begin{fortrancode}
   subroutine block_assembly(nvar, variables, dependencies, hermitian, coefficient,
-                            context, output, rhs) bind(c)
+                            context, output, rhs) 
     integer(kind=c_int), intent(in), value :: nvar
     type(adj_variable), dimension(nvar), intent(in) :: variables
     type(adj_vector), dimension(nvar), intent(in) :: dependencies
@@ -213,7 +213,7 @@ void nblock_derivative_action(int nvar, adj_variable* variables,
 \begin{fortrancode}
 subroutine nblock_derivative_action(nvar, variables, dependencies, derivative, 
                                     contraction, hermitian, input, coefficient, 
-                                    context, output) bind(c)
+                                    context, output) 
   integer(kind=c_int), intent(in), value :: nvar
   type(adj_variable), dimension(nvar), intent(in) :: variables
   type(adj_vector), dimension(nvar), intent(in) :: dependencies
@@ -231,16 +231,16 @@ end subroutine nblock_derivative_action
 
 \begin{boxwithtitle}{Mathematical description (\texttt{ADJ_NBLOCK_DERIVATIVE_ACTION_CB})}
 Let $V$ represent the nonlinear block with which this routine is associated. 
-Suppose $V$ depends on $\left\{x_0, x_1, \dots, x_N\right\}$. The values of these                                                  
+Suppose $V$ depends on $\left\{d_0, d_1, \dots, d_\texttt{ndepends}\right\}$. The values of these                                                  
 dependencies are given by the \texttt{dependencies} array, with each corresponding entry in the \texttt{variables} array describing what each variable is. The \texttt{derivative} variable
-is the variable with which the derivative is to be computed. Let $x_i$ denote this variable, and $c$ denote \texttt{contraction}.
+is the variable with which the derivative is to be computed. Let $d_i$ denote this variable, and $c$ denote \texttt{contraction}.
 Then, if \texttt{hermitian == ADJ_FALSE}, this routine must compute
 \begin{equation*}
-\texttt{output} = \left(\left.\frac{\partial V}{\partial x_i}\right|_{(x_0, \dots, x_N)}c\right)\texttt{input}, 
+\texttt{output} = \left(\left.\frac{\partial V}{\partial d_i}\right|_{(d_0, \dots, d_\texttt{ndepends})}c\right)\texttt{input}, 
 \end{equation*}
 and if \texttt{hermitian == ADJ_TRUE}, this routine must compute
 \begin{equation*}
-\texttt{output} = \left(\left.\frac{\partial V}{\partial x_i}\right|_{(x_0, \dots, x_N)}c\right)^{*}\texttt{input}. 
+\texttt{output} = \left(\left.\frac{\partial V}{\partial d_i}\right|_{(d_0, \dots, d_\texttt{ndepends})}c\right)^{*}\texttt{input}. 
 \end{equation*}
 \end{boxwithtitle}
 
@@ -282,7 +282,7 @@ void nblock_derivative_assembly(int nvar, adj_variable* variables,
 \begin{fortrancode}
 subroutine nblock_derivative_assembly(nvar, variables, dependencies, derivative, 
                                     contraction, hermitian, coefficient, 
-                                    context, output) bind(c)
+                                    context, output) 
   integer(kind=c_int), intent(in) :: nvar
   type(adj_variable), dimension(nvar), intent(in) :: variables
   type(adj_vector), dimension(nvar), intent(in) :: dependencies
@@ -346,7 +346,7 @@ void nblock_action(int nvar, adj_variable* variables, adj_vector* dependencies,
 \end{ccode}
 \begin{fortrancode}
 subroutine nblock_action(nvar, variables, dependencies, input, 
-                         context, output) bind(c) 
+                         context, output) 
   integer(kind=c_int), intent(in), value :: nvar
   type(adj_variable), dimension(nvar), intent(in) :: variables
   type(adj_vector), dimension(nvar), intent(in) :: dependencies
@@ -394,6 +394,26 @@ Required for each nonlinear block registered when the ADJ DIFFERENTIATION option
 \begin{boxwithtitle}{\texttt{adj_register_forward_source_callback}}
 \begin{minipage}{\columnwidth}
 \begin{ccode}
+int adj_register_forward_source_callback(adj_adjointer* adjointer, 
+                 void (*fn)(adj_adjointer* adjointer, adj_variable variable, 
+                            int ndepends, adj_variable* variables, 
+                            adj_vector* dependencies, void* context, 
+                            adj_vector* output, int* has_output));
+\end{ccode}
+\begin{fortrancode}
+function adj_register_forward_source_callback(adjointer, fnptr) 
+                                                   result(ierr) 
+  type(adj_adjointer), intent(inout) :: adjointer
+  type(c_funptr), intent(in), value :: fnptr
+  integer(kind=c_int) :: ierr
+end function adj_register_forward_source_callback
+\end{fortrancode}
+\end{minipage}
+\end{boxwithtitle}
+
+\begin{boxwithtitle}{\texttt{adj_register_forward_source_callback}}
+\begin{minipage}{\columnwidth}
+\begin{ccode}
 void forward_source(adj_adjointer* adjointer, adj_variable variable, 
                     int ndepends, adj_variable* variables, 
                     adj_vector* dependencies, void* context, 
@@ -401,7 +421,7 @@ void forward_source(adj_adjointer* adjointer, adj_variable variable,
 \end{ccode}
 \begin{fortrancode}
 subroutine forward_source(adjointer, variable, ndepends, dependencies, 
-                          values, output, has_output) bind(c)
+                          values, output, has_output) 
   type(adj_adjointer), intent(in) :: adjointer
   type(adj_variable), intent(in), value :: variable
   integer(kind=c_int), intent(in), value :: ndepends
@@ -434,8 +454,79 @@ here are the same as those which were registered during the annotation.
 When necessary: 
 If replay is used. 
 
-\defapis{adj_register_functional_derivative_callback}
-
-
 \section{Functional evaluation callbacks}
 \defapis{adj_register_functional_callback}
+
+\begin{boxwithtitle}{\texttt{adj_register_functional_callback}}
+\begin{minipage}{\columnwidth}
+\begin{ccode}
+int adj_register_functional_callback(adj_adjointer* adjointer, char* name, 
+                           void (*fn)(adj_adjointer* adjointer, int timestep, 
+                                      int ndepends, adj_variable* variables, 
+                                      adj_vector* dependencies, char* name, 
+                                      adj_scalar* output));
+\end{ccode}
+\begin{fortrancode}
+  function adj_register_functional_callback(adjointer, name, fnptr) result(ierr)
+    type(adj_adjointer), intent(inout) :: adjointer
+    character(len=*), intent(in) :: name
+    type(c_funptr), intent(in) :: fnptr
+    integer :: ierr
+\end{fortrancode}
+\end{minipage}
+\end{boxwithtitle}
+
+The interface of the supplied function is:
+
+\begin{boxwithtitle}{\texttt{interface}}
+\begin{minipage}{\columnwidth}
+\begin{ccode}
+void functional_callback(adj_adjointer* adjointer, int timestep, 
+                         int ndepends, adj_variable* variables, 
+                         adj_vector* dependencies, char* name, 
+                         adj_scalar* output);
+\end{ccode}
+\begin{fortrancode}
+TODO
+\end{fortrancode}
+\end{minipage}
+\end{boxwithtitle}
+
+\defapis{adj_register_functional_derivative_callback}
+
+\begin{boxwithtitle}{\texttt{adj_register_functional_derivative_callback}}
+\begin{minipage}{\columnwidth}
+\begin{ccode}
+int adj_register_functional_derivative_callback(adj_adjointer* adjointer, char* name, 
+                    void (*fn)(adj_adjointer* adjointer, 
+                               adj_variable variable, int ndepends, 
+                               adj_variable* variables, adj_vector* dependencies, 
+                               char* name, adj_vector* output));
+\end{ccode}
+\begin{fortrancode}
+function adj_register_functional_derivative_callback(adjointer, name, fnptr) 
+                                                                      result(ierr)
+  type(adj_adjointer), intent(inout) :: adjointer
+  character(len=*), intent(in) :: name
+  type(c_funptr), intent(in) :: fnptr
+  integer :: ierr
+end function adj_register_functional_derivative_callback
+\end{fortrancode}
+\end{minipage}
+\end{boxwithtitle}
+
+The interface of the supplied function is:
+
+\begin{boxwithtitle}{\texttt{interface}}
+\begin{minipage}{\columnwidth}
+\begin{ccode}
+void functional_derivative_callback(adj_adjointer* adjointer,
+                               adj_variable variable, int ndepends,
+                               adj_variable* variables, adj_vector* dependencies,
+                               char* name, adj_vector* output);
+\end{ccode}
+\begin{fortrancode}
+TODO
+\end{fortrancode}
+\end{minipage}
+\end{boxwithtitle}
