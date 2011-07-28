@@ -201,7 +201,7 @@ targets an \refapi{adj_variable} in an \refapi{adj_equation} that is the variabl
 \refapi{adj_equation}.
 
 \defapiss{ADJ_NBLOCK_DERIVATIVE_ACTION_CB}
-% Simon  TODO: Add section that explains how AD fits in here.
+% TODO: Add section that explains how AD fits in here.
 \begin{boxwithtitle}{\texttt{ADJ_NBLOCK_DERIVATIVE_ACTION_CB}}
 \begin{minipage}{\columnwidth}
 \begin{ccode}
@@ -255,7 +255,7 @@ array is given by \texttt{nvar}. The first entry of the \texttt{variables} array
 tells the model developer what the first entry of the \texttt{dependencies} is, the second pairs with the second, and so on.
 \item[\texttt{dependencies}] An array of \refapi{adj_vector}s containing the values of the dependencies of this block. The dependencies supplied
 here are the same as those which were registered during the annotation.
-\item[\texttt{derivative}] The \refapi{adj_variable} with which respect to the derivative is to be computed. % (TODO)
+\item[\texttt{derivative}] The derivative of the nonlinear block is to be computed with respect to this \refapi{adj_variable}. 
 \item[\texttt{contraction}] The \refapi{adj_vector} with which the derivative is to be contracted.  
 \item[\texttt{hermitian}] A flag indicating whether the routine is to compute the action of the block, or the action of the Hermitian of the
 block. It will either be \texttt{ADJ_TRUE} or \texttt{ADJ_FALSE}.
@@ -266,12 +266,7 @@ block. It will either be \texttt{ADJ_TRUE} or \texttt{ADJ_FALSE}.
 \end{description}
 \end{boxwithtitle}
 
-When necessary: usually required for each nonlinear block registered when the
-\texttt{ADJ_DIFFERENTIATION} option is set to \texttt{ADJ_DIFFERENTIATION_SUPPLIED}.  %TODO
-If a nonlinear
-block depends on variables computed earlier in the simulation, then only the action is
-required; if a nonlinear block depends on the variable being solved for in that equation,
-then the assembly is required.
+When necessary: required for each registered nonlinear block for assembling the adjoint equation, see \autoref{sec:adjoint_assembly}.
 
 %\defapiss{ADJ_NBLOCK_DERIVATIVE_ASSEMBLY_CB}
 %\begin{boxwithtitle}{\texttt{ADJ_NBLOCK_DERIVATIVE_ASSEMBLY_CB}}
@@ -390,12 +385,7 @@ here are the same as those which were registered during the annotation.
 \end{boxwithtitle}
 
 When necessary: 
-% is only necessary for the derivative test
-to compute the action of a nonlinear operator, so that it can be differentiated
-with the ISP approach.
-Required for each nonlinear block registered when the \texttt{ADJ_DIFFERENTIATION} option is set to \texttt{ADJ_DIFFERENTIATION_ISP}.
-
-
+This callback is necessary for checking the gradient correctness, see \autoref{sec:derivative_test}.
 
 \section{Source-term callbacks}
 \defapis{adj_register_forward_source_callback}
@@ -462,7 +452,7 @@ here are the same as those which were registered during the annotation.
 \end{boxwithtitle}
 
 When necessary: 
-If replay is used. 
+This callback is necessary when the annotated model is compared with the original run, see \autoref{sec:compare}.
 
 \section{Functional evaluation callbacks}
 \defapis{adj_register_functional_callback}
