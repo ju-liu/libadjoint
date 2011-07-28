@@ -15,9 +15,9 @@ int adj_register_equation(adj_adjointer* adjointer, adj_equation equation);
 int adj_record_variable(adj_adjointer* adjointer, adj_variable var, adj_storage_data storage);
 int adj_register_operator_callback(adj_adjointer* adjointer, int type, char* name, void (*fn)(void));
 int adj_register_data_callback(adj_adjointer* adjointer, int type, void (*fn)(void));
-int adj_register_functional_callback(adj_adjointer* adjointer, char* name, void (*fn)(adj_adjointer* adjointer, int timestep, int nb_variables, adj_variable* variables, adj_vector* dependencies, char* name, adj_scalar* output));
-int adj_register_functional_derivative_callback(adj_adjointer* adjointer, char* name, void (*fn)(adj_adjointer* adjointer, adj_variable variable, int nb_variables, adj_variable* variables, adj_vector* dependencies, char* name, adj_vector* output));
-int adj_register_forward_source_callback(adj_adjointer* adjointer, void (*fn)(adj_adjointer* adjointer, adj_variable variable, int nb_variables, adj_variable* variables, adj_vector* dependencies, void* context, adj_vector* output, int* has_output));
+int adj_register_functional_callback(adj_adjointer* adjointer, char* name, void (*fn)(adj_adjointer* adjointer, int timestep, int ndepends, adj_variable* variables, adj_vector* dependencies, char* name, adj_scalar* output));
+int adj_register_functional_derivative_callback(adj_adjointer* adjointer, char* name, void (*fn)(adj_adjointer* adjointer, adj_variable variable, int ndepends, adj_variable* variables, adj_vector* dependencies, char* name, adj_vector* output));
+int adj_register_forward_source_callback(adj_adjointer* adjointer, void (*fn)(adj_adjointer* adjointer, adj_variable variable, int ndepends, adj_variable* variables, adj_vector* dependencies, void* context, adj_vector* output, int* has_output));
 int adj_forget_adjoint_equation(adj_adjointer* adjointer, int equation);
 
 int adj_timestep_count(adj_adjointer* adjointer, int* count);
@@ -38,8 +38,8 @@ int adj_variable_get_ndepending_timesteps(adj_adjointer* adjointer, adj_variable
 int adj_variable_get_depending_timestep(adj_adjointer* adjointer, adj_variable variable, char* functional, int k, int* timestep);
 
 int adj_find_operator_callback(adj_adjointer* adjointer, int type, char* name, void (**fn)(void));
-int adj_find_functional_callback(adj_adjointer* adjointer, char* name, void (**fn)(adj_adjointer* adjointer, int timestep, int nb_variables, adj_variable* variables, adj_vector* dependencies, char* name, adj_scalar* output));
-int adj_find_functional_derivative_callback(adj_adjointer* adjointer, char* name, void (**fn)(adj_adjointer* adjointer, adj_variable variable, int nb_variables, adj_variable* variables, adj_vector* dependencies, char* name, adj_vector* output));
+int adj_find_functional_callback(adj_adjointer* adjointer, char* name, void (**fn)(adj_adjointer* adjointer, int timestep, int ndepends, adj_variable* variables, adj_vector* dependencies, char* name, adj_scalar* output));
+int adj_find_functional_derivative_callback(adj_adjointer* adjointer, char* name, void (**fn)(adj_adjointer* adjointer, adj_variable variable, int ndepends, adj_variable* variables, adj_vector* dependencies, char* name, adj_vector* output));
 int adj_get_variable_value(adj_adjointer* adjointer, adj_variable var, adj_vector* value);
 int adj_has_variable_value(adj_adjointer* adjointer, adj_variable var);
 int adj_forget_variable_value(adj_adjointer* adjointer, adj_variable_data* data);

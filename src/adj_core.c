@@ -9,7 +9,7 @@ int adj_get_adjoint_equation(adj_adjointer* adjointer, int equation, char* funct
   adj_variable_data* fwd_data;
   int i;
   int j;
-  void (*functional_derivative_func)(adj_adjointer* adjointer, adj_variable variable, int nb_variables, adj_variable* variables, adj_vector* dependencies, char* name, adj_vector* output) = NULL;
+  void (*functional_derivative_func)(adj_adjointer* adjointer, adj_variable variable, int ndepends, adj_variable* variables, adj_vector* dependencies, char* name, adj_vector* output) = NULL;
 
   if (adjointer->options[ADJ_ACTIVITY] == ADJ_ACTIVITY_NOTHING)
   {

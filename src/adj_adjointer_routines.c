@@ -747,7 +747,7 @@ int adj_register_data_callback(adj_adjointer* adjointer, int type, void (*fn)(vo
   return ADJ_OK;
 }
 
-int adj_register_functional_callback(adj_adjointer* adjointer, char* name, void (*fn)(adj_adjointer* adjointer, int timestep, int nb_variables, adj_variable* variables, adj_vector* dependencies, char* name, adj_scalar* output))
+int adj_register_functional_callback(adj_adjointer* adjointer, char* name, void (*fn)(adj_adjointer* adjointer, int timestep, int ndepends, adj_variable* variables, adj_vector* dependencies, char* name, adj_scalar* output))
 {
   adj_func_callback_list* cb_list_ptr;
   adj_func_callback* cb_ptr;
@@ -762,7 +762,7 @@ int adj_register_functional_callback(adj_adjointer* adjointer, char* name, void 
   {
     if (strncmp(cb_ptr->name, name, ADJ_NAME_LEN) == 0)
     {
-      cb_ptr->callback = (void (*)(void* adjointer, int timestep, int nb_variables, adj_variable* variables, adj_vector* dependencies, char* name, adj_scalar* output)) fn;
+      cb_ptr->callback = (void (*)(void* adjointer, int timestep, int ndepends, adj_variable* variables, adj_vector* dependencies, char* name, adj_scalar* output)) fn;
       return ADJ_OK;
     }
     cb_ptr = cb_ptr->next;
@@ -772,7 +772,7 @@ int adj_register_functional_callback(adj_adjointer* adjointer, char* name, void 
   cb_ptr = (adj_func_callback*) malloc(sizeof(adj_func_callback));
   ADJ_CHKMALLOC(cb_ptr);
   strncpy(cb_ptr->name, name, ADJ_NAME_LEN);
-  cb_ptr->callback = (void (*)(void* adjointer, int timestep, int nb_variables, adj_variable* variables, adj_vector* dependencies, char* name, adj_scalar* output)) fn;
+  cb_ptr->callback = (void (*)(void* adjointer, int timestep, int ndepends, adj_variable* variables, adj_vector* dependencies, char* name, adj_scalar* output)) fn;
   cb_ptr->next = NULL;
 
   /* Special case for the first callback */
@@ -790,7 +790,7 @@ int adj_register_functional_callback(adj_adjointer* adjointer, char* name, void 
   return ADJ_OK;
 }
 
-int adj_register_functional_derivative_callback(adj_adjointer* adjointer, char* name, void (*fn)(adj_adjointer* adjointer, adj_variable variable, int nb_variables, adj_variable* variables, adj_vector* dependencies, char* name, adj_vector* output))
+int adj_register_functional_derivative_callback(adj_adjointer* adjointer, char* name, void (*fn)(adj_adjointer* adjointer, adj_variable variable, int ndepends, adj_variable* variables, adj_vector* dependencies, char* name, adj_vector* output))
 {
   adj_func_deriv_callback_list* cb_list_ptr;
   adj_func_deriv_callback* cb_ptr;
@@ -805,7 +805,7 @@ int adj_register_functional_derivative_callback(adj_adjointer* adjointer, char* 
   {
     if (strncmp(cb_ptr->name, name, ADJ_NAME_LEN) == 0)
     {
-      cb_ptr->callback = (void (*)(void* adjointer, adj_variable variable, int nb_variables, adj_variable* variables, adj_vector* dependencies, char* name, adj_vector* output)) fn;
+      cb_ptr->callback = (void (*)(void* adjointer, adj_variable variable, int ndepends, adj_variable* variables, adj_vector* dependencies, char* name, adj_vector* output)) fn;
       return ADJ_OK;
     }
     cb_ptr = cb_ptr->next;
@@ -815,7 +815,7 @@ int adj_register_functional_derivative_callback(adj_adjointer* adjointer, char* 
   cb_ptr = (adj_func_deriv_callback*) malloc(sizeof(adj_func_deriv_callback));
   ADJ_CHKMALLOC(cb_ptr);
   strncpy(cb_ptr->name, name, ADJ_NAME_LEN);
-  cb_ptr->callback = (void (*)(void* adjointer, adj_variable variable, int nb_variables, adj_variable* variables, adj_vector* dependencies, char* name, adj_vector* output)) fn;
+  cb_ptr->callback = (void (*)(void* adjointer, adj_variable variable, int ndepends, adj_variable* variables, adj_vector* dependencies, char* name, adj_vector* output)) fn;
   cb_ptr->next = NULL;
 
   /* Special case for the first callback */
@@ -833,7 +833,7 @@ int adj_register_functional_derivative_callback(adj_adjointer* adjointer, char* 
   return ADJ_OK;
 }
 
-int adj_register_forward_source_callback(adj_adjointer* adjointer, void (*fn)(adj_adjointer* adjointer, adj_variable variable, int nb_variables, adj_variable* variables, adj_vector* dependencies, void* context, adj_vector* output, int* has_output))
+int adj_register_forward_source_callback(adj_adjointer* adjointer, void (*fn)(adj_adjointer* adjointer, adj_variable variable, int ndepends, adj_variable* variables, adj_vector* dependencies, void* context, adj_vector* output, int* has_output))
 {
   if (adjointer->options[ADJ_ACTIVITY] == ADJ_ACTIVITY_NOTHING) return ADJ_OK;
   adjointer->forward_source_callback = fn;
@@ -948,7 +948,7 @@ int adj_find_operator_callback(adj_adjointer* adjointer, int type, char* name, v
   return ADJ_ERR_NEED_CALLBACK;
 }
 
-int adj_find_functional_callback(adj_adjointer* adjointer, char* name, void (**fn)(adj_adjointer* adjointer, int timestep, int nb_variables, adj_variable* variables, adj_vector* dependencies, char* name, adj_scalar* output))
+int adj_find_functional_callback(adj_adjointer* adjointer, char* name, void (**fn)(adj_adjointer* adjointer, int timestep, int ndepends, adj_variable* variables, adj_vector* dependencies, char* name, adj_scalar* output))
 {
   adj_func_callback_list* cb_list_ptr;
   adj_func_callback* cb_ptr;
@@ -960,7 +960,7 @@ int adj_find_functional_callback(adj_adjointer* adjointer, char* name, void (**f
   {
     if (strncmp(cb_ptr->name, name, ADJ_NAME_LEN) == 0)
     {
-      *fn = (void (*)(adj_adjointer* adjointer, int timestep, int nb_variables, adj_variable* variables, adj_vector* dependencies, char* name, adj_scalar* output)) cb_ptr->callback;
+      *fn = (void (*)(adj_adjointer* adjointer, int timestep, int ndepends, adj_variable* variables, adj_vector* dependencies, char* name, adj_scalar* output)) cb_ptr->callback;
       return ADJ_OK;
     }
     cb_ptr = cb_ptr->next;
@@ -970,7 +970,7 @@ int adj_find_functional_callback(adj_adjointer* adjointer, char* name, void (**f
   return ADJ_ERR_NEED_CALLBACK;
 }
 
-int adj_find_functional_derivative_callback(adj_adjointer* adjointer, char* name, void (**fn)(adj_adjointer* adjointer, adj_variable variable, int nb_variables, adj_variable* variables, adj_vector* dependencies, char* name, adj_vector* output))
+int adj_find_functional_derivative_callback(adj_adjointer* adjointer, char* name, void (**fn)(adj_adjointer* adjointer, adj_variable variable, int ndepends, adj_variable* variables, adj_vector* dependencies, char* name, adj_vector* output))
 {
   adj_func_deriv_callback_list* cb_list_ptr;
   adj_func_deriv_callback* cb_ptr;
@@ -982,7 +982,7 @@ int adj_find_functional_derivative_callback(adj_adjointer* adjointer, char* name
   {
     if (strncmp(cb_ptr->name, name, ADJ_NAME_LEN) == 0)
     {
-      *fn = (void (*)(adj_adjointer* adjointer, adj_variable variable, int nb_variables, adj_variable* variables, adj_vector* dependencies, char* name, adj_vector* output)) cb_ptr->callback;
+      *fn = (void (*)(adj_adjointer* adjointer, adj_variable variable, int ndepends, adj_variable* variables, adj_vector* dependencies, char* name, adj_vector* output)) cb_ptr->callback;
       return ADJ_OK;
     }
     cb_ptr = cb_ptr->next;
