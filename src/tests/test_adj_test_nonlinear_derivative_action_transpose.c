@@ -13,7 +13,7 @@ void test_adj_test_nonlinear_derivative_action_transpose(void)
 #include "libadjoint/adj_petsc_data_structures.h"
 #include "libadjoint/adj_petsc.h"
 
-void nonlinear_derivative_action_callback(int nvar, adj_variable* variables, adj_vector* dependencies, adj_variable derivative, adj_vector contraction, int hermitian, adj_vector input, adj_scalar coefficient, void* context, adj_vector* output);
+void nonlinear_derivative_action_callback(int ndepends, adj_variable* variables, adj_vector* dependencies, adj_variable derivative, adj_vector contraction, int hermitian, adj_vector input, adj_scalar coefficient, void* context, adj_vector* output);
 
 void test_adj_test_nonlinear_derivative_action_transpose(void)
 {
@@ -59,11 +59,11 @@ void test_adj_test_nonlinear_derivative_action_transpose(void)
   adj_chkierr(ierr);
 }
 
-void nonlinear_derivative_action_callback(int nvar, adj_variable* variables, adj_vector* dependencies, adj_variable derivative, adj_vector contraction, int hermitian, adj_vector input, adj_scalar coefficient, void* context, adj_vector* output)
+void nonlinear_derivative_action_callback(int ndepends, adj_variable* variables, adj_vector* dependencies, adj_variable derivative, adj_vector contraction, int hermitian, adj_vector input, adj_scalar coefficient, void* context, adj_vector* output)
 {
   (void) hermitian;
   (void) context;
-  (void) nvar;
+  (void) ndepends;
   (void) variables;
   (void) dependencies;
   (void) derivative;

@@ -85,7 +85,7 @@ int adj_evaluate_nonlinear_derivative_action(adj_adjointer* adjointer, int nderi
 {
   int ierr;
   int deriv;
-  void (*nonlinear_derivative_action_func)(int nvar, adj_variable* variables, adj_vector* dependencies, adj_variable derivative, adj_vector contraction, int hermitian, adj_vector input, adj_scalar coefficient, void* context, adj_vector* output);
+  void (*nonlinear_derivative_action_func)(int ndepends, adj_variable* variables, adj_vector* dependencies, adj_variable derivative, adj_vector contraction, int hermitian, adj_vector input, adj_scalar coefficient, void* context, adj_vector* output);
 
   /* As usual, check as much as we can at the start */
   strncpy(adj_error_msg, "Need a data callback, but it hasn't been supplied.", ADJ_ERROR_MSG_BUF);
@@ -135,7 +135,7 @@ int adj_evaluate_nonlinear_derivative_action(adj_adjointer* adjointer, int nderi
       snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Sorry, ISP is not implemented yet.");
       return ADJ_ERR_NOT_IMPLEMENTED;
 
-      void (*nonlinear_action_func)(int nvar, adj_variable* variables, adj_vector* dependencies, adj_vector input, void* context, adj_vector* output) = NULL;
+      void (*nonlinear_action_func)(int ndepends, adj_variable* variables, adj_vector* dependencies, adj_vector input, void* context, adj_vector* output) = NULL;
       ierr = adj_find_operator_callback(adjointer, ADJ_NBLOCK_ACTION_CB, derivatives[deriv].nonlinear_block.name, (void (**)(void)) &nonlinear_action_func);
       if (ierr != ADJ_OK)
       {
@@ -154,7 +154,7 @@ int adj_evaluate_nonlinear_derivative_action(adj_adjointer* adjointer, int nderi
   return ADJ_OK;
 }
 
-int adj_evaluate_nonlinear_derivative_action_supplied(adj_adjointer* adjointer, void (*nonlinear_derivative_action_func)(int nvar, adj_variable* variables, 
+int adj_evaluate_nonlinear_derivative_action_supplied(adj_adjointer* adjointer, void (*nonlinear_derivative_action_func)(int ndepends, adj_variable* variables, 
      adj_vector* dependencies, adj_variable derivative, adj_vector contraction, int hermitian, adj_vector input, adj_scalar coefficient, void* context, adj_vector* output),
      adj_nonlinear_block_derivative derivative, adj_vector value, adj_vector* rhs)
 {
@@ -177,7 +177,7 @@ int adj_evaluate_nonlinear_derivative_action_supplied(adj_adjointer* adjointer, 
   return ADJ_OK;
 }
 
-int adj_evaluate_nonlinear_derivative_action_isp(adj_adjointer* adjointer, void (*nonlinear_action_func)(int nvar, adj_variable*
+int adj_evaluate_nonlinear_derivative_action_isp(adj_adjointer* adjointer, void (*nonlinear_action_func)(int ndepends, adj_variable*
      variables, adj_vector* dependencies, adj_vector input, void* context, adj_vector* output), adj_nonlinear_block_derivative derivative, 
      adj_vector value, adj_vector* rhs)
 {
@@ -189,7 +189,7 @@ int adj_evaluate_nonlinear_derivative_action_isp(adj_adjointer* adjointer, void 
   adj_vector perturbed;
   adj_vector perturbation_vector;
   adj_vector dependency;
-  void (*nonlinear_colouring_func)(int nvar, adj_variable* variables, adj_vector* dependencies, adj_variable derivative, void* context, int sz, int* colouring) = NULL;
+  void (*nonlinear_colouring_func)(int ndepends, adj_variable* variables, adj_vector* dependencies, adj_variable derivative, void* context, int sz, int* colouring) = NULL;
   int* colouring;
   int colour;
   int ncolours;
@@ -289,7 +289,7 @@ int adj_evaluate_nonlinear_derivative_action_isp(adj_adjointer* adjointer, void 
 }
 
 int adj_evaluate_nonlinear_colouring(adj_adjointer* adjointer, adj_nonlinear_block nonlinear_block, adj_variable derivative,
-    void (*nonlinear_colouring_func)(int nvar, adj_variable* variables, adj_vector* dependencies, adj_variable derivative, void* context, int sz, int* colouring),
+    void (*nonlinear_colouring_func)(int ndepends, adj_variable* variables, adj_vector* dependencies, adj_variable derivative, void* context, int sz, int* colouring),
     int sz, int* colouring)
 {
   int ierr;
@@ -310,7 +310,7 @@ int adj_evaluate_nonlinear_colouring(adj_adjointer* adjointer, adj_nonlinear_blo
   return ADJ_OK;
 }
 
-int adj_evaluate_nonlinear_action(adj_adjointer* adjointer, void (*nonlinear_action_func)(int nvar, adj_variable* variables, adj_vector* dependencies,
+int adj_evaluate_nonlinear_action(adj_adjointer* adjointer, void (*nonlinear_action_func)(int ndepends, adj_variable* variables, adj_vector* dependencies,
                                   adj_vector input, void* context, adj_vector* output), adj_nonlinear_block nonlinear_block, adj_vector input,
                                   adj_variable* perturbed_var, adj_vector* perturbation, adj_vector* output)
 {

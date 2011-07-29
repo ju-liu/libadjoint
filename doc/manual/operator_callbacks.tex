@@ -86,16 +86,16 @@ the interface documented in this manual!
 \begin{boxwithtitle}{\texttt{ADJ_BLOCK_ACTION_CB}}
 \begin{minipage}{\columnwidth}
 \begin{ccode}
-  void block_action(int nvar, adj_variable* variables, adj_vector* dependencies,
+  void block_action(int ndepends, adj_variable* variables, adj_vector* dependencies,
                     int hermitian, adj_scalar coefficient, adj_vector input,
                     void* context, adj_vector* output);
 \end{ccode}
 \begin{fortrancode}
-  subroutine block_action(nvar, variables, dependencies, hermitian, coefficient,
+  subroutine block_action(ndepends, variables, dependencies, hermitian, coefficient,
                           input, context, output) 
-    integer(kind=c_int), intent(in), value :: nvar
-    type(adj_variable), dimension(nvar), intent(in) :: variables
-    type(adj_vector), dimension(nvar), intent(in) :: dependencies
+    integer(kind=c_int), intent(in), value :: ndepends
+    type(adj_variable), dimension(ndepends), intent(in) :: variables
+    type(adj_vector), dimension(ndepends), intent(in) :: dependencies
     integer(kind=c_int), intent(in), value :: hermitian
     adj_scalar_f, intent(in), value :: coefficient
     type(adj_vector), intent(in), value :: input
@@ -111,20 +111,20 @@ This callback computes the action of a block on a specified input vector \texttt
 Let $V$ represent the block with which this routine is associated. Then,
 if \texttt{hermitian == ADJ_FALSE}, this routine must compute
 \begin{equation*}
-\texttt{output} = \texttt{coefficient} \cdot V(d_1,d_2,\dots,d_{\texttt{nvar}}) \cdot \texttt{input},
+\texttt{output} = \texttt{coefficient} \cdot V(d_1,d_2,\dots,d_{\texttt{ndepends}}) \cdot \texttt{input},
 \end{equation*}
 and if \texttt{hermitian == ADJ_TRUE}, this routine must compute
 \begin{equation*}
-\texttt{output} = \texttt{coefficient} \cdot V(d_1,d_2,\dots,d_{\texttt{nvar}})^* \cdot \texttt{input},
+\texttt{output} = \texttt{coefficient} \cdot V(d_1,d_2,\dots,d_{\texttt{ndepends}})^* \cdot \texttt{input},
 \end{equation*}
-where $(d_1, d_2, \dots, d_{\texttt{nvar}})$ are the nonlinear dependencies of this block supplied in the \texttt{dependencies} array.
+where $(d_1, d_2, \dots, d_{\texttt{ndepends}})$ are the nonlinear dependencies of this block supplied in the \texttt{dependencies} array.
 \end{boxwithtitle}
 
 \begin{boxwithtitle}{Detailed argument list (\texttt{ADJ_BLOCK_ACTION_CB})}
 \begin{description}
-\item[\texttt{nvar}] The number of variables that this block depends on.
+\item[\texttt{ndepends}] The number of variables that this block depends on.
 \item[\texttt{variables}] An array of \refapi{adj_variable}s indicating which dependencies are being supplied to this routine. The length of the
-array is given by \texttt{nvar}. The first entry of the \texttt{variables} array
+array is given by \texttt{ndepends}. The first entry of the \texttt{variables} array
 tells the model developer what the first entry of the \texttt{dependencies} is, the second pairs with the second, and so on.
 \item[\texttt{dependencies}] An array of \refapi{adj_vector}s containing the values of the dependencies of this block. The dependencies supplied
 here are the same as those which were registered during the annotation.
@@ -145,16 +145,16 @@ targets an \refapi{adj_variable} in an \refapi{adj_equation} that is not the var
 \begin{boxwithtitle}{\texttt{ADJ_BLOCK_ASSEMBLY_CB}}
 \begin{minipage}{\columnwidth}
 \begin{ccode}
-  void block_assembly(int nvar, adj_variable* variables, adj_vector* dependencies,
+  void block_assembly(int ndepends, adj_variable* variables, adj_vector* dependencies,
                     int hermitian, adj_scalar coefficient, void* context,
                     adj_matrix* output, adj_vector* rhs);
 \end{ccode}
 \begin{fortrancode}
-  subroutine block_assembly(nvar, variables, dependencies, hermitian, coefficient,
+  subroutine block_assembly(ndepends, variables, dependencies, hermitian, coefficient,
                             context, output, rhs) 
-    integer(kind=c_int), intent(in), value :: nvar
-    type(adj_variable), dimension(nvar), intent(in) :: variables
-    type(adj_vector), dimension(nvar), intent(in) :: dependencies
+    integer(kind=c_int), intent(in), value :: ndepends
+    type(adj_variable), dimension(ndepends), intent(in) :: variables
+    type(adj_vector), dimension(ndepends), intent(in) :: dependencies
     integer(kind=c_int), intent(in), value :: hermitian
     adj_scalar_f, intent(in), value :: coefficient
     type(c_ptr), intent(in), value :: context
@@ -170,20 +170,20 @@ This callback assembles a given block, and also creates a model vector for its o
 Let $V$ represent the block with which this routine is associated. Then,
 if \texttt{hermitian == ADJ_FALSE}, this routine must compute
 \begin{equation*}
-\texttt{output} = \texttt{coefficient} \cdot V(d_1,d_2,\dots,d_{\texttt{nvar}}),
+\texttt{output} = \texttt{coefficient} \cdot V(d_1,d_2,\dots,d_{\texttt{ndepends}}),
 \end{equation*}
 and if \texttt{hermitian == ADJ_TRUE}, this routine must compute
 \begin{equation*}
-\texttt{output} = \texttt{coefficient} \cdot V(d_1,d_2,\dots,d_{\texttt{nvar}})^*,
+\texttt{output} = \texttt{coefficient} \cdot V(d_1,d_2,\dots,d_{\texttt{ndepends}})^*,
 \end{equation*}
-where $(d_1, d_2, \dots, d_{\texttt{nvar}})$ are the nonlinear dependencies of this block supplied in the \texttt{dependencies} array.
+where $(d_1, d_2, \dots, d_{\texttt{ndepends}})$ are the nonlinear dependencies of this block supplied in the \texttt{dependencies} array.
 \end{boxwithtitle}
 
 \begin{boxwithtitle}{Detailed argument list (\texttt{ADJ_BLOCK_ASSEMBLY_CB})}
 \begin{description}
-\item[\texttt{nvar}] The number of variables that this block depends on.
+\item[\texttt{ndepends}] The number of variables that this block depends on.
 \item[\texttt{variables}] An array of \refapi{adj_variable}s indicating which dependencies are being supplied to this routine. The length of the
-array is given by \texttt{nvar}. The first entry of the \texttt{variables} array
+array is given by \texttt{ndepends}. The first entry of the \texttt{variables} array
 tells the model developer what the first entry of the \texttt{dependencies} is, the second pairs with the second, and so on.
 \item[\texttt{dependencies}] An array of \refapi{adj_vector}s containing the values of the dependencies of this block. The dependencies supplied
 here are the same as those which were registered during the annotation.
@@ -205,19 +205,19 @@ targets an \refapi{adj_variable} in an \refapi{adj_equation} that is the variabl
 \begin{boxwithtitle}{\texttt{ADJ_NBLOCK_DERIVATIVE_ACTION_CB}}
 \begin{minipage}{\columnwidth}
 \begin{ccode}
-void nblock_derivative_action(int nvar, adj_variable* variables, 
+void nblock_derivative_action(int ndepends, adj_variable* variables, 
                               adj_vector* dependencies, adj_variable derivative, 
                               adj_vector contraction, int hermitian, 
                               adj_vector input, adj_scalar coefficient, 
                               void* context, adj_vector* output);
 \end{ccode}
 \begin{fortrancode}
-subroutine nblock_derivative_action(nvar, variables, dependencies, derivative, 
+subroutine nblock_derivative_action(ndepends, variables, dependencies, derivative, 
                                     contraction, hermitian, input, coefficient, 
                                     context, output) 
-  integer(kind=c_int), intent(in), value :: nvar
-  type(adj_variable), dimension(nvar), intent(in) :: variables
-  type(adj_vector), dimension(nvar), intent(in) :: dependencies
+  integer(kind=c_int), intent(in), value :: ndepends
+  type(adj_variable), dimension(ndepends), intent(in) :: variables
+  type(adj_vector), dimension(ndepends), intent(in) :: dependencies
   type(adj_variable), intent(in), value :: derivative
   type(adj_vector), intent(in), value :: contraction
   integer(kind=c_int), intent(in), value :: hermitian
@@ -249,9 +249,9 @@ and if \texttt{hermitian == ADJ_TRUE}, this routine must compute
 
 \begin{boxwithtitle}{Detailed argument list (\texttt{ADJ_NBLOCK_DERIVATIVE_ACTION_CB})}
 \begin{description}
-\item[\texttt{nvar}] The number of variables that the associated nonlinear block depends on.
+\item[\texttt{ndepends}] The number of variables that the associated nonlinear block depends on.
 \item[\texttt{variables}] An array of \refapi{adj_variable}s indicating which dependencies are being supplied to this routine. The length of the
-array is given by \texttt{nvar}. The first entry of the \texttt{variables} array
+array is given by \texttt{ndepends}. The first entry of the \texttt{variables} array
 tells the model developer what the first entry of the \texttt{dependencies} is, the second pairs with the second, and so on.
 \item[\texttt{dependencies}] An array of \refapi{adj_vector}s containing the values of the dependencies of this block. The dependencies supplied
 here are the same as those which were registered during the annotation.
@@ -272,19 +272,19 @@ When necessary: required for each registered nonlinear block for assembling the 
 %\begin{boxwithtitle}{\texttt{ADJ_NBLOCK_DERIVATIVE_ASSEMBLY_CB}}
 %\begin{minipage}{\columnwidth}
 %\begin{ccode}
-%void nblock_derivative_assembly(int nvar, adj_variable* variables, 
+%void nblock_derivative_assembly(int ndepends, adj_variable* variables, 
 %                                adj_vector* dependencies, adj_variable derivative, 
 %                                adj_vector contraction, int hermitian, 
 %                                adj_scalar coefficient, 
 %                                void* context, adj_vector* output);
 %\end{ccode}
 %\begin{fortrancode}
-%subroutine nblock_derivative_assembly(nvar, variables, dependencies, derivative, 
+%subroutine nblock_derivative_assembly(ndepends, variables, dependencies, derivative, 
 %                                      contraction, hermitian, coefficient, 
 %                                      context, output) 
-%  integer(kind=c_int), intent(in) :: nvar
-%  type(adj_variable), dimension(nvar), intent(in) :: variables
-%  type(adj_vector), dimension(nvar), intent(in) :: dependencies
+%  integer(kind=c_int), intent(in) :: ndepends
+%  type(adj_variable), dimension(ndepends), intent(in) :: variables
+%  type(adj_vector), dimension(ndepends), intent(in) :: dependencies
 %  type(adj_variable), intent(in) :: derivative
 %  type(adj_vector), intent(in) :: contraction
 %  logical(kind=c_bool), intent(in) :: hermitian
@@ -314,9 +314,9 @@ When necessary: required for each registered nonlinear block for assembling the 
 %
 %\begin{boxwithtitle}{Detailed argument list (\texttt{ADJ_NBLOCK_DERIVATIVE_ASSEMBLY_CB})}
 %\begin{description}
-%\item[\texttt{nvar}] The number of variables that the associated nonlinear block depends on.
+%\item[\texttt{ndepends}] The number of variables that the associated nonlinear block depends on.
 %\item[\texttt{variables}] An array of \refapi{adj_variable}s indicating which dependencies are being supplied to this routine. The length of the
-%array is given by \texttt{nvar}. The first entry of the \texttt{variables} array
+%array is given by \texttt{ndepends}. The first entry of the \texttt{variables} array
 %tells the model developer what the first entry of the \texttt{dependencies} is, the second pairs with the second, and so on.
 %\item[\texttt{dependencies}] An array of \refapi{adj_vector}s containing the values of the dependencies of this block. The dependencies supplied
 %here are the same as those which were registered during the annotation.
@@ -342,15 +342,15 @@ When necessary: required for each registered nonlinear block for assembling the 
 \begin{boxwithtitle}{\texttt{ADJ_NBLOCK_ACTION_CB}}
 \begin{minipage}{\columnwidth}
 \begin{ccode}
-void nblock_action(int nvar, adj_variable* variables, adj_vector* dependencies, 
+void nblock_action(int ndepends, adj_variable* variables, adj_vector* dependencies, 
                  adj_vector input, void* context, adj_vector* output);
 \end{ccode}
 \begin{fortrancode}
-subroutine nblock_action(nvar, variables, dependencies, input, 
+subroutine nblock_action(ndepends, variables, dependencies, input, 
                          context, output) 
-  integer(kind=c_int), intent(in), value :: nvar
-  type(adj_variable), dimension(nvar), intent(in) :: variables
-  type(adj_vector), dimension(nvar), intent(in) :: dependencies
+  integer(kind=c_int), intent(in), value :: ndepends
+  type(adj_variable), dimension(ndepends), intent(in) :: variables
+  type(adj_vector), dimension(ndepends), intent(in) :: dependencies
   type(adj_vector), intent(in), value :: input
   type(c_ptr), intent(in), value :: context
   type(adj_vector), intent(out) :: output
@@ -365,16 +365,16 @@ This callback computes the action of a nonlinear block on a specified input vect
 Let $V$ represent the nonlinear block with which this routine is associated. 
 Then, this routine must compute
 \begin{equation*}
-\texttt{output} = \texttt{coefficient} \cdot V(d_1,d_2,\dots,d_{\texttt{nvar}}) \cdot \texttt{input},
+\texttt{output} = \texttt{coefficient} \cdot V(d_1,d_2,\dots,d_{\texttt{ndepends}}) \cdot \texttt{input},
 \end{equation*}
-where $(d_1, d_2, \dots, d_{\texttt{nvar}})$ are the nonlinear dependencies of this block supplied in the \texttt{dependencies} array.
+where $(d_1, d_2, \dots, d_{\texttt{ndepends}})$ are the nonlinear dependencies of this block supplied in the \texttt{dependencies} array.
 \end{boxwithtitle}
 
 \begin{boxwithtitle}{Detailed argument list (\texttt{ADJ_NBLOCK_ACTION_CB})}
 \begin{description}
-\item[\texttt{nvar}] The number of variables that this nonlinear block depends on.
+\item[\texttt{ndepends}] The number of variables that this nonlinear block depends on.
 \item[\texttt{variables}] An array of \refapi{adj_variable}s indicating which dependencies are being supplied to this routine. The length of the
-array is given by \texttt{nvar}. The first entry of the \texttt{variables} array
+array is given by \texttt{ndepends}. The first entry of the \texttt{variables} array
 tells the model developer what the first entry of the \texttt{dependencies} is, the second pairs with the second, and so on.
 \item[\texttt{dependencies}] An array of \refapi{adj_vector}s containing the values of the dependencies of this nonlinear block. The dependencies supplied
 here are the same as those which were registered during the annotation.

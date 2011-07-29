@@ -1,4 +1,4 @@
-subroutine block_action_callback(nvar, variables, dependencies, hermitian, coefficient, input, context, output_vec) bind(c)
+subroutine block_action_callback(ndepends, variables, dependencies, hermitian, coefficient, input, context, output_vec) bind(c)
   use libadjoint
   use libadjoint_petsc_data_structures
   use iso_c_binding
@@ -6,9 +6,9 @@ subroutine block_action_callback(nvar, variables, dependencies, hermitian, coeff
 #include "libadjoint/adj_fortran.h"
 #include "libadjoint/adj_petsc_f.h"
 
-  integer(kind=c_int), intent(in), value :: nvar
-  type(adj_variable), dimension(nvar), intent(in) :: variables
-  type(adj_vector), dimension(nvar), intent(in) :: dependencies
+  integer(kind=c_int), intent(in), value :: ndepends
+  type(adj_variable), dimension(ndepends), intent(in) :: variables
+  type(adj_vector), dimension(ndepends), intent(in) :: dependencies
   integer(kind=c_int), intent(in), value :: hermitian
   adj_scalar_f, intent(in), value :: coefficient
   type(adj_vector), intent(in), value :: input
@@ -27,7 +27,7 @@ subroutine block_action_callback(nvar, variables, dependencies, hermitian, coeff
 
 end subroutine block_action_callback
 
-subroutine nonlinear_derivative_action_callback(nvar, variables, dependencies, derivative, contraction, hermitian, &
+subroutine nonlinear_derivative_action_callback(ndepends, variables, dependencies, derivative, contraction, hermitian, &
                                                 & input, coefficient, context, output_vec) bind(c)
   use libadjoint
   use libadjoint_petsc_data_structures
@@ -36,9 +36,9 @@ subroutine nonlinear_derivative_action_callback(nvar, variables, dependencies, d
 #include "libadjoint/adj_fortran.h"
 #include "libadjoint/adj_petsc_f.h"
 
-  integer(kind=c_int), intent(in), value :: nvar
-  type(adj_variable), dimension(nvar), intent(in) :: variables
-  type(adj_vector), dimension(nvar), intent(in) :: dependencies
+  integer(kind=c_int), intent(in), value :: ndepends
+  type(adj_variable), dimension(ndepends), intent(in) :: variables
+  type(adj_vector), dimension(ndepends), intent(in) :: dependencies
   type(adj_variable), intent(in), value :: derivative
   type(adj_vector), intent(in), value :: contraction
   integer(kind=c_int), intent(in), value :: hermitian
@@ -58,7 +58,8 @@ subroutine nonlinear_derivative_action_callback(nvar, variables, dependencies, d
 #endif
 end subroutine nonlinear_derivative_action_callback
 
-subroutine identity_assembly_callback(nvar, variables, dependencies, hermitian, coefficient, context, output_mat, rhs_vec) bind(c)
+subroutine identity_assembly_callback(ndepends, variables, dependencies, hermitian, coefficient, & 
+                                    & context, output_mat, rhs_vec) bind(c)
   use libadjoint
   use libadjoint_petsc_data_structures
   use iso_c_binding
@@ -66,9 +67,9 @@ subroutine identity_assembly_callback(nvar, variables, dependencies, hermitian, 
 #include "libadjoint/adj_fortran.h"
 #include "libadjoint/adj_petsc_f.h"
 
-  integer(kind=c_int), intent(in), value :: nvar
-  type(adj_variable), dimension(nvar), intent(in) :: variables
-  type(adj_vector), dimension(nvar), intent(in) :: dependencies
+  integer(kind=c_int), intent(in), value :: ndepends
+  type(adj_variable), dimension(ndepends), intent(in) :: variables
+  type(adj_vector), dimension(ndepends), intent(in) :: dependencies
   integer(kind=c_int), intent(in), value :: hermitian
   adj_scalar_f, intent(in), value :: coefficient
   type(c_ptr), intent(in), value :: context

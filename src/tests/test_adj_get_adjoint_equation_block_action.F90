@@ -9,7 +9,7 @@ subroutine test_adj_get_adjoint_equation_block_action
 end subroutine test_adj_get_adjoint_equation_block_action
 #else
 
-subroutine identity_assembly_callback(nvar, variables, dependencies, hermitian, coefficient, context, output, rhs) bind(c)
+subroutine identity_assembly_callback(ndepends, variables, dependencies, hermitian, coefficient, context, output, rhs) bind(c)
   use iso_c_binding
   use libadjoint
   use libadjoint_petsc_data_structures
@@ -17,9 +17,9 @@ subroutine identity_assembly_callback(nvar, variables, dependencies, hermitian, 
 #include "libadjoint/adj_fortran.h"
 #include "libadjoint/adj_petsc_f.h"
 
-  integer(kind=c_int), intent(in), value :: nvar
-  type(adj_variable), dimension(nvar), intent(in) :: variables
-  type(adj_vector), dimension(nvar), intent(in) :: dependencies
+  integer(kind=c_int), intent(in), value :: ndepends
+  type(adj_variable), dimension(ndepends), intent(in) :: variables
+  type(adj_vector), dimension(ndepends), intent(in) :: dependencies
   integer(kind=c_int), intent(in), value :: hermitian
   adj_scalar_f, intent(in), value :: coefficient
   type(c_ptr), intent(in), value :: context
@@ -35,7 +35,7 @@ subroutine identity_assembly_callback(nvar, variables, dependencies, hermitian, 
   Mat :: output_mat
   Vec :: rhs_petsc
 
-  call adj_test_assert(nvar == 0, "We don't depend on any variables")
+  call adj_test_assert(ndepends == 0, "We don't depend on any variables")
 
   call MatCreateSeqAIJ(PETSC_COMM_SELF, m, m, 1, PETSC_NULL_INTEGER, output_mat, ierr)
   call MatZeroEntries(output_mat, ierr)
@@ -57,16 +57,16 @@ subroutine identity_assembly_callback(nvar, variables, dependencies, hermitian, 
   rhs = petsc_vec_to_adj_vector(rhs_petsc)
 end subroutine identity_assembly_callback
 
-subroutine identity_action_callback(nvar, variables, dependencies, hermitian, coefficient, input, context, output) bind(c)
+subroutine identity_action_callback(ndepends, variables, dependencies, hermitian, coefficient, input, context, output) bind(c)
   use iso_c_binding
   use libadjoint
   use libadjoint_petsc_data_structures
   implicit none
 #include "libadjoint/adj_petsc_f.h"
 
-  integer(kind=c_int), intent(in), value :: nvar
-  type(adj_variable), dimension(nvar), intent(in) :: variables
-  type(adj_vector), dimension(nvar), intent(in) :: dependencies
+  integer(kind=c_int), intent(in), value :: ndepends
+  type(adj_variable), dimension(ndepends), intent(in) :: variables
+  type(adj_vector), dimension(ndepends), intent(in) :: dependencies
   integer(kind=c_int), intent(in), value :: hermitian
   adj_scalar_f, intent(in), value :: coefficient
   type(adj_vector), intent(in), value :: input
@@ -77,7 +77,7 @@ subroutine identity_action_callback(nvar, variables, dependencies, hermitian, co
   integer :: ierr
   PetscScalar :: coefficient_petsc
 
-  call adj_test_assert(nvar == 0, "We don't depend on any variables")
+  call adj_test_assert(ndepends == 0, "We don't depend on any variables")
   call VecDuplicate(petsc_vec_from_adj_vector(input), output_vec, ierr)
   call VecCopy(petsc_vec_from_adj_vector(input), output_vec, ierr)
   coefficient_petsc = coefficient ! I wish fortran had casts!
