@@ -201,7 +201,6 @@ targets an \refapi{adj_variable} in an \refapi{adj_equation} that is the variabl
 \refapi{adj_equation}.
 
 \defapiss{ADJ_NBLOCK_DERIVATIVE_ACTION_CB}
-% TODO: Add section that explains how AD fits in here.
 \begin{boxwithtitle}{\texttt{ADJ_NBLOCK_DERIVATIVE_ACTION_CB}}
 \begin{minipage}{\columnwidth}
 \begin{ccode}
@@ -235,7 +234,7 @@ The action of this derivative on a specified input vector \texttt{input} is retu
 \begin{boxwithtitle}{Mathematical description (\texttt{ADJ_NBLOCK_DERIVATIVE_ACTION_CB})}
 Let $V$ represent the nonlinear block with which this routine is associated. 
 Suppose $V$ depends on $\left\{d_0, d_1, \dots, d_\texttt{ndepends}\right\}$. The values of these                                                  
-dependencies are given by the \texttt{dependencies} array, with each corresponding entry in the \texttt{variables} array describing what each variable is. The \texttt{derivative} variable
+dependencies are given by the \texttt{dependencies} array, with each corresponding entry in the \texttt{variables} array describing what each variable is. \texttt{derivative} 
 is the variable with which the derivative is to be computed. Let $d_i$ denote this variable, and $c$ denote \texttt{contraction}.
 Then, if \texttt{hermitian == ADJ_FALSE}, this routine must compute
 \begin{equation*}
@@ -245,6 +244,89 @@ and if \texttt{hermitian == ADJ_TRUE}, this routine must compute
 \begin{equation*}
 \texttt{output} = \left(\left.\frac{\partial V}{\partial d_i}\right|_{(d_0, \dots, d_{\texttt{ndepends}})}c\right)^{*}\texttt{input}. 
 \end{equation*}
+\end{boxwithtitle}
+
+\begin{boxwithtitle}{Using automatic differentiation tools to generate \texttt{ADJ_NBLOCK_DERIVATIVE_ACTION_CB} callbacks.}
+The \texttt{ADJ_NBLOCK_DERIVATIVE_ACTION_CB} callback function implements the derivatives of the nonlinear block with respect to its dependencies.
+While these derivatives can be derived by hand for simple nonlinear blocks, it is desirable to automatically generate the callbacks with an automatic differentiation (AD) tool.
+The following example demonstrates a typical setup of this kind. 
+
+Assume the associated block computes the action with the advection matrix $A(u)c$,
+where $u$ is the (only) dependency of the nonlinear block $A$ and $c$ is the contraction vector.
+A helper subroutine is available that performs this action:
+
+\begin{minipage}{\columnwidth}
+\begin{fortrancode}
+subroutine advection_action(u, c, Ac)
+  real, dimension(:), intent(in) :: u
+  real, dimension(:), intent(in) :: c
+  real, dimension(:), intent(out) :: Ac
+...
+end subroutine advection_action
+\end{fortrancode}
+\end{minipage}
+
+From applying the AD tool in forward mode and instructing it to generate the derivative of \texttt{Ac} with respect to \texttt{u} one obtains:
+
+\begin{minipage}{\columnwidth}
+\begin{fortrancode}
+! Differentiation of advection_action in forward (tangent) mode:
+! variations of useful results: Ac
+! with respect to varying inputs: u
+! RW status of diff variables: Ac:out u:in
+subroutine advection_action_d(u, ud, c, Ac, Acd)
+  real, dimension(:), intent(in) :: u
+  real, dimension(:), intent(in) :: ud
+  real, dimension(:), intent(in) :: c
+  real, dimension(:), intent(out) :: Ac
+  real, dimension(:), intent(out) :: Acd
+...
+end subroutine advection_action_d
+\end{fortrancode}
+\end{minipage}
+
+and 
+
+\begin{minipage}{\columnwidth}
+\begin{fortrancode}
+! Differentiation of advection_action in reverse (adjoint) mode:
+! gradient of useful results: Ac
+! with respect to varying inputs: Ac u
+! RW status of diff variables: Ac:in-zero u:out
+subroutine advection_action_b(u, ub, c, Ac, Acb)
+    real, dimension(:), intent(in) :: u
+    real, dimension(:), intent(out) :: ub
+    real, dimension(:), intent(in) :: c
+    real, dimension(:), intent(out) :: Ac
+    real, dimension(:), intent(in) :: Acb
+...
+end subroutine advection_action_b
+\end{fortrancode}
+\end{minipage}
+
+These routines can now be used in the \texttt{ADJ_NBLOCK_DERIVATIVE_ACTION_CB} callback:
+
+\begin{minipage}{\columnwidth}
+\begin{fortrancode}
+subroutine advection_derivative_action(ndepends, variables, dependencies, 
+                                       derivative, contraction, hermitian, 
+                                       input, coefficient, context, output)
+...
+if (hermitian == ADJ_FALSE) then
+  call advection_action_d(dependencies(1), input, contraction, tmp, output)
+else
+  call advection_action_b(dependencies(1), output, contraction, tmp, input)
+end if
+...
+end subroutine advection_derivative_action
+\end{fortrancode}
+\end{minipage}
+
+
+Note that most AD tools only support a subset of the programming language. 
+While this can be a burden when it is used to generate the adjoint of the full forward model,
+in the context of libadjoint it is only applied to the assembly routine of the nonlinear block, which normally consists only of low level mathematical routines.
+ 
 \end{boxwithtitle}
 
 \begin{boxwithtitle}{Detailed argument list (\texttt{ADJ_NBLOCK_DERIVATIVE_ACTION_CB})}
@@ -300,7 +382,7 @@ When necessary: required for each registered nonlinear block for assembling the 
 %\begin{boxwithtitle}{Mathematical description (\texttt{ADJ_NBLOCK_DERIVATIVE_ASSEMBLY_CB})}
 %Let $V$ represent the nonlinear block with which this routine is associated. 
 %Suppose $V$ depends on $\left\{d_0, d_1, \dots, d_N\right\}$. The values of these                                                  
-%dependencies are given by the \texttt{dependencies} array, with each corresponding entry in the \texttt{variables} array describing what each variable is. The \texttt{derivative} variable
+%dependencies are given by the \texttt{dependencies} array, with each corresponding entry in the \texttt{variables} array describing what each variable is. \texttt{derivative} 
 %is the variable with which the derivative is to be computed. Let $d_i$ denote this variable, and $c$ denote \texttt{contraction}.
 %Then, if \texttt{hermitian == ADJ_FALSE}, this routine must compute
 %\begin{equation*}
