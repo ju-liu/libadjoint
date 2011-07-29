@@ -519,13 +519,12 @@ module libadjoint
       integer(kind=c_int) :: ierr
     end function adj_destroy_adjointer
 
-    function adj_set_option(adjointer, option, choice) result(ierr) bind(c, name='adj_set_option')
+    function adj_deactivate_adjointer(adjointer) result(ierr) bind(c, name='adj_deactivate_adjointer')
       use libadjoint_data_structures
       use iso_c_binding
       type(adj_adjointer), intent(inout) :: adjointer
-      integer(kind=c_int), intent(in), value :: option, choice 
       integer(kind=c_int) :: ierr
-    end function adj_set_option
+    end function adj_deactivate_adjointer
 
     function adj_equation_count(adjointer, count) result(ierr) bind(c, name='adj_equation_count')
       use libadjoint_data_structures

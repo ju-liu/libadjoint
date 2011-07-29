@@ -9,7 +9,7 @@
 
 int adj_create_adjointer(adj_adjointer* adjointer);
 int adj_destroy_adjointer(adj_adjointer* adjointer);
-int adj_set_option(adj_adjointer* adjointer, int option, int choice);
+int adj_deactivate_adjointer(adj_adjointer* adjointer);
 int adj_equation_count(adj_adjointer* adjointer, int* count);
 int adj_register_equation(adj_adjointer* adjointer, adj_equation equation);
 int adj_record_variable(adj_adjointer* adjointer, adj_variable var, adj_storage_data storage);
@@ -34,6 +34,7 @@ int adj_storage_set_compare(adj_storage_data* data, int compare, adj_scalar comp
 int adj_storage_set_overwrite(adj_storage_data* data, int overwrite);
 
 #ifndef ADJ_HIDE_FROM_USER
+int adj_set_option(adj_adjointer* adjointer, int option, int choice);
 int adj_variable_get_ndepending_timesteps(adj_adjointer* adjointer, adj_variable variable, char* functional, int* ntimesteps);
 int adj_variable_get_depending_timestep(adj_adjointer* adjointer, adj_variable variable, char* functional, int k, int* timestep);
 

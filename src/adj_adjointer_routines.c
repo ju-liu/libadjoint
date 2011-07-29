@@ -167,6 +167,11 @@ int adj_destroy_adjointer(adj_adjointer* adjointer)
   return ADJ_OK;
 }
 
+int adj_deactivate_adjointer(adj_adjointer* adjointer)
+{
+  return adj_set_option(adjointer, ADJ_ACTIVITY, ADJ_ACTIVITY_NOTHING);
+}
+
 int adj_register_equation(adj_adjointer* adjointer, adj_equation equation)
 {
   adj_variable_data* data_ptr;
