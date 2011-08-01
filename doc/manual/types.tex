@@ -77,7 +77,7 @@
 \end{minipage}
 \end{boxwithtitle}
 
-This function creates an \texttt{adj_variable} with the given \texttt{name} (used to identify a variable), \texttt{timestep} and \texttt{iteration}.
+This function creates an \texttt{adj_variable} with the given \texttt{name} (used to identify the variable), \texttt{timestep} and \texttt{iteration}.
 The \texttt{auxiliary} option defines the type of the variable and must be either \texttt{ADJ_NORMAL_VARIABLE} or \texttt{ADJ_AUXILIARY_VARIABLE}.
 The function returns an error code that can be passed to \refapi{adj_chkierr}.
 
@@ -191,15 +191,15 @@ The function returns an error code that can be passed to \refapi{adj_chkierr}.
 
 This function creates an \texttt{adj_block} with the given \texttt{name}.
 If the block is nonlinear, the corresponding \refapi{adj_nonlinear_block} is passed as \texttt{nblock}. 
-Otherwise, a \texttt{NULL} pointer is to be passed in C and ignored in Fortran.
-The void pointer \texttt{context} allows the developer to pass arbitrary data to the callbacks of this operator. 
+Otherwise, a \texttt{NULL} pointer is to be passed in C and the argument can be ignored in Fortran.
+The void pointer \texttt{context} allows the developer to pass arbitrary data to the block's callbacks (\refapi{ADJ_BLOCK_ACTION_CB}, \refapi{ADJ_BLOCK_ASSEMBLY_CB}) of this operator. 
 The resulting block is stored in \texttt{block}. 
 The return value is an error code that can be passed to \refapi{adj_chkierr}.
 
 In addition, \texttt{adj_block} has properties that are not directly accessible during the initialisation:
 
 \begin{description}
-  \item[hermitian] A flag determining if the block is hermitian of the operator is to be used. Default: \texttt{ADJ_FALSE}
+  \item[hermitian] A flag indicating if the hermitian of the operator is to be used. Default: \texttt{ADJ_FALSE}
   \item[coefficient] A scaling factor. Default: 1.0
 \end{description}
 
@@ -286,6 +286,16 @@ The return value is an error code that can be passed to \refapi{adj_chkierr}.
 \end{fortrancode}
 \end{minipage}
 \end{boxwithtitle}
+This function creates an \texttt{adj_nonlinear_block} with the given \texttt{name}.
+The dependency variables are passed with \texttt{depends} (and \texttt{ndepends} in C which specifies the length of the array).
+At least one dependency must be given.
+The void pointer \texttt{context} allows the developer to pass arbitrary data to the nonlinear block's callbacks (\refapi{ADJ_NBLOCK_DERIVATIVE_ACTION_CB}, \refapi{ADJ_NBLOCK_ACTION_CB}) of this operator.
+
+The resulting nonlinear block is stored in \texttt{nblock}. 
+The return value is an error code that can be passed to \refapi{adj_chkierr}.
+
+In addition, \texttt{adj_nonlinear_block} has a scaling property that is not directly accessible during the initialisation. 
+Its default value is set to 1.0, but can be changed using \refapi{adj_nonlinear_block_set_coefficient}, see below.
 
 
 \defapis{adj_nonlinear_block_set_coefficient}
@@ -304,6 +314,8 @@ The return value is an error code that can be passed to \refapi{adj_chkierr}.
 \end{fortrancode}
 \end{minipage}
 \end{boxwithtitle}
+This function sets the scaling of a nonlinear block to \texttt{coefficient}. 
+The return value is an error code that can be passed to \refapi{adj_chkierr}.
 
 
 \defapis{adj_destroy_nonlinear_block}
@@ -320,6 +332,8 @@ The return value is an error code that can be passed to \refapi{adj_chkierr}.
 \end{fortrancode}
 \end{minipage}
 \end{boxwithtitle}
+Destroys the nonlinear block \texttt{nblock}.
+The return value is an error code that can be passed to \refapi{adj_chkierr}.
 
 \defapi{adj_equation}
 
@@ -341,6 +355,7 @@ The return value is an error code that can be passed to \refapi{adj_chkierr}.
 \end{fortrancode}
 \end{minipage}
 \end{boxwithtitle}
+This function creates an \refapi{adj_equation} that solves for the \refapi{adj_variable} \texttt{var}.
 
 
 \defapis{adj_equation_set_rhs_dependencies}
