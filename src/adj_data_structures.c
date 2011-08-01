@@ -128,7 +128,7 @@ int adj_create_block(char* name, adj_nonlinear_block* nblock, void* context, adj
   }
 
   block->context = context;
-  block->hermitian = 0;
+  block->hermitian = ADJ_FALSE;
   block->coefficient = (adj_scalar)1.0;
   block->test_hermitian = ADJ_FALSE;
   block->number_of_tests = 0;
