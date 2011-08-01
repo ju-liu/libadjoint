@@ -502,6 +502,10 @@ The return value is an error code that can be passed to \refapi{adj_chkierr}.
 
 \defapi{adj_dict}
 
+\refapi{adj_dict} is an implementation of a dictionary class for strings.
+
+Why is it public in libadjoint and how could it be used for the model developer?
+
 \defapis{adj_dict_init}
 \begin{boxwithtitle}{\texttt{adj_dict_init}}
 \begin{minipage}{\columnwidth}
@@ -516,7 +520,9 @@ The return value is an error code that can be passed to \refapi{adj_chkierr}.
 \end{fortrancode}
 \end{minipage}
 \end{boxwithtitle}
+Creates a new dictionary \texttt{dict}.
 
+The return value is an error code that can be passed to \refapi{adj_chkierr}.
 
 \defapis{adj_dict_set}
 \begin{boxwithtitle}{\texttt{adj_dict_set}}
@@ -534,6 +540,9 @@ The return value is an error code that can be passed to \refapi{adj_chkierr}.
 \end{minipage}
 \end{boxwithtitle}
 
+Creates or updates an entry in the dictionary \texttt{dict} with key \texttt{key} and value \texttt{value}.
+
+The return value is an error code that can be passed to \refapi{adj_chkierr}.
 
 \defapis{adj_dict_find}
 \begin{boxwithtitle}{\texttt{adj_dict_find}}
@@ -552,6 +561,13 @@ The return value is an error code that can be passed to \refapi{adj_chkierr}.
 \end{minipage}
 \end{boxwithtitle}
 
+Finds an entry in the dictionary \texttt{dict} with key \texttt{key}.
+
+If no corresponding key exist in the dictionary, the function returns \refapi{ADJ_ERR_DICT_FAILED}.
+Otherwise, the value can be accessed with \texttt{value}.
+
+The return value is an error code that can be passed to \refapi{adj_chkierr}.
+
 
 \defapis{adj_dict_print}
 \begin{boxwithtitle}{\texttt{adj_dict_print}}
@@ -567,6 +583,7 @@ The return value is an error code that can be passed to \refapi{adj_chkierr}.
 \end{minipage}
 \end{boxwithtitle}
 
+Prints the key $\to$ value list in \texttt{dict} to \texttt{STDOUT}. 
 
 \defapis{adj_dict_destroy}
 \begin{boxwithtitle}{\texttt{adj_dict_destroy}}
@@ -583,3 +600,6 @@ The return value is an error code that can be passed to \refapi{adj_chkierr}.
 \end{minipage}
 \end{boxwithtitle}
 
+Destroys the dictionary \texttt{dict}.
+
+The return value is an error code that can be passed to \refapi{adj_chkierr}.
