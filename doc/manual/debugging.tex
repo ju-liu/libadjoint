@@ -175,8 +175,28 @@ will return an \refapi{ADJ_ERR_TOLERANCE_EXCEEDED}.
 
 The use of this feature requires the \refapi{ADJ_VEC_SET_RANDOM_CB} and
 \refapi{ADJ_VEC_DOT_PRODUCT_CB} data callbacks.
+
 \defapis{adj_nonlinear_block_set_test_hermitian}
+
 \section{Checking gradient correctness} \label{sec:derivative_test}
 \defapis{adj_nonlinear_block_set_test_derivative}
+
 \section{\texttt{adj_adjointer} consistency check}
 \defapis{adj_adjointer_check_consistency}
+\begin{boxwithtitle}{\texttt{adj_adjointer_check_consistency}}
+\begin{minipage}{\columnwidth}
+\begin{ccode}
+  int adj_adjointer_check_consistency(adj_adjointer* adjointer);
+\end{ccode}
+\begin{fortrancode}
+  function adj_adjointer_check_consistency(adjointer) result(ierr)
+    type(adj_adjointer), intent(in) :: adjointer
+    integer(kind=c_int) :: ierr
+  end function adj_adjointer_check_consistency
+\end{fortrancode}
+\end{minipage}
+\end{boxwithtitle}
+This routine runs miscellaneous debugging checks to ensure the validity
+of a given annotation. For example, it checks that all non-auxiliary
+variables seen by \libadjoint have an equation set and that the system
+presented is lower triangular.
