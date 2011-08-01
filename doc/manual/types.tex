@@ -77,15 +77,15 @@
 \end{minipage}
 \end{boxwithtitle}
 
-\begin{boxwithtitle}{Detailed argument list (\texttt{adj_create_variable})}
-\begin{description}
-\item[\texttt{name}]  
-\item[\texttt{timestep}] 
-\item[\texttt{iteration}] 
-\item[\texttt{auxiliary}] 
-\item[\texttt{var}] 
-\end{description}
-\end{boxwithtitle}
+This function creates an \texttt{adj_variable} with the given \texttt{name} (used to identify a variable), \texttt{timestep} and \texttt{iteration}.
+The \texttt{auxiliary} option defines the type of the variable and must be either \texttt{ADJ_NORMAL_VARIABLE} or \texttt{ADJ_AUXILIARY_VARIABLE}.
+The function returns an error code that can be passed to \refapi{adj_chkierr}.
+
+Auxiliary variables are variables for which no equation is solved, but are necessary for the evaluation of an operator.
+A typical example for an auxiliary variable is the computational mesh, which is needed for the assembly of the discretised operators but for which no equation is solved during the simulation.
+An alternative way of passing objects to the callback functions is to use the \texttt{context} pointer in \refapi{adj_create_block} and \refapi{adj_create_nonlinear_block}.
+
+Helper functions are available to change the properties of a variable after initialisation, see below. 
 
 
 
@@ -160,9 +160,8 @@ The function returns an error code that can be passed to \refapi{adj_chkierr}.
 \end{fortrancode}
 \end{minipage}
 \end{boxwithtitle}
-This function is used to mark an \texttt{adj_variable} as a \texttt{auxiliary} variable. 
-Auxiliary variables are variables for which no equation is solved, but are necessary for the evaluation of an operator.
-A typical example for an auxiliary variable is the computational mesh.
+This function is used to define the type of an \texttt{adj_variable}.
+\texttt{auxiliary} must be either \texttt{ADJ_NORMAL_VARIABLE} or \texttt{ADJ_AUXILIARY_VARIABLE}.
 The function returns an error code that can be passed to \refapi{adj_chkierr}.
 
 \defapi{adj_block}
