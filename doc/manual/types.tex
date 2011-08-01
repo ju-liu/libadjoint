@@ -355,8 +355,16 @@ The return value is an error code that can be passed to \refapi{adj_chkierr}.
 \end{fortrancode}
 \end{minipage}
 \end{boxwithtitle}
-This function creates an \refapi{adj_equation} that solves for the \refapi{adj_variable} \texttt{var}.
+This function creates an \refapi{adj_equation} that solves for \texttt{var}.
 
+\texttt{blocks} and \texttt{targets} are arrays of length \texttt{nblocks} that describe the equation:
+The first block of the blocks array is to be multiplied with the first variable in the targets array, 
+the second pairs with the second, and so on.
+The right hand side of the equation is neglected since it irrelevant for the adjoint equation. 
+Hence, the variable to be solvedi for, \texttt{var}, must exist in \texttt{targets}. If that is not the case an \refapi{ADJ_ERR_INVALID_INPUTS} is returned.
+ 
+
+The return value is an error code that can be passed to \refapi{adj_chkierr}.
 
 \defapis{adj_equation_set_rhs_dependencies}
 \begin{boxwithtitle}{\texttt{adj_equation_set_rhs_dependencies}}
@@ -366,7 +374,8 @@ This function creates an \refapi{adj_equation} that solves for the \refapi{adj_v
                                         adj_variable* rhsdeps, void* context);
 \end{ccode}
 \begin{fortrancode}
-  function adj_equation_set_rhs_dependencies(equation, rhsdeps, context) result(ierr)
+  function adj_equation_set_rhs_dependencies(equation, rhsdeps, context) 
+           result(ierr)
     type(adj_equation), intent(inout) :: equation
     type(adj_variable), dimension(:), intent(in), optional :: rhsdeps
     type(c_ptr), intent(in), value, optional :: context
@@ -376,6 +385,12 @@ This function creates an \refapi{adj_equation} that solves for the \refapi{adj_v
 \end{minipage}
 \end{boxwithtitle}
 
+Sets the dependency variables and the context for the right hand side evaluation of \texttt{equation}. 
+
+This information will passed to the source term callback function, if a source term is defined (see \refapi{adj_register_forward_source_callback}).
+Otherwise this function can be ignored.
+
+The return value is an error code that can be passed to \refapi{adj_chkierr}.
 
 \defapis{adj_register_equation}
 \begin{boxwithtitle}{\texttt{adj_register_equation}}
@@ -393,12 +408,16 @@ This function creates an \refapi{adj_equation} that solves for the \refapi{adj_v
 \end{minipage}
 \end{boxwithtitle}
 
+Adds the \texttt{equation} to the \texttt{adjointer}.
+
+The return value is an error code that can be passed to \refapi{adj_chkierr}.
+
 
 \defapis{adj_destroy_equation}
 \begin{boxwithtitle}{\texttt{adj_destroy_equation}}
 \begin{minipage}{\columnwidth}
 \begin{ccode}
-  int adj_destroy_adjointer(adj_adjointer* adjointer);
+  int adj_destroy_equation(adj_equation* equation);
 \end{ccode}
 \begin{fortrancode}
   function adj_destroy_equation(equation) result(ierr)
@@ -408,6 +427,10 @@ This function creates an \refapi{adj_equation} that solves for the \refapi{adj_v
 \end{fortrancode}
 \end{minipage}
 \end{boxwithtitle}
+
+Destroys the equation \texttt{equation}.
+
+The return value is an error code that can be passed to \refapi{adj_chkierr}.
 
 \defapi{adj_storage_data}
 
