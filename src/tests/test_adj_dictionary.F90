@@ -24,6 +24,12 @@ subroutine test_adj_dictionary
   call adj_test_assert(ierr == ADJ_OK, "Should have found it")
   call adj_test_assert(trim(value) == "Martha", "Should be Martha")
 
+  ierr = adj_dict_set(dict, "Hello", "dlroW")
+  call adj_test_assert(ierr == ADJ_OK, "Should always work")
+  ierr = adj_dict_find(dict, "Hello", value)
+  call adj_test_assert(ierr == ADJ_OK, "Should have found it")
+  call adj_test_assert(trim(value) == "dlroW", "Should be World")
+
   ierr = adj_dict_find(dict, "Adios", value)
   call adj_test_assert(ierr == ADJ_ERR_DICT_FAILED, "No such key")
 
