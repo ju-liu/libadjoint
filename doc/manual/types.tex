@@ -77,6 +77,17 @@
 \end{minipage}
 \end{boxwithtitle}
 
+\begin{boxwithtitle}{Detailed argument list (\texttt{adj_create_variable})}
+\begin{description}
+\item[\texttt{name}]  
+\item[\texttt{timestep}] 
+\item[\texttt{iteration}] 
+\item[\texttt{auxiliary}] 
+\item[\texttt{var}] 
+\end{description}
+\end{boxwithtitle}
+
+
 
 \defapis{adj_variable_get_name}
 \begin{boxwithtitle}{\texttt{adj_variable_get_name}}
@@ -93,7 +104,8 @@
 \end{fortrancode}
 \end{minipage}
 \end{boxwithtitle}
-
+This function is used to query the \texttt{name} of an \texttt{adj_variable}.
+The function returns an error code that can be passed to \refapi{adj_chkierr}.
 
 \defapis{adj_variable_get_timestep}
 \begin{boxwithtitle}{\texttt{adj_variable_get_timestep}}
@@ -110,6 +122,8 @@
 \end{fortrancode}
 \end{minipage}
 \end{boxwithtitle}
+This function is used to query the \texttt{timestep} of an \texttt{adj_variable}.
+The function returns an error code that can be passed to \refapi{adj_chkierr}.
 
 
 \defapis{adj_variable_get_iteration}
@@ -127,6 +141,8 @@
 \end{fortrancode}
 \end{minipage}
 \end{boxwithtitle}
+This function is used to query the \texttt{iteration} of an \texttt{adj_variable}.
+The function returns an error code that can be passed to \refapi{adj_chkierr}.
 
 
 \defapis{adj_variable_set_auxiliary}
@@ -144,6 +160,10 @@
 \end{fortrancode}
 \end{minipage}
 \end{boxwithtitle}
+This function is used to mark an \texttt{adj_variable} as a \texttt{auxiliary} variable. 
+Auxiliary variables are variables for which no equation is solved, but are necessary for the evaluation of an operator.
+A typical example for an auxiliary variable is the computational mesh.
+The function returns an error code that can be passed to \refapi{adj_chkierr}.
 
 \defapi{adj_block}
 
