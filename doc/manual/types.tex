@@ -104,6 +104,7 @@ Helper functions are available to change the properties of a variable after init
 \end{fortrancode}
 \end{minipage}
 \end{boxwithtitle}
+
 This function is used to query the \texttt{name} of an \texttt{adj_variable}.
 The function returns an error code that can be passed to \refapi{adj_chkierr}.
 
@@ -122,6 +123,7 @@ The function returns an error code that can be passed to \refapi{adj_chkierr}.
 \end{fortrancode}
 \end{minipage}
 \end{boxwithtitle}
+
 This function is used to query the \texttt{timestep} of an \texttt{adj_variable}.
 The function returns an error code that can be passed to \refapi{adj_chkierr}.
 
@@ -141,6 +143,7 @@ The function returns an error code that can be passed to \refapi{adj_chkierr}.
 \end{fortrancode}
 \end{minipage}
 \end{boxwithtitle}
+
 This function is used to query the \texttt{iteration} of an \texttt{adj_variable}.
 The function returns an error code that can be passed to \refapi{adj_chkierr}.
 
@@ -160,6 +163,7 @@ The function returns an error code that can be passed to \refapi{adj_chkierr}.
 \end{fortrancode}
 \end{minipage}
 \end{boxwithtitle}
+
 This function is used to define the type of an \texttt{adj_variable}.
 \texttt{auxiliary} must be either \texttt{ADJ_NORMAL_VARIABLE} or \texttt{ADJ_AUXILIARY_VARIABLE}.
 The function returns an error code that can be passed to \refapi{adj_chkierr}.
@@ -184,6 +188,7 @@ The function returns an error code that can be passed to \refapi{adj_chkierr}.
 \end{fortrancode}
 \end{minipage}
 \end{boxwithtitle}
+
 This function creates an \texttt{adj_block} with the given \texttt{name}.
 If the block is nonlinear, the corresponding \refapi{adj_nonlinear_block} is passed as \texttt{nblock}. 
 Otherwise, a \texttt{NULL} pointer is to be passed in C and ignored in Fortran.
@@ -192,10 +197,12 @@ The resulting block is stored in \texttt{block}.
 The return value is an error code that can be passed to \refapi{adj_chkierr}.
 
 In addition, \texttt{adj_block} has properties that are not directly accessible during the initialisation:
+
 \begin{description}
   \item[hermitian] A flag determining if the block is hermitian of the operator is to be used. Default: \texttt{ADJ_FALSE}
   \item[coefficient] A scaling factor. Default: 1.0
 \end{description}
+
 Helper functions are available to change these values, see below. 
 
 
@@ -214,6 +221,7 @@ Helper functions are available to change these values, see below.
 \end{fortrancode}
 \end{minipage}
 \end{boxwithtitle}
+
 This function sets the scaling of a block to \texttt{coefficient}. 
 The return value is an error code that can be passed to \refapi{adj_chkierr}.
 
@@ -233,9 +241,9 @@ The return value is an error code that can be passed to \refapi{adj_chkierr}.
 \end{fortrancode}
 \end{minipage}
 \end{boxwithtitle}
+
 This function sets the hermitian flag of \texttt{block}. \texttt{hermitian} must be \texttt{ADJ_TRUE} or \texttt{ADJ_FALSE}.
 The return value is an error code that can be passed to \refapi{adj_chkierr}.
-
 
 \defapis{adj_destroy_block}
 \begin{boxwithtitle}{\texttt{adj_destroy_block}}
@@ -251,6 +259,10 @@ The return value is an error code that can be passed to \refapi{adj_chkierr}.
 \end{fortrancode}
 \end{minipage}
 \end{boxwithtitle}
+
+Destroys the block \texttt{block}.
+The return value is an error code that can be passed to \refapi{adj_chkierr}.
+
 
 \defapi{adj_nonlinear_block}
 
