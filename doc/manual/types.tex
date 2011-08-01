@@ -7,50 +7,479 @@
 
 \defapi{adj_adjointer}
 \defapis{adj_create_adjointer}
+\begin{boxwithtitle}{\texttt{adj_create_adjointer}}
+\begin{minipage}{\columnwidth}
+\begin{ccode}
+  int adj_create_adjointer(adj_adjointer* adjointer);
+\end{ccode}
+\begin{fortrancode}
+  function adj_create_adjointer(adjointer) result(ierr) 
+    type(adj_adjointer), intent(inout) :: adjointer
+    integer(kind=c_int) :: ierr
+  end function adj_create_adjointer
+\end{fortrancode}
+\end{minipage}
+\end{boxwithtitle}
 
-int adj_create_adjointer(adj_adjointer* adjointer);
 
 \defapis{adj_destroy_adjointer}
+\begin{boxwithtitle}{\texttt{adj_destroy_adjointer}}
+\begin{minipage}{\columnwidth}
+\begin{ccode}
+  int adj_destroy_adjointer(adj_adjointer* adjointer);
+\end{ccode}
+\begin{fortrancode}
+  function adj_destroy_adjointer(adjointer) result(ierr) 
+    type(adj_adjointer), intent(inout) :: adjointer
+    integer(kind=c_int) :: ierr
+  end function adj_destroy_adjointer
+\end{fortrancode}
+\end{minipage}
+\end{boxwithtitle}
 
-%int adj_destroy_adjointer(adj_adjointer* adjointer);
 
 \defapis{adj_deactivate_adjointer}
+\begin{boxwithtitle}{\texttt{adj_deactivate_adjointer}}
+\begin{minipage}{\columnwidth}
+\begin{ccode}
+  int adj_deactivate_adjointer(adj_adjointer* adjointer);
+\end{ccode}
+\begin{fortrancode}
+  function adj_deactivate_adjointer(adjointer) result(ierr) 
+    type(adj_adjointer), intent(inout) :: adjointer
+    integer(kind=c_int) :: ierr
+  end function adj_deactivate_adjointer
+\end{fortrancode}
+\end{minipage}
+\end{boxwithtitle}
 
-%int adj_deactivate_adjointer(adj_adjointer* adjointer);
+
 
 \defapi{adj_variable}
+
 \defapis{adj_create_variable}
+\begin{boxwithtitle}{\texttt{adj_create_variable}}
+\begin{minipage}{\columnwidth}
+\begin{ccode}
+  int adj_create_variable(char* name, int timestep, int iteration, int auxiliary, 
+                          adj_variable* var);
+\end{ccode}
+\begin{fortrancode}
+  function adj_create_variable(name, timestep, iteration, auxiliary, variable) 
+           result(ierr)
+    character(len=*), intent(in) :: name
+    integer, intent(in) :: timestep, iteration
+    logical, intent(in) :: auxiliary
+    type(adj_variable), intent(out) :: variable
+    integer :: ierr
+  end function adj_create_variable
+\end{fortrancode}
+\end{minipage}
+\end{boxwithtitle}
+
+
 \defapis{adj_variable_get_name}
+\begin{boxwithtitle}{\texttt{adj_variable_get_name}}
+\begin{minipage}{\columnwidth}
+\begin{ccode}
+  int adj_variable_get_name(adj_variable var, char** name);
+\end{ccode}
+\begin{fortrancode}
+  function adj_variable_get_name(variable, name) result(ierr)
+    type(adj_variable), intent(in) :: variable
+    character(len=*), intent(out) :: name
+    integer :: ierr
+  end function adj_variable_get_name
+\end{fortrancode}
+\end{minipage}
+\end{boxwithtitle}
+
+
 \defapis{adj_variable_get_timestep}
+\begin{boxwithtitle}{\texttt{adj_variable_get_timestep}}
+\begin{minipage}{\columnwidth}
+\begin{ccode}
+  int adj_variable_get_timestep(adj_variable var, int* timestep);
+\end{ccode}
+\begin{fortrancode}
+  function adj_variable_get_timestep(var, timestep) result(ierr)
+    type(adj_variable), intent(in), value :: var
+    integer(kind=c_int), intent(out) :: timestep
+    integer(kind=c_int) :: ierr
+  end function adj_variable_get_timestep
+\end{fortrancode}
+\end{minipage}
+\end{boxwithtitle}
+
+
 \defapis{adj_variable_get_iteration}
+\begin{boxwithtitle}{\texttt{adj_variable_get_iteration}}
+\begin{minipage}{\columnwidth}
+\begin{ccode}
+  int adj_variable_get_iteration(adj_variable var, int* iteration);
+\end{ccode}
+\begin{fortrancode}
+  function adj_variable_get_iteration(var, iteration) result(ierr) 
+    type(adj_variable), intent(in), value :: var
+    integer(kind=c_int), intent(out) :: iteration
+    integer(kind=c_int) :: ierr
+  end function adj_variable_get_iteration
+\end{fortrancode}
+\end{minipage}
+\end{boxwithtitle}
+
+
 \defapis{adj_variable_set_auxiliary}
+\begin{boxwithtitle}{\texttt{adj_variable_set_auxiliary}}
+\begin{minipage}{\columnwidth}
+\begin{ccode}
+  int adj_variable_set_auxiliary(adj_variable* var, int auxiliary);
+\end{ccode}
+\begin{fortrancode}
+  function adj_variable_set_auxiliary(var, auxiliary) result(ierr)
+    type(adj_variable), intent(inout) :: var
+    logical, intent(in) :: auxiliary
+    integer(kind=c_int) :: ierr
+  end function adj_variable_set_auxiliary
+\end{fortrancode}
+\end{minipage}
+\end{boxwithtitle}
 
 \defapi{adj_block}
+
 \defapis{adj_create_block}
+\begin{boxwithtitle}{\texttt{adj_create_block}}
+\begin{minipage}{\columnwidth}
+\begin{ccode}
+  int adj_create_block(char* name, adj_nonlinear_block* nblock, void* context, 
+                       adj_block* block);
+\end{ccode}
+\begin{fortrancode}
+  function adj_create_block(name, nblock, context, block) result(ierr)
+    character(len=*), intent(in) :: name
+    type(adj_nonlinear_block), intent(in), optional, target :: nblock
+    type(c_ptr), intent(in), optional :: context
+    type(adj_block), intent(inout) :: block
+    integer :: ierr
+  end function adj_create_block
+\end{fortrancode}
+\end{minipage}
+\end{boxwithtitle}
+
+
 \defapis{adj_block_set_coefficient}
+\begin{boxwithtitle}{\texttt{adj_block_set_coefficient}}
+\begin{minipage}{\columnwidth}
+\begin{ccode}
+  int adj_block_set_coefficient(adj_block* block, adj_scalar coefficient);
+\end{ccode}
+\begin{fortrancode}
+  function adj_nonlinear_block_set_coefficient(nblock, coefficient) result(ierr)
+    type(adj_nonlinear_block), intent(inout) :: nblock
+    adj_scalar_f, intent(in), value :: coefficient
+    integer(kind=c_int) :: ierr
+  end function adj_nonlinear_block_set_coefficient
+\end{fortrancode}
+\end{minipage}
+\end{boxwithtitle}
+
+
 \defapis{adj_block_set_hermitian}
+\begin{boxwithtitle}{\texttt{adj_block_set_hermitian}}
+\begin{minipage}{\columnwidth}
+\begin{ccode}
+  int adj_block_set_hermitian(adj_block* block, int hermitian);
+\end{ccode}
+\begin{fortrancode}
+  function adj_block_set_hermitian(block, hermitian) result(ierr)
+    type(adj_block), intent(inout) :: block
+    logical, intent(in) :: hermitian
+    integer(kind=c_int) :: ierr
+  end function adj_block_set_hermitian
+\end{fortrancode}
+\end{minipage}
+\end{boxwithtitle}
+
+
 \defapis{adj_destroy_block}
+\begin{boxwithtitle}{\texttt{adj_destroy_block}}
+\begin{minipage}{\columnwidth}
+\begin{ccode}
+  int adj_destroy_block(adj_block* block);
+\end{ccode}
+\begin{fortrancode}
+  function adj_destroy_block(block) result(ierr) 
+    type(adj_block), intent(inout) :: block
+    integer(kind=c_int) :: ierr
+  end function adj_destroy_block
+\end{fortrancode}
+\end{minipage}
+\end{boxwithtitle}
 
 \defapi{adj_nonlinear_block}
+
 \defapis{adj_create_nonlinear_block}
+\begin{boxwithtitle}{\texttt{adj_create_nonlinear_block}}
+\begin{minipage}{\columnwidth}
+\begin{ccode}
+  int adj_create_nonlinear_block(char* name, int ndepends, adj_variable* depends, 
+                                 void* context, adj_nonlinear_block* nblock);
+\end{ccode}
+\begin{fortrancode}
+  function adj_create_nonlinear_block(name, depends, coefficient, context, nblock) 
+           result(ierr)
+    character(len=*), intent(in) :: name
+    type(adj_variable), intent(in), dimension(:) :: depends
+    adj_scalar_f, intent(in), optional :: coefficient
+    type(c_ptr), intent(in), optional :: context
+    type(adj_nonlinear_block), intent(out) :: nblock
+    integer :: ierr
+  end function adj_create_nonlinear_block
+\end{fortrancode}
+\end{minipage}
+\end{boxwithtitle}
+
+
 \defapis{adj_nonlinear_block_set_coefficient}
+\begin{boxwithtitle}{\texttt{adj_nonlinear_block_set_coefficient}}
+\begin{minipage}{\columnwidth}
+\begin{ccode}
+  int adj_nonlinear_block_set_coefficient(adj_nonlinear_block* nblock, 
+                                          adj_scalar coefficient);
+\end{ccode}
+\begin{fortrancode}
+  function adj_nonlinear_block_set_coefficient(nblock, coefficient) result(ierr) 
+    type(adj_nonlinear_block), intent(inout) :: nblock
+    adj_scalar_f, intent(in), value :: coefficient
+    integer(kind=c_int) :: ierr
+  end function adj_nonlinear_block_set_coefficient
+\end{fortrancode}
+\end{minipage}
+\end{boxwithtitle}
+
+
 \defapis{adj_destroy_nonlinear_block}
+\begin{boxwithtitle}{\texttt{adj_destroy_nonlinear_block}}
+\begin{minipage}{\columnwidth}
+\begin{ccode}
+  int adj_destroy_nonlinear_block(adj_nonlinear_block* nblock);
+\end{ccode}
+\begin{fortrancode}
+  function adj_destroy_nonlinear_block(nblock) result(ierr)
+    type(adj_nonlinear_block), intent(inout) :: nblock
+    integer(kind=c_int) :: ierr
+  end function adj_destroy_nonlinear_block
+\end{fortrancode}
+\end{minipage}
+\end{boxwithtitle}
 
 \defapi{adj_equation}
+
 \defapis{adj_create_equation}
+\begin{boxwithtitle}{\texttt{adj_create_equation}}
+\begin{minipage}{\columnwidth}
+\begin{ccode}
+  int adj_create_equation(adj_variable var, int nblocks, adj_block* blocks, 
+                          adj_variable* targets, adj_equation* equation);
+\end{ccode}
+\begin{fortrancode}
+  function adj_create_equation(variable, blocks, targets, equation) result(ierr)
+    type(adj_variable), intent(in), value :: variable
+    type(adj_block), dimension(:), intent(in) :: blocks
+    type(adj_variable), dimension(:), intent(in) :: targets
+    type(adj_equation), intent(inout) :: equation
+    integer :: ierr
+  end function adj_create_equation
+\end{fortrancode}
+\end{minipage}
+\end{boxwithtitle}
+
+
 \defapis{adj_equation_set_rhs_dependencies}
+\begin{boxwithtitle}{\texttt{adj_equation_set_rhs_dependencies}}
+\begin{minipage}{\columnwidth}
+\begin{ccode}
+  int adj_equation_set_rhs_dependencies(adj_equation* equation, int nrhsdeps, 
+                                        adj_variable* rhsdeps, void* context);
+\end{ccode}
+\begin{fortrancode}
+  function adj_equation_set_rhs_dependencies(equation, rhsdeps, context) result(ierr)
+    type(adj_equation), intent(inout) :: equation
+    type(adj_variable), dimension(:), intent(in), optional :: rhsdeps
+    type(c_ptr), intent(in), value, optional :: context
+    integer(kind=c_int) :: ierr
+  end function adj_equation_set_rhs_dependencies
+\end{fortrancode}
+\end{minipage}
+\end{boxwithtitle}
+
+
 \defapis{adj_register_equation}
+\begin{boxwithtitle}{\texttt{adj_register_equation}}
+\begin{minipage}{\columnwidth}
+\begin{ccode}
+  int adj_register_equation(adj_adjointer* adjointer, adj_equation equation);
+\end{ccode}
+\begin{fortrancode}
+  function adj_register_equation(adjointer, equation) result(ierr)
+    type(adj_adjointer), intent(inout) :: adjointer
+    type(adj_equation), intent(in), value :: equation
+    integer(kind=c_int) :: ierr
+  end function adj_register_equation
+\end{fortrancode}
+\end{minipage}
+\end{boxwithtitle}
+
+
 \defapis{adj_destroy_equation}
+\begin{boxwithtitle}{\texttt{adj_destroy_equation}}
+\begin{minipage}{\columnwidth}
+\begin{ccode}
+  int adj_destroy_adjointer(adj_adjointer* adjointer);
+\end{ccode}
+\begin{fortrancode}
+  function adj_destroy_equation(equation) result(ierr)
+    type(adj_equation), intent(inout) :: equation
+    integer(kind=c_int) :: ierr
+  end function adj_destroy_equation
+\end{fortrancode}
+\end{minipage}
+\end{boxwithtitle}
 
 \defapi{adj_storage_data}
+
 \defapis{adj_storage_memory_copy}
+\begin{boxwithtitle}{\texttt{adj_storage_memory_copy}}
+\begin{minipage}{\columnwidth}
+\begin{ccode}
+  int adj_storage_memory_copy(adj_vector value, adj_storage_data* data);
+\end{ccode}
+\begin{fortrancode}
+  function adj_storage_memory_copy(val, mem) result(ierr)
+    type(adj_vector), intent(in), value :: val
+    type(adj_storage_data), intent(inout) :: mem
+    integer(kind=c_int) :: ierr
+  end function adj_storage_memory_copy
+\end{fortrancode}
+\end{minipage}
+\end{boxwithtitle}
+
+
 \defapis{adj_storage_memory_incref}
+\begin{boxwithtitle}{\texttt{adj_storage_memory_incref}}
+\begin{minipage}{\columnwidth}
+\begin{ccode}
+  int adj_storage_memory_incref(adj_vector value, adj_storage_data* data);
+\end{ccode}
+\begin{fortrancode}
+  function adj_storage_memory_incref(val, mem) result(ierr)
+    type(adj_vector), intent(in), value :: val
+    type(adj_storage_data), intent(inout) :: mem
+    integer(kind=c_int) :: ierr
+  end function adj_storage_memory_incref
+\end{fortrancode}
+\end{minipage}
+\end{boxwithtitle}
+
+
 \defapis{adj_record_variable}
+\begin{boxwithtitle}{\texttt{adj_record_variable}}
+\begin{minipage}{\columnwidth}
+\begin{ccode}
+  int adj_record_variable(adj_adjointer* adjointer, adj_variable var, 
+                          adj_storage_data storage);
+\end{ccode}
+\begin{fortrancode}
+  function adj_record_variable(adjointer, variable, storage) result(ierr) 
+    type(adj_adjointer), intent(inout) :: adjointer
+    type(adj_variable), intent(in), value :: variable
+    type(adj_storage_data), intent(in), value :: storage
+    integer(kind=c_int) :: ierr
+  end function adj_record_variable
+\end{fortrancode}
+\end{minipage}
+\end{boxwithtitle}
 
 \defapi{adj_dict}
+
 \defapis{adj_dict_init}
+\begin{boxwithtitle}{\texttt{adj_dict_init}}
+\begin{minipage}{\columnwidth}
+\begin{ccode}
+  int adj_dict_init(adj_dictionary* dict);
+\end{ccode}
+\begin{fortrancode}
+  function adj_dict_init(dict) result(ierr)
+    type(adj_dictionary), intent(inout) :: dict
+    integer(kind=c_int) :: ierr
+  end function adj_dict_init
+\end{fortrancode}
+\end{minipage}
+\end{boxwithtitle}
+
+
 \defapis{adj_dict_set}
+\begin{boxwithtitle}{\texttt{adj_dict_set}}
+\begin{minipage}{\columnwidth}
+\begin{ccode}
+  int adj_dict_set(adj_dictionary* dict, char* key, char* value);
+\end{ccode}
+\begin{fortrancode}
+  function adj_dict_set(dict, key, value) result(ierr)
+    type(adj_dictionary), intent(inout) :: dict
+    character(len=*), intent(in) :: key, value
+    integer :: ierr
+  end function adj_dict_set
+\end{fortrancode}
+\end{minipage}
+\end{boxwithtitle}
+
+
 \defapis{adj_dict_find}
+\begin{boxwithtitle}{\texttt{adj_dict_find}}
+\begin{minipage}{\columnwidth}
+\begin{ccode}
+  int adj_dict_find(adj_dictionary* dict, char* key, char** value);
+\end{ccode}
+\begin{fortrancode}
+  function adj_dict_find(dict, key, value) result(ierr)
+    type(adj_dictionary), intent(inout) :: dict
+    character(len=*), intent(in) :: key
+    character(len=*), intent(out) :: value
+    integer :: ierr
+  end function adj_dict_find
+\end{fortrancode}
+\end{minipage}
+\end{boxwithtitle}
+
+
 \defapis{adj_dict_print}
+\begin{boxwithtitle}{\texttt{adj_dict_print}}
+\begin{minipage}{\columnwidth}
+\begin{ccode}
+  void adj_dict_print(adj_dictionary* dict);
+\end{ccode}
+\begin{fortrancode}
+  subroutine adj_dict_print(dict)
+    type(adj_dictionary), intent(inout) :: dict
+  end subroutine adj_dict_print
+\end{fortrancode}
+\end{minipage}
+\end{boxwithtitle}
+
+
 \defapis{adj_dict_destroy}
+\begin{boxwithtitle}{\texttt{adj_dict_destroy}}
+\begin{minipage}{\columnwidth}
+\begin{ccode}
+  int adj_dict_destroy(adj_dictionary* dict);
+\end{ccode}
+\begin{fortrancode}
+  function adj_dict_destroy(dict) result(ierr)
+    type(adj_dictionary), intent(inout) :: dict
+    integer(kind=c_int) :: ierr
+  end function adj_dict_destroy
+\end{fortrancode}
+\end{minipage}
+\end{boxwithtitle}
 
