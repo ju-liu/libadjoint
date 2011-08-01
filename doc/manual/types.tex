@@ -22,7 +22,7 @@
 \end{boxwithtitle}
 
 This function creates an \refapi{adj_adjointer} object. 
-It stores all details needed for the assembly of the adjoint equations, in particular the annotation of the forward model and the associated callbacks routines.
+It stores the required details for the assembly of the adjoint equations, in particular the annotation of the forward model and the associated callbacks routines.
 
 The function returns an error code that can be passed to \refapi{adj_chkierr}.
 
@@ -60,8 +60,8 @@ The function returns an error code that can be passed to \refapi{adj_chkierr}.
 \end{minipage}
 \end{boxwithtitle}
 
-Deactivates the supplied \refapi{adj_adjointer}.
-In particular, the model annotation, the callback registration and the recording functions are replaced by dummy functions within \texttt{libadjoint} that always return \refapi{ADJ_OK}.
+This function deactivates the supplied \refapi{adj_adjointer}.
+In particular, the model annotation, the callback registration and the recording functions are replaced by dummy routines within \texttt{libadjoint} that always return \refapi{ADJ_OK}.
 
 This functionality is primarily used to deactivate the adjoint features for cases where only the forward model result is of interest.
 
@@ -89,13 +89,13 @@ The function returns an error code that can be passed to \refapi{adj_chkierr}.
 \end{minipage}
 \end{boxwithtitle}
 
-This function creates an \texttt{adj_variable} with the given \texttt{name} (used to identify the variable), \texttt{timestep} and \texttt{iteration}.
+This function creates an \texttt{adj_variable} with name \texttt{name}, timestep \texttt{timestep} and iteration \texttt{iteration}.
 The \texttt{auxiliary} option defines the type of the variable and must be either \texttt{ADJ_NORMAL_VARIABLE} or \texttt{ADJ_AUXILIARY_VARIABLE}.
 The function returns an error code that can be passed to \refapi{adj_chkierr}.
 
 Auxiliary variables are variables for which no equation is solved, but are necessary for the evaluation of an operator.
-A typical example for an auxiliary variable is the computational mesh, which is needed for the assembly of the discretised operators but for which no equation is solved during the simulation.
-An alternative way of passing objects to the callback functions is to use the \texttt{context} pointer in \refapi{adj_create_block} and \refapi{adj_create_nonlinear_block}.
+A typical example for an auxiliary variable is the computational mesh, which is needed for the assembly of the discrete operator but for which no equation is solved during the simulation.
+An alternative way of passing data objects to callback functions is by using the \texttt{context} pointer in \refapi{adj_create_block} and \refapi{adj_create_nonlinear_block}.
 
 Helper functions are available to change the properties of a variable after initialisation, see below. 
 
@@ -117,7 +117,7 @@ Helper functions are available to change the properties of a variable after init
 \end{minipage}
 \end{boxwithtitle}
 
-This function is used to query the \texttt{name} of an \texttt{adj_variable}.
+This function queries the \texttt{name} of an \texttt{adj_variable}.
 The function returns an error code that can be passed to \refapi{adj_chkierr}.
 
 \defapis{adj_variable_get_timestep}
@@ -136,7 +136,7 @@ The function returns an error code that can be passed to \refapi{adj_chkierr}.
 \end{minipage}
 \end{boxwithtitle}
 
-This function is used to query the \texttt{timestep} of an \texttt{adj_variable}.
+This function queries the \texttt{timestep} of an \texttt{adj_variable}.
 The function returns an error code that can be passed to \refapi{adj_chkierr}.
 
 
@@ -156,7 +156,7 @@ The function returns an error code that can be passed to \refapi{adj_chkierr}.
 \end{minipage}
 \end{boxwithtitle}
 
-This function is used to query the \texttt{iteration} of an \texttt{adj_variable}.
+This function queries the \texttt{iteration} of an \texttt{adj_variable}.
 The function returns an error code that can be passed to \refapi{adj_chkierr}.
 
 
@@ -201,11 +201,11 @@ The function returns an error code that can be passed to \refapi{adj_chkierr}.
 \end{minipage}
 \end{boxwithtitle}
 
-This function creates an \texttt{adj_block} with the given \texttt{name}.
+This function creates an \texttt{adj_block} with the name \texttt{name}.
 If the block is nonlinear, the corresponding \refapi{adj_nonlinear_block} is passed as \texttt{nblock}. 
 Otherwise, a \texttt{NULL} pointer is to be passed in C and the argument can be ignored in Fortran.
-The void pointer \texttt{context} allows the developer to pass arbitrary data to the block's callbacks (\refapi{ADJ_BLOCK_ACTION_CB}, \refapi{ADJ_BLOCK_ASSEMBLY_CB}) of this operator. 
-The resulting block is stored in \texttt{block}. 
+The void pointer \texttt{context} allows the developer to pass arbitrary data to the block's callbacks (\refapi{ADJ_BLOCK_ACTION_CB}, \refapi{ADJ_BLOCK_ASSEMBLY_CB}). 
+The result is stored in \texttt{block}. 
 The return value is an error code that can be passed to \refapi{adj_chkierr}.
 
 In addition, \texttt{adj_block} has properties that are not directly accessible during the initialisation:
@@ -234,7 +234,7 @@ Helper functions are available to change these values, see below.
 \end{minipage}
 \end{boxwithtitle}
 
-This function sets the scaling of a block to \texttt{coefficient}. 
+This function sets the scaling factor of the supplied block to \texttt{coefficient}. 
 The return value is an error code that can be passed to \refapi{adj_chkierr}.
 
 
@@ -254,7 +254,7 @@ The return value is an error code that can be passed to \refapi{adj_chkierr}.
 \end{minipage}
 \end{boxwithtitle}
 
-This function sets the hermitian flag of \texttt{block}. \texttt{hermitian} must be \texttt{ADJ_TRUE} or \texttt{ADJ_FALSE}.
+This function sets the hermitian flag of the supplied \texttt{block}. \texttt{hermitian} must be \texttt{ADJ_TRUE} or \texttt{ADJ_FALSE}.
 The return value is an error code that can be passed to \refapi{adj_chkierr}.
 
 \defapis{adj_destroy_block}
@@ -298,10 +298,11 @@ The return value is an error code that can be passed to \refapi{adj_chkierr}.
 \end{fortrancode}
 \end{minipage}
 \end{boxwithtitle}
-This function creates an \texttt{adj_nonlinear_block} with the given \texttt{name}.
-The dependency variables are passed with \texttt{depends} (and \texttt{ndepends} in C which specifies the length of the array).
+
+This function creates an \texttt{adj_nonlinear_block} with name \texttt{name}.
+The dependency variables \texttt{depends} are passed as an array of \texttt{adj_variable}s of length \texttt{ndepends}.
 At least one dependency must be given.
-The void pointer \texttt{context} allows the developer to pass arbitrary data to the nonlinear block's callbacks (\refapi{ADJ_NBLOCK_DERIVATIVE_ACTION_CB}, \refapi{ADJ_NBLOCK_ACTION_CB}) of this operator.
+The void pointer \texttt{context} allows the developer to pass arbitrary data to the nonlinear block's callbacks (\refapi{ADJ_NBLOCK_DERIVATIVE_ACTION_CB}, \refapi{ADJ_NBLOCK_ACTION_CB}). 
 
 The resulting nonlinear block is stored in \texttt{nblock}. 
 The return value is an error code that can be passed to \refapi{adj_chkierr}.
@@ -326,7 +327,8 @@ Its default value is set to 1.0, but can be changed using \refapi{adj_nonlinear_
 \end{fortrancode}
 \end{minipage}
 \end{boxwithtitle}
-This function sets the scaling of a nonlinear block to \texttt{coefficient}. 
+
+This function sets the scaling factor of the supplied nonlinear block to \texttt{coefficient}. 
 The return value is an error code that can be passed to \refapi{adj_chkierr}.
 
 
@@ -344,6 +346,7 @@ The return value is an error code that can be passed to \refapi{adj_chkierr}.
 \end{fortrancode}
 \end{minipage}
 \end{boxwithtitle}
+
 Destroys the nonlinear block \texttt{nblock}.
 The return value is an error code that can be passed to \refapi{adj_chkierr}.
 
@@ -367,13 +370,14 @@ The return value is an error code that can be passed to \refapi{adj_chkierr}.
 \end{fortrancode}
 \end{minipage}
 \end{boxwithtitle}
+
 This function creates an \refapi{adj_equation} that solves for \texttt{var}.
 
-\texttt{blocks} and \texttt{targets} are arrays of length \texttt{nblocks} that describe the equation:
+The arguments \texttt{blocks} and \texttt{targets} are arrays of length \texttt{nblocks} that describe the equation:
 The first block of the blocks array is to be multiplied with the first variable in the targets array, 
 the second pairs with the second, and so on.
+Hence, the variable to be solved for, \texttt{var}, must exist in \texttt{targets}. If that is not the case an \refapi{ADJ_ERR_INVALID_INPUTS} is returned.
 The right hand side of the equation is neglected since it irrelevant for the adjoint equation. 
-Hence, the variable to be solvedi for, \texttt{var}, must exist in \texttt{targets}. If that is not the case an \refapi{ADJ_ERR_INVALID_INPUTS} is returned.
  
 
 The return value is an error code that can be passed to \refapi{adj_chkierr}.
@@ -399,8 +403,11 @@ The return value is an error code that can be passed to \refapi{adj_chkierr}.
 
 Sets the dependency variables and the context for the right hand side evaluation of \texttt{equation}. 
 
+The array \texttt{rhsdeps} is an array of length \texttt{nrhsdeps} containing the dependency variables.
+The void pointer \texttt{context} allows the developer to pass arbitrary data to the forward source callbacks. 
+
 This information will passed to the source term callback function, if a source term is defined (see \refapi{adj_register_forward_source_callback}).
-Otherwise this function can be ignored.
+If the right hand side is not needed or the source term has no dependencies, this function can be ignored.
 
 The return value is an error code that can be passed to \refapi{adj_chkierr}.
 
@@ -420,7 +427,7 @@ The return value is an error code that can be passed to \refapi{adj_chkierr}.
 \end{minipage}
 \end{boxwithtitle}
 
-Adds the \texttt{equation} to the \texttt{adjointer}.
+Adds the equation \texttt{equation} to the \texttt{adjointer}.
 
 The return value is an error code that can be passed to \refapi{adj_chkierr}.
 
@@ -450,7 +457,7 @@ The return value is an error code that can be passed to \refapi{adj_chkierr}.
 \begin{boxwithtitle}{\texttt{adj_storage_memory_copy}}
 \begin{minipage}{\columnwidth}
 \begin{ccode}
-  int adj_storage_memory_copy(adj_vector value, adj_storage_data* data);
+  int adj_storage_memory_copy(adj_vector val, adj_storage_data* data);
 \end{ccode}
 \begin{fortrancode}
   function adj_storage_memory_copy(val, mem) result(ierr)
@@ -461,10 +468,12 @@ The return value is an error code that can be passed to \refapi{adj_chkierr}.
 \end{fortrancode}
 \end{minipage}
 \end{boxwithtitle}
-Creates a \refapi{adj_storage} object that contains the supplied \refapi{adj_vector} \texttt{val}.
+
+Creates an \refapi{adj_storage} object that contains the supplied \refapi{adj_vector} \texttt{val}.
 
 When the resulting \refapi{adj_storage} is used to record a variable (see \refapi{adj_record_variable}), 
 a copy of \texttt{val} is created using the data callbacks \refapi{vec_duplicate} and \refapi{vec_axpy}.
+Therefore, \texttt{val} can be deallocated in the model after the variable has been recorded. 
 
 The return value is an error code that can be passed to \refapi{adj_chkierr}.
 
@@ -472,7 +481,7 @@ The return value is an error code that can be passed to \refapi{adj_chkierr}.
 \begin{boxwithtitle}{\texttt{adj_storage_memory_incref}}
 \begin{minipage}{\columnwidth}
 \begin{ccode}
-  int adj_storage_memory_incref(adj_vector value, adj_storage_data* data);
+  int adj_storage_memory_incref(adj_vector val, adj_storage_data* data);
 \end{ccode}
 \begin{fortrancode}
   function adj_storage_memory_incref(val, mem) result(ierr)
@@ -483,11 +492,13 @@ The return value is an error code that can be passed to \refapi{adj_chkierr}.
 \end{fortrancode}
 \end{minipage}
 \end{boxwithtitle}
-Creates a \refapi{adj_storage} object that contains the supplied \refapi{adj_vector} \texttt{val}.
+
+Creates an \refapi{adj_storage} object that contains the supplied \refapi{adj_vector} \texttt{val}.
 
 When the resulting \refapi{adj_storage} is used to record a variable (see \refapi{adj_record_variable}), 
-then only the pointer to \texttt{var} is recorded and the model developer has to ensure that the underlying data remains valid 
-(for example with reference counting).
+then only the data pointer to \texttt{var} is recorded.
+Therefore the model developer has to ensure that the underlying data remains valid.
+This strategy is usually used in combination with reference counting.
 
 The return value is an error code that can be passed to \refapi{adj_chkierr}.
 
@@ -508,6 +519,7 @@ The return value is an error code that can be passed to \refapi{adj_chkierr}.
 \end{fortrancode}
 \end{minipage}
 \end{boxwithtitle}
+
 Records the variable \texttt{var} in \texttt{adjointer} with the data and storage strategy defined in \texttt{storage}.
 
 The return value is an error code that can be passed to \refapi{adj_chkierr}.
@@ -532,7 +544,8 @@ Why is it public in libadjoint and how could it be used for the model developer?
 \end{fortrancode}
 \end{minipage}
 \end{boxwithtitle}
-Creates a new dictionary \texttt{dict}.
+
+Creates a dictionary \texttt{dict}.
 
 The return value is an error code that can be passed to \refapi{adj_chkierr}.
 
