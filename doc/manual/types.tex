@@ -21,6 +21,10 @@
 \end{minipage}
 \end{boxwithtitle}
 
+This function creates an \refapi{adj_adjointer} object. 
+It stores all details needed for the assembly of the adjoint equations, in particular the annotation of the forward model and the associated callbacks routines.
+
+The function returns an error code that can be passed to \refapi{adj_chkierr}.
 
 \defapis{adj_destroy_adjointer}
 \begin{boxwithtitle}{\texttt{adj_destroy_adjointer}}
@@ -37,6 +41,9 @@
 \end{minipage}
 \end{boxwithtitle}
 
+This function destroys the supplied \refapi{adj_adjointer} object.
+
+The function returns an error code that can be passed to \refapi{adj_chkierr}.
 
 \defapis{adj_deactivate_adjointer}
 \begin{boxwithtitle}{\texttt{adj_deactivate_adjointer}}
@@ -53,7 +60,12 @@
 \end{minipage}
 \end{boxwithtitle}
 
+Deactivates the supplied \refapi{adj_adjointer}.
+In particular, the model annotation, the callback registration and the recording functions are replaced by dummy functions within \texttt{libadjoint} that always return \refapi{ADJ_OK}.
 
+This functionality is primarily used to deactivate the adjoint features for cases where only the forward model result is of interest.
+
+The function returns an error code that can be passed to \refapi{adj_chkierr}.
 
 \defapi{adj_variable}
 
