@@ -219,6 +219,40 @@ int adj_register_equation(adj_adjointer* adjointer, adj_equation equation)
     }
   }
 
+  if (equation.variable.auxiliary)
+  {
+    char buf[ADJ_NAME_LEN];
+    adj_variable_str(equation.variable, buf, ADJ_NAME_LEN);
+    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Cannot register an equation for an auxiliary variable %s.", buf);
+  }
+
+  /* check that any targets that aren't auxiliary and aren't the subject of the current equation
+     have equations registered for them (i.e., the system is lower-triangular) */
+  for (i = 0; i < equation.nblocks; i++)
+  {
+    if (!equation.targets[i].auxiliary && !adj_variable_equal(&equation.targets[i], &equation.variable, 1))
+    {
+      adj_variable_data* hash_ptr;
+      int ierr;
+      ierr = adj_find_variable_data(&adjointer->varhash, &equation.targets[i], &hash_ptr);
+      if (ierr == ADJ_ERR_HASH_FAILED)
+      {
+        char buf[ADJ_NAME_LEN];
+        adj_variable_str(equation.targets[i], buf, ADJ_NAME_LEN);
+        snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Have %s as a target in an equation, but have never seen that variable before.", buf);
+        return ierr;
+      }
+
+      if (hash_ptr->equation < 0)
+      {
+        char buf[ADJ_NAME_LEN];
+        adj_variable_str(equation.targets[i], buf, ADJ_NAME_LEN);
+        snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Have %s as a target in an equation, but that variable has not been solved for previously.", buf);
+        return ADJ_ERR_INVALID_INPUTS;
+      }
+    }
+  }
+
   /* OK. We're good to go. */
 
   /* Let's add it to the hash table. */

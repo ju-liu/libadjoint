@@ -551,74 +551,7 @@ here are the same as those which were registered during the annotation.
 \end{boxwithtitle}
 
 When necessary: 
-This callback is used to assemble the forward equation, e.g. when the annotated model is compared to the original run, see \autoref{sec:compare}.
-
-\section{Functional evaluation callbacks}
-\defapis{adj_register_functional_callback}
-
-\begin{boxwithtitle}{\texttt{adj_register_functional_callback}}
-\begin{minipage}{\columnwidth}
-\begin{ccode}
-  int adj_register_functional_callback(adj_adjointer* adjointer, char* name, 
-                             void (*fn)(adj_adjointer* adjointer, int timestep, 
-                                        int ndepends, adj_variable* variables, 
-                                        adj_vector* dependencies, char* name, 
-                                        adj_scalar* output));
-\end{ccode}
-\begin{fortrancode}
-  function adj_register_functional_callback(adjointer, name, fnptr) result(ierr)
-    type(adj_adjointer), intent(inout) :: adjointer
-    character(len=*), intent(in) :: name
-    type(c_funptr), intent(in) :: fnptr
-    integer :: ierr
-\end{fortrancode}
-\end{minipage}
-\end{boxwithtitle}
-This function registers a given functional callback with name \texttt{name} so that libadjoint can use
-it when necessary. 
-If an functional callback has not been registered, and libadjoint needs it to perform some task that the model developer has
-requested, the function will return an \refapi{ADJ_ERR_NEED_CALLBACK} error.
-
-The supplied function callback computes the functional value at \texttt{timestep} of the functional with name \texttt{name}.
-Its interface has to conform:
-
-\begin{boxwithtitle}{Function interface for \texttt{adj_register_functional_callback}}
-\begin{minipage}{\columnwidth}
-\begin{ccode}
-  void functional(adj_adjointer* adjointer, int timestep, 
-                           int ndepends, adj_variable* variables, 
-                           adj_vector* dependencies, char* name, 
-                           adj_scalar* output);
-\end{ccode}
-\begin{fortrancode}
-  subroutine functional(adjointer, timestep, ndepends, variables, dependencies, 
-                        name, output) 
-    type(adj_adjointer), intent(in) :: adjointer
-    integer(kind=c_int), intent(in), value :: timestep
-    integer(kind=c_int), intent(in), value :: ndepends
-    type(adj_variable), dimension(ndepends), intent(in) :: variables 
-    type(adj_vector), dimension(ndepends), intent(in) :: dependencies
-    character(kind=c_char), dimension(ADJ_NAME_LEN), intent(in) :: name
-    adj_scalar_f, intent(out) :: output
-  end subroutine functional
-\end{fortrancode}
-\end{minipage}
-\end{boxwithtitle}
-
-\begin{boxwithtitle}{Detailed argument list (\texttt{functional})}
-\begin{description}
-\item[\texttt{adjointer}] The associated \refapi{adj_adjointer}.
-\item[\texttt{timestep}] The timestep at which the functional is to be evaluated. The start and end time of this timestep can be obtained with \texttt{adj_timestep_get_times}.
-\item[\texttt{ndepends}] The number of variables that this functional depends on.
-\item[\texttt{variables}] An array of \refapi{adj_variable}s indicating which dependencies are being supplied to this routine. The length of the
-array is given by \texttt{ndepends}. The first entry of the \texttt{variables} array
-tells the model developer what the first entry of the \texttt{dependencies} is, the second pairs with the second, and so on.
-\item[\texttt{dependencies}] An array of \refapi{adj_vector}s containing the values of the dependencies of this functional. The dependencies supplied
-here are the same as those which were registered during the annotation.
-\item[\texttt{name}] The name of the functional to be evaluated.
-\item[\texttt{output}] This is an \refapi{adj_vector} which is to contain the functional value. 
-\end{description}
-\end{boxwithtitle}
+This callback is used to assemble the forward equation, e.g. when the annotated model is compared to the original run, see \autoref{sec:compare} and \refapi{adj_get_forward_equation}.
 
 \defapis{adj_register_functional_derivative_callback}
 
@@ -688,3 +621,79 @@ here are the same as those which were registered during the annotation.
 \item[\texttt{output}] This is an \refapi{adj_vector} which is to contain the derivative of the functional with respect to \texttt{derivative}. 
 \end{description}
 \end{boxwithtitle}
+
+When necessary: 
+This callback is necessary to assemble the adjoint equation; see \refapi{adj_get_adjoint_equation}.
+
+\section{Functional evaluation callbacks}
+\defapis{adj_register_functional_callback}
+
+\begin{boxwithtitle}{\texttt{adj_register_functional_callback}}
+\begin{minipage}{\columnwidth}
+\begin{ccode}
+  int adj_register_functional_callback(adj_adjointer* adjointer, char* name, 
+                             void (*fn)(adj_adjointer* adjointer, int timestep, 
+                                        int ndepends, adj_variable* variables, 
+                                        adj_vector* dependencies, char* name, 
+                                        adj_scalar* output));
+\end{ccode}
+\begin{fortrancode}
+  function adj_register_functional_callback(adjointer, name, fnptr) result(ierr)
+    type(adj_adjointer), intent(inout) :: adjointer
+    character(len=*), intent(in) :: name
+    type(c_funptr), intent(in) :: fnptr
+    integer :: ierr
+\end{fortrancode}
+\end{minipage}
+\end{boxwithtitle}
+This function registers a given functional callback with name \texttt{name} so that libadjoint can evaluate the functional,
+if the model developer desires it.
+If an functional callback has not been registered, and the model developer requests the value of a functional with
+\refapi{adj_evaluate_functional},
+\libadjoint will return an \refapi{ADJ_ERR_NEED_CALLBACK} error.
+
+The supplied function callback computes the functional value at \texttt{timestep} of the functional with name \texttt{name}.
+Its interface has to conform:
+
+\begin{boxwithtitle}{Function interface for \texttt{adj_register_functional_callback}}
+\begin{minipage}{\columnwidth}
+\begin{ccode}
+  void functional(adj_adjointer* adjointer, int timestep, 
+                           int ndepends, adj_variable* variables, 
+                           adj_vector* dependencies, char* name, 
+                           adj_scalar* output);
+\end{ccode}
+\begin{fortrancode}
+  subroutine functional(adjointer, timestep, ndepends, variables, dependencies, 
+                        name, output) 
+    type(adj_adjointer), intent(in) :: adjointer
+    integer(kind=c_int), intent(in), value :: timestep
+    integer(kind=c_int), intent(in), value :: ndepends
+    type(adj_variable), dimension(ndepends), intent(in) :: variables 
+    type(adj_vector), dimension(ndepends), intent(in) :: dependencies
+    character(kind=c_char), dimension(ADJ_NAME_LEN), intent(in) :: name
+    adj_scalar_f, intent(out) :: output
+  end subroutine functional
+\end{fortrancode}
+\end{minipage}
+\end{boxwithtitle}
+
+\begin{boxwithtitle}{Detailed argument list (\texttt{functional})}
+\begin{description}
+\item[\texttt{adjointer}] The associated \refapi{adj_adjointer}.
+\item[\texttt{timestep}] The timestep at which the functional is to be evaluated. The start and end time of this timestep can be obtained with \texttt{adj_timestep_get_times}.
+\item[\texttt{ndepends}] The number of variables that this functional depends on.
+\item[\texttt{variables}] An array of \refapi{adj_variable}s indicating which dependencies are being supplied to this routine. The length of the
+array is given by \texttt{ndepends}. The first entry of the \texttt{variables} array
+tells the model developer what the first entry of the \texttt{dependencies} is, the second pairs with the second, and so on.
+\item[\texttt{dependencies}] An array of \refapi{adj_vector}s containing the values of the dependencies of this functional. The dependencies supplied
+here are the same as those which were registered during the annotation.
+\item[\texttt{name}] The name of the functional to be evaluated.
+\item[\texttt{output}] This is an \refapi{adj_vector} which is to contain the functional value. 
+\end{description}
+\end{boxwithtitle}
+
+When necessary: supplying such a callback is optional. If the model developer supplies it, then the
+model developer can request the functional value with \refapi{adj_evaluate_functional}. The advantage
+of this approach is that \libadjoint will supply the dependencies of the functional to the evaluation
+code, so that the model developer does not have to.
