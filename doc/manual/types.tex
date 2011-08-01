@@ -449,7 +449,12 @@ The return value is an error code that can be passed to \refapi{adj_chkierr}.
 \end{fortrancode}
 \end{minipage}
 \end{boxwithtitle}
+Creates a \refapi{adj_storage} object that contains the supplied \refapi{adj_vector} \texttt{val}.
 
+When the resulting \refapi{adj_storage} is used to record a variable (see \refapi{adj_record_variable}), 
+a copy of \texttt{val} is created using the data callbacks \refapi{vec_duplicate} and \refapi{vec_axpy}.
+
+The return value is an error code that can be passed to \refapi{adj_chkierr}.
 
 \defapis{adj_storage_memory_incref}
 \begin{boxwithtitle}{\texttt{adj_storage_memory_incref}}
@@ -466,7 +471,13 @@ The return value is an error code that can be passed to \refapi{adj_chkierr}.
 \end{fortrancode}
 \end{minipage}
 \end{boxwithtitle}
+Creates a \refapi{adj_storage} object that contains the supplied \refapi{adj_vector} \texttt{val}.
 
+When the resulting \refapi{adj_storage} is used to record a variable (see \refapi{adj_record_variable}), 
+then only the pointer to \texttt{var} is recorded and the model developer has to ensure that the underlying data remains valid 
+(for example with reference counting).
+
+The return value is an error code that can be passed to \refapi{adj_chkierr}.
 
 \defapis{adj_record_variable}
 \begin{boxwithtitle}{\texttt{adj_record_variable}}
@@ -485,6 +496,9 @@ The return value is an error code that can be passed to \refapi{adj_chkierr}.
 \end{fortrancode}
 \end{minipage}
 \end{boxwithtitle}
+Records the variable \texttt{var} in \texttt{adjointer} with the data and storage strategy defined in \texttt{storage}.
+
+The return value is an error code that can be passed to \refapi{adj_chkierr}.
 
 \defapi{adj_dict}
 
