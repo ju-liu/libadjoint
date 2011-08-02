@@ -7,14 +7,207 @@
 
 \section{Replaying the forward run} \label{sec:replay}
 \defapis{adj_get_forward_equation}
+
+\begin{boxwithtitle}{\texttt{adj_get_forward_equation}}
+\begin{minipage}{\columnwidth}
+\begin{ccode}
+  int adj_get_forward_equation(adj_adjointer* adjointer, int equation, 
+                               adj_matrix* lhs, adj_vector* rhs, 
+                               adj_variable* fwd_var);
+\end{ccode}
+\begin{fortrancode}   
+  function adj_get_forward_equation(adjointer, equation, lhs, rhs, fwd_var) 
+           result(ierr) 
+    type(adj_adjointer), intent(inout) :: adjointer
+    integer(kind=c_int), intent(in), value :: equation
+    type(adj_matrix), intent(out) :: lhs
+    type(adj_vector), intent(out) :: rhs
+    type(adj_variable), intent(out) :: fwd_var
+    integer(kind=c_int) :: ierr
+  end function adj_get_forward_equation
+\end{fortrancode}
+\end{minipage}
+\end{boxwithtitle}
+
 \section{Assembling the adjoint equations} \label{sec:adjoint_assembly}
 \defapis{adj_get_adjoint_equation} 
+
+\begin{boxwithtitle}{\texttt{adj_get_adjoint_equation}}
+\begin{minipage}{\columnwidth}
+\begin{ccode}
+  int adj_get_adjoint_equation(adj_adjointer* adjointer, int equation, 
+                               char* functional, adj_matrix* lhs, 
+                               adj_vector* rhs, adj_variable* adj_var)
+\end{ccode}
+\begin{fortrancode}   
+  function adj_get_adjoint_equation(adjointer, equation, functional, lhs, rhs, 
+                                    adj_var) result(ierr)
+    type(adj_adjointer), intent(inout) :: adjointer
+    integer(kind=c_int), intent(in), value :: equation
+    character(len=*), intent(in) :: functional
+    type(adj_matrix), intent(out) :: lhs
+    type(adj_vector), intent(out) :: rhs
+    type(adj_variable), intent(out) :: adj_var
+    integer(kind=c_int) :: ierr
+  end function adj_get_adjoint_equation
+\end{fortrancode}
+\end{minipage}
+\end{boxwithtitle}
+
+
 \section{A typical adjoint main loop}
 \defapis{adj_evaluate_functional}
+
+\begin{boxwithtitle}{\texttt{adj_evaluate_functional}}
+\begin{minipage}{\columnwidth}
+\begin{ccode}
+  int adj_evaluate_functional(adj_adjointer* adjointer, int timestep, 
+                              char* functional, adj_scalar* output)
+\end{ccode}
+\begin{fortrancode}   
+  function adj_evaluate_functional(adjointer, timestep, functional, output) 
+           result(ierr)
+    type(adj_adjointer), intent(inout) :: adjointer
+    integer, intent(in) :: timestep
+    character(len=*), intent(in) :: functional
+    adj_scalar_f, intent(out) :: output
+    integer :: ierr
+  end function adj_evaluate_functional
+\end{fortrancode}
+\end{minipage}
+\end{boxwithtitle}
+
+
 \defapis{adj_equation_count}
+
+\begin{boxwithtitle}{\texttt{adj_equation_count}}
+\begin{minipage}{\columnwidth}
+\begin{ccode}
+  int adj_equation_count(adj_adjointer* adjointer, int* count)
+\end{ccode}
+\begin{fortrancode}   
+  function adj_equation_count(adjointer, count) result(ierr) 
+    type(adj_adjointer), intent(in) :: adjointer
+    integer(kind=c_int), intent(inout) :: count
+    integer(kind=c_int) :: ierr
+  end function adj_equation_count
+\end{fortrancode}
+\end{minipage}
+\end{boxwithtitle}
+
+
 \defapis{adj_iteration_count}
+
+\begin{boxwithtitle}{\texttt{adj_iteration_count}}
+\begin{minipage}{\columnwidth}
+\begin{ccode}
+  int adj_iteration_count(adj_adjointer* adjointer, adj_variable variable, 
+                          int* count)
+\end{ccode}
+\begin{fortrancode}   
+  function adj_iteration_count(adjointer, variable, count) result(ierr) 
+    type(adj_adjointer), intent(in) :: adjointer
+    type(adj_variable), intent(in), value :: variable
+    integer(kind=c_int), intent(out) :: count
+    integer(kind=c_int) :: ierr
+  end function adj_iteration_count
+\end{fortrancode}
+\end{minipage}
+\end{boxwithtitle}
+
+
 \defapis{adj_timestep_count}
+
+\begin{boxwithtitle}{\texttt{adj_timestep_count}}
+\begin{minipage}{\columnwidth}
+\begin{ccode}
+  int adj_timestep_count(adj_adjointer* adjointer, int* count)
+\end{ccode}
+\begin{fortrancode}   
+  function adj_timestep_count(adjointer, count) result(ierr) 
+    type(adj_adjointer), intent(in) :: adjointer
+    integer(kind=c_int), intent(out) :: count
+    integer(kind=c_int) :: ierr
+  end function adj_timestep_count
+\end{fortrancode}
+\end{minipage}
+\end{boxwithtitle}
+
+
 \defapis{adj_timestep_start_equation}
+
+\begin{boxwithtitle}{\texttt{adj_timestep_start_equation}}
+\begin{minipage}{\columnwidth}
+\begin{ccode}
+  int adj_timestep_start_equation(adj_adjointer* adjointer, int timestep, 
+                                  int* start)
+\end{ccode}
+\begin{fortrancode}   
+  function adj_timestep_start_equation(adjointer, timestep, start) result(ierr) 
+    type(adj_adjointer), intent(in) :: adjointer
+    integer(kind=c_int), intent(in), value :: timestep
+    integer(kind=c_int), intent(out) :: start
+    integer(kind=c_int) :: ierr
+  end function adj_timestep_start_equation
+\end{fortrancode}
+\end{minipage}
+\end{boxwithtitle}
+
+
 \defapis{adj_timestep_end_equation}
+
+\begin{boxwithtitle}{\texttt{adj_timestep_end_equation}}
+\begin{minipage}{\columnwidth}
+\begin{ccode}
+  int adj_timestep_end_equation(adj_adjointer* adjointer, int timestep, int* end)
+\end{ccode}
+\begin{fortrancode}   
+  function adj_timestep_end_equation(adjointer, timestep, end) result(ierr) 
+    type(adj_adjointer), intent(in) :: adjointer
+    integer(kind=c_int), intent(in), value :: timestep
+    integer(kind=c_int), intent(out) :: end
+    integer(kind=c_int) :: ierr
+  end function adj_timestep_end_equation
+\end{fortrancode}
+\end{minipage}
+\end{boxwithtitle}
+
+
 \defapis{adj_timestep_get_times}
+
+\begin{boxwithtitle}{\texttt{adj_timestep_get_times}}
+\begin{minipage}{\columnwidth}
+\begin{ccode}
+  int adj_timestep_get_times(adj_adjointer* adjointer, int timestep, 
+                             adj_scalar* start, adj_scalar* end)
+\end{ccode}
+\begin{fortrancode}   
+  function adj_timestep_get_times(adjointer, timestep, start, end) result(ierr) 
+    type(adj_adjointer), intent(in) :: adjointer
+    integer(kind=c_int), intent(in), value :: timestep
+    adj_scalar_f, intent(out) :: start
+    adj_scalar_f, intent(out) :: end
+    integer(kind=c_int) :: ierr
+  end function adj_timestep_get_times
+\end{fortrancode}
+\end{minipage}
+\end{boxwithtitle}
+
+
 \defapis{adj_forget_adjoint_equation}
+
+\begin{boxwithtitle}{\texttt{adj_forget_adjoint_equation}}
+\begin{minipage}{\columnwidth}
+\begin{ccode}
+  int adj_forget_adjoint_equation(adj_adjointer* adjointer, int equation)
+\end{ccode}
+\begin{fortrancode}   
+  function adj_forget_adjoint_equation(adjointer, equation) result(ierr) 
+    type(adj_adjointer), intent(inout) :: adjointer
+    integer(kind=c_int), intent(in), value :: equation
+    integer(kind=c_int) :: ierr
+  end function adj_forget_adjoint_equation
+\end{fortrancode}
+\end{minipage}
+\end{boxwithtitle}
+
