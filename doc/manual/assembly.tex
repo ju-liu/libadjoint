@@ -5,6 +5,7 @@
 \vspace{\fill}
 \newpage
 
+TODO: Write introduction
 
 \section{Assembling the adjoint equations} \label{sec:adjoint_assembly}
 \defapis{adj_get_adjoint_equation} 
@@ -31,50 +32,246 @@
 \end{minipage}
 \end{boxwithtitle}
 
-This is the core function of libadjoint. 
-It assembles the adjoint equation with index \texttt{equation} for the functional given by \texttt{functional}.
+This is the core function of \libadjoint.
+It assembles the adjoint equation with index \texttt{equation} for the functional named \texttt{functional}.
 The result is a linear system with operator \texttt{lhs} and right hand side \texttt{rhs}. 
-In addition, the \refapi{adj_variable} that this adjoint equation targets is provided as \texttt{adj_var}.
+Furthermore, the variable that this adjoint equation targets is provided as \texttt{adj_var}.
 
-The function returns an error code that can be passed to \refapi{adj_chkierr}.
 
-\section{A typical adjoint main loop}
+\defapis{adj_forget_adjoint_equation}
 
-Once the developer has annotated the model and provided the all necessary callbacks to libadjoint, 
+\begin{boxwithtitle}{\texttt{adj_forget_adjoint_equation}}
+\begin{minipage}{\columnwidth}
+\begin{ccode}
+  int adj_forget_adjoint_equation(adj_adjointer* adjointer, int equation)
+\end{ccode}
+\begin{fortrancode}   
+  function adj_forget_adjoint_equation(adjointer, equation) result(ierr) 
+    type(adj_adjointer), intent(inout) :: adjointer
+    integer(kind=c_int), intent(in), value :: equation
+    integer(kind=c_int) :: ierr
+  end function adj_forget_adjoint_equation
+\end{fortrancode}
+\end{minipage}
+\end{boxwithtitle}
+
+This function is used to forget recorded variables. 
+It forgets all recorded variables that are not needed to assemble the adjoint equations with index lower than \texttt{equation}.
+
+The data callback \refapi{vec_destroy} must be registered to use this function.
+
+
+\section{A typical adjoint main loop}\label{sec:typical_adjoint_main_loop}
+
+Once the developer has annotated the model and provided the all necessary callbacks to \libadjoint, 
 everything is in place to assemble and solve the adjoint equations. 
 
 Libadjoint is designed such that the program loop for solving the adjoint equations is simple
 and its structure does not depend on the underlying forward model.
-Hence, the example adjoint main loop given in this section is a good starting point for any adjoint main loop implementation with libadjoint.
+Hence, the example adjoint main loop given at the end of this section is a good starting point for any adjoint main loop implementation with \libadjoint.
 
-The core function in the adjoint main loop is \refapi{adj_get_adjoint_equation}.
-It assembles an adjoint equation for a given functional. 
-Consequently, a sketch of a possible  adjoint main loop could be:
+A sketch of a straight forward (but not very efficient as we will see soon) adjoint main loop could be:
 
-\begin{itemize}
-\item{{for i=0...Number of functional}}
-    \begin{itemize}
-      \item{for j=0...Number of adjoint equations} 
-      \begin{itemize}
-        \item{Call \refapi{adj_get_adjoint_equation} to assemble the j'th adjoint equation for functional i.}
-        \item{Solve the adjoint equation and call \refapi{adj_record_variable} to record the solution.}
-      \end{itemize}
-      \item{Call \refapi{adj_forget_adjoint_equation} to forget all recorded adjoint variables.}
-    \end{itemize}
-\item{Call \refapi{adj_forget_adjoint_equation} to forget all recorded forward variables.}
-\end{itemize}
+\begin{minipage}{\columnwidth}
+\begin{fortrancode}   
+  do i = 0, no_functionals ! Loop over the registered functionals
+    do j = no_equations, 0, -1 ! Loop backwards(!) over the registered equations
+      call adj_get_adjoint_equation ! Assemble the j'th adjoint equation 
+                                    ! for functional i
+      call solve ! Solve the adjoint equation 
+      call adj_record_variable ! Record the adjoint solution
+      !! ... ! Do something useful with the adjoint solution
+    end do
+    call adj_forget_adjoint_equation ! Forget all recorded adjoint variables
+  end do
+  call adj_forget_adjoint_equation ! Forget all recorded forward variables
+\end{fortrancode}
+\end{minipage}
+
+For every registered functional, the adjoint equations are solved backwards in time. 
+The core function is \refapi{adj_get_adjoint_equation}, which assembles an adjoint equation for a given functional. 
+The solution of the resulting linear system is then recorded with \refapi{adj_record_variable} since it is required for the assembly of the remaining adjoint equations.
+However, at the end of the adjoint equations loop, the recorded adjoint variables are no longer needed and can be forgotten using \refapi{adj_forget_adjoint_equation}.
+The adjoint main loop is finalised by calling \refapi{adj_forget_adjoint_equation} to forget the recorded forward variables. 
 
 Although this adjoint main loop would work, it has one big disadvantage: 
-The adjoint loop is solved independently for each functional. 
-Hence the recorded dependency variables are requested separately for each functional. 
-Depending on the storage strategy of these variables, each of these request might be very expensive and might even involve running parts of the forward run again.
+The adjoint loop is iterated independently for every functional. 
+Hence the, during the forward run, recorded dependency variables are requested separately for each functional. 
+Depending on the storage strategy, each request might be very expensive, e.g. involve running parts of the forward run again.
 
 A more efficient adjoint main loop implementation is obtained by looping over the adjoint equations first and then over the functionals:
 
+\begin{minipage}{\columnwidth}
+\begin{fortrancode}   
+  do i = no_equations, 0, -1 ! Loop backwards(!) over the registered equations
+    do j = 0, no_functionals ! Loop over the registered functionals
+      call adj_get_adjoint_equation ! Assemble the i'th adjoint equation 
+                                    ! for functional j
+      call solve ! Solve the adjoint equation 
+      call adj_record_variable ! Record the adjoint solution
+      !! ... ! Do something useful with the adjoint solution
+    end do
+    call adj_forget_adjoint_equation ! Forget any recorded forward/adjoint 
+                                     ! variables that not needed for the 
+                                     ! remaining adjoint equations
+  end do
+\end{fortrancode}
+\end{minipage}
 
 
-The function \refapi{adj_get_adjoint_equation} provides 
 
+Before a full implementation template for the adjoint main loop can be provided, a few helper functions need to be introduced.
+
+
+\defapis{adj_equation_count}
+
+\begin{boxwithtitle}{\texttt{adj_equation_count}}
+\begin{minipage}{\columnwidth}
+\begin{ccode}
+  int adj_equation_count(adj_adjointer* adjointer, int* count)
+\end{ccode}
+\begin{fortrancode}   
+  function adj_equation_count(adjointer, count) result(ierr) 
+    type(adj_adjointer), intent(in) :: adjointer
+    integer(kind=c_int), intent(inout) :: count
+    integer(kind=c_int) :: ierr
+  end function adj_equation_count
+\end{fortrancode}
+\end{minipage}
+\end{boxwithtitle}
+
+This function queries the total number of registered equations in \texttt{adjointer}.
+The result is saved in \texttt{count}.
+
+
+
+\defapis{adj_timestep_count}
+
+\begin{boxwithtitle}{\texttt{adj_timestep_count}}
+\begin{minipage}{\columnwidth}
+\begin{ccode}
+  int adj_timestep_count(adj_adjointer* adjointer, int* count)
+\end{ccode}
+\begin{fortrancode}   
+  function adj_timestep_count(adjointer, count) result(ierr) 
+    type(adj_adjointer), intent(in) :: adjointer
+    integer(kind=c_int), intent(out) :: count
+    integer(kind=c_int) :: ierr
+  end function adj_timestep_count
+\end{fortrancode}
+\end{minipage}
+\end{boxwithtitle}
+
+This function queries the total number of timesteps in \texttt{adjointer}.
+The result is saved in \texttt{count}.
+
+
+\defapis{adj_iteration_count}
+
+\begin{boxwithtitle}{\texttt{adj_iteration_count}}
+\begin{minipage}{\columnwidth}
+\begin{ccode}
+  int adj_iteration_count(adj_adjointer* adjointer, adj_variable variable, 
+                          int* count)
+\end{ccode}
+\begin{fortrancode}   
+  function adj_iteration_count(adjointer, variable, count) result(ierr) 
+    type(adj_adjointer), intent(in) :: adjointer
+    type(adj_variable), intent(in), value :: variable
+    integer(kind=c_int), intent(out) :: count
+    integer(kind=c_int) :: ierr
+  end function adj_iteration_count
+\end{fortrancode}
+\end{minipage}
+\end{boxwithtitle}
+
+This function queries the number iterations for variable \texttt{variable} at the variable's current timestep.
+If no iteration is found an \refapi{ADJ_ERR_INVALID_INPUTS} error code is returned.
+The result is saved in \texttt{count}.
+
+
+\defapis{adj_timestep_start_equation}
+
+\begin{boxwithtitle}{\texttt{adj_timestep_start_equation}}
+\begin{minipage}{\columnwidth}
+\begin{ccode}
+  int adj_timestep_start_equation(adj_adjointer* adjointer, int timestep, 
+                                  int* start)
+\end{ccode}
+\begin{fortrancode}   
+  function adj_timestep_start_equation(adjointer, timestep, start) result(ierr) 
+    type(adj_adjointer), intent(in) :: adjointer
+    integer(kind=c_int), intent(in), value :: timestep
+    integer(kind=c_int), intent(out) :: start
+    integer(kind=c_int) :: ierr
+  end function adj_timestep_start_equation
+\end{fortrancode}
+\end{minipage}
+\end{boxwithtitle}
+
+This function returns the index of the first registered equation for the supplied timstep.
+It is commonly used in combination with \refapi{adj_timestep_end_equation} and \refapi{adj_get_adjoint_equation} (or \refapi{adj_get_forward_equation}) to loop over every equation of one timestep.
+
+
+
+\defapis{adj_timestep_end_equation}
+
+\begin{boxwithtitle}{\texttt{adj_timestep_end_equation}}
+\begin{minipage}{\columnwidth}
+\begin{ccode}
+  int adj_timestep_end_equation(adj_adjointer* adjointer, int timestep, int* end)
+\end{ccode}
+\begin{fortrancode}   
+  function adj_timestep_end_equation(adjointer, timestep, end) result(ierr) 
+    type(adj_adjointer), intent(in) :: adjointer
+    integer(kind=c_int), intent(in), value :: timestep
+    integer(kind=c_int), intent(out) :: end
+    integer(kind=c_int) :: ierr
+  end function adj_timestep_end_equation
+\end{fortrancode}
+\end{minipage}
+\end{boxwithtitle}
+
+This function returns the index of the last registered equation for the supplied timstep.
+It is commonly used in combination with \refapi{adj_timestep_start_equation} and \refapi{adj_get_adjoint_equation} (or \refapi{adj_get_forward_equation}) to loop over every equation in a timestep.
+
+
+
+
+
+\defapis{adj_timestep_get_times}
+
+\begin{boxwithtitle}{\texttt{adj_timestep_get_times}}
+\begin{minipage}{\columnwidth}
+\begin{ccode}
+  int adj_timestep_get_times(adj_adjointer* adjointer, int timestep, 
+                             adj_scalar* start, adj_scalar* end)
+\end{ccode}
+\begin{fortrancode}   
+  function adj_timestep_get_times(adjointer, timestep, start, end) result(ierr) 
+    type(adj_adjointer), intent(in) :: adjointer
+    integer(kind=c_int), intent(in), value :: timestep
+    adj_scalar_f, intent(out) :: start
+    adj_scalar_f, intent(out) :: end
+    integer(kind=c_int) :: ierr
+  end function adj_timestep_get_times
+\end{fortrancode}
+\end{minipage}
+\end{boxwithtitle}
+
+This function queries the start and end simulation time of the supplied timestep. 
+For this function to work, the start and end time must have been previously defined with \refapi{adj_timestep_set_times}.
+If that is not the case an \refapi{ADJ_ERR_INVALID_INPUTS} error code is returned.
+
+
+
+
+\subsection{The full implementation template}
+The following code implements a typical adjoint main loop and is intended to be a starting point 
+for new adjoint code implementations.
+
+The structure of the loop is based on what was introduced in the beginning of \autoref{sec:typical_adjoint_main_loop}, with the difference that it loops over the adjoint equations of each timestep separately.
+This allows to perform certain tasks to be executed at the beginning or end of every adjoint timestep. 
 
 \begin{boxwithtitle}{\texttt{A typical adjoint main loop (1)}}
 \begin{minipage}{\columnwidth}
@@ -187,181 +384,8 @@ The function \refapi{adj_get_adjoint_equation} provides
 \end{boxwithtitle}
 
 
-In this adjoint loop template, a number of libadjoint function were used which are now described in detail:
-
-
-\defapis{adj_equation_count}
-
-\begin{boxwithtitle}{\texttt{adj_equation_count}}
-\begin{minipage}{\columnwidth}
-\begin{ccode}
-  int adj_equation_count(adj_adjointer* adjointer, int* count)
-\end{ccode}
-\begin{fortrancode}   
-  function adj_equation_count(adjointer, count) result(ierr) 
-    type(adj_adjointer), intent(in) :: adjointer
-    integer(kind=c_int), intent(inout) :: count
-    integer(kind=c_int) :: ierr
-  end function adj_equation_count
-\end{fortrancode}
-\end{minipage}
-\end{boxwithtitle}
-
-This function queries the total number of registered equations in \texttt{adjointer}.
-The result can be accessed with \texttt{count}.
-
-The function returns an error code that can be passed to \refapi{adj_chkierr}.
-
-
-\defapis{adj_timestep_count}
-
-\begin{boxwithtitle}{\texttt{adj_timestep_count}}
-\begin{minipage}{\columnwidth}
-\begin{ccode}
-  int adj_timestep_count(adj_adjointer* adjointer, int* count)
-\end{ccode}
-\begin{fortrancode}   
-  function adj_timestep_count(adjointer, count) result(ierr) 
-    type(adj_adjointer), intent(in) :: adjointer
-    integer(kind=c_int), intent(out) :: count
-    integer(kind=c_int) :: ierr
-  end function adj_timestep_count
-\end{fortrancode}
-\end{minipage}
-\end{boxwithtitle}
-
-This function queries the total number of timesteps in \texttt{adjointer}.
-The result can be accessed with \texttt{count}.
-
-The function returns an error code that can be passed to \refapi{adj_chkierr}.
-
-\defapis{adj_iteration_count}
-
-\begin{boxwithtitle}{\texttt{adj_iteration_count}}
-\begin{minipage}{\columnwidth}
-\begin{ccode}
-  int adj_iteration_count(adj_adjointer* adjointer, adj_variable variable, 
-                          int* count)
-\end{ccode}
-\begin{fortrancode}   
-  function adj_iteration_count(adjointer, variable, count) result(ierr) 
-    type(adj_adjointer), intent(in) :: adjointer
-    type(adj_variable), intent(in), value :: variable
-    integer(kind=c_int), intent(out) :: count
-    integer(kind=c_int) :: ierr
-  end function adj_iteration_count
-\end{fortrancode}
-\end{minipage}
-\end{boxwithtitle}
-
-This function queries the number iterations for variable \texttt{variable} at the variable's timestep.
-If no iteration is found an \refapi{ADJ_ERR_INVALID_INPUTS} error code is returned.
-The result can be accessed with \texttt{count}.
-
-The function returns an error code that can be passed to \refapi{adj_chkierr}.
-
-\defapis{adj_timestep_start_equation}
-
-\begin{boxwithtitle}{\texttt{adj_timestep_start_equation}}
-\begin{minipage}{\columnwidth}
-\begin{ccode}
-  int adj_timestep_start_equation(adj_adjointer* adjointer, int timestep, 
-                                  int* start)
-\end{ccode}
-\begin{fortrancode}   
-  function adj_timestep_start_equation(adjointer, timestep, start) result(ierr) 
-    type(adj_adjointer), intent(in) :: adjointer
-    integer(kind=c_int), intent(in), value :: timestep
-    integer(kind=c_int), intent(out) :: start
-    integer(kind=c_int) :: ierr
-  end function adj_timestep_start_equation
-\end{fortrancode}
-\end{minipage}
-\end{boxwithtitle}
-
-This function returns the index of the first registered equation for the supplied timstep.
-It is commonly used in combination with \refapi{adj_timestep_end_equation} and \refapi{adj_get_adjoint_equation} (or \refapi{adj_get_forward_equation}) to loop over every equation in a timestep.
-
-Since \texttt{libadjoint} assumes that the equations are registered chronologically, \refapi{adj_timestep_start_equation} and \refapi{adj_timestep_end_equation} can be used to loop over the registered equations of one timestep.
-
-
-The function returns an error code that can be passed to \refapi{adj_chkierr}.
-
-
-\defapis{adj_timestep_end_equation}
-
-\begin{boxwithtitle}{\texttt{adj_timestep_end_equation}}
-\begin{minipage}{\columnwidth}
-\begin{ccode}
-  int adj_timestep_end_equation(adj_adjointer* adjointer, int timestep, int* end)
-\end{ccode}
-\begin{fortrancode}   
-  function adj_timestep_end_equation(adjointer, timestep, end) result(ierr) 
-    type(adj_adjointer), intent(in) :: adjointer
-    integer(kind=c_int), intent(in), value :: timestep
-    integer(kind=c_int), intent(out) :: end
-    integer(kind=c_int) :: ierr
-  end function adj_timestep_end_equation
-\end{fortrancode}
-\end{minipage}
-\end{boxwithtitle}
-
-This function returns the index of the last registered equation for the supplied timstep.
-It is commonly used in combination with \refapi{adj_timestep_start_equation} and \refapi{adj_get_adjoint_equation} (or \refapi{adj_get_forward_equation}) to loop over every equation in a timestep.
-
-Since \texttt{libadjoint} assumes that the equations are registered chronologically, \refapi{adj_timestep_start_equation} and \refapi{adj_timestep_end_equation} can be used to loop over the registered equations of one timestep.
-
-The function returns an error code that can be passed to \refapi{adj_chkierr}.
-
-
-
-\defapis{adj_timestep_get_times}
-
-\begin{boxwithtitle}{\texttt{adj_timestep_get_times}}
-\begin{minipage}{\columnwidth}
-\begin{ccode}
-  int adj_timestep_get_times(adj_adjointer* adjointer, int timestep, 
-                             adj_scalar* start, adj_scalar* end)
-\end{ccode}
-\begin{fortrancode}   
-  function adj_timestep_get_times(adjointer, timestep, start, end) result(ierr) 
-    type(adj_adjointer), intent(in) :: adjointer
-    integer(kind=c_int), intent(in), value :: timestep
-    adj_scalar_f, intent(out) :: start
-    adj_scalar_f, intent(out) :: end
-    integer(kind=c_int) :: ierr
-  end function adj_timestep_get_times
-\end{fortrancode}
-\end{minipage}
-\end{boxwithtitle}
-
-This function queries the start and end time of the supplied timestep \texttt{timestep}. 
-For this function to work, the start and end time must have been defined previously with \refapi{adj_timestep_set_times}.
-If that is not the case an \refapi{ADJ_ERR_INVALID_INPUTS} error code is returned.
-
-The function returns an error code that can be passed to \refapi{adj_chkierr}.
-
-\defapis{adj_forget_adjoint_equation}
-
-\begin{boxwithtitle}{\texttt{adj_forget_adjoint_equation}}
-\begin{minipage}{\columnwidth}
-\begin{ccode}
-  int adj_forget_adjoint_equation(adj_adjointer* adjointer, int equation)
-\end{ccode}
-\begin{fortrancode}   
-  function adj_forget_adjoint_equation(adjointer, equation) result(ierr) 
-    type(adj_adjointer), intent(inout) :: adjointer
-    integer(kind=c_int), intent(in), value :: equation
-    integer(kind=c_int) :: ierr
-  end function adj_forget_adjoint_equation
-\end{fortrancode}
-\end{minipage}
-\end{boxwithtitle}
-
-
-The function returns an error code that can be passed to \refapi{adj_chkierr}.
-
 \section{Replaying the forward run} \label{sec:replay}
+
 \defapis{adj_get_forward_equation}
 
 \begin{boxwithtitle}{\texttt{adj_get_forward_equation}}
@@ -385,7 +409,11 @@ The function returns an error code that can be passed to \refapi{adj_chkierr}.
 \end{minipage}
 \end{boxwithtitle}
 
-The function returns an error code that can be passed to \refapi{adj_chkierr}.
+This function assembles the forward equation with index \texttt{equation}.
+For this to work, the source term callbacks have to be registered, see \refapi{adj_register_forward_source_callback}. 
+The result is a linear system with operator \texttt{lhs} and right hand side \texttt{rhs}. 
+Furthermore, the variable that this adjoint equation targets is provided as \texttt{fwd_var}.
+
 
 \defapis{adj_evaluate_functional}
 
@@ -408,6 +436,8 @@ The function returns an error code that can be passed to \refapi{adj_chkierr}.
 \end{minipage}
 \end{boxwithtitle}
 
-The function returns an error code that can be passed to \refapi{adj_chkierr}.
-
+This function evaluates the functional named \texttt{functional} at timestep \texttt{timesteps} and saves the result in \texttt{output}.
+If the required functional callback, see \refapi{adj_register_functional_callback}, is missing an \refapi{ADJ_ERR_NEED_CALLBACK} is returned.
+Furthermore, the evaluation of a functional without any dependencies returns \refapi{ADJ_WARN_UNINITIALISED_VALUE}. 
+In both cases, \refapi{output} is uninitialised after the function.
 
