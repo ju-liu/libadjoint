@@ -196,7 +196,7 @@ This function is used to define the type of an \texttt{adj_variable}.
 \end{boxwithtitle}
 
 This function creates an \texttt{adj_block} with the name \texttt{name}.
-If the block is nonlinear, the corresponding \refapi{adj_nonlinear_block} is passed as \texttt{nblock}. 
+If the block is nonlinear, i.e. its entries depend on the solution, the corresponding \refapi{adj_nonlinear_block} is passed as \texttt{nblock}. 
 Otherwise, a \texttt{NULL} pointer is to be passed in C and the argument can be ignored in Fortran.
 The void pointer \texttt{context} allows the developer to pass arbitrary data to the block's callbacks (\refapi{ADJ_BLOCK_ACTION_CB}, \refapi{ADJ_BLOCK_ASSEMBLY_CB}). 
 The result is stored in \texttt{block}. 
