@@ -196,7 +196,7 @@ This function is used to define the type of an \texttt{adj_variable}.
 \end{boxwithtitle}
 
 This function creates an \texttt{adj_block} with the name \texttt{name}.
-If the block is nonlinear, the corresponding \refapi{adj_nonlinear_block} is passed as \texttt{nblock}. 
+If the block is nonlinear, i.e. its entries depend on the solution, the corresponding \refapi{adj_nonlinear_block} is passed as \texttt{nblock}. 
 Otherwise, a \texttt{NULL} pointer is to be passed in C and the argument can be ignored in Fortran.
 The void pointer \texttt{context} allows the developer to pass arbitrary data to the block's callbacks (\refapi{ADJ_BLOCK_ACTION_CB}, \refapi{ADJ_BLOCK_ASSEMBLY_CB}). 
 The result is stored in \texttt{block}. 
@@ -506,9 +506,13 @@ Records the variable \texttt{var} in \texttt{adjointer} with the data and storag
 
 \defapi{adj_dict}
 
-\refapi{adj_dict} is an implementation of a dictionary class for strings.
+During the adjoint model development it is very common that the developer wants to store additional information about \libadjoint data objects 
+and access these information later on in the codebase.
+\refapi{adj_dict} is an implementation of a dictionary class for strings that can be used for this purpose.
 
-Why is it public in \libadjoint and how could it be used for the model developer?
+A typical example are solver options that one might want to assign to every \texttt{adj_variable} during the annotation of the forward model.
+In the adjoint main loop, these options can then be reused to solve the adjoint equations accordingly.
+This can be implemented with an \refapi{adj_dict} that maps the name of the \refapi{adj_variable} to a string with the solver options.
 
 \defapis{adj_dict_init}
 \begin{boxwithtitle}{\texttt{adj_dict_init}}
@@ -585,7 +589,7 @@ Otherwise, the value can be accessed with \texttt{value}.
 \end{minipage}
 \end{boxwithtitle}
 
-Prints the key $\to$ value list in \texttt{dict} to \texttt{STDOUT}. 
+Prints the key $\to$ value list in \texttt{dict} to the standard output. 
 
 \defapis{adj_dict_destroy}
 \begin{boxwithtitle}{\texttt{adj_dict_destroy}}
