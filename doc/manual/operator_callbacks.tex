@@ -337,7 +337,7 @@ These routines can now be used in the \texttt{ADJ_NBLOCK_DERIVATIVE_ACTION_CB} c
 
 Note that most AD tools only support a subset of the programming language. 
 While this can be a burden when it is used to generate the adjoint of the full forward model,
-in the context of libadjoint it is only applied to the assembly routine of the nonlinear block, which normally consists only of low level mathematical routines.
+in the context of \libadjoint it is only applied to the assembly routine of the nonlinear block, which normally consists only of low level mathematical routines.
  
 \end{boxwithtitle}
 
@@ -504,8 +504,8 @@ This callback only used for checking the gradient correctness, see \autoref{sec:
 \end{fortrancode}
 \end{minipage}
 \end{boxwithtitle}
-This function registers the forward source callback so that libadjoint can use it when necessary. 
-If the forward source callback has not been registered, and libadjoint needs it to perform some task that the model developer has
+This function registers the forward source callback so that \libadjoint can use it when necessary. 
+If the forward source callback has not been registered, and \libadjoint needs it to perform some task that the model developer has
 requested, the function will return an \refapi{ADJ_ERR_NEED_CALLBACK} error.
 
 The supplied function callback computes the source vector when solving for \texttt{variable} in the forward model.
@@ -576,9 +576,9 @@ This callback is used to assemble the forward equation, e.g. when the annotated 
 \end{fortrancode}
 \end{minipage}
 \end{boxwithtitle}
-This function registers a given functional derivative callback with name \texttt{name} so that libadjoint can use
+This function registers a given functional derivative callback with name \texttt{name} so that \libadjoint can use
 it when necessary. 
-If an functional derivative callback has not been registered, and libadjoint needs it to perform some task that the model developer has
+If an functional derivative callback has not been registered, and \libadjoint needs it to perform some task that the model developer has
 requested, the function will return an \refapi{ADJ_ERR_NEED_CALLBACK} error.
 
 The supplied function callback computes the derivative of the functional with respect to the variable \texttt{derivative}. 
@@ -646,7 +646,7 @@ This callback is necessary to assemble the adjoint equation; see \refapi{adj_get
 \end{fortrancode}
 \end{minipage}
 \end{boxwithtitle}
-This function registers a given functional callback with name \texttt{name} so that libadjoint can evaluate the functional,
+This function registers a given functional callback with name \texttt{name} so that \libadjoint can evaluate the functional,
 if the model developer desires it.
 If an functional callback has not been registered, and the model developer requests the value of a functional with
 \refapi{adj_evaluate_functional},
