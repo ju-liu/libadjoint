@@ -201,7 +201,7 @@ subroutine test_adj_nonlinear_derivative_action_callback
   call adj_chkierr(ierr)
   ierr = adj_register_operator_callback(adjointer, ADJ_BLOCK_ASSEMBLY_CB, "IdentityOperator", &
   & c_funloc(identity_assembly_callback))
-  ierr = adj_get_adjoint_equation(adjointer, functional="Drag", equation=1, lhs=lhs, rhs=rhs, variable=adj_var1)
+  ierr = adj_get_adjoint_equation(adjointer, functional="Drag", equation=1, lhs=lhs, rhs=rhs, adj_var=adj_var1)
   call adj_chkierr(ierr)
   call adj_test_assert(ierr == 0, "Should have worked")
 
@@ -228,7 +228,7 @@ subroutine test_adj_nonlinear_derivative_action_callback
   ierr = adj_record_variable(adjointer, u0, storage)
   call adj_test_assert(ierr == 0, "Should have worked")
 
-  ierr = adj_get_adjoint_equation(adjointer, functional="Drag", equation=0, lhs=lhs, rhs=rhs, variable=adj_var0)
+  ierr = adj_get_adjoint_equation(adjointer, functional="Drag", equation=0, lhs=lhs, rhs=rhs, adj_var=adj_var0)
   call adj_test_assert(ierr == ADJ_ERR_NEED_CALLBACK, "Should not have worked")
 
   ! Register the callback for the block action
@@ -236,7 +236,7 @@ subroutine test_adj_nonlinear_derivative_action_callback
          & c_funloc(block_action_callback))
   call adj_test_assert(ierr == ADJ_OK, "Should have worked")
 
-  ierr = adj_get_adjoint_equation(adjointer, functional="Drag", equation=0, lhs=lhs, rhs=rhs, variable=adj_var0)
+  ierr = adj_get_adjoint_equation(adjointer, functional="Drag", equation=0, lhs=lhs, rhs=rhs, adj_var=adj_var0)
   call adj_test_assert(ierr /= ADJ_OK, "Should not have worked")
 
   ! Register the callback for the nonlinear derivative action
@@ -244,7 +244,7 @@ subroutine test_adj_nonlinear_derivative_action_callback
                            & c_funloc(nonlinear_derivative_action_callback))
   call adj_test_assert(ierr == ADJ_OK, "Should have worked")
 
-  ierr = adj_get_adjoint_equation(adjointer, functional="Drag", equation=0, lhs=lhs, rhs=rhs, variable=adj_var0)
+  ierr = adj_get_adjoint_equation(adjointer, functional="Drag", equation=0, lhs=lhs, rhs=rhs, adj_var=adj_var0)
   call adj_test_assert(ierr == 0, "Should have worked")
  
    ! The rhs should now be -2*u0_val

@@ -858,6 +858,11 @@ module libadjoint
     character(kind=c_char), dimension(ADJ_NAME_LEN) :: functional_c
     integer :: j
 
+    if (len_trim(functional) .ge. ADJ_NAME_LEN - 1) then
+      ! Can't set the error message from Fortran, I think?
+      ierr = ADJ_ERR_INVALID_INPUTS
+    end if
+
     do j=1,len_trim(functional)
       functional_c(j) = functional(j:j)
     end do
@@ -866,7 +871,7 @@ module libadjoint
     end do
     functional_c(ADJ_NAME_LEN) = c_null_char
 
-    ierr = adj_get_adjoint_equation_c(adjointer, equation, functional_c, lhs, rhs, variable)
+    ierr = adj_get_adjoint_equation_c(adjointer, equation, functional_c, lhs, rhs, adj_var)
   end function adj_get_adjoint_equation
 
   function adj_create_variable(name, timestep, iteration, auxiliary, variable) result(ierr)
@@ -885,6 +890,12 @@ module libadjoint
     else
       auxiliary_c = ADJ_FALSE
     end if
+
+    if (len_trim(name) .ge. ADJ_NAME_LEN - 1) then
+      ! Can't set the error message from Fortran, I think?
+      ierr = ADJ_ERR_INVALID_INPUTS
+    end if
+
     do j=1,len_trim(name)
       name_c(j) = name(j:j)
     end do
@@ -926,6 +937,11 @@ module libadjoint
     integer :: j
     type(c_ptr) :: context_c
 
+    if (len_trim(name) .ge. ADJ_NAME_LEN - 1) then
+      ! Can't set the error message from Fortran, I think?
+      ierr = ADJ_ERR_INVALID_INPUTS
+    end if
+
     do j=1,len_trim(name)
       name_c(j) = name(j:j)
     end do
@@ -963,6 +979,11 @@ module libadjoint
     type(c_ptr) :: nblock_ptr
     type(c_ptr) :: context_c
 
+    if (len_trim(name) .ge. ADJ_NAME_LEN - 1) then
+      ! Can't set the error message from Fortran, I think?
+      ierr = ADJ_ERR_INVALID_INPUTS
+    end if
+
     do j=1,len_trim(name)
       name_c(j) = name(j:j)
     end do
@@ -995,6 +1016,11 @@ module libadjoint
 
     character(kind=c_char), dimension(ADJ_NAME_LEN) :: name_c
     integer :: j
+
+    if (len_trim(name) .ge. ADJ_NAME_LEN - 1) then
+      ! Can't set the error message from Fortran, I think?
+      ierr = ADJ_ERR_INVALID_INPUTS
+    end if
 
     do j=1,len_trim(name)
       name_c(j) = name(j:j)
@@ -1037,6 +1063,11 @@ module libadjoint
     character(kind=c_char), dimension(ADJ_NAME_LEN) :: functional_c
     integer :: j
 
+    if (len_trim(functional) .ge. ADJ_NAME_LEN - 1) then
+      ! Can't set the error message from Fortran, I think?
+      ierr = ADJ_ERR_INVALID_INPUTS
+    end if
+
     do j=1,len_trim(functional)
       functional_c(j) = functional(j:j)
     end do
@@ -1057,6 +1088,11 @@ module libadjoint
 
     character(kind=c_char), dimension(ADJ_NAME_LEN) :: functional_c
     integer :: j
+
+    if (len_trim(functional) .ge. ADJ_NAME_LEN - 1) then
+      ! Can't set the error message from Fortran, I think?
+      ierr = ADJ_ERR_INVALID_INPUTS
+    end if
 
     do j=1,len_trim(functional)
       functional_c(j) = functional(j:j)
@@ -1080,6 +1116,11 @@ module libadjoint
     character(kind=c_char), dimension(ADJ_NAME_LEN) :: functional_c
     integer :: j
 
+    if (len_trim(functional) .ge. ADJ_NAME_LEN - 1) then
+      ! Can't set the error message from Fortran, I think?
+      ierr = ADJ_ERR_INVALID_INPUTS
+    end if
+
     do j=1,len_trim(functional)
       functional_c(j) = functional(j:j)
     end do
@@ -1099,6 +1140,11 @@ module libadjoint
 
     character(kind=c_char), dimension(ADJ_NAME_LEN) :: name_c
     integer :: j
+
+    if (len_trim(name) .ge. ADJ_NAME_LEN - 1) then
+      ! Can't set the error message from Fortran, I think?
+      ierr = ADJ_ERR_INVALID_INPUTS
+    end if
 
     do j=1,len_trim(name)
       name_c(j) = name(j:j)
@@ -1120,6 +1166,11 @@ module libadjoint
     character(kind=c_char), dimension(ADJ_NAME_LEN) :: name_c
     integer :: j
 
+    if (len_trim(name) .ge. ADJ_NAME_LEN - 1) then
+      ! Can't set the error message from Fortran, I think?
+      ierr = ADJ_ERR_INVALID_INPUTS
+    end if
+
     do j=1,len_trim(name)
       name_c(j) = name(j:j)
     end do
@@ -1139,6 +1190,11 @@ module libadjoint
     
     character(kind=c_char), dimension(ADJ_NAME_LEN) :: filename_c
     integer :: j
+
+    if (len_trim(filename) .ge. ADJ_NAME_LEN - 1) then
+      ! Can't set the error message from Fortran, I think?
+      ierr = ADJ_ERR_INVALID_INPUTS
+    end if
 
     do j=1,len_trim(filename)
       filename_c(j) = filename(j:j)
@@ -1160,6 +1216,11 @@ module libadjoint
     
     character(kind=c_char), dimension(ADJ_NAME_LEN) :: functional_c
     integer :: j
+
+    if (len_trim(functional) .ge. ADJ_NAME_LEN - 1) then
+      ! Can't set the error message from Fortran, I think?
+      ierr = ADJ_ERR_INVALID_INPUTS
+    end if
 
     do j=1,len_trim(functional)
       functional_c(j) = functional(j:j)
