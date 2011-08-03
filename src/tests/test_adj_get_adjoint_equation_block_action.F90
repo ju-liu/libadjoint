@@ -177,10 +177,10 @@ subroutine test_adj_get_adjoint_equation_block_action
   ierr = adj_destroy_equation(equation)
   call adj_chkierr(ierr)
 
-  ierr = adj_get_adjoint_equation(adjointer, equation=2, functional="Drag", lhs=lhs, rhs=rhs, variable=adj_var1)
+  ierr = adj_get_adjoint_equation(adjointer, equation=2, functional="Drag", lhs=lhs, rhs=rhs, adj_var=adj_var1)
   call adj_test_assert(ierr == ADJ_ERR_INVALID_INPUTS, "Should not have worked")
 
-  ierr = adj_get_adjoint_equation(adjointer, equation=1, functional="Drag", lhs=lhs, rhs=rhs, variable=adj_var1)
+  ierr = adj_get_adjoint_equation(adjointer, equation=1, functional="Drag", lhs=lhs, rhs=rhs, adj_var=adj_var1)
   call adj_test_assert(ierr == ADJ_ERR_NEED_CALLBACK, "Need the functional callback")
 
   ierr = adj_register_functional_derivative_callback(adjointer, "Drag", c_funloc(functional_derivative_callback))
@@ -191,7 +191,7 @@ subroutine test_adj_get_adjoint_equation_block_action
   ierr = adj_timestep_set_functional_dependencies(adjointer, timestep=1, functional="Drag", dependencies=(/u0/))
   call adj_test_assert(ierr == ADJ_OK, "Should have worked")
 
-  ierr = adj_get_adjoint_equation(adjointer, equation=0, functional="Drag", lhs=lhs, rhs=rhs, variable=adj_var1)
+  ierr = adj_get_adjoint_equation(adjointer, equation=0, functional="Drag", lhs=lhs, rhs=rhs, adj_var=adj_var1)
   call adj_test_assert(ierr == ADJ_ERR_NEED_VALUE, "We should need the value for u0")
 
   ierr = adj_timestep_set_functional_dependencies(adjointer, timestep=1, functional="Drag", dependencies=(/u0, u1/))
@@ -211,14 +211,14 @@ subroutine test_adj_get_adjoint_equation_block_action
   ierr = adj_record_variable(adjointer, u0, storage)
   call adj_test_assert(ierr == ADJ_OK, "Should have worked")
 
-  ierr = adj_get_adjoint_equation(adjointer, equation=1, functional="Drag", lhs=lhs, rhs=rhs, variable=adj_var1)
+  ierr = adj_get_adjoint_equation(adjointer, equation=1, functional="Drag", lhs=lhs, rhs=rhs, adj_var=adj_var1)
   call adj_test_assert(ierr == ADJ_OK, "Should have worked")
 
   ! We don't actually need the memory for lhs and rhs, so we'll delete them now
   call petsc_vec_destroy_proc(rhs)
   call petsc_mat_destroy_proc(lhs)
 
-  ierr = adj_get_adjoint_equation(adjointer, equation=0, functional="Drag", lhs=lhs, rhs=rhs, variable=adj_var1)
+  ierr = adj_get_adjoint_equation(adjointer, equation=0, functional="Drag", lhs=lhs, rhs=rhs, adj_var=adj_var1)
   call adj_test_assert(ierr == ADJ_ERR_NEED_VALUE, "Should need the value for lambda1")
 
   ! We'll decide on a random value for lambda1 (lambda1 = dJ/du, so that's the same
@@ -235,13 +235,13 @@ subroutine test_adj_get_adjoint_equation_block_action
   ierr = adj_record_variable(adjointer, adj_var1, storage)
   call adj_test_assert(ierr == ADJ_OK, "Should have worked")
 
-  ierr = adj_get_adjoint_equation(adjointer, equation=0, functional="Drag", lhs=lhs, rhs=rhs, variable=adj_var1)
+  ierr = adj_get_adjoint_equation(adjointer, equation=0, functional="Drag", lhs=lhs, rhs=rhs, adj_var=adj_var1)
   call adj_test_assert(ierr == ADJ_ERR_NEED_CALLBACK, "Should need the block_action_callback")
 
   ierr = adj_register_operator_callback(adjointer, ADJ_BLOCK_ACTION_CB, "IdentityOperator", c_funloc(identity_action_callback))
   call adj_test_assert(ierr == ADJ_OK, "Should have worked")
 
-  ierr = adj_get_adjoint_equation(adjointer, equation=0, functional="Drag", lhs=lhs, rhs=rhs, variable=adj_var1)
+  ierr = adj_get_adjoint_equation(adjointer, equation=0, functional="Drag", lhs=lhs, rhs=rhs, adj_var=adj_var1)
   call adj_test_assert(ierr == ADJ_OK, "Should have worked")
 
   ! So now solve lhs . lambda0 = rhs
