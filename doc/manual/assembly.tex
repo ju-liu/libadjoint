@@ -5,9 +5,14 @@
 \vspace{\fill}
 \newpage
 
-TODO: Write introduction
+
+This section introduces the assembly routines for the adjoint equation 
+and gives a typical example for an adjoint main loop.
+Furthermore the routines for assembling the forward equations are discussed which are needed 
+for the comparison against the original forward run,see {sec:compare}.
 
 \section{Assembling the adjoint equations} \label{sec:adjoint_assembly}
+
 \defapis{adj_get_adjoint_equation} 
 
 \begin{boxwithtitle}{\texttt{adj_get_adjoint_equation}}
@@ -34,9 +39,9 @@ TODO: Write introduction
 
 This is the core function of \libadjoint.
 It assembles the adjoint equation with index \texttt{equation} for the functional named \texttt{functional}.
+If \texttt{equation} is less than zero or larger or equal to the number of registered equations \refapi{ADJ_ERR_INVALID_INPUTS} is returned.
 The result is a linear system with operator \texttt{lhs} and right hand side \texttt{rhs}. 
 Furthermore, the variable that this adjoint equation targets is provided as \texttt{adj_var}.
-
 
 \defapis{adj_forget_adjoint_equation}
 
@@ -55,15 +60,15 @@ Furthermore, the variable that this adjoint equation targets is provided as \tex
 \end{minipage}
 \end{boxwithtitle}
 
-This function is used to forget recorded variables. 
-It forgets all recorded variables that are not needed to assemble the adjoint equations with index lower than \texttt{equation}.
+This function is used to remove recorded variables that are not longer be necessary to assemble the remaining adjoint equations. 
+More specifically, it forgets all recorded variables that are not needed to assemble the adjoint equations with index lower than \texttt{equation}.
 
-The data callback \refapi{vec_destroy} must be registered to use this function.
+The data callback \refapi{ADJ_VEC_DESTROY_CB} must be registered to use this function.
 
 
 \section{A typical adjoint main loop}\label{sec:typical_adjoint_main_loop}
 
-Once the developer has annotated the model and provided the all necessary callbacks to \libadjoint, 
+Once the developer has annotated the model and provided all necessary callbacks to \libadjoint, 
 everything is in place to assemble and solve the adjoint equations. 
 
 Libadjoint is designed such that the program loop for solving the adjoint equations is simple
@@ -91,12 +96,12 @@ A sketch of a straight forward (but not very efficient as we will see soon) adjo
 For every registered functional, the adjoint equations are solved backwards in time. 
 The core function is \refapi{adj_get_adjoint_equation}, which assembles an adjoint equation for a given functional. 
 The solution of the resulting linear system is then recorded with \refapi{adj_record_variable} since it is required for the assembly of the remaining adjoint equations.
-However, at the end of the adjoint equations loop, the recorded adjoint variables are no longer needed and can be forgotten using \refapi{adj_forget_adjoint_equation}.
+However, at the end of the adjoint equations loop, the recorded adjoint solutions are no longer needed and can be forgotten using \refapi{adj_forget_adjoint_equation}.
 The adjoint main loop is finalised by calling \refapi{adj_forget_adjoint_equation} to forget the recorded forward variables. 
 
 Although this adjoint main loop would work, it has one big disadvantage: 
 The adjoint loop is iterated independently for every functional. 
-Hence the, during the forward run, recorded dependency variables are requested separately for each functional. 
+Hence the recorded forward variables are requested separately for each functional. 
 Depending on the storage strategy, each request might be very expensive, e.g. involve running parts of the forward run again.
 
 A more efficient adjoint main loop implementation is obtained by looping over the adjoint equations first and then over the functionals:
@@ -118,9 +123,7 @@ A more efficient adjoint main loop implementation is obtained by looping over th
 \end{fortrancode}
 \end{minipage}
 
-
-
-Before a full implementation template for the adjoint main loop can be provided, a few helper functions need to be introduced.
+Before a full implementation of a typical adjoint main loop can be given, a few helper functions need to be introduced.
 
 
 \defapis{adj_equation_count}
@@ -290,8 +293,8 @@ This allows to perform certain tasks to be executed at the beginning or end of e
   integer :: no_functionals, functional ! The total number of registered 
                                         ! functionals and an iterator for the 
                                         ! functional loop.
-  character(len=256), dimension(no_functionals) :: functional_name ! An array of 
-                    ! strings containing the name of the registered functional.
+  character(len=ADJ_NAME_LEN), dimension(no_functionals) :: functional_name 
+        ! An array of strings containing the name of the registered functional.
 
   type(adj_vector) :: rhs ! The right hand side of the adjoint equation.
   type(adj_vector) :: soln ! The solution vector of the adjoint equation.
@@ -338,16 +341,6 @@ This allows to perform certain tasks to be executed at the beginning or end of e
                                         lhs, rhs, adj_var)
         call adj_chkierr(ierr)
 
-        ! Typically, one would get some 
-        !! ierr = adj_variable_get_name(adj_var, variable_name)
-        !! call adj_chkierr(ierr)
-
-        ! Retrieve previously saved details about this variable using the 
-        ! libadjoint dictionary
-        !! ierr = adj_dict_find(adj_path_lookup, trim(variable_name), 
-        !                       solver_options)
-        !! call adj_chkierr(ierr)
-
         ! Depending on lhs%klass and rhs%klass one might use different 
         ! solver strategies to solve the adjoint equation.
 
@@ -362,15 +355,15 @@ This allows to perform certain tasks to be executed at the beginning or end of e
         ierr = adj_record_variable(adjointer, adj_var, storage)
         call adj_chkierr(ierr)
 
-        ! Destroy lhs and rhs
-        call femtools_vec_destroy_proc(rhs)
-        call femtools_mat_destroy_proc(lhs)
+        ! Destroy lhs and rhs using the appropriate data callbacks
+        call vec_destroy(rhs)
+        call mat_destroy(lhs)
 
       end do ! End of equation loop
       
     end do ! End of functional loop
 
-    ! Now forget
+    ! Now forget unnecessary variables
     ierr = adj_forget_adjoint_equation(adjointer, start_timestep)
     call adj_chkierr(ierr)
 
