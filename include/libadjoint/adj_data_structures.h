@@ -102,9 +102,6 @@ typedef struct adj_variable_data
   int nrhs_equations; /* any equations whose right-hand sides depend on this variable */
   int* rhs_equations;
 
-  int ndepending_timesteps; /* any timesteps that need this variable for the computation of a functional */
-  int* depending_timesteps;
-
   int nadjoint_equations; /* computed: the adjoint equations that need this variable */
   int* adjoint_equations;
   adj_storage_data storage; /* its storage record */
@@ -217,8 +214,6 @@ typedef struct
   adj_scalar start_time;
   adj_scalar end_time;
 
-  adj_functional_data* functional_data_start;
-  adj_functional_data* functional_data_end;
 } adj_timestep_data;
 
 typedef struct adj_adjointer
@@ -236,14 +231,20 @@ typedef struct adj_adjointer
   int options[ADJ_NO_OPTIONS]; /* Pretty obvious */
 
   adj_data_callbacks callbacks; /* Data callbacks */
+
   adj_op_callback_list nonlinear_colouring_list; /* Operator callbacks */
   adj_op_callback_list nonlinear_action_list;
   adj_op_callback_list nonlinear_derivative_action_list;
   adj_op_callback_list nonlinear_derivative_assembly_list;
   adj_op_callback_list block_action_list;
   adj_op_callback_list block_assembly_list;
-  adj_func_callback_list functional_list;
+
+  adj_func_callback_list functional_list; /* Functional callbacks */
   adj_func_deriv_callback_list functional_derivative_list;
+
+  adj_functional_data* functional_data_start; /* Functional data */
+  adj_functional_data* functional_data_end;
+
   void (*forward_source_callback)(struct adj_adjointer* adjointer, adj_variable variable, int ndepends, adj_variable* variables, adj_vector* dependencies, void* context, adj_vector* output, int* has_output);
 } adj_adjointer;
 
