@@ -1416,6 +1416,8 @@ int adj_set_functional_dependencies(adj_adjointer* adjointer, char* functional, 
   functional_data_ptr->dependencies = (adj_variable*) malloc(ndepends * sizeof(adj_variable));
   ADJ_CHKMALLOC(functional_data_ptr->dependencies);
   memcpy(functional_data_ptr->dependencies, dependencies, ndepends * sizeof(adj_variable));
+  functional_data_ptr->functional_derivative_data_start = NULL;
+  functional_data_ptr->functional_derivative_data_end = NULL;
 
   for (i = 0; i < ndepends; i++)
   {
@@ -1433,6 +1435,82 @@ int adj_set_functional_dependencies(adj_adjointer* adjointer, char* functional, 
   /* We are done */
   return ADJ_OK;
 }
+
+int adj_set_functional_derivative_dependencies(adj_adjointer* adjointer, char* functional, adj_variable derivative, int ndepends, adj_variable* dependencies)
+{
+  int i;
+
+  adj_functional_data* functional_data_ptr = NULL;
+  adj_functional_derivative_data* functional_derivative_data_ptr = NULL;
+
+  if (ndepends < 0)
+  {
+    strncpy(adj_error_msg, "Must supply a nonnegative number of dependencies.", ADJ_ERROR_MSG_BUF);
+    return ADJ_ERR_INVALID_INPUTS;
+  }
+
+  for (i = 0; i < ndepends; i++)
+  {
+    if (dependencies[i].type != ADJ_FORWARD)
+    {
+      snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Functional dependencies must be forward variables.");
+      return ADJ_ERR_INVALID_INPUTS;
+    }
+  }
+
+  if (derivative.type != ADJ_FORWARD)
+  {
+    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Argument derivative must be forward variable.");
+    return ADJ_ERR_INVALID_INPUTS;
+  }
+
+  /* Find the functional data associated with this functional */
+  functional_data_ptr = adjointer->functional_data_start;
+  while (functional_data_ptr != NULL)
+  {
+    if (strncmp(functional_data_ptr->name, functional, ADJ_NAME_LEN) == 0)
+      break;
+    functional_data_ptr = functional_data_ptr->next;
+  }
+
+  if (functional_data_ptr == NULL) 
+  {
+    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "The functional dependencies for %s have to be defined first before the derivative dependencies can be set.", functional);
+    return ADJ_ERR_INVALID_INPUTS;
+  }
+
+  /* Make sure that the dependencies for this functional have not been set before */
+  functional_derivative_data_ptr = functional_data_ptr->functional_derivative_data_start;
+  while (functional_derivative_data_ptr != NULL)
+  {
+    if (adj_variable_equal(&(functional_derivative_data_ptr->derivative), &derivative, 1))
+    {
+      snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "The dependencies for derivative of functional %s with respect to variable %s have been already set.", functional, derivative.name);
+      return ADJ_ERR_INVALID_INPUTS;
+    }
+    functional_derivative_data_ptr = functional_derivative_data_ptr->next;
+  }
+
+  /* append the functional derivative dependency information to the list */  
+  functional_derivative_data_ptr = (adj_functional_derivative_data*) malloc(sizeof(adj_functional_derivative_data));
+  ADJ_CHKMALLOC(functional_derivative_data_ptr);
+
+  if (functional_data_ptr->functional_derivative_data_start == NULL)
+    functional_data_ptr->functional_derivative_data_start = functional_derivative_data_ptr;
+  if (functional_data_ptr->functional_derivative_data_end != NULL) 
+    functional_data_ptr->functional_derivative_data_end->next = functional_derivative_data_ptr;
+  functional_data_ptr->functional_derivative_data_end = functional_derivative_data_ptr;
+
+  functional_derivative_data_ptr->next = NULL;
+  functional_derivative_data_ptr->ndepends = ndepends;
+  functional_derivative_data_ptr->dependencies = (adj_variable*) malloc(ndepends * sizeof(adj_variable));
+  ADJ_CHKMALLOC(functional_derivative_data_ptr->dependencies);
+  memcpy(functional_derivative_data_ptr->dependencies, dependencies, ndepends * sizeof(adj_variable));
+
+  /* We are done */
+  return ADJ_OK;
+}
+
 
 int adj_append_unique(int** array, int* array_sz, int value)
 {

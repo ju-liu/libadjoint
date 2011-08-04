@@ -199,11 +199,21 @@ typedef struct
   adj_dictionary_entry* dict;
 } adj_dictionary;
 
+typedef struct adj_functional_derivative_data
+{
+  adj_variable derivative;
+  int ndepends;
+  adj_variable* dependencies;
+  struct adj_functional_derivative_data* next; /* a pointer to the next one, so we can walk the list */
+} adj_functional_derivative_data;
+
 typedef struct adj_functional_data
 {
   char name[ADJ_NAME_LEN];
   int ndepends;
   adj_variable* dependencies;
+  adj_functional_derivative_data* functional_derivative_data_start; /* Functional derivative data */ 
+  adj_functional_derivative_data* functional_derivative_data_end; 
   struct adj_functional_data* next; /* a pointer to the next one, so we can walk the list */
 } adj_functional_data;
 

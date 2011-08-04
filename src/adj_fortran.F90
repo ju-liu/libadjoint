@@ -686,6 +686,18 @@ module libadjoint
       integer(kind=c_int) :: ierr
     end function adj_set_functional_dependencies_c
 
+    function adj_set_functional_derivative_dependencies_c(adjointer, functional, derivative, ndepends, dependencies)  &
+                                                      & result(ierr) bind(c, name='adj_set_functional_derivative_dependencies')
+      use libadjoint_data_structures
+      use iso_c_binding
+      type(adj_adjointer), intent(inout) :: adjointer
+      character(kind=c_char), dimension(ADJ_NAME_LEN), intent(in) :: functional
+      type(adj_variable), intent(in) :: derivative
+      integer(kind=c_int), intent(in), value :: ndepends
+      type(adj_variable), dimension(*), intent(in) :: dependencies
+      integer(kind=c_int) :: ierr
+    end function adj_set_functional_derivative_dependencies_c
+
     function adj_storage_memory_copy(val, mem) result(ierr) bind(c, name='adj_storage_memory_copy')
       use libadjoint_data_structures
       use iso_c_binding
@@ -1057,6 +1069,34 @@ module libadjoint
 
     ierr = adj_set_functional_dependencies_c(adjointer, functional_c, size(dependencies), dependencies)
   end function adj_set_functional_dependencies
+
+  function adj_set_functional_derivative_dependencies(adjointer, functional, derivative, dependencies) result(ierr)
+    use libadjoint_data_structures
+    use iso_c_binding
+    type(adj_adjointer), intent(inout) :: adjointer
+    character(len=*), intent(in) :: functional
+    type(adj_variable), intent(in) :: derivative
+    type(adj_variable), dimension(:), intent(in) :: dependencies
+    integer :: ierr
+
+    character(kind=c_char), dimension(ADJ_NAME_LEN) :: functional_c
+    integer :: j
+
+    if (len_trim(functional) .ge. ADJ_NAME_LEN - 1) then
+      ! Can't set the error message from Fortran, I think?
+      ierr = ADJ_ERR_INVALID_INPUTS
+    end if
+
+    do j=1,len_trim(functional)
+      functional_c(j) = functional(j:j)
+    end do
+    do j=len_trim(functional)+1,ADJ_NAME_LEN
+      functional_c(j) = c_null_char
+    end do
+    functional_c(ADJ_NAME_LEN) = c_null_char
+
+    ierr = adj_set_functional_derivative_dependencies_c(adjointer, functional_c, derivative, size(dependencies), dependencies)
+  end function adj_set_functional_derivative_dependencies
 
   function adj_register_functional_callback(adjointer, name, fnptr) result(ierr)
     type(adj_adjointer), intent(inout) :: adjointer
