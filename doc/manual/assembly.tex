@@ -379,6 +379,12 @@ This allows to perform certain tasks to be executed at the beginning or end of e
 
 \section{Replaying the forward run} \label{sec:replay}
 
+\libadjoint can not only be used to assemble the adjoint equations but also the forward equations. 
+This can be used to replay the forward simulation, which provides a very powerful debugging tool for checking the correctness of the model annotation and the callback implementation, see \autoref{sec:compare}.
+
+The function interface for assembling a forward equation is very similar to the one for the adjoint equation. 
+Therefore, the adjoint main loop template given in \autoref{sec:typical_adjoint_main_loop} can be easily adopted to a forward main loop.
+
 \defapis{adj_get_forward_equation}
 
 \begin{boxwithtitle}{\texttt{adj_get_forward_equation}}
@@ -403,9 +409,10 @@ This allows to perform certain tasks to be executed at the beginning or end of e
 \end{boxwithtitle}
 
 This function assembles the forward equation with index \texttt{equation}.
+
 For this to work, the source term callbacks have to be registered, see \refapi{adj_register_forward_source_callback}. 
 The result is a linear system with operator \texttt{lhs} and right hand side \texttt{rhs}. 
-Furthermore, the variable that this adjoint equation targets is provided as \texttt{fwd_var}.
+Furthermore, the variable that this forward equation targets is provided as \texttt{fwd_var}.
 
 
 \defapis{adj_evaluate_functional}
@@ -429,8 +436,10 @@ Furthermore, the variable that this adjoint equation targets is provided as \tex
 \end{minipage}
 \end{boxwithtitle}
 
-This function evaluates the functional named \texttt{functional} at timestep \texttt{timesteps} and saves the result in \texttt{output}.
-If the required functional callback, see \refapi{adj_register_functional_callback}, is missing an \refapi{ADJ_ERR_NEED_CALLBACK} is returned.
+This function evaluates the functional named \texttt{functional} at timestep \texttt{timesteps} and saves the result to \texttt{output}.
+
+It assumes that functional callback with name \texttt{functional} is registered, see \refapi{adj_register_functional_callback}. 
+If this callback is missing \refapi{ADJ_ERR_NEED_CALLBACK} is returned.
 Furthermore, the evaluation of a functional without any dependencies returns \refapi{ADJ_WARN_UNINITIALISED_VALUE}. 
-In both cases, \refapi{output} is uninitialised after the function.
+In both cases, \refapi{output} remains uninitialised.
 

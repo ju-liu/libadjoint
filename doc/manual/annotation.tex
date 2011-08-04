@@ -10,4 +10,85 @@
 \section{Existing model code}
 \section{Annotating the model}
 \defapis{adj_timestep_set_times}
+\begin{boxwithtitle}{Function interface for \texttt{adj_timestep_set_times}}
+\begin{minipage}{\columnwidth}
+\begin{ccode}
+  int adj_timestep_set_times(adj_adjointer* adjointer, int timestep, 
+                             adj_scalar start, adj_scalar end)
+\end{ccode}
+\begin{fortrancode}
+  function adj_timestep_set_times(adjointer, timestep, start, end) result(ierr) 
+    type(adj_adjointer), intent(inout) :: adjointer
+    integer(kind=c_int), intent(in), value :: timestep
+    adj_scalar_f, intent(in), value :: start
+    adj_scalar_f, intent(in), value :: end
+    integer(kind=c_int) :: ierr
+  end function adj_timestep_set_times
+\end{fortrancode}
+\end{minipage}
+\end{boxwithtitle}
+
+When necessary:
+
 \defapis{adj_timestep_set_functional_dependencies}
+\begin{boxwithtitle}{Function interface for \texttt{adj_timestep_set_functional_dependencies}}
+\begin{minipage}{\columnwidth}
+\begin{ccode}
+  int adj_timestep_set_functional_dependencies(adj_adjointer* adjointer, 
+                   int timestep, char* functional, int ndepends, 
+                   adj_variable* dependencies);
+\end{ccode}
+\begin{fortrancode}
+  function adj_timestep_set_functional_dependencies(adjointer, timestep, 
+                                  functional, dependencies) result(ierr)
+    type(adj_adjointer), intent(inout) :: adjointer
+    integer, intent(in) :: timestep
+    character(len=*), intent(in) :: functional
+    type(adj_variable), dimension(:), intent(in) :: dependencies
+    integer :: ierr
+  end function adj_timestep_set_functional_dependencies
+\end{fortrancode}
+\end{minipage}
+\end{boxwithtitle}
+
+This function defines the dependency variables for the functional with name \texttt{functional} at timestep \texttt{timestep}.
+\texttt{dependencies} must be an array of length \texttt{ndepends} containing any variable that is needed to evaluate the functional at this timestep.
+
+This information is used in two ways: 
+Firstly, to work out the dependecy variables needed for the evaluation of the fucntional value, see \refapi{adj_register_functional_callback}.
+Secondly, to work out the dependency variables needed for the evaluation of the functional derivatives, see \refapi{adj_register_functional_derivative_callback}.
+
+
+Note 
+
+A simpe example:
+A very common functional is the misfit of the solution $u$ and measurements $u_m(T)$ at the end of the simlation time $T$:
+\begin{equation}
+J(u) = |u(T) - u_{m}(T)|^2
+\label{eq:ex_functional1}
+\end{equation}
+
+
+
+
+
+\begin{equation}
+J(u) = \int_0^T |u - u_{m}|^2 dt,
+\label{eq:ex_functional1}
+\end{equation}
+
+where $0$ and $T$ are the simulation start end end time respectively, $u$ is the forward solution vector and $u_m$ is a vector containing available measurement data.
+
+
+If $\Delta t$ denotes the timestep used for a linear time discretisation (for example the $\theta$ method) of the forward model, we can write \autoref{eq:ex_functional1} as:
+\begin{equation}
+J(u) = \sum_{i=0,..,T/\Delta t} \int_0^T |u - u_{m}|^2 dt
+\label{eq:ex_functional1}
+\end{equation}
+where the superscript denotes the timelevel of the
+
+
+
+When necessary: Always.
+
+
