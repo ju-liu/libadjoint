@@ -670,40 +670,16 @@ module libadjoint
       integer(kind=c_int) :: ierr
     end function adj_timestep_get_times
 
-    function adj_timestep_set_functional_dependencies_c(adjointer, timestep, functional, ndepends, dependencies) result(ierr) &
-                                                      & bind(c, name='adj_timestep_set_functional_dependencies')
+    function adj_set_functional_dependencies_c(adjointer, functional, ndepends, dependencies) result(ierr) &
+                                                      & bind(c, name='adj_set_functional_dependencies')
       use libadjoint_data_structures
       use iso_c_binding
       type(adj_adjointer), intent(inout) :: adjointer
-      integer(kind=c_int), intent(in), value :: timestep
       character(kind=c_char), dimension(ADJ_NAME_LEN), intent(in) :: functional
       integer(kind=c_int), intent(in), value :: ndepends
       type(adj_variable), dimension(*), intent(in) :: dependencies
       integer(kind=c_int) :: ierr
-    end function adj_timestep_set_functional_dependencies_c
-
-    function adj_variable_get_ndepending_timesteps_c(adjointer, variable, functional, ntimesteps) result(ierr) &
-                                                      & bind(c, name='adj_variable_get_ndepending_timesteps')
-      use libadjoint_data_structures
-      use iso_c_binding
-      type(adj_adjointer), intent(in) :: adjointer
-      type(adj_variable), intent(in), value :: variable
-      character(kind=c_char), dimension(ADJ_NAME_LEN), intent(in) :: functional
-      integer(kind=c_int), intent(out) :: ntimesteps
-      integer(kind=c_int) :: ierr
-    end function adj_variable_get_ndepending_timesteps_c
-
-    function adj_variable_get_depending_timestep_c(adjointer, variable, functional, i, timesteps) result(ierr) &
-                                                      & bind(c, name='adj_variable_get_depending_timestep')
-      use libadjoint_data_structures
-      use iso_c_binding
-      type(adj_adjointer), intent(in) :: adjointer
-      type(adj_variable), intent(in), value :: variable
-      character(kind=c_char), dimension(ADJ_NAME_LEN), intent(in) :: functional
-      integer(kind=c_int), intent(in), value :: i
-      integer(kind=c_int), intent(out) :: timesteps
-      integer(kind=c_int) :: ierr
-    end function adj_variable_get_depending_timestep_c
+    end function adj_set_functional_dependencies_c
 
     function adj_storage_memory_copy(val, mem) result(ierr) bind(c, name='adj_storage_memory_copy')
       use libadjoint_data_structures
@@ -818,12 +794,11 @@ module libadjoint
       integer(kind=c_int) :: ierr
     end function adj_set_petsc_data_callbacks
 
-    function adj_evaluate_functional_c(adjointer, timestep, functional, output) result(ierr) &
+    function adj_evaluate_functional_c(adjointer, functional, output) result(ierr) &
            & bind(c, name='adj_evaluate_functional')
       use libadjoint_data_structures
       use iso_c_binding
       type(adj_adjointer), intent(inout) :: adjointer
-      integer(kind=c_int), intent(in), value :: timestep
       character(kind=c_char), dimension(ADJ_NAME_LEN), intent(in) :: functional
       adj_scalar_f, intent(out) :: output 
       integer(kind=c_int) :: ierr
@@ -1051,11 +1026,10 @@ module libadjoint
     ierr = adj_create_equation_c(variable, size(blocks), blocks, targets, equation)
   end function adj_create_equation
 
-  function adj_timestep_set_functional_dependencies(adjointer, timestep, functional, dependencies) result(ierr)
+  function adj_set_functional_dependencies(adjointer, functional, dependencies) result(ierr)
     use libadjoint_data_structures
     use iso_c_binding
     type(adj_adjointer), intent(inout) :: adjointer
-    integer, intent(in) :: timestep
     character(len=*), intent(in) :: functional
     type(adj_variable), dimension(:), intent(in) :: dependencies
     integer :: ierr
@@ -1076,62 +1050,9 @@ module libadjoint
     end do
     functional_c(ADJ_NAME_LEN) = c_null_char
 
-    ierr = adj_timestep_set_functional_dependencies_c(adjointer, timestep, functional_c, size(dependencies), dependencies)
-  end function adj_timestep_set_functional_dependencies
+    ierr = adj_set_functional_dependencies_c(adjointer, functional_c, size(dependencies), dependencies)
+  end function adj_set_functional_dependencies
 
-  function adj_variable_get_ndepending_timesteps(adjointer, variable, functional, ntimesteps) result(ierr)
-    type(adj_adjointer), intent(in) :: adjointer
-    type(adj_variable), intent(in), value :: variable
-    character(len=*), intent(in) :: functional
-    integer, intent(out) :: ntimesteps
-    integer :: ierr
-
-    character(kind=c_char), dimension(ADJ_NAME_LEN) :: functional_c
-    integer :: j
-
-    if (len_trim(functional) .ge. ADJ_NAME_LEN - 1) then
-      ! Can't set the error message from Fortran, I think?
-      ierr = ADJ_ERR_INVALID_INPUTS
-    end if
-
-    do j=1,len_trim(functional)
-      functional_c(j) = functional(j:j)
-    end do
-    do j=len_trim(functional)+1,ADJ_NAME_LEN
-      functional_c(j) = c_null_char
-    end do
-    functional_c(ADJ_NAME_LEN) = c_null_char
-
-    ierr = adj_variable_get_ndepending_timesteps_c(adjointer, variable, functional_c, ntimesteps)
-  end function adj_variable_get_ndepending_timesteps
-
-  function adj_variable_get_depending_timestep(adjointer, variable, functional, i, timestep) result(ierr)
-    type(adj_adjointer), intent(in) :: adjointer
-    type(adj_variable), intent(in), value :: variable
-    character(len=*), intent(in) :: functional
-    integer, intent(in), value :: i
-    integer, intent(out) :: timestep
-    integer :: ierr
-
-    character(kind=c_char), dimension(ADJ_NAME_LEN) :: functional_c
-    integer :: j
-
-    if (len_trim(functional) .ge. ADJ_NAME_LEN - 1) then
-      ! Can't set the error message from Fortran, I think?
-      ierr = ADJ_ERR_INVALID_INPUTS
-    end if
-
-    do j=1,len_trim(functional)
-      functional_c(j) = functional(j:j)
-    end do
-    do j=len_trim(functional)+1,ADJ_NAME_LEN
-      functional_c(j) = c_null_char
-    end do
-    functional_c(ADJ_NAME_LEN) = c_null_char
-
-    ierr = adj_variable_get_depending_timestep_c(adjointer, variable, functional_c, i, timestep)
-  end function adj_variable_get_depending_timestep
-  
   function adj_register_functional_callback(adjointer, name, fnptr) result(ierr)
     type(adj_adjointer), intent(inout) :: adjointer
     character(len=*), intent(in) :: name
@@ -1207,9 +1128,8 @@ module libadjoint
     ierr = adj_adjointer_to_html_c(adjointer, filename_c, type)
   end function adj_adjointer_to_html
   
-  function adj_evaluate_functional(adjointer, timestep, functional, output) result(ierr) 
+  function adj_evaluate_functional(adjointer, functional, output) result(ierr) 
     type(adj_adjointer), intent(inout) :: adjointer
-    integer, intent(in) :: timestep
     character(len=*), intent(in) :: functional
     adj_scalar_f, intent(out) :: output
     integer :: ierr
@@ -1230,7 +1150,7 @@ module libadjoint
     end do
     functional_c(ADJ_NAME_LEN) = c_null_char
 
-    ierr = adj_evaluate_functional_c(adjointer, timestep, functional_c, output)
+    ierr = adj_evaluate_functional_c(adjointer, functional_c, output)
   end function adj_evaluate_functional
   
   function adj_dict_set(dict, key, value) result(ierr)

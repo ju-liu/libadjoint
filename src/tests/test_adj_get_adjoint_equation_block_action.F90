@@ -186,15 +186,10 @@ subroutine test_adj_get_adjoint_equation_block_action
   ierr = adj_register_functional_derivative_callback(adjointer, "Drag", c_funloc(functional_derivative_callback))
   call adj_test_assert(ierr == ADJ_OK, "Should have worked")
 
-  ierr = adj_timestep_set_functional_dependencies(adjointer, timestep=0, functional="Drag", dependencies=(/u0/))
-  call adj_test_assert(ierr == ADJ_OK, "Should have worked")
-  ierr = adj_timestep_set_functional_dependencies(adjointer, timestep=1, functional="Drag", dependencies=(/u0/))
-  call adj_test_assert(ierr == ADJ_OK, "Should have worked")
-
   ierr = adj_get_adjoint_equation(adjointer, equation=0, functional="Drag", lhs=lhs, rhs=rhs, adj_var=adj_var1)
   call adj_test_assert(ierr == ADJ_ERR_NEED_VALUE, "We should need the value for u0")
 
-  ierr = adj_timestep_set_functional_dependencies(adjointer, timestep=1, functional="Drag", dependencies=(/u0, u1/))
+  ierr = adj_set_functional_dependencies(adjointer, functional="Drag", dependencies=(/u0, u1/))
   call adj_test_assert(ierr == ADJ_ERR_INVALID_INPUTS, "We can't set the functional dependencies twice")
 
   ! Test the html output
