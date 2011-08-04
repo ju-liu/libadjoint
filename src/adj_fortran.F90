@@ -105,8 +105,13 @@ module libadjoint_data_structures
     type(adj_op_callback_list) :: nonlinear_derivative_assembly_list
     type(adj_op_callback_list) :: block_action_list
     type(adj_op_callback_list) :: block_assembly_list
+
     type(adj_func_callback_list) :: functional_list
     type(adj_func_deriv_callback_list) :: functional_derivative_list
+
+    type(c_ptr) :: functional_data_start
+    type(c_ptr) :: functional_data_end
+
     type(c_funptr) :: forward_source_callback
   end type adj_adjointer
 
