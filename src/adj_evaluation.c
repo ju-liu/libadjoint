@@ -465,7 +465,7 @@ int adj_evaluate_functional_derivative(adj_adjointer* adjointer, adj_variable va
 
   if (dependencies == NULL) 
   {
-    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Warning: Evaluating functional %s without having any dependencies registered for it.\n", functional);
+    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Warning: Evaluating the derivative of functional %s without having any dependencies registered for it.\n", functional);
     return ADJ_WARN_UNINITIALISED_VALUE;
   }
 
