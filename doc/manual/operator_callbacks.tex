@@ -693,7 +693,5 @@ here are the same as those which were registered during the annotation.
 \end{description}
 \end{boxwithtitle}
 
-When necessary: supplying such a callback is optional. If the model developer supplies it, then the
-model developer can request the functional value with \refapi{adj_evaluate_functional}. The advantage
-of this approach is that \libadjoint will supply the dependencies of the functional to the evaluation
-code, so that the model developer does not have to.
+When necessary: supplying such a callback is optional. 
+If supplied, the functional can be evaluated with \refapi{adj_evaluate_functional} as soon as all the necessary dependencies for the evaluation are recorded. 
