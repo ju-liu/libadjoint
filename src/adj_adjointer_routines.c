@@ -888,7 +888,7 @@ int adj_forget_adjoint_equation(adj_adjointer* adjointer, int equation)
 
   if (adjointer->options[ADJ_ACTIVITY] == ADJ_ACTIVITY_NOTHING) return ADJ_OK;
 
-  if (equation >= adjointer->nequations)
+  if (equation < 0 || equation >= adjointer->nequations)
   {
     strncpy(adj_error_msg, "No such equation.", ADJ_ERROR_MSG_BUF);
     return ADJ_ERR_INVALID_INPUTS;
@@ -929,6 +929,10 @@ int adj_forget_adjoint_equation(adj_adjointer* adjointer, int equation)
         }
 
       }
+
+      /* After solving the last equation we can delete everything */
+	  if (equation==0)
+		should_we_delete = 1;
 
       if (should_we_delete)
       {
