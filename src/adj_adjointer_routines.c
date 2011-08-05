@@ -882,6 +882,7 @@ int adj_register_forward_source_callback(adj_adjointer* adjointer, void (*fn)(ad
 int adj_forget_adjoint_equation(adj_adjointer* adjointer, int equation)
 {
   adj_variable_data* data;
+  adj_variable variable;
   int should_we_delete;
   int i;
   int ierr;
@@ -913,26 +914,50 @@ int adj_forget_adjoint_equation(adj_adjointer* adjointer, int equation)
       /* Also check that it isn't necessary for any remaining functional right-hand-sides */
       if (should_we_delete == 1)
       {
-        adj_functional_data* functional_data_ptr = NULL;
-        adj_variable variable = adjointer->equations[data->equation].variable;
+        variable = adjointer->equations[data->equation].variable;
+        /* Loop over all remaining equations */
+        for (i=0; i<equation; i++)
+        {
+          adj_variable derivative = adjointer->equations[i].variable;
 
-        functional_data_ptr = adjointer->functional_data_start;
-        while (functional_data_ptr != NULL)
-        { 
-          for (i = 0; i < functional_data_ptr->ndepends; i++)
-          {
-            if (adj_variable_equal(&(functional_data_ptr->dependencies[i]), &variable, 1))
-              should_we_delete = 0;
+          /* Loop over all functionals and check if the variable is in the dependency list */ 
+          adj_functional_data* functional_data_ptr = adjointer->functional_data_start;
+          while (functional_data_ptr != NULL)
+          { 
+            int j;
+            /* Check if the dependencies of the functional derivative with respect to derivative have been defined specifically */
+            adj_functional_derivative_data *functional_derivative_data_ptr = functional_data_ptr->functional_derivative_data_start;
+            while (functional_derivative_data_ptr != NULL)
+            { 
+              if (adj_variable_equal(&(functional_derivative_data_ptr->derivative), &derivative, 1))
+              {
+                /* Now loop over the dependency list and compare */
+                for (j = 0; j < functional_derivative_data_ptr->ndepends; j++)
+                {
+                  if (adj_variable_equal(&(functional_derivative_data_ptr->dependencies[j]), &variable, 1))
+                    should_we_delete = 0;
+                }
+                break;
+              } 
+
+              functional_derivative_data_ptr = functional_derivative_data_ptr->next;
+            }
+             
+            /* Otherwise use the dependencies for the functional evaluation */
+            if (functional_derivative_data_ptr == NULL)
+            {
+              for (j = 0; j < functional_data_ptr->ndepends; j++)
+              {
+                if (adj_variable_equal(&(functional_data_ptr->dependencies[j]), &variable, 1))
+                  should_we_delete = 0;
+              }
+            }
+
+            functional_data_ptr = functional_data_ptr->next;
           }
-    
-          functional_data_ptr = functional_data_ptr->next;
         }
 
       }
-
-      /* After solving the last equation we can delete everything */
-	  if (equation==0)
-		should_we_delete = 1;
 
       if (should_we_delete)
       {
@@ -1506,6 +1531,7 @@ int adj_set_functional_derivative_dependencies(adj_adjointer* adjointer, char* f
   functional_data_ptr->functional_derivative_data_end = functional_derivative_data_ptr;
 
   functional_derivative_data_ptr->next = NULL;
+  functional_derivative_data_ptr->derivative = derivative;
   functional_derivative_data_ptr->ndepends = ndepends;
   functional_derivative_data_ptr->dependencies = (adj_variable*) malloc(ndepends * sizeof(adj_variable));
   ADJ_CHKMALLOC(functional_derivative_data_ptr->dependencies);
@@ -1514,7 +1540,6 @@ int adj_set_functional_derivative_dependencies(adj_adjointer* adjointer, char* f
   /* We are done */
   return ADJ_OK;
 }
-
 
 int adj_append_unique(int** array, int* array_sz, int value)
 {
