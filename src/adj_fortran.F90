@@ -692,7 +692,7 @@ module libadjoint
       use iso_c_binding
       type(adj_adjointer), intent(inout) :: adjointer
       character(kind=c_char), dimension(ADJ_NAME_LEN), intent(in) :: functional
-      type(adj_variable), intent(in) :: derivative
+      type(adj_variable), intent(in), value :: derivative
       integer(kind=c_int), intent(in), value :: ndepends
       type(adj_variable), dimension(*), intent(in) :: dependencies
       integer(kind=c_int) :: ierr
