@@ -449,10 +449,29 @@ int adj_evaluate_functional_derivative(adj_adjointer* adjointer, adj_variable va
     if (strncmp(functional_data_ptr->name, functional, ADJ_NAME_LEN) == 0)
     {
       int k;
-      ndepends = functional_data_ptr->ndepends;
+      adj_functional_derivative_data* functional_derivative_data_ptr = NULL;
+
+      /* Check if the dependencies are defined specifically */
+      functional_derivative_data_ptr = functional_data_ptr->functional_derivative_data_start;
+      while (functional_derivative_data_ptr != NULL)
+      {
+        if (adj_variable_equal(&(functional_derivative_data_ptr->derivative), &variable, 1))
+        {
+          ndepends = functional_derivative_data_ptr->ndepends;
+          variables = functional_derivative_data_ptr->dependencies;
+          break;
+        }
+        functional_derivative_data_ptr = functional_derivative_data_ptr->next;
+      }
+      /* Otherwise we assume the worst case: all dependecies of the functional are necessary */
+      if (functional_derivative_data_ptr == NULL)
+      {
+        ndepends = functional_data_ptr->ndepends;
+        variables = functional_data_ptr->dependencies;
+      }
+
       dependencies = (adj_vector*) malloc( ndepends * sizeof(adj_vector));
       ADJ_CHKMALLOC(dependencies);
-      variables = functional_data_ptr->dependencies;
 
       for (k = 0; k < ndepends; k++)
       {
