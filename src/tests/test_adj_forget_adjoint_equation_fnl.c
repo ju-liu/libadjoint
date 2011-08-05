@@ -22,7 +22,7 @@ void test_adj_forget_adjoint_equation_fnl(void)
   adj_equation eqn;
   int ierr;
   int before_2[5] = {1, 1, 1, 1, 1};
-  int after_2[5] = {1, 1, 1, 1, 0};
+  int after_2[5] = {1, 1, 1, 0, 0};
   int after_1[5] = {1, 1, 1, 0, 0};
   int after_0[5] = {0, 0, 0, 0, 0};
   Vec vec;
@@ -121,9 +121,25 @@ void test_adj_forget_adjoint_equation_fnl(void)
     adj_test_assert(ierr == ADJ_OK, "Should have worked");
   }
 
-  /* One last spanner in the works. Claim that u20 is necessary for the functional computation. */
-  ierr = adj_set_functional_dependencies(&adjointer, "Drag", 1, &u[3]);
-  adj_test_assert(ierr == ADJ_OK, "Should have worked fine");
+  /* The dependencies of the transposed forward system are:         */
+  /*                                                                */
+  /* u0    | u1     | u2       | u3    | u4                         */
+  /* ----------------------------------                             */
+  /*       | (u0)   | (u1)     |       |               (equation 0) */
+  /*       | (u0)   |          |       |               (equation 1) */
+  /*       |        | (u0,u1)  | (u2)  | (u2,u3)       (equation 2) */
+  /*       |        |          | (u2)  |               (equation 3) */
+  /*       |        |          |       | (u2,u3)       (equation 4) */
+
+  /* The dependencies of the transposed G matrix are:                */
+  /*                                                                 */
+  /* u0    | u1     | u2       | u3     | u4                         */
+  /* -------------------------------------------------               */
+  /*       | (u0,u1)| (u0,u2)  |        |               (equation 0) */
+  /*       |        | (u1,u2)  |        |               (equation 1) */
+  /*       |        |          | (u2,u3)| (u2,u3,u4)    (equation 2) */
+  /*       |        |          |        | (u2,u3,u4)    (equation 3) */
+  /*       |        |          |        |               (equation 4) */
 
   has_val = has_values(&adjointer, 5, u);
   adj_test_assert(memcmp(has_val, before_2, 5 * sizeof(int)) == 0, "Should be {1, 1, 1, 1, 1}");
@@ -147,7 +163,7 @@ void test_adj_forget_adjoint_equation_fnl(void)
   ierr = adj_forget_adjoint_equation(&adjointer, 2);
   adj_test_assert(ierr == ADJ_OK, "Should have worked");
   has_val = has_values(&adjointer, 5, u);
-  adj_test_assert(memcmp(has_val, after_2, 5 * sizeof(int)) == 0, "Should be {1, 1, 1, 1, 0}");
+  adj_test_assert(memcmp(has_val, after_2, 5 * sizeof(int)) == 0, "Should be {1, 1, 1, 0, 0}");
   free(has_val);
 
   ierr = adj_forget_adjoint_equation(&adjointer, 1);
