@@ -646,13 +646,11 @@ This callback is necessary to assemble the adjoint equation; see \refapi{adj_get
 \end{fortrancode}
 \end{minipage}
 \end{boxwithtitle}
-This function registers a given functional callback with name \texttt{name} so that \libadjoint can evaluate the functional,
-if the model developer desires it.
-If an functional callback has not been registered, and the model developer requests the value of a functional with
-\refapi{adj_evaluate_functional},
-\libadjoint will return an \refapi{ADJ_ERR_NEED_CALLBACK} error.
+This function registers a given functional callback with name \texttt{name}.
+Once the callback is registered, the functional value can be requested with \refapi{adj_evaluate_functional}.
 
-The supplied function callback computes the functional value at \texttt{timestep} of the functional with name \texttt{name}.
+The supplied function callback must compute the functional value at \texttt{timestep} of the functional with name \texttt{name}. 
+For further details see \refapi{adj_timestep_set_functional_dependencies}.
 Its interface has to conform:
 
 \begin{boxwithtitle}{Function interface for \texttt{adj_register_functional_callback}}

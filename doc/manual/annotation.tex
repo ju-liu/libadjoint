@@ -28,7 +28,10 @@
 \end{minipage}
 \end{boxwithtitle}
 
-When necessary:
+This functions sets the simulation start and end time for time step \texttt{timestep} in the \texttt{adjointer} object.
+The function \refapi{adj_timestep_get_times} can be used to retrieve these information again. 
+
+When necessary: Providing the simulation times is optional and is only used by \refapi{adj_timestep_get_times}.
 
 \defapis{adj_timestep_set_functional_dependencies}
 \begin{boxwithtitle}{Function interface for \texttt{adj_timestep_set_functional_dependencies}}
@@ -51,44 +54,67 @@ When necessary:
 \end{minipage}
 \end{boxwithtitle}
 
-This function defines the dependency variables for the functional with name \texttt{functional} at timestep \texttt{timestep}.
-\texttt{dependencies} must be an array of length \texttt{ndepends} containing any variable that is needed to evaluate the functional at this timestep.
+This function defines the dependencies for time step \texttt{timestep} of the functional with name \texttt{functional}.
+The argument \texttt{dependencies} must be an array of length \texttt{ndepends} containing any variable that is needed to evaluate the functional associated with this time step.
 
-This information is used in two ways: 
-Firstly, to work out the dependecy variables needed for the evaluation of the fucntional value, see \refapi{adj_register_functional_callback}.
-Secondly, to work out the dependency variables needed for the evaluation of the functional derivatives, see \refapi{adj_register_functional_derivative_callback}.
-
-
-Note 
-
-A simpe example:
-A very common functional is the misfit of the solution $u$ and measurements $u_m(T)$ at the end of the simlation time $T$:
+More specifically, \libadjoint assumes that the functional $J$ is written as a sum over all time steps:
 \begin{equation}
-J(u) = |u(T) - u_{m}(T)|^2
+J = \sum_{n=0}^N J_n(\mathbf d_n),
+\label{eq:functional_as_sum}
+\end{equation}
+where $N$ is the number of time steps and $\mathbf d_n=\{d_n^1, d_n^2, ...\}$ are the dependencies for the n'th summand.
+Then $\mathbf d_n$ is the \texttt{dependencies} argument of  \refapi{adj_timestep_set_functional_dependencies} at time step $i$.
+
+This information is always required and used in two ways: 
+\begin{itemize}
+\item Firstly, to work out the dependency variables passed to the functional evaluation callback, see \refapi{adj_register_functional_callback}.
+This callback function then computes the associated summand of this timestep, i.e. $J_n(\mathbf d_n)$ for time step $n$.
+\item Secondly, to work out which dependency variables are needed for the evaluation of the functional derivatives, see \refapi{adj_register_functional_derivative_callback}.
+\end{itemize}
+
+Examples:
+
+\underline{Example 1}:
+A common functional is the misfit of the forward solution $u$ and measurements $w$ at a given time $T$, i.e.:
+
+\begin{equation}
+J(u) = ||u(T) - w(T)||.
 \label{eq:ex_functional1}
 \end{equation}
 
-
-
-
-
+Since time $T$ does not have to coincide with one of the simulation time steps, the solution $u$ needs to be interpolated at time $T$.
+Let $u^{n-1}$ and $u^{n}$ be the two solution vectors at the time steps $t^{n-1}$ and $t^{n}$ just before and after $T$.
+Then a linear interpolation yields:
 \begin{equation}
-J(u) = \int_0^T |u - u_{m}|^2 dt,
+J(u) = ||\frac{T-t^{n}}{t^{n-1}-t^{n}}u^{n-1} + \frac{T-t^{n-1}}{t^{n}-t^{n-1}}u^{n} - w(T)||.
 \label{eq:ex_functional1}
 \end{equation}
 
-where $0$ and $T$ are the simulation start end end time respectively, $u$ is the forward solution vector and $u_m$ is a vector containing available measurement data.
+Therefore there are two dependency variables, $u^{n-1}$ and $u^{n}$, for time step $n$ (or three if $w(T)$ is declared to be an auxiliary variable) and no dependencies for all other time steps.
 
-
-If $\Delta t$ denotes the timestep used for a linear time discretisation (for example the $\theta$ method) of the forward model, we can write \autoref{eq:ex_functional1} as:
+\underline{Example 2}:
+If measurements are available at any point in time the misfit function can be integrated over time, i.e.: 
 \begin{equation}
-J(u) = \sum_{i=0,..,T/\Delta t} \int_0^T |u - u_{m}|^2 dt
+J(u) = \int_0^T ||u(t) - w(t)||^2 dt,
 \label{eq:ex_functional1}
 \end{equation}
-where the superscript denotes the timelevel of the
+
+where $0$ and $T$ are the simulation start and end time respectively, $u$ is the forward solution and $w$ contains the measurement data.
 
 
+To bring \autoref{eq:ex_functional1} in the form of \autoref{eq:functional_as_sum} it is rewritten as:
+\begin{equation}
+J(u) = \sum_{n=1,..,N} J_n(u^{n-1}, u^{n}), \quad J_n(u^{n-1}, u^{n}) := \int_{(n-1)\Delta t}^{n \Delta t} ||u - w||^2 dt,
+\end{equation}
+where $N$ is the number of time steps, $\Delta t$ is the time step size and a superscript denotes the time step of the variable.
+The dependency variables for time step $n>0$ is therefore $u^{n-1}$ and $u^{n}$ (and the associated $w$ if declared as auxiliary variables).
 
-When necessary: Always.
+\underline{Example 3}:
+Consider the functional given by: 
+\begin{equation}
+J(u) = \prod_{n=0,..,N} u^{n}.
+\end{equation}
+This can be trivially rewritten in form \autoref{eq:functional_as_sum} by defining $J_n \equiv 0$ for $n \ne N$ and $J_N(u) = \prod_{n=0,..,N} u^{n}$.
+Hence, there are no dependencies for time steps smaller than $n$ and a dependency of all forward variables at time step $N$.
 
 
