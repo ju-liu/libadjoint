@@ -89,7 +89,7 @@ but compiling out the calls to \libadjoint is impractical.
 \end{boxwithtitle}
 
 This function creates an \texttt{adj_variable} with name \texttt{name}, timestep \texttt{timestep} and iteration \texttt{iteration}.
-The \texttt{auxiliary} option defines the type of the variable and must be either \refapi{ADJ_NORMAL_VARIABLE} or \refapi{ADJ_AUXILIARY_VARIABLE}.
+The \texttt{auxiliary} option defines the type of the variable and must be either \texttt{ADJ_NORMAL_VARIABLE} or \texttt{ADJ_AUXILIARY_VARIABLE}.
 
 Auxiliary variables are variables for which no equation is solved, but are necessary for the evaluation of an operator.
 A typical example for an auxiliary variable is the computational mesh, which is needed for the assembly of the discrete operator but for which no equation is solved during the simulation.
@@ -172,7 +172,7 @@ This function queries the \texttt{iteration} of an \texttt{adj_variable}.
 \end{boxwithtitle}
 
 This function is used to define the type of an \texttt{adj_variable}.
-\texttt{auxiliary} must be either \refapi{ADJ_NORMAL_VARIABLE} \index{ADJ_NORMAL_VARIABLE} or \refapi{ADJ_AUXILIARY_VARIABLE}\index{ADJ_AUXILIARY_VARIABLE}.
+\texttt{auxiliary} must be either \texttt{ADJ_NORMAL_VARIABLE} \index{ADJ_NORMAL_VARIABLE} or \texttt{ADJ_AUXILIARY_VARIABLE}\index{ADJ_AUXILIARY_VARIABLE}.
 
 \defapi{adj_block}
 
@@ -452,10 +452,10 @@ Destroys the equation \texttt{equation}.
 \end{minipage}
 \end{boxwithtitle}
 
-Creates an \refapi{adj_storage} object that contains the supplied \refapi{adj_vector} \texttt{val}.
+Creates an \refapi{adj_storage_data} object that contains the supplied \refapi{adj_vector} \texttt{val}.
 
-When the resulting \refapi{adj_storage} is used to record a variable (see \refapi{adj_record_variable}), 
-a copy of \texttt{val} is created using the data callbacks \refapi{vec_duplicate} and \refapi{vec_axpy}.
+When the resulting \refapi{adj_storage_data} is used to record a variable (see \refapi{adj_record_variable}), 
+a copy of \texttt{val} is created using the \refapi{ADJ_VEC_DUPLICATE_CB} and \refapi{ADJ_VEC_AXPY_CB} data callbacks.
 Therefore, \texttt{val} can be deallocated in the model after the variable has been recorded. 
 
 
@@ -475,9 +475,9 @@ Therefore, \texttt{val} can be deallocated in the model after the variable has b
 \end{minipage}
 \end{boxwithtitle}
 
-Creates an \refapi{adj_storage} object that contains the supplied \refapi{adj_vector} \texttt{val}.
+Creates an \refapi{adj_storage_data} object that contains the supplied \refapi{adj_vector} \texttt{val}.
 
-When the resulting \refapi{adj_storage} is used to record a variable (see \refapi{adj_record_variable}), 
+When the resulting \refapi{adj_storage_data} is used to record a variable (see \refapi{adj_record_variable}), 
 then only the data pointer to \texttt{var} is recorded.
 Therefore the model developer has to ensure that the underlying data remains valid.
 This strategy is usually used in combination with reference counting.

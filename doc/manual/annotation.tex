@@ -87,7 +87,7 @@ Let $u^{n-1}$ and $u^{n}$ be the two solution vectors at the time steps $t^{n-1}
 Then a linear interpolation yields:
 \begin{equation}
 J(u) = ||\frac{T-t^{n}}{t^{n-1}-t^{n}}u^{n-1} + \frac{T-t^{n-1}}{t^{n}-t^{n-1}}u^{n} - w(T)||.
-\label{eq:ex_functional1}
+\label{eq:ex_functional2}
 \end{equation}
 
 Therefore there are two dependency variables, $u^{n-1}$ and $u^{n}$, for time step $n$ (or three if $w(T)$ is declared to be an auxiliary variable) and no dependencies for all other time steps.
@@ -96,13 +96,13 @@ Therefore there are two dependency variables, $u^{n-1}$ and $u^{n}$, for time st
 If measurements are available at any point in time the misfit function can be integrated over time, i.e.: 
 \begin{equation}
 J(u) = \int_0^T ||u(t) - w(t)||^2 dt,
-\label{eq:ex_functional1}
+\label{eq:ex_functional3}
 \end{equation}
 
 where $0$ and $T$ are the simulation start and end time respectively, $u$ is the forward solution and $w$ contains the measurement data.
 
 
-To bring \autoref{eq:ex_functional1} in the form of \autoref{eq:functional_as_sum} it is rewritten as:
+To bring \autoref{eq:ex_functional3} in the form of \autoref{eq:functional_as_sum} it is rewritten as:
 \begin{equation}
 J(u) = \sum_{n=1,..,N} J_n(u^{n-1}, u^{n}), \quad J_n(u^{n-1}, u^{n}) := \int_{(n-1)\Delta t}^{n \Delta t} ||u - w||^2 dt,
 \end{equation}
