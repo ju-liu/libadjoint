@@ -202,7 +202,8 @@ subroutine test_adj_nonlinear_derivative_action_callback
   ierr = adj_register_operator_callback(adjointer, ADJ_BLOCK_ASSEMBLY_CB, "IdentityOperator", &
   & c_funloc(identity_assembly_callback))
   ierr = adj_get_adjoint_equation(adjointer, functional="Drag", equation=1, lhs=lhs, rhs=rhs, adj_var=adj_var1)
-  call adj_test_assert(ierr == ADJ_WARN_UNINITIALISED_VALUE, "Expected ADJ_WARN_UNINITIALISED_VALUE because no dependencies have been recorded.")
+  call adj_chkierr(ierr)
+  call adj_test_assert(ierr == 0, "Should have worked")
 
   ! Set adj_var1 to be constant 1.
 #ifdef HAVE_PETSC
@@ -244,7 +245,7 @@ subroutine test_adj_nonlinear_derivative_action_callback
   call adj_test_assert(ierr == ADJ_OK, "Should have worked")
 
   ierr = adj_get_adjoint_equation(adjointer, functional="Drag", equation=0, lhs=lhs, rhs=rhs, adj_var=adj_var0)
-  call adj_test_assert(ierr == ADJ_WARN_UNINITIALISED_VALUE, "Expected ADJ_WARN_UNINITIALISED_VALUE because no dependencies have been recorded.")
+  call adj_test_assert(ierr == 0, "Should have worked")
  
    ! The rhs should now be -2*u0_val
   call VecAXPY(petsc_vec_from_adj_vector(rhs), two, u0_val, ierr)

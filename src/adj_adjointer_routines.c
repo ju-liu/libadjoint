@@ -47,9 +47,6 @@ int adj_create_adjointer(adj_adjointer* adjointer)
   adjointer->functional_derivative_list.lastnode = NULL;
   adjointer->forward_source_callback = NULL;
 
-  adjointer->functional_data_start = NULL;
-  adjointer->functional_data_end = NULL;
-
   for (i = 0; i < ADJ_NO_OPTIONS; i++)
     adjointer->options[i] = 0; /* 0 is the default for all options */
 
@@ -78,16 +75,19 @@ int adj_destroy_adjointer(adj_adjointer* adjointer)
   }
   if (adjointer->equations != NULL) free(adjointer->equations);
 
-  functional_data_ptr = adjointer->functional_data_start;
-  while (functional_data_ptr != NULL)
+  if (adjointer->timestep_data != NULL)
   {
-    functional_data_ptr_next = functional_data_ptr->next;
-    if (functional_data_ptr->dependencies != NULL) free(functional_data_ptr->dependencies);
-    free(functional_data_ptr);
-    functional_data_ptr = functional_data_ptr_next;
+    for (i = 0; i < adjointer->ntimesteps; i++)
+      functional_data_ptr = adjointer->timestep_data[i].functional_data_start;
+      while (functional_data_ptr != NULL)
+      {
+        functional_data_ptr_next = functional_data_ptr->next;
+        if (functional_data_ptr->dependencies != NULL) free(functional_data_ptr->dependencies);
+        free(functional_data_ptr);
+        functional_data_ptr = functional_data_ptr_next;
+      }
+    free(adjointer->timestep_data);
   }
-
-  if (adjointer->timestep_data != NULL) free(adjointer->timestep_data);
 
   data_ptr = adjointer->vardata.firstnode;
   while (data_ptr != NULL)
@@ -882,14 +882,14 @@ int adj_register_forward_source_callback(adj_adjointer* adjointer, void (*fn)(ad
 int adj_forget_adjoint_equation(adj_adjointer* adjointer, int equation)
 {
   adj_variable_data* data;
-  adj_variable variable;
   int should_we_delete;
   int i;
   int ierr;
+  int min_timestep;
 
   if (adjointer->options[ADJ_ACTIVITY] == ADJ_ACTIVITY_NOTHING) return ADJ_OK;
 
-  if (equation < 0 || equation >= adjointer->nequations)
+  if (equation >= adjointer->nequations)
   {
     strncpy(adj_error_msg, "No such equation.", ADJ_ERROR_MSG_BUF);
     return ADJ_ERR_INVALID_INPUTS;
@@ -911,52 +911,19 @@ int adj_forget_adjoint_equation(adj_adjointer* adjointer, int equation)
         }
       }
 
-      /* Also check that it isn't necessary for any remaining functional right-hand-sides */
-      if (should_we_delete == 1)
+      /* Also check that it isn't necessary for any timesteps we still have to compute
+         functional right-hand-sides for */
+      if (data->ndepending_timesteps > 0 && should_we_delete == 1)
       {
-        variable = adjointer->equations[data->equation].variable;
-        /* Loop over all remaining equations */
-        for (i=0; i<equation; i++)
+        int start_equation;
+        min_timestep = adj_minval(data->depending_timesteps, data->ndepending_timesteps);
+        ierr = adj_timestep_start_equation(adjointer, min_timestep, &start_equation);
+        assert(ierr == ADJ_OK);
+
+        if (equation > start_equation)
         {
-          adj_variable derivative = adjointer->equations[i].variable;
-
-          /* Loop over all functionals and check if the variable is in the dependency list */ 
-          adj_functional_data* functional_data_ptr = adjointer->functional_data_start;
-          while (functional_data_ptr != NULL)
-          { 
-            int j;
-            /* Check if the dependencies of the functional derivative with respect to derivative have been defined specifically */
-            adj_functional_derivative_data *functional_derivative_data_ptr = functional_data_ptr->functional_derivative_data_start;
-            while (functional_derivative_data_ptr != NULL)
-            { 
-              if (adj_variable_equal(&(functional_derivative_data_ptr->derivative), &derivative, 1))
-              {
-                /* Now loop over the dependency list and compare */
-                for (j = 0; j < functional_derivative_data_ptr->ndepends; j++)
-                {
-                  if (adj_variable_equal(&(functional_derivative_data_ptr->dependencies[j]), &variable, 1))
-                    should_we_delete = 0;
-                }
-                break;
-              } 
-
-              functional_derivative_data_ptr = functional_derivative_data_ptr->next;
-            }
-             
-            /* Otherwise use the dependencies for the functional evaluation */
-            if (functional_derivative_data_ptr == NULL)
-            {
-              for (j = 0; j < functional_data_ptr->ndepends; j++)
-              {
-                if (adj_variable_equal(&(functional_data_ptr->dependencies[j]), &variable, 1))
-                  should_we_delete = 0;
-              }
-            }
-
-            functional_data_ptr = functional_data_ptr->next;
-          }
+          should_we_delete = 0;
         }
-
       }
 
       if (should_we_delete)
@@ -1020,7 +987,7 @@ int adj_find_operator_callback(adj_adjointer* adjointer, int type, char* name, v
   return ADJ_ERR_NEED_CALLBACK;
 }
 
-int adj_find_functional_callback(adj_adjointer* adjointer, char* name, void (**fn)(adj_adjointer* adjointer, int ndepends, adj_variable* variables, adj_vector* dependencies, char* name, adj_scalar* output))
+int adj_find_functional_callback(adj_adjointer* adjointer, char* name, void (**fn)(adj_adjointer* adjointer, int timestep, int ndepends, adj_variable* variables, adj_vector* dependencies, char* name, adj_scalar* output))
 {
   adj_func_callback_list* cb_list_ptr;
   adj_func_callback* cb_ptr;
@@ -1032,7 +999,7 @@ int adj_find_functional_callback(adj_adjointer* adjointer, char* name, void (**f
   {
     if (strncmp(cb_ptr->name, name, ADJ_NAME_LEN) == 0)
     {
-      *fn = (void (*)(adj_adjointer* adjointer, int ndepends, adj_variable* variables, adj_vector* dependencies, char* name, adj_scalar* output)) cb_ptr->callback;
+      *fn = (void (*)(adj_adjointer* adjointer, int timestep, int ndepends, adj_variable* variables, adj_vector* dependencies, char* name, adj_scalar* output)) cb_ptr->callback;
       return ADJ_OK;
     }
     cb_ptr = cb_ptr->next;
@@ -1254,6 +1221,8 @@ int adj_add_new_hash_entry(adj_adjointer* adjointer, adj_variable* var, adj_vari
   (*data)->depending_equations = NULL;
   (*data)->nrhs_equations = 0;
   (*data)->rhs_equations = NULL;
+  (*data)->ndepending_timesteps = 0;
+  (*data)->depending_timesteps = NULL;
   (*data)->nadjoint_equations = 0;
   (*data)->adjoint_equations = NULL;
 
@@ -1396,11 +1365,17 @@ int adj_timestep_get_times(adj_adjointer* adjointer, int timestep, adj_scalar* s
     return ADJ_OK;
 }
 
-int adj_set_functional_dependencies(adj_adjointer* adjointer, char* functional, int ndepends, adj_variable* dependencies)
+int adj_timestep_set_functional_dependencies(adj_adjointer* adjointer, int timestep, char* functional, int ndepends, adj_variable* dependencies)
 {
   int i;
+  int ierr;
 
   adj_functional_data* functional_data_ptr = NULL;
+  if (timestep < 0)
+  {
+    strncpy(adj_error_msg, "Invalid timestep supplied to adj_timestep_set_times.", ADJ_ERROR_MSG_BUF);
+    return ADJ_ERR_INVALID_INPUTS;
+  }
 
   if (ndepends < 0)
   {
@@ -1417,13 +1392,19 @@ int adj_set_functional_dependencies(adj_adjointer* adjointer, char* functional, 
     }
   }
 
-  /* Make sure that the dependencies for this functional have not been set before */
-  functional_data_ptr = adjointer->functional_data_start;
+  if (adjointer->ntimesteps <= timestep)
+  {
+    ierr = adj_extend_timestep_data(adjointer, timestep + 1);
+    if (ierr != ADJ_OK) return ierr;
+  }
+
+  /* Make sure that the dependencies for this timestep have not been set before */
+  functional_data_ptr = adjointer->timestep_data[timestep].functional_data_start;
   while (functional_data_ptr != NULL)
   {
     if (strncmp(functional_data_ptr->name, functional, ADJ_NAME_LEN) == 0)
     {
-      snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "The dependencies for functional %s have been already set.", functional);
+      snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "The dependencies for functional %s at timestep %d have been already set.", functional, timestep);
       return ADJ_ERR_INVALID_INPUTS;
     }
     functional_data_ptr = functional_data_ptr->next;
@@ -1433,11 +1414,11 @@ int adj_set_functional_dependencies(adj_adjointer* adjointer, char* functional, 
   functional_data_ptr = (adj_functional_data*) malloc(sizeof(adj_functional_data));
   ADJ_CHKMALLOC(functional_data_ptr);
 
-  if (adjointer->functional_data_start == NULL)
-    adjointer->functional_data_start = functional_data_ptr;
-  if (adjointer->functional_data_end != NULL) 
-    adjointer->functional_data_end->next = functional_data_ptr;
-  adjointer->functional_data_end = functional_data_ptr;
+  if (adjointer->timestep_data[timestep].functional_data_start == NULL)
+    adjointer->timestep_data[timestep].functional_data_start = functional_data_ptr;
+  if (adjointer->timestep_data[timestep].functional_data_end != NULL) 
+    adjointer->timestep_data[timestep].functional_data_end->next = functional_data_ptr;
+  adjointer->timestep_data[timestep].functional_data_end = functional_data_ptr;
 
   functional_data_ptr->next = NULL;
   strncpy(functional_data_ptr->name, functional, ADJ_NAME_LEN);
@@ -1445,8 +1426,6 @@ int adj_set_functional_dependencies(adj_adjointer* adjointer, char* functional, 
   functional_data_ptr->dependencies = (adj_variable*) malloc(ndepends * sizeof(adj_variable));
   ADJ_CHKMALLOC(functional_data_ptr->dependencies);
   memcpy(functional_data_ptr->dependencies, dependencies, ndepends * sizeof(adj_variable));
-  functional_data_ptr->functional_derivative_data_start = NULL;
-  functional_data_ptr->functional_derivative_data_end = NULL;
 
   for (i = 0; i < ndepends; i++)
   {
@@ -1460,83 +1439,10 @@ int adj_set_functional_dependencies(adj_adjointer* adjointer, char* functional, 
       if (ierr != ADJ_OK) return ierr;
     }
 
+    /* Record that this variable is necessary for the functional evaluation at this point in time */
+    ierr = adj_append_unique(&(data_ptr->depending_timesteps), &(data_ptr->ndepending_timesteps), timestep);
+    if (ierr != ADJ_OK) return ierr;
   }
-  /* We are done */
-  return ADJ_OK;
-}
-
-int adj_set_functional_derivative_dependencies(adj_adjointer* adjointer, char* functional, adj_variable derivative, int ndepends, adj_variable* dependencies)
-{
-  int i;
-
-  adj_functional_data* functional_data_ptr = NULL;
-  adj_functional_derivative_data* functional_derivative_data_ptr = NULL;
-
-  if (ndepends < 0)
-  {
-    strncpy(adj_error_msg, "Must supply a nonnegative number of dependencies.", ADJ_ERROR_MSG_BUF);
-    return ADJ_ERR_INVALID_INPUTS;
-  }
-
-  for (i = 0; i < ndepends; i++)
-  {
-    if (dependencies[i].type != ADJ_FORWARD)
-    {
-      snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Functional dependencies must be forward variables.");
-      return ADJ_ERR_INVALID_INPUTS;
-    }
-  }
-
-  if (derivative.type != ADJ_FORWARD)
-  {
-    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Argument derivative must be forward variable.");
-    return ADJ_ERR_INVALID_INPUTS;
-  }
-
-  /* Find the functional data associated with this functional */
-  functional_data_ptr = adjointer->functional_data_start;
-  while (functional_data_ptr != NULL)
-  {
-    if (strncmp(functional_data_ptr->name, functional, ADJ_NAME_LEN) == 0)
-      break;
-    functional_data_ptr = functional_data_ptr->next;
-  }
-
-  if (functional_data_ptr == NULL) 
-  {
-    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "The functional dependencies for %s have to be defined first before the derivative dependencies can be set.", functional);
-    return ADJ_ERR_INVALID_INPUTS;
-  }
-
-  /* Make sure that the dependencies for this functional have not been set before */
-  functional_derivative_data_ptr = functional_data_ptr->functional_derivative_data_start;
-  while (functional_derivative_data_ptr != NULL)
-  {
-    if (adj_variable_equal(&(functional_derivative_data_ptr->derivative), &derivative, 1))
-    {
-      snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "The dependencies for derivative of functional %s with respect to variable %s have been already set.", functional, derivative.name);
-      return ADJ_ERR_INVALID_INPUTS;
-    }
-    functional_derivative_data_ptr = functional_derivative_data_ptr->next;
-  }
-
-  /* append the functional derivative dependency information to the list */  
-  functional_derivative_data_ptr = (adj_functional_derivative_data*) malloc(sizeof(adj_functional_derivative_data));
-  ADJ_CHKMALLOC(functional_derivative_data_ptr);
-
-  if (functional_data_ptr->functional_derivative_data_start == NULL)
-    functional_data_ptr->functional_derivative_data_start = functional_derivative_data_ptr;
-  if (functional_data_ptr->functional_derivative_data_end != NULL) 
-    functional_data_ptr->functional_derivative_data_end->next = functional_derivative_data_ptr;
-  functional_data_ptr->functional_derivative_data_end = functional_derivative_data_ptr;
-
-  functional_derivative_data_ptr->next = NULL;
-  functional_derivative_data_ptr->derivative = derivative;
-  functional_derivative_data_ptr->ndepends = ndepends;
-  functional_derivative_data_ptr->dependencies = (adj_variable*) malloc(ndepends * sizeof(adj_variable));
-  ADJ_CHKMALLOC(functional_derivative_data_ptr->dependencies);
-  memcpy(functional_derivative_data_ptr->dependencies, dependencies, ndepends * sizeof(adj_variable));
-
   /* We are done */
   return ADJ_OK;
 }
@@ -1572,6 +1478,8 @@ int adj_extend_timestep_data(adj_adjointer* adjointer, int extent)
     adjointer->timestep_data[i].start_equation = -1;
     adjointer->timestep_data[i].start_time = ADJ_UNSET;
     adjointer->timestep_data[i].end_time = ADJ_UNSET;
+    adjointer->timestep_data[i].functional_data_start = NULL;
+    adjointer->timestep_data[i].functional_data_end = NULL;
   }
   adjointer->ntimesteps = extent;
 
@@ -1597,4 +1505,95 @@ int adj_minval(int* array, int array_sz)
   return minval;
 }
 
+/* Provides the number of timesteps that need this variable for the computation of the specified functional */
+int adj_variable_get_ndepending_timesteps(adj_adjointer* adjointer, adj_variable variable, char* functional, int* ntimesteps)
+{
+  int ierr;
+  adj_variable_data* data_ptr;
+  int k;
 
+  ierr = adj_find_variable_data(&(adjointer->varhash), &variable, &data_ptr);
+  if (ierr != ADJ_OK) return ierr;
+
+  *ntimesteps = 0;
+  for (k = 0; k < data_ptr->ndepending_timesteps; k++)
+  {
+    adj_functional_data* func_ptr;
+    func_ptr = adjointer->timestep_data[data_ptr->depending_timesteps[k]].functional_data_start;
+    while (func_ptr != NULL)
+    {
+      if (strncmp(func_ptr->name, functional, ADJ_NAME_LEN) == 0)
+      {
+        /* OK, we've found the functional data for this timestep. Now, we loop through the dependencies of this
+           functional at this timestep, to see if we need to add it */
+        int l;
+        for (l = 0; l < func_ptr->ndepends; l++)
+        {
+          if (adj_variable_equal(&variable, &func_ptr->dependencies[l], 1))
+          {
+            *ntimesteps = *ntimesteps + 1;
+            break;
+          }
+        }
+        break;
+      }
+      else
+      {
+        func_ptr = func_ptr->next;
+      }
+    }
+  }
+
+  return ADJ_OK;
+}
+
+/* Provides the timesteps that need this variable for the computation of the specified functional */
+int adj_variable_get_depending_timestep(adj_adjointer* adjointer, adj_variable variable, char* functional, int i, int* timestep)
+{
+  int ierr;
+  adj_variable_data* data_ptr;
+  int k;
+  int ntimesteps;
+
+  ierr = adj_find_variable_data(&(adjointer->varhash), &variable, &data_ptr);
+  if (ierr != ADJ_OK) return ierr;
+
+  ntimesteps = 0;
+  for (k = 0; k < data_ptr->ndepending_timesteps; k++)
+  {
+    adj_functional_data* func_ptr;
+    func_ptr = adjointer->timestep_data[data_ptr->depending_timesteps[k]].functional_data_start;
+    while (func_ptr != NULL)
+    {
+      if (strncmp(func_ptr->name, functional, ADJ_NAME_LEN) == 0)
+      {
+        /* OK, we've found the functional data for this timestep. Now, we loop through the dependencies of this
+           functional at this timestep, to see if we need to add it */
+        int l;
+        for (l = 0; l < func_ptr->ndepends; l++)
+        {
+          if (adj_variable_equal(&variable, &func_ptr->dependencies[l], 1))
+          {
+            if (i == ntimesteps)
+            {
+              *timestep = data_ptr->depending_timesteps[k];
+              return ADJ_OK;
+            }
+            else
+            {
+              ntimesteps = ntimesteps + 1;
+              break;
+            }
+          }
+        }
+        break;
+      }
+      else
+      {
+        func_ptr = func_ptr->next;
+      }
+    }
+  }
+
+  return ADJ_ERR_INVALID_INPUTS;
+}

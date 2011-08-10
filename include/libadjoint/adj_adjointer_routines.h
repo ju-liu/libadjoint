@@ -26,8 +26,7 @@ int adj_timestep_start_equation(adj_adjointer* adjointer, int timestep, int* sta
 int adj_timestep_end_equation(adj_adjointer* adjointer, int timestep, int* end);
 int adj_timestep_set_times(adj_adjointer* adjointer, int timestep, adj_scalar start, adj_scalar end);
 int adj_timestep_get_times(adj_adjointer* adjointer, int timestep, adj_scalar* start, adj_scalar* end);
-int adj_set_functional_dependencies(adj_adjointer* adjointer, char* functional, int ndepends, adj_variable* dependencies);
-int adj_set_functional_derivative_dependencies(adj_adjointer* adjointer, char* functional, adj_variable derivative, int ndepends, adj_variable* dependencies);
+int adj_timestep_set_functional_dependencies(adj_adjointer* adjointer, int timestep, char* functional, int ndepends, adj_variable* dependencies);
 
 int adj_storage_memory_copy(adj_vector value, adj_storage_data* data);
 int adj_storage_memory_incref(adj_vector value, adj_storage_data* data);
@@ -36,9 +35,11 @@ int adj_storage_set_overwrite(adj_storage_data* data, int overwrite);
 
 #ifndef ADJ_HIDE_FROM_USER
 int adj_set_option(adj_adjointer* adjointer, int option, int choice);
+int adj_variable_get_ndepending_timesteps(adj_adjointer* adjointer, adj_variable variable, char* functional, int* ntimesteps);
+int adj_variable_get_depending_timestep(adj_adjointer* adjointer, adj_variable variable, char* functional, int k, int* timestep);
 
 int adj_find_operator_callback(adj_adjointer* adjointer, int type, char* name, void (**fn)(void));
-int adj_find_functional_callback(adj_adjointer* adjointer, char* name, void (**fn)(adj_adjointer* adjointer, int ndepends, adj_variable* variables, adj_vector* dependencies, char* name, adj_scalar* output));
+int adj_find_functional_callback(adj_adjointer* adjointer, char* name, void (**fn)(adj_adjointer* adjointer, int timestep, int ndepends, adj_variable* variables, adj_vector* dependencies, char* name, adj_scalar* output));
 int adj_find_functional_derivative_callback(adj_adjointer* adjointer, char* name, void (**fn)(adj_adjointer* adjointer, adj_variable variable, int ndepends, adj_variable* variables, adj_vector* dependencies, char* name, adj_vector* output));
 int adj_get_variable_value(adj_adjointer* adjointer, adj_variable var, adj_vector* value);
 int adj_has_variable_value(adj_adjointer* adjointer, adj_variable var);

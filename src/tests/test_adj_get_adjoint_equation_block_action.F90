@@ -105,7 +105,7 @@ subroutine functional_derivative_callback(adjointer, variable, ndepends, depende
   integer, parameter :: m = 2
   integer :: ierr
 
-  if (variable%timestep == 1) then
+  if (variable%timestep == 0) then
     call adj_test_assert(ndepends == 1, "We depend on one variable")
   else
     call adj_test_assert(ndepends == 0, "We don't depend on any variables")
@@ -126,7 +126,6 @@ subroutine test_adj_get_adjoint_equation_block_action
   type(adj_block) :: I
   type(adj_variable) :: u0, u1, adj_var0, adj_var1
   type(adj_equation) :: equation
-  type(adj_variable), dimension(0) :: nodeps
   integer :: ierr
   integer, parameter :: m = 2
   procedure(adj_block_assembly_proc), bind(c) :: identity_assembly_callback
@@ -178,9 +177,6 @@ subroutine test_adj_get_adjoint_equation_block_action
   ierr = adj_destroy_equation(equation)
   call adj_chkierr(ierr)
 
-  ierr = adj_set_functional_dependencies(adjointer, functional="Drag", dependencies=(/ nodeps /))
-  call adj_test_assert(ierr == ADJ_OK, "Should have worked")
-
   ierr = adj_get_adjoint_equation(adjointer, equation=2, functional="Drag", lhs=lhs, rhs=rhs, adj_var=adj_var1)
   call adj_test_assert(ierr == ADJ_ERR_INVALID_INPUTS, "Should not have worked")
 
@@ -190,14 +186,16 @@ subroutine test_adj_get_adjoint_equation_block_action
   ierr = adj_register_functional_derivative_callback(adjointer, "Drag", c_funloc(functional_derivative_callback))
   call adj_test_assert(ierr == ADJ_OK, "Should have worked")
 
-  ierr = adj_set_functional_derivative_dependencies(adjointer, functional="Drag", derivative=u1, dependencies=(/u0/))
+  ierr = adj_timestep_set_functional_dependencies(adjointer, timestep=0, functional="Drag", dependencies=(/u0/))
   call adj_test_assert(ierr == ADJ_OK, "Should have worked")
-
-  ierr = adj_set_functional_derivative_dependencies(adjointer, functional="Drag", derivative=u1, dependencies=(/u0, u1/))
-  call adj_test_assert(ierr == ADJ_ERR_INVALID_INPUTS, "We can't set the functional dependencies twice")
+  ierr = adj_timestep_set_functional_dependencies(adjointer, timestep=1, functional="Drag", dependencies=(/u0/))
+  call adj_test_assert(ierr == ADJ_OK, "Should have worked")
 
   ierr = adj_get_adjoint_equation(adjointer, equation=0, functional="Drag", lhs=lhs, rhs=rhs, adj_var=adj_var1)
   call adj_test_assert(ierr == ADJ_ERR_NEED_VALUE, "We should need the value for u0")
+
+  ierr = adj_timestep_set_functional_dependencies(adjointer, timestep=1, functional="Drag", dependencies=(/u0, u1/))
+  call adj_test_assert(ierr == ADJ_ERR_INVALID_INPUTS, "We can't set the functional dependencies twice")
 
   ! Test the html output
   ierr = adj_adjointer_to_html(adjointer, "test_adj_get_adjoint_equation_block_action_1_forward.html", ADJ_FORWARD)
@@ -214,7 +212,6 @@ subroutine test_adj_get_adjoint_equation_block_action
   call adj_test_assert(ierr == ADJ_OK, "Should have worked")
 
   ierr = adj_get_adjoint_equation(adjointer, equation=1, functional="Drag", lhs=lhs, rhs=rhs, adj_var=adj_var1)
-  call adj_chkierr(ierr)
   call adj_test_assert(ierr == ADJ_OK, "Should have worked")
 
   ! We don't actually need the memory for lhs and rhs, so we'll delete them now
