@@ -6,10 +6,10 @@
 \newpage
 
 
-This section introduces the assembly routines for the adjoint equation 
+This chapter introduces the assembly routines for the adjoint equation 
 and gives a typical example for an adjoint main loop.
-Furthermore the routines for assembling the forward equations are discussed which are needed 
-for the comparison against the original forward run,see {sec:compare}.
+Furthermore, the routines for assembling the forward equations are discussed which are needed 
+for the comparison against the original forward run, see \autoref{sec:compare}.
 
 \section{Assembling the adjoint equations} \label{sec:adjoint_assembly}
 
@@ -39,9 +39,10 @@ for the comparison against the original forward run,see {sec:compare}.
 
 This is the core function of \libadjoint.
 It assembles the adjoint equation with index \texttt{equation} for the functional named \texttt{functional}.
-If \texttt{equation} is less than zero or larger or equal to the number of registered equations \refapi{ADJ_ERR_INVALID_INPUTS} is returned.
+If \texttt{equation} is less than zero or larger or equal to the number of registered equations, \refapi{ADJ_ERR_INVALID_INPUTS} is returned.
 The result is a linear system with operator \texttt{lhs} and right hand side \texttt{rhs}. 
 Furthermore, the variable that this adjoint equation targets is provided as \texttt{adj_var}.
+The solution of the linear system must be recorded with \refapi{adj_record_variable}.
 
 \defapis{adj_forget_adjoint_equation}
 
@@ -63,8 +64,6 @@ Furthermore, the variable that this adjoint equation targets is provided as \tex
 This function is used to remove recorded variables that are not longer be necessary to assemble the remaining adjoint equations. 
 More specifically, it forgets all recorded variables that are not needed to assemble the adjoint equations with index lower than \texttt{equation}.
 
-The data callback \refapi{ADJ_VEC_DESTROY_CB} must be registered to use this function.
-
 
 \section{A typical adjoint main loop}\label{sec:typical_adjoint_main_loop}
 
@@ -75,7 +74,7 @@ Libadjoint is designed such that the program loop for solving the adjoint equati
 and its structure does not depend on the underlying forward model.
 Hence, the example adjoint main loop given at the end of this section is a good starting point for any adjoint main loop implementation with \libadjoint.
 
-A sketch of a straight forward (but not very efficient as we will see soon) adjoint main loop could be:
+A sketch of a straightforward (but very inefficient as we will see soon) adjoint main loop could be:
 
 \begin{minipage}{\columnwidth}
 \begin{fortrancode}   
@@ -87,16 +86,14 @@ A sketch of a straight forward (but not very efficient as we will see soon) adjo
       call adj_record_variable ! Record the adjoint solution
       !! ... ! Do something useful with the adjoint solution
     end do
-    call adj_forget_adjoint_equation ! Forget all recorded adjoint variables
   end do
-  call adj_forget_adjoint_equation ! Forget all recorded forward variables
+  call adj_forget_adjoint_equation ! Forget all recorded variables
 \end{fortrancode}
 \end{minipage}
 
 For every registered functional, the adjoint equations are solved backwards in time. 
 The core function is \refapi{adj_get_adjoint_equation}, which assembles an adjoint equation for a given functional. 
 The solution of the resulting linear system is then recorded with \refapi{adj_record_variable} since it is required for the assembly of the remaining adjoint equations.
-However, at the end of the adjoint equations loop, the recorded adjoint solutions are no longer needed and can be forgotten using \refapi{adj_forget_adjoint_equation}.
 The adjoint main loop is finalised by calling \refapi{adj_forget_adjoint_equation} to forget the recorded forward variables. 
 
 Although this adjoint main loop would work, it has one big disadvantage: 
@@ -188,7 +185,7 @@ The result is saved in \texttt{count}.
 \end{minipage}
 \end{boxwithtitle}
 
-This function queries the number iterations for variable \texttt{variable} at the variable's current timestep.
+This function queries the number iterations for the variable in \refapi{adjointer} that matches the name, timestep and the auxiliary flag of the model variable \texttt{variable}.
 If no iteration is found an \refapi{ADJ_ERR_INVALID_INPUTS} error code is returned.
 The result is saved in \texttt{count}.
 
@@ -354,6 +351,9 @@ This allows to perform certain tasks to be executed at the beginning or end of e
 
         ierr = adj_record_variable(adjointer, adj_var, storage)
         call adj_chkierr(ierr)
+
+        ! Use the adjoint variable
+        ! ...
 
         ! Destroy lhs and rhs using the appropriate data callbacks
         call vec_destroy(rhs)

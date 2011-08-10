@@ -358,14 +358,13 @@ Destroys the nonlinear block \texttt{nblock}.
 \end{minipage}
 \end{boxwithtitle}
 
-This function creates an \refapi{adj_equation} that solves for \texttt{var}.
+This function creates an \refapi{adj_equation}.
 
 The arguments \texttt{blocks} and \texttt{targets} are arrays of length \texttt{nblocks} that describe the equation:
 The first block of the blocks array is to be multiplied with the first variable in the targets array, 
 the second pairs with the second, and so on.
+\texttt{var} is the variable to be solved for in this equation.
 Hence, the variable to be solved for, \texttt{var}, must exist in \texttt{targets}. If that is not the case an \refapi{ADJ_ERR_INVALID_INPUTS} is returned.
-The right hand side of the equation is neglected since it irrelevant for the adjoint equation. 
- 
 
 
 \defapis{adj_equation_set_rhs_dependencies}
@@ -412,7 +411,7 @@ If the right hand side is not needed or the source term has no dependencies, thi
 \end{minipage}
 \end{boxwithtitle}
 
-Adds the equation \texttt{equation} to the \texttt{adjointer}.
+Registers the equation \texttt{equation} to the \texttt{adjointer}.
 
 
 
@@ -456,7 +455,7 @@ Creates an \refapi{adj_storage_data} object that contains the supplied \refapi{a
 
 When the resulting \refapi{adj_storage_data} is used to record a variable (see \refapi{adj_record_variable}), 
 a copy of \texttt{val} is created using the \refapi{ADJ_VEC_DUPLICATE_CB} and \refapi{ADJ_VEC_AXPY_CB} data callbacks.
-Therefore, \texttt{val} can be deallocated in the model after the variable has been recorded. 
+Therefore, \texttt{val} can be destroyed in the model after the variable has been recorded. 
 
 
 \defapis{adj_storage_memory_incref}
