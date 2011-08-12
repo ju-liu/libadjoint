@@ -137,6 +137,429 @@ module libadjoint_data_structures
   end type adj_dictionary
 end module libadjoint_data_structures
 
+
+module libadjoint_array1_data_structures
+
+  use libadjoint_data_structures
+  use iso_c_binding
+  implicit none
+
+  private
+
+  public :: array1_vec_to_adj_vector
+  public :: array1_vec_from_adj_vector
+
+  public :: array1_vec_duplicate
+  public :: array1_vec_axpy
+  public :: array1_vec_destroy
+  public :: array1_vec_set_values
+  public :: array1_vec_get_size
+  public :: array1_vec_get_norm
+  public :: array1_vec_set_random
+  public :: array1_vec_dot_product
+
+  public :: array1_mat_to_adj_matrix
+  public :: array1_mat_from_adj_matrix
+  public :: array1_mat_duplicate
+  public :: array1_mat_axpy
+  public :: array1_mat_destroy
+
+  type rank1_ptr
+    adj_scalar_f, dimension(:), pointer :: ptr
+  end type rank1_ptr
+
+  type rank2_ptr
+    adj_scalar_f, dimension(:, :), pointer :: ptr
+  end type rank2_ptr
+
+  contains
+
+  function array1_vec_to_adj_vector(input) result(output)
+    adj_scalar_f, dimension(:), intent(in), target :: input
+    type(rank1_ptr), pointer :: ptr
+    type(adj_vector) :: output
+
+    output%klass = 0
+    allocate(ptr)
+    ptr%ptr => input
+    output%ptr = c_loc(ptr)
+  end function array1_vec_to_adj_vector
+
+  function array1_vec_from_adj_vector(input) result(output)
+    type(adj_vector), intent(in) :: input
+    adj_scalar_f, dimension(:), pointer :: output
+    type(rank1_ptr), pointer :: ptr
+
+    call c_f_pointer(input%ptr, ptr)
+    output => ptr%ptr
+  end function array1_vec_from_adj_vector
+
+  ! Remember to deallocate ptr after using output!
+  function array1_mat_to_adj_matrix(input) result(output)
+    adj_scalar_f, dimension(:, :), intent(in), target :: input
+    type(rank2_ptr), pointer :: ptr
+    type(adj_matrix) :: output
+
+    output%klass = 0
+    allocate(ptr)
+    ptr%ptr => input
+    output%ptr = c_loc(ptr)
+  end function array1_mat_to_adj_matrix
+
+  function array1_mat_from_adj_matrix(input) result(output)
+    type(adj_matrix), intent(in) :: input
+    adj_scalar_f, dimension(:, :), pointer :: output
+    type(rank2_ptr), pointer :: ptr
+
+    call c_f_pointer(input%ptr, ptr)
+    output => ptr%ptr
+  end function array1_mat_from_adj_matrix
+
+  subroutine array1_vec_duplicate(X, newX) bind(c) 
+    type(adj_vector), intent(in), value :: X
+    type(adj_vector), intent(out) :: newX
+
+    adj_scalar_f, dimension(:), pointer :: ptr1, ptr2
+
+    ptr1 => array1_vec_from_adj_vector(X)
+    allocate(ptr2(size(ptr2, 1)))
+    ptr2(:) = 0.0
+    newX = array1_vec_to_adj_vector(ptr2)
+  end subroutine array1_vec_duplicate
+
+  subroutine array1_vec_axpy(Y, alpha, X) bind(c) 
+    type(adj_vector), intent(inout) :: Y
+    adj_scalar_f, intent(in), value :: alpha
+    type(adj_vector), intent(in), value :: X
+
+    adj_scalar_f, dimension(:), pointer :: ptr1, ptr2
+
+    ptr1 => array1_vec_from_adj_vector(X)
+    ptr2 => array1_vec_from_adj_vector(Y)
+
+    ptr2 = ptr2 + alpha*ptr1
+  end subroutine array1_vec_axpy
+
+  subroutine array1_vec_destroy(X)  bind(c) 
+    type(adj_vector), intent(inout) :: X
+
+    adj_scalar_f, dimension(:), pointer :: ptr
+
+    ptr => array1_vec_from_adj_vector(X)
+    deallocate(ptr)
+  end subroutine array1_vec_destroy
+
+  subroutine array1_vec_set_values(vec, scalars) bind(c)
+    type(adj_vector), intent(inout) :: vec
+    adj_scalar_f, dimension(*), intent(in) :: scalars
+
+    adj_scalar_f, dimension(:), pointer :: ptr
+    integer :: sz
+
+    ptr => array1_vec_from_adj_vector(vec)
+    sz = size(ptr,1)
+    ptr = scalars(1:sz)
+  end subroutine array1_vec_set_values
+
+
+  subroutine array1_vec_get_size(x, sz)  bind(c) 
+    type(adj_vector), intent(in) :: x
+    integer(kind=c_int), intent(out) :: sz
+
+    adj_scalar_f, dimension(:), pointer :: ptr
+
+    ptr => array1_vec_from_adj_vector(x)
+    sz = size(ptr, 1)
+  end subroutine array1_vec_get_size
+
+  subroutine array1_vec_get_norm(x, norm) bind(c) 
+    type(adj_vector), intent(in) :: x
+    adj_scalar_f, intent(out) :: norm
+
+    adj_scalar_f, dimension(:), pointer :: ptr
+    integer :: i
+
+    ptr => array1_vec_from_adj_vector(x)
+    norm = 0.0
+
+    do i = 1, size(ptr, 1) 
+      norm = norm + ptr(i)*ptr(i)
+    end do
+    norm = sqrt(real(norm))
+  end subroutine array1_vec_get_norm
+
+  subroutine array1_vec_set_random(x)  bind(c) 
+    type(adj_vector), intent(inout) :: x
+    
+    adj_scalar_f, dimension(:), pointer :: ptr
+    integer :: i
+
+    ptr => array1_vec_from_adj_vector(x)
+    call random_seed()
+    call random_number(ptr)
+  end subroutine array1_vec_set_random
+
+  subroutine array1_vec_dot_product(x, y, val)  bind(c) 
+    type(adj_vector), intent(in), value :: x, y
+    adj_scalar_f, intent(out) :: val
+
+    adj_scalar_f, dimension(:), pointer :: ptr1, ptr2
+
+    ptr1 => array1_vec_from_adj_vector(x)
+    ptr2 => array1_vec_from_adj_vector(y)
+
+    val = dot_product(ptr1, ptr2)
+  end subroutine array1_vec_dot_product
+
+  subroutine array1_mat_duplicate(X, newX)  bind(c) 
+    type(adj_matrix), intent(in), value :: X
+    type(adj_matrix), intent(out) :: newX
+
+    adj_scalar_f, dimension(:,:), pointer :: ptr1, ptr2
+
+    ptr1 => array1_mat_from_adj_matrix(X)
+    allocate(ptr2(size(ptr1, 1), size(ptr1, 2)))
+    ptr2(:,:) = 0.0
+    newX = array1_mat_to_adj_matrix(ptr2)
+  end subroutine array1_mat_duplicate
+
+  subroutine array1_mat_axpy(Y, alpha, X)  bind(c) 
+    type(adj_matrix), intent(inout) :: Y
+    adj_scalar_f, intent(in), value :: alpha
+    type(adj_matrix), intent(in), value :: X
+
+    adj_scalar_f, dimension(:,:), pointer :: ptr1, ptr2
+
+    ptr1 => array1_mat_from_adj_matrix(X)
+    ptr2 => array1_mat_from_adj_matrix(Y)
+
+    ptr2 = ptr2 + alpha*ptr1
+  end subroutine array1_mat_axpy
+
+  subroutine array1_mat_destroy(X)  bind(c) 
+    type(adj_matrix), intent(inout) :: X
+
+    adj_scalar_f, dimension(:,:), pointer :: ptr
+
+    ptr => array1_mat_from_adj_matrix(X)
+    deallocate(ptr)
+  end subroutine array1_mat_destroy
+
+end module libadjoint_array1_data_structures
+
+module libadjoint_array2_data_structures
+
+  use libadjoint
+  use iso_c_binding
+  implicit none
+
+  private
+  public :: array2_vec_to_adj_vector
+  public :: array2_vec_from_adj_vector
+
+  public :: array2_vec_duplicate
+  public :: array2_vec_axpy
+  public :: array2_vec_destroy
+  public :: array2_vec_set_values
+  public :: array2_vec_get_size
+  public :: array2_vec_get_norm
+  public :: array2_vec_set_random
+  public :: array2_vec_dot_product
+
+  public :: array2_mat_to_adj_matrix
+  public :: array2_mat_from_adj_matrix
+  public :: array2_mat_duplicate
+  public :: array2_mat_axpy
+  public :: array2_mat_destroy
+
+  type rank2_ptr
+    adj_scalar_f, dimension(:, :), pointer :: ptr
+  end type rank2_ptr
+
+  type rank4_ptr
+    adj_scalar_f, dimension(:, :, :, :), pointer :: ptr
+  end type rank4_ptr
+
+  contains
+
+  function array2_vec_to_adj_vector(input) result(output)
+    adj_scalar_f, dimension(:,:), intent(in), target :: input
+    type(rank2_ptr), pointer :: ptr
+    type(adj_vector) :: output
+
+    output%klass = 0
+    allocate(ptr)
+    ptr%ptr => input
+    output%ptr = c_loc(ptr)
+  end function array2_vec_to_adj_vector
+
+  function array2_vec_from_adj_vector(input) result(output)
+    type(adj_vector), intent(in) :: input
+    adj_scalar_f, dimension(:,:), pointer :: output
+    type(rank2_ptr), pointer :: ptr
+
+    call c_f_pointer(input%ptr, ptr)
+    output => ptr%ptr
+  end function array2_vec_from_adj_vector
+
+  function array2_mat_to_adj_matrix(input) result(output)
+    adj_scalar_f, dimension(:,:,:,:), intent(in), target :: input
+    type(rank4_ptr), pointer :: ptr
+    type(adj_matrix) :: output
+
+    output%klass = 0
+    allocate(ptr)
+    ptr%ptr => input
+    output%ptr = c_loc(ptr)
+  end function array2_mat_to_adj_matrix
+
+  function array2_mat_from_adj_matrix(input) result(output)
+    type(adj_matrix), intent(in) :: input
+    adj_scalar_f, dimension(:,:,:,:), pointer :: output
+    type(rank4_ptr), pointer :: ptr
+
+    call c_f_pointer(input%ptr, ptr)
+    output => ptr%ptr
+  end function array2_mat_from_adj_matrix
+
+  subroutine array2_vec_duplicate(X, newX)  bind(c)
+    type(adj_vector), intent(in), value :: X
+    type(adj_vector), intent(out) :: newX
+
+    adj_scalar_f, dimension(:,:), pointer :: ptr1, ptr2
+
+    ptr2 => array2_vec_from_adj_vector(X)
+    allocate(ptr2(size(ptr2, 1), size(ptr2, 2)))
+    ptr2(:,:) = 0.0
+    newX = array2_vec_to_adj_vector(ptr2)
+  end subroutine array2_vec_duplicate
+
+  subroutine array2_vec_axpy(Y, alpha, X)  bind(c)
+    type(adj_vector), intent(inout) :: Y
+    adj_scalar_f, intent(in), value :: alpha
+    type(adj_vector), intent(in), value :: X
+
+    adj_scalar_f, dimension(:,:), pointer :: ptr1, ptr2
+
+    ptr1 => array2_vec_from_adj_vector(X)
+    ptr2 => array2_vec_from_adj_vector(Y)
+
+    ptr2 = ptr2 + alpha*ptr1
+  end subroutine array2_vec_axpy
+
+  subroutine array2_vec_destroy(X)  bind(c)
+    type(adj_vector), intent(inout) :: X
+
+    adj_scalar_f, dimension(:,:), pointer :: ptr
+
+    ptr => array2_vec_from_adj_vector(X)
+    deallocate(ptr)
+  end subroutine array2_vec_destroy
+
+  subroutine array2_vec_set_values(vec, scalars) bind(c)
+    type(adj_vector), intent(inout) :: vec
+    adj_scalar_f, dimension(*), intent(in) :: scalars
+
+    adj_scalar_f, dimension(:,:), pointer :: ptr
+    integer :: sz
+
+    ptr => array2_vec_from_adj_vector(vec)
+    sz = size(ptr,1)*size(ptr,2)
+    ptr = reshape( scalars(1:sz), (/ size(ptr, 1), size(ptr, 2) /)  )
+  end subroutine array2_vec_set_values
+
+  subroutine array2_vec_get_size(x, sz)  bind(c)
+    type(adj_vector), intent(in) :: x
+    integer(kind=c_int), intent(out) :: sz
+
+    adj_scalar_f, dimension(:,:), pointer :: ptr
+
+    ptr => array2_vec_from_adj_vector(x)
+    sz = size(ptr, 1)*size(ptr,2)
+  end subroutine array2_vec_get_size
+
+  subroutine array2_vec_get_norm(x, norm)  bind(c)
+    type(adj_vector), intent(in) :: x
+    adj_scalar_f, intent(out) :: norm
+
+    adj_scalar_f, dimension(:,:), pointer :: ptr
+    integer :: i,j
+
+    ptr => array2_vec_from_adj_vector(x)
+
+    norm = 0.0
+    do i = 1, size(ptr, 1) 
+      do j = 1, size(ptr, 2) 
+        norm = norm + ptr(i,j)*ptr(i,j)
+      end do
+    end do
+
+    norm = sqrt(real(norm))
+  end subroutine array2_vec_get_norm
+
+  subroutine array2_vec_set_random(x)  bind(c)
+    type(adj_vector), intent(inout) :: x
+    
+    adj_scalar_f, dimension(:,:), pointer :: ptr
+    integer :: i
+
+    ptr => array2_vec_from_adj_vector(x)
+    call random_seed()
+    call random_number(ptr)
+  end subroutine array2_vec_set_random
+
+  subroutine array2_vec_dot_product(x, y, val)  bind(c)
+    type(adj_vector), intent(in), value :: x, y
+    adj_scalar_f, intent(out) :: val
+
+    adj_scalar_f, dimension(:,:), pointer :: ptr1, ptr2
+    integer :: i
+
+    ptr1 => array2_vec_from_adj_vector(x)
+    ptr2 => array2_vec_from_adj_vector(y)
+
+    val = 0.0
+    do i = 1, size(ptr1,1)
+      val = val + dot_product(ptr1(i,:), ptr2(i,:))
+    end do
+  end subroutine array2_vec_dot_product 
+
+  subroutine array2_mat_duplicate(X, newX)  bind(c)
+    type(adj_matrix), intent(in), value :: X
+    type(adj_matrix), intent(out) :: newX
+
+    adj_scalar_f, dimension(:,:,:,:), pointer :: ptr1, ptr2
+
+    ptr2 => array2_mat_from_adj_matrix(X)
+    allocate(ptr2(size(ptr2, 1), size(ptr2, 2), size(ptr2, 3), size(ptr2, 4)))
+    ptr2(:,:,:,:) = 0.0
+    newX = array2_mat_to_adj_matrix(ptr2)
+  end subroutine array2_mat_duplicate
+
+  subroutine array2_mat_axpy(Y, alpha, X)  bind(c)
+    type(adj_matrix), intent(inout) :: Y
+    adj_scalar_f, intent(in), value :: alpha
+    type(adj_matrix), intent(in), value :: X
+
+    adj_scalar_f, dimension(:,:,:,:), pointer :: ptr1, ptr2
+
+    ptr1 => array2_mat_from_adj_matrix(X)
+    ptr2 => array2_mat_from_adj_matrix(Y)
+
+    ptr2 = ptr2 + alpha*ptr1
+  end subroutine array2_mat_axpy
+
+  subroutine array2_mat_destroy(X)  bind(c)
+    type(adj_matrix), intent(inout) :: X
+
+    adj_scalar_f, dimension(:,:,:,:), pointer :: ptr
+
+    ptr => array2_mat_from_adj_matrix(X)
+    deallocate(ptr)
+  end subroutine array2_mat_destroy
+
+end module libadjoint_array2_data_structures
+
 module libadjoint
 
   use libadjoint_data_structures
@@ -847,19 +1270,69 @@ module libadjoint
 
   contains
 
-!  function adj_set_array1_data_callbacks(adjointer) result(ierr)
-!    use libadjoint_data_structures
-!    use libadjoint_array1_data_structures
-!    use iso_c_binding
-!    type(adj_adjointer), intent(inout) :: adjointer
-!    integer(kind=c_int) :: ierr
-!    procedure(adj_vec_norm_proc), bind(c) :: array1_vec_get_norm_f
-!
-!    ierr = adj_register_data_callback(adjointer, ADJ_VEC_GET_NORM_CB, c_funloc(array1_vec_get_norm_f))
-!    call adj_chkierr(ierr)
-!
-!  end function adj_set_array1_data_callbacks
+  function adj_set_array1_data_callbacks(adjointer) result(ierr)
+    use libadjoint_data_structures
+    use libadjoint_array1_data_structures
+    use iso_c_binding
+    type(adj_adjointer), intent(inout) :: adjointer
+    integer(kind=c_int) :: ierr
 
+    ierr = adj_register_data_callback(adjointer, ADJ_VEC_DUPLICATE_CB, c_funloc(array1_vec_duplicate))
+    call adj_chkierr(ierr)
+    ierr = adj_register_data_callback(adjointer, ADJ_VEC_AXPY_CB, c_funloc(array1_vec_axpy))
+    call adj_chkierr(ierr)
+    ierr = adj_register_data_callback(adjointer, ADJ_VEC_DESTROY_CB, c_funloc(array1_vec_destroy))
+    call adj_chkierr(ierr)
+    ierr = adj_register_data_callback(adjointer, ADJ_VEC_SET_VALUES_CB, c_funloc(array1_vec_set_values))
+    call adj_chkierr(ierr)
+    ierr = adj_register_data_callback(adjointer, ADJ_VEC_GET_SIZE_CB, c_funloc(array1_vec_get_size))
+    call adj_chkierr(ierr)
+    ierr = adj_register_data_callback(adjointer, ADJ_VEC_GET_NORM_CB, c_funloc(array1_vec_get_norm))
+    call adj_chkierr(ierr)
+    ierr = adj_register_data_callback(adjointer, ADJ_VEC_SET_RANDOM_CB, c_funloc(array1_vec_set_random))
+    call adj_chkierr(ierr)
+    ierr = adj_register_data_callback(adjointer, ADJ_VEC_DOT_PRODUCT_CB, c_funloc(array1_vec_dot_product))
+    call adj_chkierr(ierr)
+    ierr = adj_register_data_callback(adjointer, ADJ_MAT_DUPLICATE_CB, c_funloc(array1_mat_duplicate))
+    call adj_chkierr(ierr)
+    ierr = adj_register_data_callback(adjointer, ADJ_MAT_AXPY_CB, c_funloc(array1_mat_axpy))
+    call adj_chkierr(ierr)
+    ierr = adj_register_data_callback(adjointer, ADJ_MAT_DESTROY_CB, c_funloc(array1_mat_destroy))
+    call adj_chkierr(ierr)
+
+  end function adj_set_array1_data_callbacks
+
+  function adj_set_array2_data_callbacks(adjointer) result(ierr)
+    use libadjoint_data_structures
+    use libadjoint_array2_data_structures
+    use iso_c_binding
+    type(adj_adjointer), intent(inout) :: adjointer
+    integer(kind=c_int) :: ierr
+
+    ierr = adj_register_data_callback(adjointer, ADJ_VEC_DUPLICATE_CB, c_funloc(array2_vec_duplicate))
+    call adj_chkierr(ierr)
+    ierr = adj_register_data_callback(adjointer, ADJ_VEC_AXPY_CB, c_funloc(array2_vec_axpy))
+    call adj_chkierr(ierr)
+    ierr = adj_register_data_callback(adjointer, ADJ_VEC_DESTROY_CB, c_funloc(array2_vec_destroy))
+    call adj_chkierr(ierr)
+    ierr = adj_register_data_callback(adjointer, ADJ_VEC_SET_VALUES_CB, c_funloc(array2_vec_set_values))
+    call adj_chkierr(ierr)
+    ierr = adj_register_data_callback(adjointer, ADJ_VEC_GET_SIZE_CB, c_funloc(array2_vec_get_size))
+    call adj_chkierr(ierr)
+    ierr = adj_register_data_callback(adjointer, ADJ_VEC_GET_NORM_CB, c_funloc(array2_vec_get_norm))
+    call adj_chkierr(ierr)
+    ierr = adj_register_data_callback(adjointer, ADJ_VEC_SET_RANDOM_CB, c_funloc(array2_vec_set_random))
+    call adj_chkierr(ierr)
+    ierr = adj_register_data_callback(adjointer, ADJ_VEC_DOT_PRODUCT_CB, c_funloc(array2_vec_dot_product))
+    call adj_chkierr(ierr)
+    ierr = adj_register_data_callback(adjointer, ADJ_MAT_DUPLICATE_CB, c_funloc(array2_mat_duplicate))
+    call adj_chkierr(ierr)
+    ierr = adj_register_data_callback(adjointer, ADJ_MAT_AXPY_CB, c_funloc(array2_mat_axpy))
+    call adj_chkierr(ierr)
+    ierr = adj_register_data_callback(adjointer, ADJ_MAT_DESTROY_CB, c_funloc(array2_mat_destroy))
+    call adj_chkierr(ierr)
+
+  end function adj_set_array2_data_callbacks
 
   function adj_get_adjoint_equation(adjointer, equation, functional, lhs, rhs, variable) result(ierr)
     type(adj_adjointer), intent(inout) :: adjointer
@@ -1539,544 +2012,3 @@ module libadjoint_petsc_data_structures
 #endif
 end module libadjoint_petsc_data_structures
 
-module libadjoint_array1_data_structures
-
-  use libadjoint
-  use iso_c_binding
-  implicit none
-
-  private
-
-  public :: array1_vec_to_adj_vector
-  public :: array1_vec_from_adj_vector
-
-  public :: array1_vec_duplicate
-  public :: array1_vec_axpy
-  public :: array1_vec_destroy
-  public :: array1_vec_set_values
-  public :: array1_vec_get_size
-  public :: array1_vec_get_norm
-  public :: array1_vec_set_random
-  public :: array1_vec_dot_product
-
-  public :: array1_mat_to_adj_matrix
-  public :: array1_mat_from_adj_matrix
-  public :: array1_mat_duplicate
-  public :: array1_mat_axpy
-  public :: array1_mat_destroy
-
-  type rank1_ptr
-    adj_scalar_f, dimension(:), pointer :: ptr
-  end type rank1_ptr
-
-  type rank2_ptr
-    adj_scalar_f, dimension(:, :), pointer :: ptr
-  end type rank2_ptr
-
-  interface array1_vec_to_adj_vector
-    module procedure array1_vec_to_adj_vector_f
-  end interface array1_vec_to_adj_vector
-
-  interface array1_vec_from_adj_vector
-    module procedure array1_vec_from_adj_vector_f
-  end interface array1_vec_from_adj_vector
-
-  interface array1_mat_to_adj_matrix
-    module procedure array1_mat_to_adj_matrix_f
-  end interface array1_mat_to_adj_matrix
-
-  interface array1_mat_from_adj_matrix
-    module procedure array1_mat_from_adj_matrix_f
-  end interface array1_mat_from_adj_matrix
-
-  interface array1_vec_duplicate
-    module procedure array1_vec_duplicate_f
-  end interface array1_vec_duplicate
-  
-  interface array1_vec_axpy
-    module procedure array1_vec_axpy_f
-  end interface array1_vec_axpy
-  
-  interface array1_vec_destroy
-    module procedure array1_vec_destroy_f
-  end interface array1_vec_destroy
-
-  interface array1_vec_set_values
-    module procedure array1_vec_set_values_f
-  end interface array1_vec_set_values
-
-  interface array1_vec_get_size
-    module procedure array1_vec_get_size_f
-  end interface array1_vec_get_size
-
-  interface array1_vec_get_norm
-    module procedure array1_vec_get_norm_f
-  end interface array1_vec_get_norm
-
-  interface array1_vec_set_random
-    module procedure array1_vec_set_random_f
-  end interface array1_vec_set_random
-
-  interface array1_vec_dot_product
-    module procedure array1_vec_dot_product_f
-  end interface array1_vec_dot_product
-
-  interface array1_mat_duplicate
-    module procedure array1_mat_duplicate_f
-  end interface array1_mat_duplicate
-
-  interface array1_mat_axpy
-    module procedure array1_mat_axpy_f
-  end interface array1_mat_axpy
-
-  interface array1_mat_destroy
-    module procedure array1_mat_destroy_f
-  end interface array1_mat_destroy
-  contains
-
-  function array1_vec_to_adj_vector_f(input) result(output)
-    adj_scalar_f, dimension(:), intent(in), target :: input
-    type(rank1_ptr), pointer :: ptr
-    type(adj_vector) :: output
-
-    output%klass = 0
-    allocate(ptr)
-    ptr%ptr => input
-    output%ptr = c_loc(ptr)
-  end function array1_vec_to_adj_vector_f
-
-  function array1_vec_from_adj_vector_f(input) result(output)
-    type(adj_vector), intent(in) :: input
-    adj_scalar_f, dimension(:), pointer :: output
-    type(rank1_ptr), pointer :: ptr
-
-    call c_f_pointer(input%ptr, ptr)
-    output => ptr%ptr
-  end function array1_vec_from_adj_vector_f
-
-  ! Remember to deallocate ptr after using output!
-  function array1_mat_to_adj_matrix_f(input) result(output)
-    adj_scalar_f, dimension(:, :), intent(in), target :: input
-    type(rank2_ptr), pointer :: ptr
-    type(adj_matrix) :: output
-
-    output%klass = 0
-    allocate(ptr)
-    ptr%ptr => input
-    output%ptr = c_loc(ptr)
-  end function array1_mat_to_adj_matrix_f
-
-  function array1_mat_from_adj_matrix_f(input) result(output)
-    type(adj_matrix), intent(in) :: input
-    adj_scalar_f, dimension(:, :), pointer :: output
-    type(rank2_ptr), pointer :: ptr
-
-    call c_f_pointer(input%ptr, ptr)
-    output => ptr%ptr
-  end function array1_mat_from_adj_matrix_f
-
-  subroutine array1_vec_duplicate_f(X, newX) 
-    type(adj_vector), intent(in), value :: X
-    type(adj_vector), intent(out) :: newX
-
-    adj_scalar_f, dimension(:), pointer :: ptr1, ptr2
-
-    ptr1 => array1_vec_from_adj_vector(X)
-    allocate(ptr2(size(ptr2, 1)))
-    ptr2(:) = 0.0
-    newX = array1_vec_to_adj_vector_f(ptr2)
-  end subroutine array1_vec_duplicate_f
-
-  subroutine array1_vec_axpy_f(Y, alpha, X) 
-    type(adj_vector), intent(inout) :: Y
-    adj_scalar_f, intent(in), value :: alpha
-    type(adj_vector), intent(in), value :: X
-
-    adj_scalar_f, dimension(:), pointer :: ptr1, ptr2
-
-    ptr1 => array1_vec_from_adj_vector(X)
-    ptr2 => array1_vec_from_adj_vector(Y)
-
-    ptr2 = ptr2 + alpha*ptr1
-  end subroutine array1_vec_axpy_f
-
-  subroutine array1_vec_destroy_f(X) 
-    type(adj_vector), intent(inout) :: X
-
-    adj_scalar_f, dimension(:), pointer :: ptr
-
-    ptr => array1_vec_from_adj_vector(X)
-    deallocate(ptr)
-  end subroutine array1_vec_destroy_f
-
-  subroutine array1_vec_set_values_f(vec, scalars) bind(c)
-    type(adj_vector), intent(inout) :: vec
-    adj_scalar_f, dimension(*), intent(in) :: scalars
-
-    adj_scalar_f, dimension(:), pointer :: ptr
-    integer :: sz
-
-    ptr => array1_vec_from_adj_vector(vec)
-    sz = size(ptr,1)
-    ptr = scalars(1:sz)
-  end subroutine array1_vec_set_values_f
-
-
-  subroutine array1_vec_get_size_f(x, sz) 
-    type(adj_vector), intent(in) :: x
-    integer(kind=c_int), intent(out) :: sz
-
-    adj_scalar_f, dimension(:), pointer :: ptr
-
-    ptr => array1_vec_from_adj_vector(x)
-    sz = size(ptr, 1)
-  end subroutine array1_vec_get_size_f
-
-  subroutine array1_vec_get_norm_f(x, norm) bind(c) 
-    type(adj_vector), intent(in) :: x
-    adj_scalar_f, intent(out) :: norm
-
-    adj_scalar_f, dimension(:), pointer :: ptr
-    integer :: i
-
-    ptr => array1_vec_from_adj_vector(x)
-    norm = 0.0
-
-    do i = 1, size(ptr, 1) 
-      norm = norm + ptr(i)*ptr(i)
-    end do
-    norm = sqrt(real(norm))
-  end subroutine array1_vec_get_norm_f
-
-  subroutine array1_vec_set_random_f(x) 
-    type(adj_vector), intent(inout) :: x
-    
-    adj_scalar_f, dimension(:), pointer :: ptr
-    integer :: i
-
-    ptr => array1_vec_from_adj_vector(x)
-    call random_seed()
-    call random_number(ptr)
-  end subroutine array1_vec_set_random_f
-
-  subroutine array1_vec_dot_product_f(x, y, val) 
-    type(adj_vector), intent(in), value :: x, y
-    adj_scalar_f, intent(out) :: val
-
-    adj_scalar_f, dimension(:), pointer :: ptr1, ptr2
-
-    ptr1 => array1_vec_from_adj_vector(x)
-    ptr2 => array1_vec_from_adj_vector(y)
-
-    val = dot_product(ptr1, ptr2)
-  end subroutine array1_vec_dot_product_f 
-
-  subroutine array1_mat_duplicate_f(X, newX) 
-    type(adj_matrix), intent(in), value :: X
-    type(adj_matrix), intent(out) :: newX
-
-    adj_scalar_f, dimension(:,:), pointer :: ptr1, ptr2
-
-    ptr1 => array1_mat_from_adj_matrix(X)
-    allocate(ptr2(size(ptr1, 1), size(ptr1, 2)))
-    ptr2(:,:) = 0.0
-    newX = array1_mat_to_adj_matrix_f(ptr2)
-  end subroutine array1_mat_duplicate_f
-
-  subroutine array1_mat_axpy_f(Y, alpha, X) 
-    type(adj_matrix), intent(inout) :: Y
-    adj_scalar_f, intent(in), value :: alpha
-    type(adj_matrix), intent(in), value :: X
-
-    adj_scalar_f, dimension(:,:), pointer :: ptr1, ptr2
-
-    ptr1 => array1_mat_from_adj_matrix(X)
-    ptr2 => array1_mat_from_adj_matrix(Y)
-
-    ptr2 = ptr2 + alpha*ptr1
-  end subroutine array1_mat_axpy_f
-
-  subroutine array1_mat_destroy_f(X) 
-    type(adj_matrix), intent(inout) :: X
-
-    adj_scalar_f, dimension(:,:), pointer :: ptr
-
-    ptr => array1_mat_from_adj_matrix(X)
-    deallocate(ptr)
-  end subroutine array1_mat_destroy_f
-
-end module libadjoint_array1_data_structures
-
-module libadjoint_array2_data_structures
-
-  use libadjoint
-  use iso_c_binding
-  implicit none
-
-  private
-  public :: array2_vec_to_adj_vector
-  public :: array2_vec_from_adj_vector
-
-  public :: array2_vec_duplicate
-  public :: array2_vec_axpy
-  public :: array2_vec_destroy
-  public :: array2_vec_set_values
-  public :: array2_vec_get_size
-  public :: array2_vec_get_norm
-  public :: array2_vec_set_random
-  public :: array2_vec_dot_product
-
-  public :: array2_mat_to_adj_matrix
-  public :: array2_mat_from_adj_matrix
-  public :: array2_mat_duplicate
-  public :: array2_mat_axpy
-  public :: array2_mat_destroy
-
-  type rank2_ptr
-    adj_scalar_f, dimension(:, :), pointer :: ptr
-  end type rank2_ptr
-
-  type rank4_ptr
-    adj_scalar_f, dimension(:, :, :, :), pointer :: ptr
-  end type rank4_ptr
-
-  interface array2_vec_to_adj_vector
-    module procedure array2_vec_to_adj_vector_f
-  end interface array2_vec_to_adj_vector
-
-  interface array2_vec_from_adj_vector
-    module procedure array2_vec_from_adj_vector_f
-  end interface array2_vec_from_adj_vector
-
-  interface array2_mat_to_adj_matrix
-    module procedure array2_mat_to_adj_matrix_f
-  end interface array2_mat_to_adj_matrix
-
-  interface array2_mat_from_adj_matrix
-    module procedure array2_mat_from_adj_matrix_f
-  end interface array2_mat_from_adj_matrix
-
-  interface array2_vec_duplicate
-    module procedure array2_vec_duplicate_f
-  end interface array2_vec_duplicate
-  
-  interface array2_vec_axpy
-    module procedure array2_vec_axpy_f
-  end interface array2_vec_axpy
-  
-  interface array2_vec_destroy
-    module procedure array2_vec_destroy_f
-  end interface array2_vec_destroy
-
-  interface array2_vec_set_values
-    module procedure array2_vec_set_values_f
-  end interface array2_vec_set_values
-
-  interface array2_vec_get_size
-    module procedure array2_vec_get_size_f
-  end interface array2_vec_get_size
-
-  interface array2_vec_get_norm
-    module procedure array2_vec_get_norm_f
-  end interface array2_vec_get_norm
-
-  interface array2_vec_set_random
-    module procedure array2_vec_set_random_f
-  end interface array2_vec_set_random
-
-  interface array2_vec_dot_product
-    module procedure array2_vec_dot_product_f
-  end interface array2_vec_dot_product
-
-  interface array2_mat_duplicate
-    module procedure array2_mat_duplicate_f
-  end interface array2_mat_duplicate
-
-  interface array2_mat_axpy
-    module procedure array2_mat_axpy_f
-  end interface array2_mat_axpy
-
-  interface array2_mat_destroy
-    module procedure array2_mat_destroy_f
-  end interface array2_mat_destroy
-
-  contains
-
-  ! Remember to deallocate ptr after using output!
-  function array2_vec_to_adj_vector_f(input) result(output)
-    adj_scalar_f, dimension(:,:), intent(in), target :: input
-    type(rank2_ptr), pointer :: ptr
-    type(adj_vector) :: output
-
-    output%klass = 0
-    allocate(ptr)
-    ptr%ptr => input
-    output%ptr = c_loc(ptr)
-  end function array2_vec_to_adj_vector_f
-
-  function array2_vec_from_adj_vector_f(input) result(output)
-    type(adj_vector), intent(in) :: input
-    adj_scalar_f, dimension(:,:), pointer :: output
-    type(rank2_ptr), pointer :: ptr
-
-    call c_f_pointer(input%ptr, ptr)
-    output => ptr%ptr
-  end function array2_vec_from_adj_vector_f
-
-  function array2_mat_to_adj_matrix_f(input) result(output)
-    adj_scalar_f, dimension(:,:,:,:), intent(in), target :: input
-    type(rank4_ptr), pointer :: ptr
-    type(adj_matrix) :: output
-
-    output%klass = 0
-    allocate(ptr)
-    ptr%ptr => input
-    output%ptr = c_loc(ptr)
-  end function array2_mat_to_adj_matrix_f
-
-  function array2_mat_from_adj_matrix_f(input) result(output)
-    type(adj_matrix), intent(in) :: input
-    adj_scalar_f, dimension(:,:,:,:), pointer :: output
-    type(rank4_ptr), pointer :: ptr
-
-    call c_f_pointer(input%ptr, ptr)
-    output => ptr%ptr
-  end function array2_mat_from_adj_matrix_f
-
-  subroutine array2_vec_duplicate_f(X, newX) 
-    type(adj_vector), intent(in), value :: X
-    type(adj_vector), intent(out) :: newX
-
-    adj_scalar_f, dimension(:,:), pointer :: ptr1, ptr2
-
-    ptr2 => array2_vec_from_adj_vector(X)
-    allocate(ptr2(size(ptr2, 1), size(ptr2, 2)))
-    ptr2(:,:) = 0.0
-    newX = array2_vec_to_adj_vector_f(ptr2)
-  end subroutine array2_vec_duplicate_f
-
-  subroutine array2_vec_axpy_f(Y, alpha, X) 
-    type(adj_vector), intent(inout) :: Y
-    adj_scalar_f, intent(in), value :: alpha
-    type(adj_vector), intent(in), value :: X
-
-    adj_scalar_f, dimension(:,:), pointer :: ptr1, ptr2
-
-    ptr1 => array2_vec_from_adj_vector(X)
-    ptr2 => array2_vec_from_adj_vector(Y)
-
-    ptr2 = ptr2 + alpha*ptr1
-  end subroutine array2_vec_axpy_f
-
-  subroutine array2_vec_destroy_f(X) 
-    type(adj_vector), intent(inout) :: X
-
-    adj_scalar_f, dimension(:,:), pointer :: ptr
-
-    ptr => array2_vec_from_adj_vector(X)
-    deallocate(ptr)
-  end subroutine array2_vec_destroy_f
-
-  subroutine array2_vec_set_values_f(vec, scalars) bind(c)
-    type(adj_vector), intent(inout) :: vec
-    adj_scalar_f, dimension(*), intent(in) :: scalars
-
-    adj_scalar_f, dimension(:,:), pointer :: ptr
-    integer :: sz
-
-    ptr => array2_vec_from_adj_vector(vec)
-    sz = size(ptr,1)*size(ptr,2)
-    ptr = reshape( scalars(1:sz), (/ size(ptr, 1), size(ptr, 2) /)  )
-  end subroutine array2_vec_set_values_f
-
-  subroutine array2_vec_get_size_f(x, sz) 
-    type(adj_vector), intent(in) :: x
-    integer(kind=c_int), intent(out) :: sz
-
-    adj_scalar_f, dimension(:,:), pointer :: ptr
-
-    ptr => array2_vec_from_adj_vector(x)
-    sz = size(ptr, 1)*size(ptr,2)
-  end subroutine array2_vec_get_size_f
-
-  subroutine array2_vec_get_norm_f(x, norm) 
-    type(adj_vector), intent(in) :: x
-    adj_scalar_f, intent(out) :: norm
-
-    adj_scalar_f, dimension(:,:), pointer :: ptr
-    integer :: i,j
-
-    ptr => array2_vec_from_adj_vector(x)
-
-    norm = 0.0
-    do i = 1, size(ptr, 1) 
-      do j = 1, size(ptr, 2) 
-        norm = norm + ptr(i,j)*ptr(i,j)
-      end do
-    end do
-
-    norm = sqrt(real(norm))
-  end subroutine array2_vec_get_norm_f
-
-  subroutine array2_vec_set_random_f(x) 
-    type(adj_vector), intent(inout) :: x
-    
-    adj_scalar_f, dimension(:,:), pointer :: ptr
-    integer :: i
-
-    ptr => array2_vec_from_adj_vector(x)
-    call random_seed()
-    call random_number(ptr)
-  end subroutine array2_vec_set_random_f
-
-  subroutine array2_vec_dot_product_f(x, y, val) 
-    type(adj_vector), intent(in), value :: x, y
-    adj_scalar_f, intent(out) :: val
-
-    adj_scalar_f, dimension(:,:), pointer :: ptr1, ptr2
-    integer :: i
-
-    ptr1 => array2_vec_from_adj_vector(x)
-    ptr2 => array2_vec_from_adj_vector(y)
-
-    val = 0.0
-    do i = 1, size(ptr1,1)
-      val = val + dot_product(ptr1(i,:), ptr2(i,:))
-    end do
-  end subroutine array2_vec_dot_product_f 
-
-  subroutine array2_mat_duplicate_f(X, newX) 
-    type(adj_matrix), intent(in), value :: X
-    type(adj_matrix), intent(out) :: newX
-
-    adj_scalar_f, dimension(:,:,:,:), pointer :: ptr1, ptr2
-
-    ptr2 => array2_mat_from_adj_matrix(X)
-    allocate(ptr2(size(ptr2, 1), size(ptr2, 2), size(ptr2, 3), size(ptr2, 4)))
-    ptr2(:,:,:,:) = 0.0
-    newX = array2_mat_to_adj_matrix_f(ptr2)
-  end subroutine array2_mat_duplicate_f
-
-  subroutine array2_mat_axpy_f(Y, alpha, X) 
-    type(adj_matrix), intent(inout) :: Y
-    adj_scalar_f, intent(in), value :: alpha
-    type(adj_matrix), intent(in), value :: X
-
-    adj_scalar_f, dimension(:,:,:,:), pointer :: ptr1, ptr2
-
-    ptr1 => array2_mat_from_adj_matrix(X)
-    ptr2 => array2_mat_from_adj_matrix(Y)
-
-    ptr2 = ptr2 + alpha*ptr1
-  end subroutine array2_mat_axpy_f
-
-  subroutine array2_mat_destroy_f(X) 
-    type(adj_matrix), intent(inout) :: X
-
-    adj_scalar_f, dimension(:,:,:,:), pointer :: ptr
-
-    ptr => array2_mat_from_adj_matrix(X)
-    deallocate(ptr)
-  end subroutine array2_mat_destroy_f
-
-end module libadjoint_array2_data_structures
