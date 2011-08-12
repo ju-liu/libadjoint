@@ -521,12 +521,13 @@ Its interface has to conform to:
 \end{ccode}
 \begin{fortrancode}
   subroutine forward_source(adjointer, variable, ndepends, dependencies, 
-                            values, output, has_output) 
+                            values, context, output, has_output) 
     type(adj_adjointer), intent(in) :: adjointer
     type(adj_variable), intent(in), value :: variable
     integer(kind=c_int), intent(in), value :: ndepends
     type(adj_variable), dimension(ndepends), intent(in) :: dependencies
     type(adj_vector), dimension(ndepends), intent(in) :: values
+    type(c_ptr), intent(in), value :: context
     type(adj_vector), intent(out) :: output
     integer(kind=c_int), intent(out) :: has_output
   end subroutine forward_source
