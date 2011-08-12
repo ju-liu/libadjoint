@@ -392,16 +392,16 @@ Therefore, the adjoint main loop template given in \autoref{sec:typical_adjoint_
 \begin{ccode}
   int adj_get_forward_equation(adj_adjointer* adjointer, int equation, 
                                adj_matrix* lhs, adj_vector* rhs, 
-                               adj_variable* fwd_var);
+                               adj_variable* variable);
 \end{ccode}
 \begin{fortrancode}   
-  function adj_get_forward_equation(adjointer, equation, lhs, rhs, fwd_var) 
+  function adj_get_forward_equation(adjointer, equation, lhs, rhs, variable) 
            result(ierr) 
     type(adj_adjointer), intent(inout) :: adjointer
     integer(kind=c_int), intent(in), value :: equation
     type(adj_matrix), intent(out) :: lhs
     type(adj_vector), intent(out) :: rhs
-    type(adj_variable), intent(out) :: fwd_var
+    type(adj_variable), intent(out) :: variable
     integer(kind=c_int) :: ierr
   end function adj_get_forward_equation
 \end{fortrancode}
