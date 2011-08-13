@@ -94,7 +94,7 @@ the interface documented in this manual!
 \end{ccode}
 \begin{fortrancode}
   subroutine block_action(ndepends, variables, dependencies, hermitian, 
-                          coefficient, input, context, output) 
+                          coefficient, input, context, output) bind(c) 
     integer(kind=c_int), intent(in), value :: ndepends
     type(adj_variable), dimension(ndepends), intent(in) :: variables
     type(adj_vector), dimension(ndepends), intent(in) :: dependencies
@@ -154,7 +154,7 @@ targets an \refapi{adj_variable} in an \refapi{adj_equation} that is not the var
 \end{ccode}
 \begin{fortrancode}
   subroutine block_assembly(ndepends, variables, dependencies, hermitian, 
-                            coefficient, context, output, rhs) 
+                            coefficient, context, output, rhs)  bind(c)
     integer(kind=c_int), intent(in), value :: ndepends
     type(adj_variable), dimension(ndepends), intent(in) :: variables
     type(adj_vector), dimension(ndepends), intent(in) :: dependencies
@@ -217,7 +217,7 @@ targets an \refapi{adj_variable} in an \refapi{adj_equation} that is the variabl
   subroutine nblock_derivative_action(ndepends, variables, dependencies, 
                                       derivative, contraction, hermitian, 
                                       input, coefficient, context, 
-                                      output) 
+                                      output)  bind(c)
     integer(kind=c_int), intent(in), value :: ndepends
     type(adj_variable), dimension(ndepends), intent(in) :: variables
     type(adj_vector), dimension(ndepends), intent(in) :: dependencies
@@ -376,7 +376,7 @@ If the operator depends on a variable that is the output of the adjoint equation
 %\begin{fortrancode}
 %subroutine nblock_derivative_assembly(ndepends, variables, dependencies, derivative, 
 %                                      contraction, hermitian, coefficient, 
-%                                      context, output) 
+%                                      context, output) bind(c)
 %  integer(kind=c_int), intent(in) :: ndepends
 %  type(adj_variable), dimension(ndepends), intent(in) :: variables
 %  type(adj_vector), dimension(ndepends), intent(in) :: dependencies
@@ -443,7 +443,7 @@ If the operator depends on a variable that is the output of the adjoint equation
 \end{ccode}
 \begin{fortrancode}
   subroutine nblock_action(ndepends, variables, dependencies, input, 
-                           context, output) 
+                           context, output)  bind(c)
     integer(kind=c_int), intent(in), value :: ndepends
     type(adj_variable), dimension(ndepends), intent(in) :: variables
     type(adj_vector), dimension(ndepends), intent(in) :: dependencies
@@ -521,7 +521,7 @@ Its interface has to conform to:
 \end{ccode}
 \begin{fortrancode}
   subroutine forward_source(adjointer, variable, ndepends, dependencies, 
-                            values, context, output, has_output) 
+                            values, context, output, has_output)  bind(c)
     type(adj_adjointer), intent(in) :: adjointer
     type(adj_variable), intent(in), value :: variable
     integer(kind=c_int), intent(in), value :: ndepends
@@ -595,7 +595,7 @@ Its interface has to conform to:
 \end{ccode}
 \begin{fortrancode}
   subroutine functional_derivative(adjointer, derivative, ndepends, variables, 
-                                   dependencies, name, output) 
+                                   dependencies, name, output)  bind(c)
     type(adj_adjointer), intent(in) :: adjointer
     type(adj_variable), intent(in), value :: derivative 
     integer(kind=c_int), intent(in), value :: ndepends
@@ -664,7 +664,7 @@ Its interface has to conform:
 \end{ccode}
 \begin{fortrancode}
   subroutine functional(adjointer, timestep, ndepends, variables, dependencies, 
-                        name, output) 
+                        name, output)  bind(c)
     type(adj_adjointer), intent(in) :: adjointer
     integer(kind=c_int), intent(in), value :: timestep
     integer(kind=c_int), intent(in), value :: ndepends
