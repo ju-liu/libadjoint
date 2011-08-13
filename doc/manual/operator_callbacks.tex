@@ -70,8 +70,8 @@ Example usage in Fortran:
 \begin{fortrancode}
   ierr = adj_register_operator_callback(adjointer, ADJ_BLOCK_ASSEMBLY_CB, 
                                     "MassMatrix",
-                                    c_funloc(mass_matrix_assembly_proc));
-  call adj_chkierr(ierr);
+                                    c_funloc(mass_matrix_assembly_proc))
+  call adj_chkierr(ierr)
 \end{fortrancode}
 \end{minipage}
 \end{boxwithtitle}
