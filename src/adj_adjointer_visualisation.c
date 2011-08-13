@@ -309,9 +309,7 @@ int adj_html_eqn(FILE* fp, adj_adjointer* adjointer, adj_equation adj_eqn, int d
     row[col][5]='\0';
 
     /* Fill in the description */
-    strncpy(desc[col], adj_eqn.blocks[i].name, ADJ_NAME_LEN);
-
-    strncat(desc[col], "\n\nTargets: ", ADJ_NAME_LEN);
+    strncpy(desc[col], "Targets: ", ADJ_NAME_LEN);
     strncat(desc[col], adj_eqn.targets[i].name, ADJ_NAME_LEN);
     strncat(desc[col], "\nTimestep:", ADJ_NAME_LEN);
     snprintf(buf, ADJ_NAME_LEN, "%d", adj_eqn.targets[i].timestep);
@@ -319,6 +317,11 @@ int adj_html_eqn(FILE* fp, adj_adjointer* adjointer, adj_equation adj_eqn, int d
     strncat(desc[col], "\nIteration:", ADJ_NAME_LEN);
     snprintf(buf, ADJ_NAME_LEN, "%d", adj_eqn.targets[i].iteration);
     strncat(desc[col], buf, ADJ_NAME_LEN);
+
+		strncat(desc[col], "\n\n===== Block description =====\n\n", ADJ_NAME_LEN);
+    strncat(desc[col], adj_eqn.blocks[i].name, ADJ_NAME_LEN);
+    strncat(desc[col], "\n------------------", ADJ_NAME_LEN);
+
     strncat(desc[col], "\nCoefficient: ", ADJ_NAME_LEN);
     snprintf(buf, ADJ_NAME_LEN, "%f", adj_eqn.blocks[i].coefficient);
     strncat(desc[col], buf, ADJ_NAME_LEN);
@@ -365,7 +368,7 @@ int adj_html_eqn(FILE* fp, adj_adjointer* adjointer, adj_equation adj_eqn, int d
 /* Writes a html row containing the supplied adjoint equation into fp */
 int adj_html_adjoint_eqn(FILE* fp, adj_adjointer* adjointer, adj_equation fwd_eqn, int diag_index, char* class)
 {
-  int i, j, k;
+  int i, j, k, l;
   char* row[adjointer->nequations];
   char* desc[adjointer->nequations];
   char buf[ADJ_NAME_LEN];
@@ -389,70 +392,145 @@ int adj_html_adjoint_eqn(FILE* fp, adj_adjointer* adjointer, adj_equation fwd_eq
   ierr = adj_find_variable_data(&(adjointer->varhash), &fwd_var, &fwd_data);
   assert(ierr == ADJ_OK);
 
-  /* Each targeting equation corresponds to one column in the considered row */
-  for (i = 0; i < fwd_data->ntargeting_equations; i++)
+  /* --------------------------------------------------------------------------
+   * Visualisation of A* terms                                                  |
+   * -------------------------------------------------------------------------- */
   {
-      adj_equation other_fwd_eqn;
-      adj_variable other_adj_var;
+		/* Each targeting equation corresponds to one column in the considered row */
+		for (i = 0; i < fwd_data->ntargeting_equations; i++)
+		{
+				adj_equation other_fwd_eqn;
+				adj_variable other_adj_var;
 
-      other_fwd_eqn = adjointer->equations[fwd_data->targeting_equations[i]];
+				other_fwd_eqn = adjointer->equations[fwd_data->targeting_equations[i]];
 
-      /* Find the index in other_fwd_eqn of the block fwd_var is multiplied with */
-      for (j=0; j<other_fwd_eqn.nblocks; j++)
+				/* Find the index in other_fwd_eqn of the block fwd_var is multiplied with */
+				for (j=0; j<other_fwd_eqn.nblocks; j++)
+				{
+					if (adj_variable_equal(&other_fwd_eqn.targets[j], &fwd_var, 1))
+						break;
+				}
+				assert(j!=other_fwd_eqn.nblocks);
+
+				/* find the column in which this blocks belongs */
+				ierr = adj_html_find_column_index(adjointer, &other_fwd_eqn.variable, &col);
+				if (ierr != ADJ_OK)
+					return ierr;
+
+				other_adj_var = other_fwd_eqn.targets[j];
+				other_adj_var.type = ADJ_ADJOINT;
+
+				/* Fill in the data */
+				strncpy(row[col], other_fwd_eqn.blocks[j].name, 5);
+				row[col][5]='\0';
+
+				strncpy(desc[col], "Targets: ", ADJ_NAME_LEN);
+				adj_variable_str(other_adj_var, buf, ADJ_NAME_LEN);
+				strncat(desc[col], buf, ADJ_NAME_LEN);
+				strncat(desc[col], "\nTimestep:", ADJ_NAME_LEN);
+				snprintf(buf, ADJ_NAME_LEN, "%d", other_adj_var.timestep);
+				strncat(desc[col], buf, ADJ_NAME_LEN);
+				strncat(desc[col], "\nIteration:", ADJ_NAME_LEN);
+				snprintf(buf, ADJ_NAME_LEN, "%d", other_adj_var.iteration);
+				strncat(desc[col], buf, ADJ_NAME_LEN);
+				strncat(desc[col], "\n\n===== Block description =====\n\n", ADJ_NAME_LEN);
+
+				strncat(desc[col], other_fwd_eqn.blocks[j].name, ADJ_NAME_LEN);
+				strncat(desc[col], "\n------------------", ADJ_NAME_LEN);
+				strncat(desc[col], "\nCoefficient: ", ADJ_NAME_LEN);
+				snprintf(buf, ADJ_NAME_LEN, "%f", other_fwd_eqn.blocks[j].coefficient);
+				strncat(desc[col], buf, ADJ_NAME_LEN);
+				strncat(desc[col], "\nHermitian: ", ADJ_NAME_LEN);
+				/* We are printing the adjoint equation, therefore hermitian has to be NOT'ed */
+				if (other_fwd_eqn.blocks[j].hermitian==ADJ_TRUE)
+					snprintf(buf, ADJ_NAME_LEN, "false");
+				else
+					snprintf(buf, ADJ_NAME_LEN, "true");
+				strncat(desc[col], buf, ADJ_NAME_LEN);
+				if (other_fwd_eqn.blocks[j].has_nonlinear_block)
+				{
+					strncat(desc[col], "\nNonlinear Block: ", ADJ_NAME_LEN);
+					strncat(desc[col], other_fwd_eqn.blocks[j].nonlinear_block.name, ADJ_NAME_LEN);
+					strncat(desc[col], " Dependencies: ", ADJ_NAME_LEN);
+					for (k=0; k<other_fwd_eqn.blocks[j].nonlinear_block.ndepends; k++)
+					{
+						strncat(desc[col], other_fwd_eqn.blocks[j].nonlinear_block.depends[k].name, ADJ_NAME_LEN);
+						strncat(desc[col], ":", ADJ_NAME_LEN);
+						snprintf(buf, ADJ_NAME_LEN, "%d", other_fwd_eqn.blocks[j].nonlinear_block.depends[k].timestep);
+						strncat(desc[col], buf, ADJ_NAME_LEN);
+						strncat(desc[col], ":", ADJ_NAME_LEN);
+						snprintf(buf, ADJ_NAME_LEN, "%d", other_fwd_eqn.blocks[j].nonlinear_block.depends[k].iteration);
+						strncat(desc[col], buf, ADJ_NAME_LEN);
+						if (k!=other_fwd_eqn.blocks[j].nonlinear_block.ndepends-1)
+							strncat(desc[col], ", ", ADJ_NAME_LEN);
+					}
+
+				}
+		  }
+
+      /* --------------------------------------------------------------------------
+       * Visualisation of G* terms                                                  |
+       * -------------------------------------------------------------------------- */
+
+      /* We need to loop through the equations that depend on fwd_var; each one of those will produce
+         a term in this row of G*. */
       {
-        if (adj_variable_equal(&other_fwd_eqn.targets[j], &fwd_var, 1))
-          break;
-      }
-      assert(j!=other_fwd_eqn.nblocks);
 
-      /* find the column in which this blocks belongs */
-      ierr = adj_html_find_column_index(adjointer, &other_fwd_eqn.variable, &col);
-      if (ierr != ADJ_OK)
-        return ierr;
-
-      other_adj_var = other_fwd_eqn.targets[j];
-      other_adj_var.type = ADJ_ADJOINT;
-
-      /* Fill in the data */
-      strncpy(row[col], other_fwd_eqn.blocks[j].name, 5);
-      row[col][5]='\0';
-
-      strncpy(desc[col], other_fwd_eqn.blocks[j].name, ADJ_NAME_LEN);
-      strncat(desc[col], "\n\nTargets: ", ADJ_NAME_LEN);
-      adj_variable_str(other_adj_var, buf, ADJ_NAME_LEN);
-      strncat(desc[col], buf, ADJ_NAME_LEN);
-      strncat(desc[col], "\nTimestep:", ADJ_NAME_LEN);
-      snprintf(buf, ADJ_NAME_LEN, "%d", other_adj_var.timestep);
-      strncat(desc[col], buf, ADJ_NAME_LEN);
-      strncat(desc[col], "\nIteration:", ADJ_NAME_LEN);
-      snprintf(buf, ADJ_NAME_LEN, "%d", other_adj_var.iteration);
-      strncat(desc[col], buf, ADJ_NAME_LEN);
-      strncat(desc[col], "\nCoefficient: ", ADJ_NAME_LEN);
-      snprintf(buf, ADJ_NAME_LEN, "%f", other_fwd_eqn.blocks[j].coefficient);
-      strncat(desc[col], buf, ADJ_NAME_LEN);
-      strncat(desc[col], "\nHermitian: ", ADJ_NAME_LEN);
-      /* We are printing the adjoint equation, therefore hermitian has to be NOT'ed */
-      if (other_fwd_eqn.blocks[j].hermitian==ADJ_TRUE)
-        snprintf(buf, ADJ_NAME_LEN, "false");
-      else
-        snprintf(buf, ADJ_NAME_LEN, "true");
-      strncat(desc[col], buf, ADJ_NAME_LEN);
-      if (other_fwd_eqn.blocks[j].has_nonlinear_block)
-      {
-        strncat(desc[col], "\nNonlinear Block: ", ADJ_NAME_LEN);
-        strncat(desc[col], other_fwd_eqn.blocks[j].nonlinear_block.name, ADJ_NAME_LEN);
-        strncat(desc[col], " Dependencies: ", ADJ_NAME_LEN);
-        for (k=0; k<other_fwd_eqn.blocks[j].nonlinear_block.ndepends; k++)
+        for (i = 0; i < fwd_data->ndepending_equations; i++)
         {
-          strncat(desc[col], other_fwd_eqn.blocks[j].nonlinear_block.depends[k].name, ADJ_NAME_LEN);
-          strncat(desc[col], ":", ADJ_NAME_LEN);
-          snprintf(buf, ADJ_NAME_LEN, "%d", other_fwd_eqn.blocks[j].nonlinear_block.depends[k].timestep);
-          strncat(desc[col], buf, ADJ_NAME_LEN);
-          strncat(desc[col], ":", ADJ_NAME_LEN);
-          snprintf(buf, ADJ_NAME_LEN, "%d", other_fwd_eqn.blocks[j].nonlinear_block.depends[k].iteration);
-          strncat(desc[col], buf, ADJ_NAME_LEN);
-          if (k!=other_fwd_eqn.blocks[j].nonlinear_block.ndepends-1)
-        	  strncat(desc[col], ", ", ADJ_NAME_LEN);
+          /* We are looking for the block of G*. */
+          int ndepending_eqn;
+          adj_equation depending_eqn;
+          int k;
+
+          ndepending_eqn = fwd_data->depending_equations[i];
+          depending_eqn = adjointer->equations[ndepending_eqn];
+
+          for (j = 0; j < depending_eqn.nblocks; j++)
+          {
+
+            if (depending_eqn.blocks[j].has_nonlinear_block)
+            {
+              for (k = 0; k < depending_eqn.blocks[j].nonlinear_block.ndepends; k++)
+              {
+
+                if (adj_variable_equal(&fwd_var, &depending_eqn.blocks[j].nonlinear_block.depends[k], 1))
+                {
+                 	ierr = adj_html_find_column_index(adjointer, &depending_eqn.variable, &col);
+                	if (ierr != ADJ_OK)
+                		return ierr;
+
+    							strncat(desc[col], "\n\n+\n\n ", ADJ_NAME_LEN);
+    							strncat(desc[col], "Derivative of ", ADJ_NAME_LEN);
+    							strncat(desc[col], depending_eqn.blocks[j].nonlinear_block.name, ADJ_NAME_LEN);
+    							strncat(desc[col], " with respect to ", ADJ_NAME_LEN);
+    							adj_variable_str(fwd_var, buf, ADJ_NAME_LEN);
+    							strncat(desc[col], buf, ADJ_NAME_LEN);
+    							strncat(desc[col], "\n------------------", ADJ_NAME_LEN);
+    							strncat(desc[col], "\nCoefficient: ", ADJ_NAME_LEN);
+    							snprintf(buf, ADJ_NAME_LEN, "%f", depending_eqn.blocks[j].nonlinear_block.coefficient);
+    							strncat(desc[col], buf, ADJ_NAME_LEN);
+    							strncat(desc[col], "\nHermitian: true", ADJ_NAME_LEN);
+  								strncat(desc[col], "\nDependencies: ", ADJ_NAME_LEN);
+   								for (l=0; l<depending_eqn.blocks[j].nonlinear_block.ndepends; l++)
+   								{
+   									strncat(desc[col], depending_eqn.blocks[j].nonlinear_block.depends[l].name, ADJ_NAME_LEN);
+   									strncat(desc[col], ":", ADJ_NAME_LEN);
+   									snprintf(buf, ADJ_NAME_LEN, "%d", depending_eqn.blocks[j].nonlinear_block.depends[l].timestep);
+   									strncat(desc[col], buf, ADJ_NAME_LEN);
+   									strncat(desc[col], ":", ADJ_NAME_LEN);
+   									snprintf(buf, ADJ_NAME_LEN, "%d", depending_eqn.blocks[j].nonlinear_block.depends[l].iteration);
+   									strncat(desc[col], buf, ADJ_NAME_LEN);
+   									if (l!=depending_eqn.blocks[j].nonlinear_block.ndepends-1)
+   										strncat(desc[col], ", ", ADJ_NAME_LEN);
+   								}
+
+                }
+
+              }
+            }
+
+          }
         }
 
       }
