@@ -222,6 +222,16 @@ module libadjoint
       type(adj_matrix), intent(inout) :: mat
     end subroutine adj_mat_destroy_proc
 
+    subroutine adj_solve_proc(var, mat, rhs, soln) bind(c)
+      ! Solves for variable var by computing mat * soln = rhs 
+      use iso_c_binding
+      use libadjoint_data_structures
+      type(adj_variable), intent(in), value :: var
+      type(adj_matrix), intent(in), value :: mat
+      type(adj_vector), intent(in), value :: rhs
+      type(adj_vector), intent(out) :: soln
+    end subroutine adj_solve_proc
+
     subroutine adj_nonlinear_colouring_proc(nvar, variables, dependencies, derivative, context, sz, colouring) bind(c)
       use iso_c_binding
       use libadjoint_data_structures
@@ -752,6 +762,18 @@ module libadjoint
       integer(kind=c_int) :: ierr
     end function adj_get_adjoint_equation_c
     
+    function adj_get_adjoint_solution_c(adjointer, equation, functional, soln, variable) result(ierr) &
+            & bind(c, name='adj_get_adjoint_solution')
+      use libadjoint_data_structures
+      use iso_c_binding
+      type(adj_adjointer), intent(inout) :: adjointer
+      integer(kind=c_int), intent(in), value :: equation
+      character(kind=c_char), dimension(ADJ_NAME_LEN), intent(in) :: functional
+      type(adj_vector), intent(out) :: soln
+      type(adj_variable), intent(out) :: variable
+      integer(kind=c_int) :: ierr
+    end function adj_get_adjoint_solution_c
+
     function adj_get_forward_equation(adjointer, equation, lhs, rhs, variable) result(ierr) &
             & bind(c, name='adj_get_forward_equation')
       use libadjoint_data_structures
@@ -869,6 +891,28 @@ module libadjoint
 
     ierr = adj_get_adjoint_equation_c(adjointer, equation, functional_c, lhs, rhs, variable)
   end function adj_get_adjoint_equation
+
+  function adj_get_adjoint_solution(adjointer, equation, functional, soln, variable) result(ierr)
+    type(adj_adjointer), intent(inout) :: adjointer
+    integer(kind=c_int), intent(in), value :: equation
+    character(len=*), intent(in) :: functional
+    type(adj_vector), intent(out) :: soln
+    type(adj_variable), intent(out) :: variable
+    integer(kind=c_int) :: ierr
+    
+    character(kind=c_char), dimension(ADJ_NAME_LEN) :: functional_c
+    integer :: j
+
+    do j=1,len_trim(functional)
+      functional_c(j) = functional(j:j)
+    end do
+    do j=len_trim(functional)+1,ADJ_NAME_LEN
+      functional_c(j) = c_null_char
+    end do
+    functional_c(ADJ_NAME_LEN) = c_null_char
+
+    ierr = adj_get_adjoint_solution_c(adjointer, equation, functional_c, soln, variable)
+  end function adj_get_adjoint_solution
 
   function adj_create_variable(name, timestep, iteration, auxiliary, variable) result(ierr)
     character(len=*), intent(in) :: name

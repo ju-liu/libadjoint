@@ -296,6 +296,19 @@ int adj_get_adjoint_equation(adj_adjointer* adjointer, int equation, char* funct
   return ADJ_OK;
 }
 
+int adj_get_adjoint_solution(adj_adjointer* adjointer, int equation, char* functional, adj_vector* soln, adj_variable* adj_var)
+{
+  int ierr;
+
+  strncpy(adj_error_msg, "Need the solve data callback, but it hasn't been supplied.", ADJ_ERROR_MSG_BUF);
+  if (adjointer->callbacks.vec_destroy == NULL) return ADJ_ERR_NEED_CALLBACK;
+  strncpy(adj_error_msg, "", ADJ_ERROR_MSG_BUF);
+
+
+
+  return ADJ_OK;
+}
+
 int adj_get_forward_equation(adj_adjointer* adjointer, int equation, adj_matrix* lhs, adj_vector* rhs, adj_variable* fwd_var)
 {
   int ierr;
