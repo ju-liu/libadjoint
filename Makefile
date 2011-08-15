@@ -7,6 +7,9 @@ FOBJ = $(patsubst src/%.F90,obj/%.o,$(FSRC))
 CSRC = $(wildcard src/*.c)
 COBJ = $(patsubst src/%.c,obj/%.o,$(CSRC))
 
+CPPSRC = $(wildcard src/*.cpp)
+CPPOBJ = $(patsubst src/%.cpp,obj/%.o,$(CPPSRC))
+
 ###############################################################################
 # Variables for unit tests                                                    #
 ###############################################################################
@@ -59,16 +62,16 @@ CFLAGS := $(CFLAGS) $(DBGFLAGS) $(PICFLAG) $(PETSC_CPPFLAGS) -Iinclude/ $(COMPIL
 ###############################################################################
 # CPP compiler variables                                                        #
 ###############################################################################
-# Identify CPP compiler
 ifeq ($(origin CPP),default)
-	CC := mpic++
+	CPP := mpic++
 endif
 
-# Compiler-specific stuff here
+# Compiler-specific stuff Vere
 CPP_VERSION = $(shell $(CPP) --version 2>&1) $(shell $(CPP) -V 2>&1)
-ifneq (,$(findstring g++, $(CPP_VERSION)))
+ifneq (,$(findstring cpp, $(CPP_VERSION)))
+	#CPP := mpic++
 	# g++-specific settings here
-	COMPILER_CPPFLAGS := -Wall -Wextra -Wunused-parameter -Wunused-result -Wunsafe-loop-optimizations -Wpointer-arith -Wstrict-prototypes -ggdb3 -fstack-protector-all
+	COMPILER_CPPFLAGS := -Wall -Wextra -Wunused-parameter -Wunused-result -Wunsafe-loop-optimizations -Wpointer-arith -ggdb3 -fstack-protector-all
 endif
 ifneq (,$(findstring icc, $(CC_VERSION)))
 	# i++-specific settings here
@@ -155,8 +158,8 @@ obj/%.o: src/%.c
 	@$(CC) $(CFLAGS) -c -o $@ $<
 
 obj/%.o: src/%.cpp
-	@echo "  CPP $<"
-	@$(CPP) $(CPPFLAGS) -c -o $@ $<
+	@echo "  C++ $<"
+	@$(CXX) $(CXXFLAGS) -c -o $@ $<
 
 lib/libadjoint.a: $(COBJ) $(FOBJ) $(CPPOBJ)
 	@echo "  AR $@"
