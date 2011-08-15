@@ -646,6 +646,13 @@ module libadjoint
       integer(kind=c_int) :: ierr
     end function adj_timestep_end_equation
 
+    function adj_set_error_checking_c(check) result(ierr) bind(c, name='adj_set_error_checking')
+      use libadjoint_data_structures
+      use iso_c_binding
+      integer(kind=c_int), intent(in), value :: check
+      integer(kind=c_int) :: ierr
+    end function adj_set_error_checking_c
+
     function adj_adjointer_check_consistency(adjointer) result(ierr) bind(c, name='adj_adjointer_check_consistency')
       use libadjoint_data_structures
       use iso_c_binding
@@ -1419,6 +1426,21 @@ module libadjoint
     eq = adj_variable_equal_c(var1tmp, var2tmp, 1)
     adj_variable_equal = (eq == 1)
   end function adj_variable_equal
+
+  function adj_set_error_checking(check) result(ierr)
+    logical, intent(in) :: check
+    integer(kind=c_int) :: ierr
+
+    integer(kind=c_int) :: c_check
+
+    if (check) then
+      c_check = ADJ_TRUE
+    else
+      c_check = ADJ_FALSE
+    end if
+
+    ierr = adj_set_error_checking_c(c_check)
+  end function adj_set_error_checking
 
 end module libadjoint
 
