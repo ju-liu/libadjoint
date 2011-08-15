@@ -37,7 +37,7 @@ int adj_set_error_checking(int check)
   if (check != ADJ_TRUE && check != ADJ_FALSE)
   {
     snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "check must be either ADJ_TRUE or ADJ_FALSE.");
-    return ADJ_ERR_INVALID_INPUTS;
+    return adj_chkierr_auto(ADJ_ERR_INVALID_INPUTS);
   }
 
   error_check = check;

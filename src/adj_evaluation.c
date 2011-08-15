@@ -10,7 +10,7 @@ int adj_evaluate_block_action(adj_adjointer* adjointer, adj_block block, adj_vec
 
   ierr = adj_find_operator_callback(adjointer, ADJ_BLOCK_ACTION_CB, block.name, (void (**)(void)) &block_action_func);
   if (ierr != ADJ_OK)
-    return ierr;
+    return adj_chkierr_auto(ierr);
 
   /* We have the right callback, so let's call it already */ 
   if (block.has_nonlinear_block) 
@@ -25,7 +25,7 @@ int adj_evaluate_block_action(adj_adjointer* adjointer, adj_block block, adj_vec
     {
       ierr = adj_get_variable_value(adjointer, variables[i], &dependencies[i]);
       if (ierr != ADJ_OK)
-        return ierr;
+        return adj_chkierr_auto(ierr);
     }
   }
 
@@ -39,7 +39,7 @@ int adj_evaluate_block_action(adj_adjointer* adjointer, adj_block block, adj_vec
   if (block.has_nonlinear_block)
     free(dependencies);
 
-  return ierr;
+  return adj_chkierr_auto(ierr);
 }
 
 
@@ -53,7 +53,7 @@ int adj_evaluate_block_assembly(adj_adjointer* adjointer, adj_block block, adj_m
 
   ierr = adj_find_operator_callback(adjointer, ADJ_BLOCK_ASSEMBLY_CB, block. name, (void (**)(void)) &block_assembly_func);
   if (ierr != ADJ_OK)
-    return ierr;
+    return adj_chkierr_auto(ierr);
 
   /* We have the right callback, so let's call it already */ 
   if (block.has_nonlinear_block)
@@ -68,7 +68,7 @@ int adj_evaluate_block_assembly(adj_adjointer* adjointer, adj_block block, adj_m
     {
       ierr = adj_get_variable_value(adjointer, variables[i], &dependencies[i]);
       if (ierr != ADJ_OK)
-        return ierr;
+        return adj_chkierr_auto(ierr);
     }
   }
 
@@ -89,9 +89,9 @@ int adj_evaluate_nonlinear_derivative_action(adj_adjointer* adjointer, int nderi
 
   /* As usual, check as much as we can at the start */
   strncpy(adj_error_msg, "Need a data callback, but it hasn't been supplied.", ADJ_ERROR_MSG_BUF);
-  if (adjointer->callbacks.vec_destroy == NULL)   return ADJ_ERR_NEED_CALLBACK;
-  if (adjointer->callbacks.vec_axpy == NULL)      return ADJ_ERR_NEED_CALLBACK;
-  if (adjointer->callbacks.vec_duplicate == NULL) return ADJ_ERR_NEED_CALLBACK;
+  if (adjointer->callbacks.vec_destroy == NULL)   return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
+  if (adjointer->callbacks.vec_axpy == NULL)      return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
+  if (adjointer->callbacks.vec_duplicate == NULL) return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
   strncpy(adj_error_msg, "", ADJ_ERROR_MSG_BUF);
   assert(nderivatives > 0);
 
@@ -102,7 +102,7 @@ int adj_evaluate_nonlinear_derivative_action(adj_adjointer* adjointer, int nderi
     for (i = 0; i < derivatives[deriv].nonlinear_block.ndepends; i++)
     {
       ierr = adj_has_variable_value(adjointer, derivatives[deriv].nonlinear_block.depends[i]);
-      if (ierr != ADJ_OK) return ierr;
+      if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
     }
   }
 
@@ -115,36 +115,36 @@ int adj_evaluate_nonlinear_derivative_action(adj_adjointer* adjointer, int nderi
       if (derivatives[deriv].nonlinear_block.test_deriv_hermitian)
       {
         ierr = adj_test_nonlinear_derivative_action_transpose(adjointer, derivatives[deriv], value, *rhs, derivatives[deriv].nonlinear_block.number_of_tests, derivatives[deriv].nonlinear_block.tolerance);
-        if (ierr != ADJ_OK) return ierr;
+        if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
       }
 	  if (derivatives[deriv].nonlinear_block.test_derivative)
       {
         ierr = adj_test_nonlinear_derivative_action_consistency(adjointer, derivatives[deriv], derivatives[deriv].variable, derivatives[deriv].nonlinear_block.number_of_rounds);
-        if (ierr != ADJ_OK) return ierr;
+        if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
       }
       adj_vector rhs_tmp;
       ierr = adj_evaluate_nonlinear_derivative_action_supplied(adjointer, nonlinear_derivative_action_func, derivatives[deriv], value, &rhs_tmp);
-      if (ierr != ADJ_OK) return ierr;
+      if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
       adjointer->callbacks.vec_axpy(rhs, (adj_scalar) -1.0, rhs_tmp);
       adjointer->callbacks.vec_destroy(&rhs_tmp);
     }
     else
     {
-      return ierr;
+      return adj_chkierr_auto(ierr);
 /*
       snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Sorry, ISP is not implemented yet.");
-      return ADJ_ERR_NOT_IMPLEMENTED;
+      return adj_chkierr_auto(ADJ_ERR_NOT_IMPLEMENTED);
 
       void (*nonlinear_action_func)(int nvar, adj_variable* variables, adj_vector* dependencies, adj_vector input, void* context, adj_vector* output) = NULL;
       ierr = adj_find_operator_callback(adjointer, ADJ_NBLOCK_ACTION_CB, derivatives[deriv].nonlinear_block.name, (void (**)(void)) &nonlinear_action_func);
       if (ierr != ADJ_OK)
       {
         snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Could not find a nonlinear derivative action callback, nor a nonlinear action callback, for operator %s.", derivatives[deriv].nonlinear_block.name);
-        return ierr;
+        return adj_chkierr_auto(ierr);
       }
       adjointer->callbacks.vec_duplicate(model_rhs, &rhs_tmp);
       ierr = adj_evaluate_nonlinear_derivative_action_isp(adjointer, nonlinear_action_func, derivatives[deriv], value, &rhs_tmp);
-      if (ierr != ADJ_OK) return ierr;
+      if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
       adjointer->callbacks.vec_axpy(rhs, (adj_scalar) 1.0, rhs_tmp);
       adjointer->callbacks.vec_destroy(&rhs_tmp);
 */
@@ -197,20 +197,20 @@ int adj_evaluate_nonlinear_derivative_action_isp(adj_adjointer* adjointer, void 
   adj_scalar h;
 
   strncpy(adj_error_msg, "Need a data callback, but it hasn't been supplied.", ADJ_ERROR_MSG_BUF);
-  if (adjointer->callbacks.vec_destroy == NULL)   return ADJ_ERR_NEED_CALLBACK;
-  if (adjointer->callbacks.vec_axpy == NULL)      return ADJ_ERR_NEED_CALLBACK;
-  if (adjointer->callbacks.vec_duplicate == NULL) return ADJ_ERR_NEED_CALLBACK;
-  if (adjointer->callbacks.vec_set_values == NULL) return ADJ_ERR_NEED_CALLBACK;
-  if (adjointer->callbacks.vec_divide == NULL)    return ADJ_ERR_NEED_CALLBACK;
-  if (adjointer->callbacks.vec_get_size == NULL)    return ADJ_ERR_NEED_CALLBACK;
+  if (adjointer->callbacks.vec_destroy == NULL)   return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
+  if (adjointer->callbacks.vec_axpy == NULL)      return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
+  if (adjointer->callbacks.vec_duplicate == NULL) return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
+  if (adjointer->callbacks.vec_set_values == NULL) return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
+  if (adjointer->callbacks.vec_divide == NULL)    return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
+  if (adjointer->callbacks.vec_get_size == NULL)    return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
   strncpy(adj_error_msg, "", ADJ_ERROR_MSG_BUF);
 
   ierr = adj_has_variable_value(adjointer, derivative.variable);
-  if (ierr != ADJ_OK) return ierr;
+  if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
 
   /* Step 1. Compute the action at the unperturbed state. */
   ierr = adj_evaluate_nonlinear_action(adjointer, nonlinear_action_func, derivative.nonlinear_block, derivative.contraction, NULL, NULL, &unperturbed);
-  if (ierr != ADJ_OK) return ierr;
+  if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
 
   /* Step 2. Colour the graph. */
   /* Firstly, get the value associated with the variable to be perturbed, and then fetch its size. */
@@ -219,14 +219,14 @@ int adj_evaluate_nonlinear_derivative_action_isp(adj_adjointer* adjointer, void 
   adjointer->callbacks.vec_get_size(dependency, &sz);
 
   ierr = adj_find_operator_callback(adjointer, ADJ_NBLOCK_COLOURING_CB, derivative.nonlinear_block.name, (void (**)(void)) &nonlinear_colouring_func);
-  if (ierr != ADJ_OK) return ierr;
+  if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
   colouring = (int*) malloc(sz * sizeof(int));
   ADJ_CHKMALLOC(colouring);
   ierr = adj_evaluate_nonlinear_colouring(adjointer, derivative.nonlinear_block, derivative.variable, nonlinear_colouring_func, sz, colouring);
   if (ierr != ADJ_OK)
   {
     free(colouring);
-    return ierr;
+    return adj_chkierr_auto(ierr);
   }
 
   /* Now that we have the colouring, figure out how many colours we have */
@@ -240,7 +240,7 @@ int adj_evaluate_nonlinear_derivative_action_isp(adj_adjointer* adjointer, void 
   if (min_colours != 1)
   {
     snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "The colouring function for %s must return integers in the range 1 to n.", derivative.nonlinear_block.name);
-    return ADJ_ERR_INVALID_INPUTS;
+    return adj_chkierr_auto(ADJ_ERR_INVALID_INPUTS);
   }
 
   /* Step 3. We'll also duplicate perturbation_vector, as we'll need it in a little bit. */
@@ -265,7 +265,7 @@ int adj_evaluate_nonlinear_derivative_action_isp(adj_adjointer* adjointer, void 
 
     /* Step 4b. Compute the action at the perturbed state. */
     ierr = adj_evaluate_nonlinear_action(adjointer, nonlinear_action_func, derivative.nonlinear_block, derivative.contraction, &derivative.variable, &perturbation_vector, &perturbed);
-    if (ierr != ADJ_OK) return ierr;
+    if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
 
     /* Step 4c. Subtract off the unperturbed result. */
     adjointer->callbacks.vec_axpy(&perturbed, (adj_scalar) -1.0, unperturbed);
@@ -321,10 +321,10 @@ int adj_evaluate_nonlinear_action(adj_adjointer* adjointer, void (*nonlinear_act
   adj_vector perturbed_dependency;
 
   strncpy(adj_error_msg, "Need a data callback, but it hasn't been supplied.", ADJ_ERROR_MSG_BUF);
-  if (adjointer->callbacks.vec_destroy == NULL)   return ADJ_ERR_NEED_CALLBACK;
-  if (adjointer->callbacks.vec_axpy == NULL)      return ADJ_ERR_NEED_CALLBACK;
-  if (adjointer->callbacks.vec_duplicate == NULL) return ADJ_ERR_NEED_CALLBACK;
-  if (adjointer->callbacks.vec_set_values == NULL) return ADJ_ERR_NEED_CALLBACK;
+  if (adjointer->callbacks.vec_destroy == NULL)   return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
+  if (adjointer->callbacks.vec_axpy == NULL)      return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
+  if (adjointer->callbacks.vec_duplicate == NULL) return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
+  if (adjointer->callbacks.vec_set_values == NULL) return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
   strncpy(adj_error_msg, "", ADJ_ERROR_MSG_BUF);
 
   /* If you want to compute at a perturbed state, you need to give me both perturbed_var
@@ -352,7 +352,7 @@ int adj_evaluate_nonlinear_action(adj_adjointer* adjointer, void (*nonlinear_act
         {
           snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Dependencies %d and %d of nonlinear block %s are equal, which is invalid.", perturbed_idx, i, nonlinear_block.name);
           free(dependencies);
-          return ADJ_ERR_INVALID_INPUTS;
+          return adj_chkierr_auto(ADJ_ERR_INVALID_INPUTS);
         }
 
         adjointer->callbacks.vec_duplicate(dependencies[i], &perturbed_dependency);
@@ -390,12 +390,12 @@ int adj_evaluate_functional(adj_adjointer* adjointer, int timestep, char* functi
 
   ierr = adj_find_functional_callback(adjointer, functional, &functional_func);
   if (ierr != ADJ_OK)
-    return ierr;
+    return adj_chkierr_auto(ierr);
 
   if (adjointer->ntimesteps <= timestep) 
   {
     snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "No data is associated with this timestep %d.", timestep);
-    return ADJ_ERR_INVALID_INPUTS;
+    return adj_chkierr_auto(ADJ_ERR_INVALID_INPUTS);
   }
   
   functional_data_ptr = adjointer->timestep_data[timestep].functional_data_start;
@@ -412,7 +412,7 @@ int adj_evaluate_functional(adj_adjointer* adjointer, int timestep, char* functi
       for (k = 0; k < nb_variables; k++)
       {
         ierr = adj_get_variable_value(adjointer, variables[k], &(dependencies[k]));
-        if (ierr != ADJ_OK) return ierr;
+        if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
       }
     }
     functional_data_ptr = functional_data_ptr->next;
@@ -420,7 +420,7 @@ int adj_evaluate_functional(adj_adjointer* adjointer, int timestep, char* functi
   if (dependencies == NULL) 
   {
     snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Warning: Evaluating functional %s at timestep %d without having any dependencies registered for it.\n", functional, timestep);
-    return ADJ_WARN_UNINITIALISED_VALUE;
+    return adj_chkierr_auto(ADJ_WARN_UNINITIALISED_VALUE);
   }
   
   /* We have the right callback, so let's call it already */ 
@@ -446,7 +446,7 @@ int adj_evaluate_functional_derivative(adj_adjointer* adjointer, adj_variable va
 
   ierr = adj_variable_get_ndepending_timesteps(adjointer, variable, functional, &ntimesteps);
   if (ierr != ADJ_OK)
-    return ierr;
+    return adj_chkierr_auto(ierr);
   if (ntimesteps == 0)
   {
     *has_output = ADJ_FALSE;
@@ -459,17 +459,17 @@ int adj_evaluate_functional_derivative(adj_adjointer* adjointer, adj_variable va
 
   ierr = adj_find_functional_derivative_callback(adjointer, functional, &functional_derivative_func);
   if (ierr != ADJ_OK)
-    return ierr;
+    return adj_chkierr_auto(ierr);
 
   if (adjointer->ntimesteps <= variable.timestep) 
   {
     snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "No data is associated with this timestep %d.", variable.timestep);
-    return ADJ_ERR_INVALID_INPUTS;
+    return adj_chkierr_auto(ADJ_ERR_INVALID_INPUTS);
   }
 
   ierr = adj_find_variable_data((&adjointer->varhash), &variable, &data_ptr);
   if (ierr != ADJ_OK)
-    return ierr;
+    return adj_chkierr_auto(ierr);
 
   /* Create the dependency list for the functional derivative evaluation. */
   /* For that we loop over all timesteps that need 'variable' for the functional evaluation */
@@ -514,7 +514,7 @@ int adj_evaluate_functional_derivative(adj_adjointer* adjointer, adj_variable va
   ADJ_CHKMALLOC(dependencies);
   nb_variables = 0;
   ierr = adj_destroy_hash(&hash);
-  if (ierr != ADJ_OK) return ierr;
+  if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
 
   for (i = 0; i < ntimesteps_to_consider; i++)
   {
@@ -534,7 +534,7 @@ int adj_evaluate_functional_derivative(adj_adjointer* adjointer, adj_variable va
             /* this variable is one we should add */
             memcpy(&(variables[nb_variables]), &(functional_data_ptr->dependencies[k]), sizeof(adj_variable));
             ierr = adj_get_variable_value(adjointer, variables[nb_variables], &(dependencies[nb_variables]));
-            if (ierr != ADJ_OK) return ierr;
+            if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
             nb_variables++;
           }
         }
@@ -546,7 +546,7 @@ int adj_evaluate_functional_derivative(adj_adjointer* adjointer, adj_variable va
 
   ierr = adj_destroy_hash(&hash);
   free(timesteps_to_consider);
-  if (ierr != ADJ_OK) return ierr;
+  if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
 
   /* We have the right callback, so let's call it already */ 
   functional_derivative_func(adjointer, variable, nb_variables, variables, dependencies, functional, output);
@@ -574,7 +574,7 @@ int adj_evaluate_forward_source(adj_adjointer* adjointer, int equation, adj_vect
   for (j=0 ; j < nrhsdeps; j++)
   {
     ierr = adj_get_variable_value(adjointer, variables[j], &(dependencies[j]));
-    if (ierr != ADJ_OK) return ierr;
+    if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
   }
 
   adjointer->forward_source_callback(adjointer, adjointer->equations[equation].variable, nrhsdeps, variables, dependencies, adjointer->equations[equation].rhs_context, output, has_output);
