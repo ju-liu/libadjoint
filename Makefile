@@ -62,14 +62,13 @@ CFLAGS := $(CFLAGS) $(DBGFLAGS) $(PICFLAG) $(PETSC_CPPFLAGS) -Iinclude/ $(COMPIL
 ###############################################################################
 # CPP compiler variables                                                        #
 ###############################################################################
-ifeq ($(origin CPP),default)
-	CPP := mpic++
+ifeq ($(origin CXX),default)
+	CXX := mpic++
 endif
 
 # Compiler-specific stuff Vere
-CPP_VERSION = $(shell $(CPP) --version 2>&1) $(shell $(CPP) -V 2>&1)
+CXX_VERSION = $(shell $(CXX) --version 2>&1) $(shell $(CXX) -V 2>&1)
 ifneq (,$(findstring cpp, $(CPP_VERSION)))
-	#CPP := mpic++
 	# g++-specific settings here
 	COMPILER_CPPFLAGS := -Wall -Wextra -Wunused-parameter -Wunused-result -Wunsafe-loop-optimizations -Wpointer-arith -ggdb3 -fstack-protector-all
 endif
@@ -78,7 +77,7 @@ ifneq (,$(findstring icc, $(CC_VERSION)))
 	COMPILER_CPPFLAGS := -Wall 
 endif
 
-CPPFLAGS := $(CPPFLAGS) $(DBGFLAGS) $(PICFLAG) $(PETSC_CPPFLAGS) -Iinclude/ $(COMPILER_CFLAGS)
+CPPFLAGS := $(CPPFLAGS) $(DBGFLAGS) $(PICFLAG) $(PETSC_CPPFLAGS) -Iinclude/ $(COMPILER_CPPFLAGS)
 
 ###############################################################################
 # F90 compiler variables                                                      #
@@ -134,11 +133,7 @@ PYDIR = $(shell python -c  "import distutils.sysconfig; print distutils.sysconfi
 ###############################################################################
 # The targets                                                                 #
 ###############################################################################
-all: revolve lib/libadjoint.a lib/libadjoint.so
-
-revolve:
-	@echo "  Compiling revolve"
-	@cd src/revolve/; make
+all: lib/libadjoint.a lib/libadjoint.so 
 
 bin/tests/%: src/tests/%.c src/tests/test_main.c lib/libadjoint.a
 	@echo "  CC $@"
@@ -159,13 +154,13 @@ obj/%.o: src/%.c
 
 obj/%.o: src/%.cpp
 	@echo "  C++ $<"
-	@$(CXX) $(CXXFLAGS) -c -o $@ $<
+	@$(CXX) $(CPPFLAGS) -c -o $@ $<
 
 lib/libadjoint.a: $(COBJ) $(FOBJ) $(CPPOBJ)
 	@echo "  AR $@"
 	@$(AR) $(ARFLAGS) $@ $(FOBJ) $(COBJ) $(CPPOBJ)
 
-lib/libadjoint.so: $(COBJ) $(FOBJ) $(CPPOBJ)
+lib/libadjoint.so: $(COBJ) $(FOBJ) $(CPPOBJ) 
 	@echo "  LD $@"
 	@$(LD) $(LDFLAGS) -o $@ $(FOBJ) $(COBJ) $(CPPOBJ) $(PETSC_LDFLAGS) $(LIBS)
 
@@ -188,7 +183,6 @@ clean:
 	@echo "  RM lib/*.py"
 	@rm -f tags
 	@rm -f include/libadjoint/adj_constants_f.h include/libadjoint/adj_error_handling_f.h
-	@cd src/revolve; make clean
 
 test: $(FTEST) $(CTEST)
 	@echo "  TEST bin/tests"
