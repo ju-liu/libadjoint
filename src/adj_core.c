@@ -305,6 +305,8 @@ int adj_get_adjoint_solution(adj_adjointer* adjointer, int equation, char* funct
   strncpy(adj_error_msg, "", ADJ_ERROR_MSG_BUF);
 
 
+  struct Revolve *r = NULL;
+  call_R_adjust(r, 10);
 
   return ADJ_OK;
 }
