@@ -41,4 +41,4 @@ no_checkpointing.o : no_checkpointing.cpp
 	
 clean:
 	rm *.o; rm revolve_binomial; rm revolve_multistage;  rm revolve_online;  rm no_checkpointing; 
-	rm ./check_rom/*.txt;
+	rm -f ./check_rom/*.txt;
