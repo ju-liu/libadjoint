@@ -22,13 +22,46 @@ void adj_html_css(FILE* fp)
       "  color: #404040;\n"
       "  background-color: lightgray;\n"
       "  text-align: left;\n"
-      "  padding-left: 3px;}\n"
+      "  padding-left: 3px;\n"
+	  "  border:1px solid black;\n"
+      "}\n"
 
-      "table.equations tr.new_iteration\n"
-      "{ border-top: 2px solid gray;}\n"
+      "table.equations td.new_timestep\n"
+      "{ border-top: 5px solid black;}\n"
 
-    "table.equations td.diagonal\n"
-    "{ background-color: lightgreen;}\n"
+      "table.equations td.new_iteration\n"
+      "{ border-top: 2px solid black}\n"
+
+      "table.equations td.diagonal\n"
+      "{ background-color: lightgreen;}\n"
+
+	  ".box_rotate {\n"
+	  "	       -moz-transform: rotate(310deg);  /* FF3.5+ */\n"
+	  "	         -o-transform: rotate(310deg);  /* Opera 10.5 */\n"
+	  "	    -webkit-transform: rotate(310deg);  /* Saf3.1+, Chrome */\n"
+	  "	               filter:  progid:DXImageTransform.Microsoft.BasicImage(rotation=-0.0698131701);  /* IE6,IE7 */\n"
+	  " 	           -ms-filter: 'progid:DXImageTransform.Microsoft.BasicImage(rotation=-0.0698131701)'; /* IE8 */\n"
+      "}"
+
+	  ".tablecell {\n"
+	  "     width:40px;\n "
+	  "     height:40px;}\n"
+
+	  ".headercell {"
+	  "     width:40px;\n"
+	  "     height:40px;\n"
+	  "     float:left;\n"
+	  "     padding-left:5px;\n"
+	  "}"
+
+ 	  ".redfont {\n"
+	  "     color:red;\n"
+	  "}\n"
+
+ 	  ".greenfont {\n"
+	  "     color:green;\n"
+	  "}\n"
+
       "</style>\n"
       "</head>\n"
       );
@@ -49,9 +82,9 @@ void adj_html_footer(FILE *fp)
       );
 }
 
-void adj_html_table_begin(FILE* fp)
+void adj_html_table_begin(FILE* fp, char* args)
 {
-  fprintf(fp, "<table border=\"1px\" class=\"equations\">\n");
+  fprintf(fp, "<table class=\"equations\" %s>\n", args);
 }
 
 void adj_html_table_end(FILE* fp)
@@ -59,18 +92,18 @@ void adj_html_table_end(FILE* fp)
   fprintf(fp, "</table>\n");
 }
 
-void adj_html_write_row(FILE* fp, char** strings, char** desc, int nb_strings, int diag_index)
+void adj_html_write_row(FILE* fp, char** strings, char** desc, int nb_strings, int diag_index, char* class)
 {
   int i;
   for (i = 0; i < nb_strings; i++)
   {
     if (strlen(desc[i]))
       if (diag_index == i)
-        fprintf(fp, "<td class=\"diagonal\"><div title=\"%s\">%s</div></td>\n", desc[i], strings[i]);
+        fprintf(fp, "<td class=\"diagonal tablecell %s\"><div title=\"%s\">%s</div></td>\n", class, desc[i], strings[i]);
       else
-        fprintf(fp, "<td><div title=\"%s\">%s</div></td>\n", desc[i], strings[i]);
+        fprintf(fp, "<td class=\"tablecell %s\"><div title=\"%s\">%s</div></td>\n", class, desc[i], strings[i]);
     else
-      fprintf(fp, "<td></div></td>\n");
+      fprintf(fp, "<td class=\"tablecell %s\"></td>\n", class);
   }
 }
 
@@ -108,69 +141,69 @@ void adj_html_print_callback_information(FILE* fp, adj_adjointer* adjointer)
 	fprintf(fp, "<h2>Data callbacks</h2>");
 
 	if (adjointer->callbacks.vec_duplicate == NULL)
-		fprintf(fp, "<span style='color:red' title='Not registered'>vec_duplicate</span>");
+		fprintf(fp, "<span class=\"redfont\" title='Not registered'>vec_duplicate</span>");
 	else
-		fprintf(fp, "<span style='color:green'>vec_duplicate</span>");
+		fprintf(fp, "<span class=\"greenfont\">vec_duplicate</span>");
 
 	if (adjointer->callbacks.vec_axpy == NULL)
-		fprintf(fp, ", <span style='color:red' title='Not registered'>vec_axpy</span>");
+		fprintf(fp, ", <span class=\"redfont\" title='Not registered'>vec_axpy</span>");
 	else
-		fprintf(fp, ", <span style='color:green'>vec_axpy</span>");
+		fprintf(fp, ", <span class=\"greenfont\">vec_axpy</span>");
 
 	if (adjointer->callbacks.vec_destroy == NULL)
-		fprintf(fp, ", <span style='color:red' title='Not registered'>vec_destroy</span>");
+		fprintf(fp, ", <span class=\"redfont\" title='Not registered'>vec_destroy</span>");
 	else
-		fprintf(fp, ", <span style='color:green'>vec_destroy</span>");
+		fprintf(fp, ", <span class=\"greenfont\">vec_destroy</span>");
 
 	if (adjointer->callbacks.vec_set_values == NULL)
-		fprintf(fp, ", <span style='color:red' title='Not registered'>vec_set_values</span>");
+		fprintf(fp, ", <span class=\"redfont\" title='Not registered'>vec_set_values</span>");
 	else
-		fprintf(fp, ", <span style='color:green'>vec_set_values</span>");
+		fprintf(fp, ", <span class=\"greenfont\">vec_set_values</span>");
 
 	if (adjointer->callbacks.vec_get_size == NULL)
-		fprintf(fp, ", <span style='color:red' title='Not registered'>vec_get_size</span>");
+		fprintf(fp, ", <span class=\"redfont\" title='Not registered'>vec_get_size</span>");
 	else
-		fprintf(fp, ", <span style='color:green'>vec_get_size</span>");
+		fprintf(fp, ", <span class=\"greenfont\">vec_get_size</span>");
 
 	if (adjointer->callbacks.vec_divide == NULL)
-		fprintf(fp, ", <span style='color:red' title='Not registered'>vec_divide</span>");
+		fprintf(fp, ", <span class=\"redfont\"' title='Not registered'>vec_divide</span>");
 	else
-		fprintf(fp, ", <span style='color:green'>vec_divide</span>");
+		fprintf(fp, ", <span class=\"greenfont\">vec_divide</span>");
 
 	if (adjointer->callbacks.vec_get_norm == NULL)
-		fprintf(fp, ", <span style='color:red' title='Not registered'>vec_get_norm</span>");
+		fprintf(fp, ", <span class=\"redfont\" title='Not registered'>vec_get_norm</span>");
 	else
-		fprintf(fp, ", <span style='color:green'>vec_get_norm</span>");
+		fprintf(fp, ", <span class=\"greenfont\">vec_get_norm</span>");
 
 	if (adjointer->callbacks.vec_dot_product == NULL)
-		fprintf(fp, ", <span style='color:red' title='Not registered'>vec_dot_product</span>");
+		fprintf(fp, ", <span class=\"redfont\" title='Not registered'>vec_dot_product</span>");
 	else
-		fprintf(fp, ", <span style='color:green'>vec_dot_product</span>");
+		fprintf(fp, ", <span class=\"greenfont\">vec_dot_product</span>");
 
 	if (adjointer->callbacks.vec_set_random == NULL)
-		fprintf(fp, ", <span style='color:red' title='Not registered'>vec_set_random</span>");
+		fprintf(fp, ", <span class=\"redfont\" title='Not registered'>vec_set_random</span>");
 	else
-		fprintf(fp, ", <span style='color:green'>vec_set_random</span>");
+		fprintf(fp, ", <span class=\"greenfont\">vec_set_random</span>");
 
 	if (adjointer->callbacks.mat_duplicate == NULL)
-		fprintf(fp, ", <span style='color:red' title='Not registered'>mat_duplicate</span>");
+		fprintf(fp, ", <span class=\"redfont\" title='Not registered'>mat_duplicate</span>");
 	else
-		fprintf(fp, ", <span style='color:green'>mat_duplicate</span>");
+		fprintf(fp, ", <span class=\"greenfont\">mat_duplicate</span>");
 
 	if (adjointer->callbacks.mat_duplicate == NULL)
-		fprintf(fp, ", <span style='color:red' title='Not registered'>mat_duplicate</span>");
+		fprintf(fp, ", <span class=\"redfont\" title='Not registered'>mat_duplicate</span>");
 	else
-		fprintf(fp, ", <span style='color:green'>mat_duplicate</span>");
+		fprintf(fp, ", <span class=\"greenfont\">mat_duplicate</span>");
 
 	if (adjointer->callbacks.mat_axpy == NULL)
-		fprintf(fp, ", <span style='color:red' title='Not registered'>mat_axpy</span>");
+		fprintf(fp, ", <span class=\"redfont\" title='Not registered'>mat_axpy</span>");
 	else
-		fprintf(fp, ", <span style='color:green'>mat_axpy</span>");
+		fprintf(fp, ", <span class=\"greenfont\">mat_axpy</span>");
 
 	if (adjointer->callbacks.mat_destroy == NULL)
-		fprintf(fp, ", <span style='color:red' title='Not registered'>mat_destroy</span>");
+		fprintf(fp, ", <span class=\"redfont\" title='Not registered'>mat_destroy</span>");
 	else
-		fprintf(fp, ", <span style='color:green'>mat_destroy</span>");
+		fprintf(fp, ", <span class=\"greenfont\">mat_destroy</span>");
 
 
 	fprintf(fp, "<h2>Block action callbacks</h2>");
@@ -211,38 +244,42 @@ void adj_html_print_callback_information(FILE* fp, adj_adjointer* adjointer)
 	fprintf(fp, "<h2>Functional callbacks</h2>");
 	func_cb_ptr= adjointer->functional_list.firstnode;
 	while (func_cb_ptr != NULL) {
-		fprintf(fp, "<span style='color:green'>%s</span>", func_cb_ptr->name);
+		fprintf(fp, "<span class=\"greenfont\">%s</span>", func_cb_ptr->name);
 		func_cb_ptr = func_cb_ptr->next;
 	}
 
 	fprintf(fp, "<h2>Functional derivative callbacks</h2>");
 	func_deriv_cb_ptr= adjointer->functional_derivative_list.firstnode;
 	while (func_deriv_cb_ptr != NULL) {
-		fprintf(fp, "<span style='color:green'>%s</span>", func_deriv_cb_ptr->name);
+		fprintf(fp, "<span class=\"greenfont\">%s</span>", func_deriv_cb_ptr->name);
 		func_deriv_cb_ptr = func_deriv_cb_ptr->next;
 	}
 }
 
-/* Writes a html row containing the adjoint variables into fp */
+/* Writes a html row containing the variables into fp */
 void adj_html_vars(FILE* fp, adj_adjointer* adjointer, int type)
 {
-  int i;
-  int width = 400; /* in pixel */
+  int i, ierr;
   char adj_name[ADJ_NAME_LEN];
   adj_variable adj_var;
+  fprintf(fp, "<div style=\"height:150px\"></div>\n");
   fprintf(fp, "<tr>\n");
   for (i = 0; i < adjointer->nequations; i++)
   {
     adj_var = adjointer->equations[i].variable;
     adj_var.type = type;
     adj_variable_str(adj_var, adj_name, ADJ_NAME_LEN);
-    fprintf(fp, "<th><div style=\"width:%ipx;\">%s</div></th>\n", width, adj_name);
+    ierr = adj_has_variable_value(adjointer, adj_var);
+    if (ierr != ADJ_OK)
+    	fprintf(fp, "<th class=\"headercell box_rotate redfont\">%s</th>\n", adj_name);
+    else
+    	fprintf(fp, "<th class=\"headercell box_rotate greenfont\">%s</th>\n", adj_name);
   }
   fprintf(fp, "</tr>\n");
-}
+ }
 
 /* Writes a html row containing the supplied equation into fp */
-int adj_html_eqn(FILE* fp, adj_adjointer* adjointer, adj_equation adj_eqn, int diag_index)
+int adj_html_eqn(FILE* fp, adj_adjointer* adjointer, adj_equation adj_eqn, int diag_index, char* class)
 {
   int i,k;
   char* row[adjointer->nequations];
@@ -268,18 +305,23 @@ int adj_html_eqn(FILE* fp, adj_adjointer* adjointer, adj_equation adj_eqn, int d
     if (ierr != ADJ_OK)
       return ierr;
 
-    strncpy(row[col], adj_eqn.blocks[i].name, ADJ_NAME_LEN);
-    /* Fill in the description */
-    strncpy(desc[col], adj_eqn.blocks[i].name, ADJ_NAME_LEN);
+    strncpy(row[col], adj_eqn.blocks[i].name, 5);
+    row[col][5]='\0';
 
-    strncat(desc[col], "\n\nTargets: ", ADJ_NAME_LEN);
+    /* Fill in the description */
+    strncpy(desc[col], "Targets: ", ADJ_NAME_LEN);
     strncat(desc[col], adj_eqn.targets[i].name, ADJ_NAME_LEN);
-    strncat(desc[col], ":", ADJ_NAME_LEN);
+    strncat(desc[col], "\nTimestep:", ADJ_NAME_LEN);
     snprintf(buf, ADJ_NAME_LEN, "%d", adj_eqn.targets[i].timestep);
     strncat(desc[col], buf, ADJ_NAME_LEN);
-    strncat(desc[col], ":", ADJ_NAME_LEN);
+    strncat(desc[col], "\nIteration:", ADJ_NAME_LEN);
     snprintf(buf, ADJ_NAME_LEN, "%d", adj_eqn.targets[i].iteration);
     strncat(desc[col], buf, ADJ_NAME_LEN);
+
+		strncat(desc[col], "\n\n===== Block description =====\n\n", ADJ_NAME_LEN);
+    strncat(desc[col], adj_eqn.blocks[i].name, ADJ_NAME_LEN);
+    strncat(desc[col], "\n------------------", ADJ_NAME_LEN);
+
     strncat(desc[col], "\nCoefficient: ", ADJ_NAME_LEN);
     snprintf(buf, ADJ_NAME_LEN, "%f", adj_eqn.blocks[i].coefficient);
     strncat(desc[col], buf, ADJ_NAME_LEN);
@@ -294,9 +336,9 @@ int adj_html_eqn(FILE* fp, adj_adjointer* adjointer, adj_equation adj_eqn, int d
     {
       strncat(desc[col], "\nNonlinear Block: ", ADJ_NAME_LEN);
       strncat(desc[col], adj_eqn.blocks[i].nonlinear_block.name, ADJ_NAME_LEN);
+      strncat(desc[col], " Dependencies: ", ADJ_NAME_LEN);
       for (k=0; k<adj_eqn.blocks[i].nonlinear_block.ndepends; k++)
       {
-        strncat(desc[col], " (Dependency: ", ADJ_NAME_LEN);
         strncat(desc[col], adj_eqn.blocks[i].nonlinear_block.depends[k].name, ADJ_NAME_LEN);
         strncat(desc[col], ":", ADJ_NAME_LEN);
         snprintf(buf, ADJ_NAME_LEN, "%d", adj_eqn.blocks[i].nonlinear_block.depends[k].timestep);
@@ -304,13 +346,14 @@ int adj_html_eqn(FILE* fp, adj_adjointer* adjointer, adj_equation adj_eqn, int d
         strncat(desc[col], ":", ADJ_NAME_LEN);
         snprintf(buf, ADJ_NAME_LEN, "%d", adj_eqn.blocks[i].nonlinear_block.depends[k].iteration);
         strncat(desc[col], buf, ADJ_NAME_LEN);
-        strncat(desc[col], ")", ADJ_NAME_LEN);
+        if (k!=adj_eqn.blocks[i].nonlinear_block.ndepends-1)
+        	strncat(desc[col], ", ", ADJ_NAME_LEN);
       }
 
     }
   }
   /* Write it to file */
-  adj_html_write_row(fp, row, desc, adjointer->nequations, diag_index);
+  adj_html_write_row(fp, row, desc, adjointer->nequations, diag_index, class);
 
 
   /* Tidy up */
@@ -323,9 +366,9 @@ int adj_html_eqn(FILE* fp, adj_adjointer* adjointer, adj_equation adj_eqn, int d
 }
 
 /* Writes a html row containing the supplied adjoint equation into fp */
-int adj_html_adjoint_eqn(FILE* fp, adj_adjointer* adjointer, adj_equation fwd_eqn, int diag_index)
+int adj_html_adjoint_eqn(FILE* fp, adj_adjointer* adjointer, adj_equation fwd_eqn, int diag_index, char* class)
 {
-  int i, j, k;
+  int i, j, k, l;
   char* row[adjointer->nequations];
   char* desc[adjointer->nequations];
   char buf[ADJ_NAME_LEN];
@@ -349,68 +392,145 @@ int adj_html_adjoint_eqn(FILE* fp, adj_adjointer* adjointer, adj_equation fwd_eq
   ierr = adj_find_variable_data(&(adjointer->varhash), &fwd_var, &fwd_data);
   assert(ierr == ADJ_OK);
 
-  /* Each targeting equation corresponds to one column in the considered row */
-  for (i = 0; i < fwd_data->ntargeting_equations; i++)
+  /* --------------------------------------------------------------------------
+   * Visualisation of A* terms                                                  |
+   * -------------------------------------------------------------------------- */
   {
-      adj_equation other_fwd_eqn;
-      adj_variable other_adj_var;
+		/* Each targeting equation corresponds to one column in the considered row */
+		for (i = 0; i < fwd_data->ntargeting_equations; i++)
+		{
+				adj_equation other_fwd_eqn;
+				adj_variable other_adj_var;
 
-      other_fwd_eqn = adjointer->equations[fwd_data->targeting_equations[i]];
+				other_fwd_eqn = adjointer->equations[fwd_data->targeting_equations[i]];
 
-      /* Find the index in other_fwd_eqn of the block fwd_var is multiplied with */
-      for (j=0; j<other_fwd_eqn.nblocks; j++)
+				/* Find the index in other_fwd_eqn of the block fwd_var is multiplied with */
+				for (j=0; j<other_fwd_eqn.nblocks; j++)
+				{
+					if (adj_variable_equal(&other_fwd_eqn.targets[j], &fwd_var, 1))
+						break;
+				}
+				assert(j!=other_fwd_eqn.nblocks);
+
+				/* find the column in which this blocks belongs */
+				ierr = adj_html_find_column_index(adjointer, &other_fwd_eqn.variable, &col);
+				if (ierr != ADJ_OK)
+					return ierr;
+
+				other_adj_var = other_fwd_eqn.targets[j];
+				other_adj_var.type = ADJ_ADJOINT;
+
+				/* Fill in the data */
+				strncpy(row[col], other_fwd_eqn.blocks[j].name, 5);
+				row[col][5]='\0';
+
+				strncpy(desc[col], "Targets: ", ADJ_NAME_LEN);
+				adj_variable_str(other_adj_var, buf, ADJ_NAME_LEN);
+				strncat(desc[col], buf, ADJ_NAME_LEN);
+				strncat(desc[col], "\nTimestep:", ADJ_NAME_LEN);
+				snprintf(buf, ADJ_NAME_LEN, "%d", other_adj_var.timestep);
+				strncat(desc[col], buf, ADJ_NAME_LEN);
+				strncat(desc[col], "\nIteration:", ADJ_NAME_LEN);
+				snprintf(buf, ADJ_NAME_LEN, "%d", other_adj_var.iteration);
+				strncat(desc[col], buf, ADJ_NAME_LEN);
+				strncat(desc[col], "\n\n===== Block description =====\n\n", ADJ_NAME_LEN);
+
+				strncat(desc[col], other_fwd_eqn.blocks[j].name, ADJ_NAME_LEN);
+				strncat(desc[col], "\n------------------", ADJ_NAME_LEN);
+				strncat(desc[col], "\nCoefficient: ", ADJ_NAME_LEN);
+				snprintf(buf, ADJ_NAME_LEN, "%f", other_fwd_eqn.blocks[j].coefficient);
+				strncat(desc[col], buf, ADJ_NAME_LEN);
+				strncat(desc[col], "\nHermitian: ", ADJ_NAME_LEN);
+				/* We are printing the adjoint equation, therefore hermitian has to be NOT'ed */
+				if (other_fwd_eqn.blocks[j].hermitian==ADJ_TRUE)
+					snprintf(buf, ADJ_NAME_LEN, "false");
+				else
+					snprintf(buf, ADJ_NAME_LEN, "true");
+				strncat(desc[col], buf, ADJ_NAME_LEN);
+				if (other_fwd_eqn.blocks[j].has_nonlinear_block)
+				{
+					strncat(desc[col], "\nNonlinear Block: ", ADJ_NAME_LEN);
+					strncat(desc[col], other_fwd_eqn.blocks[j].nonlinear_block.name, ADJ_NAME_LEN);
+					strncat(desc[col], " Dependencies: ", ADJ_NAME_LEN);
+					for (k=0; k<other_fwd_eqn.blocks[j].nonlinear_block.ndepends; k++)
+					{
+						strncat(desc[col], other_fwd_eqn.blocks[j].nonlinear_block.depends[k].name, ADJ_NAME_LEN);
+						strncat(desc[col], ":", ADJ_NAME_LEN);
+						snprintf(buf, ADJ_NAME_LEN, "%d", other_fwd_eqn.blocks[j].nonlinear_block.depends[k].timestep);
+						strncat(desc[col], buf, ADJ_NAME_LEN);
+						strncat(desc[col], ":", ADJ_NAME_LEN);
+						snprintf(buf, ADJ_NAME_LEN, "%d", other_fwd_eqn.blocks[j].nonlinear_block.depends[k].iteration);
+						strncat(desc[col], buf, ADJ_NAME_LEN);
+						if (k!=other_fwd_eqn.blocks[j].nonlinear_block.ndepends-1)
+							strncat(desc[col], ", ", ADJ_NAME_LEN);
+					}
+
+				}
+		  }
+
+      /* --------------------------------------------------------------------------
+       * Visualisation of G* terms                                                  |
+       * -------------------------------------------------------------------------- */
+
+      /* We need to loop through the equations that depend on fwd_var; each one of those will produce
+         a term in this row of G*. */
       {
-        if (adj_variable_equal(&other_fwd_eqn.targets[j], &fwd_var, 1))
-          break;
-      }
-      assert(j!=other_fwd_eqn.nblocks);
 
-      /* find the column in which this blocks belongs */
-      ierr = adj_html_find_column_index(adjointer, &other_fwd_eqn.variable, &col);
-      if (ierr != ADJ_OK)
-        return ierr;
-
-      other_adj_var = other_fwd_eqn.targets[j];
-      other_adj_var.type = ADJ_ADJOINT;
-
-      /* Fill in the data */
-      strncpy(row[col], other_fwd_eqn.blocks[j].name, ADJ_NAME_LEN);
-
-      strncpy(desc[col], other_fwd_eqn.blocks[j].name, ADJ_NAME_LEN);
-      strncat(desc[col], "\n\nTargets: ", ADJ_NAME_LEN);
-      adj_variable_str(other_adj_var, buf, ADJ_NAME_LEN);
-      strncat(desc[col], buf, ADJ_NAME_LEN);
-      strncat(desc[col], ":", ADJ_NAME_LEN);
-      snprintf(buf, ADJ_NAME_LEN, "%d", other_adj_var.timestep);
-      strncat(desc[col], buf, ADJ_NAME_LEN);
-      strncat(desc[col], ":", ADJ_NAME_LEN);
-      snprintf(buf, ADJ_NAME_LEN, "%d", other_adj_var.iteration);
-      strncat(desc[col], buf, ADJ_NAME_LEN);
-      strncat(desc[col], "\nCoefficient: ", ADJ_NAME_LEN);
-      snprintf(buf, ADJ_NAME_LEN, "%f", other_fwd_eqn.blocks[j].coefficient);
-      strncat(desc[col], buf, ADJ_NAME_LEN);
-      strncat(desc[col], "\nHermitian: ", ADJ_NAME_LEN);
-      /* We are printing the adjoint equation, therefore hermition has to be NOT'ed */
-      if (other_fwd_eqn.blocks[j].hermitian==ADJ_TRUE)
-        snprintf(buf, ADJ_NAME_LEN, "false");
-      else
-        snprintf(buf, ADJ_NAME_LEN, "true");
-      strncat(desc[col], buf, ADJ_NAME_LEN);
-      if (other_fwd_eqn.blocks[j].has_nonlinear_block)
-      {
-        strncat(desc[col], "\nNonlinear Block: ", ADJ_NAME_LEN);
-        strncat(desc[col], other_fwd_eqn.blocks[j].nonlinear_block.name, ADJ_NAME_LEN);
-        for (k=0; k<other_fwd_eqn.blocks[j].nonlinear_block.ndepends; k++)
+        for (i = 0; i < fwd_data->ndepending_equations; i++)
         {
-          strncat(desc[col], " (Dependency: ", ADJ_NAME_LEN);
-          strncat(desc[col], other_fwd_eqn.blocks[j].nonlinear_block.depends[k].name, ADJ_NAME_LEN);
-          strncat(desc[col], ":", ADJ_NAME_LEN);
-          snprintf(buf, ADJ_NAME_LEN, "%d", other_fwd_eqn.blocks[j].nonlinear_block.depends[k].timestep);
-          strncat(desc[col], buf, ADJ_NAME_LEN);
-          strncat(desc[col], ":", ADJ_NAME_LEN);
-          snprintf(buf, ADJ_NAME_LEN, "%d", other_fwd_eqn.blocks[j].nonlinear_block.depends[k].iteration);
-          strncat(desc[col], buf, ADJ_NAME_LEN);
-          strncat(desc[col], ")", ADJ_NAME_LEN);
+          /* We are looking for the block of G*. */
+          int ndepending_eqn;
+          adj_equation depending_eqn;
+          int k;
+
+          ndepending_eqn = fwd_data->depending_equations[i];
+          depending_eqn = adjointer->equations[ndepending_eqn];
+
+          for (j = 0; j < depending_eqn.nblocks; j++)
+          {
+
+            if (depending_eqn.blocks[j].has_nonlinear_block)
+            {
+              for (k = 0; k < depending_eqn.blocks[j].nonlinear_block.ndepends; k++)
+              {
+
+                if (adj_variable_equal(&fwd_var, &depending_eqn.blocks[j].nonlinear_block.depends[k], 1))
+                {
+                 	ierr = adj_html_find_column_index(adjointer, &depending_eqn.variable, &col);
+                	if (ierr != ADJ_OK)
+                		return ierr;
+
+    							strncat(desc[col], "\n\n+\n\n ", ADJ_NAME_LEN);
+    							strncat(desc[col], "Derivative of ", ADJ_NAME_LEN);
+    							strncat(desc[col], depending_eqn.blocks[j].nonlinear_block.name, ADJ_NAME_LEN);
+    							strncat(desc[col], " with respect to ", ADJ_NAME_LEN);
+    							adj_variable_str(fwd_var, buf, ADJ_NAME_LEN);
+    							strncat(desc[col], buf, ADJ_NAME_LEN);
+    							strncat(desc[col], "\n------------------", ADJ_NAME_LEN);
+    							strncat(desc[col], "\nCoefficient: ", ADJ_NAME_LEN);
+    							snprintf(buf, ADJ_NAME_LEN, "%f", depending_eqn.blocks[j].nonlinear_block.coefficient);
+    							strncat(desc[col], buf, ADJ_NAME_LEN);
+    							strncat(desc[col], "\nHermitian: true", ADJ_NAME_LEN);
+  								strncat(desc[col], "\nDependencies: ", ADJ_NAME_LEN);
+   								for (l=0; l<depending_eqn.blocks[j].nonlinear_block.ndepends; l++)
+   								{
+   									strncat(desc[col], depending_eqn.blocks[j].nonlinear_block.depends[l].name, ADJ_NAME_LEN);
+   									strncat(desc[col], ":", ADJ_NAME_LEN);
+   									snprintf(buf, ADJ_NAME_LEN, "%d", depending_eqn.blocks[j].nonlinear_block.depends[l].timestep);
+   									strncat(desc[col], buf, ADJ_NAME_LEN);
+   									strncat(desc[col], ":", ADJ_NAME_LEN);
+   									snprintf(buf, ADJ_NAME_LEN, "%d", depending_eqn.blocks[j].nonlinear_block.depends[l].iteration);
+   									strncat(desc[col], buf, ADJ_NAME_LEN);
+   									if (l!=depending_eqn.blocks[j].nonlinear_block.ndepends-1)
+   										strncat(desc[col], ", ", ADJ_NAME_LEN);
+   								}
+
+                }
+
+              }
+            }
+
+          }
         }
 
       }
@@ -418,7 +538,7 @@ int adj_html_adjoint_eqn(FILE* fp, adj_adjointer* adjointer, adj_equation fwd_eq
   }
 
   /* Write it to file */
-  adj_html_write_row(fp, row, desc, adjointer->nequations, diag_index);
+  adj_html_write_row(fp, row, desc, adjointer->nequations, diag_index, class);
 
   /* Tidy up */
   for (i = 0; i < adjointer->nequations; ++i)
@@ -453,26 +573,24 @@ int adj_html_adjoint_system(adj_adjointer* adjointer, char* filename)
   timestep = adjointer->equations[0].variable.timestep-1;
   iteration = adjointer->equations[0].variable.iteration - 1 ;
 
+  adj_html_table_begin(fp, "");
+  adj_html_vars(fp, adjointer, ADJ_ADJOINT);
+  adj_html_table_end(fp);
+
+  adj_html_table_begin(fp, "");
   for (i=0; i<adjointer->nequations; i++)
   {
     adj_eqn = adjointer->equations[i];
     if (timestep != adj_eqn.variable.timestep) {
-      /* New timestep, create a new table */
-      if (i!=adjointer->nequations-1)
-        adj_html_table_end(fp);
-      fprintf(fp, "<h2>Timestep %d</h2>\n", adj_eqn.variable.timestep);
-      adj_html_table_begin(fp);
-      adj_html_vars(fp, adjointer, ADJ_ADJOINT);
-      fprintf(fp, "<tr class=\"new_iteration\">\n");
+    	ierr = adj_html_adjoint_eqn(fp, adjointer, adj_eqn, i, "new_timestep");
     }
     else {
       if (iteration != adj_eqn.variable.iteration)
-        fprintf(fp, "<tr class=\"new_iteration\">\n");
+    	  ierr = adj_html_adjoint_eqn(fp, adjointer, adj_eqn, i, "");
       else
-        fprintf(fp, "<tr>\n");
+    	  ierr = adj_html_adjoint_eqn(fp, adjointer, adj_eqn, i, "");
     }
 
-    ierr = adj_html_adjoint_eqn(fp, adjointer, adj_eqn, i);
     if (ierr != ADJ_OK)
     {
       fclose(fp);
@@ -514,26 +632,25 @@ int adj_html_forward_system(adj_adjointer* adjointer, char* filename)
   timestep = adjointer->equations[0].variable.timestep - 1;
   iteration = adjointer->equations[0].variable.iteration - 1 ;
 
+  adj_html_table_begin(fp, "");
+  adj_html_vars(fp, adjointer, ADJ_FORWARD);
+  adj_html_table_end(fp);
+
+  adj_html_table_begin(fp, "");
   for (i=0; i<adjointer->nequations; i++)
   {
     adj_eqn = adjointer->equations[i];
     if (timestep != adj_eqn.variable.timestep) {
-      /* New timestep, create a new table */
-      if (i!=0)
-        adj_html_table_end(fp);
-      fprintf(fp, "<h2>Timestep %d</h2>\n", adj_eqn.variable.timestep);
-      adj_html_table_begin(fp);
-      adj_html_vars(fp, adjointer, ADJ_FORWARD);
-      fprintf(fp, "<tr class=\"new_iteration\">\n");
+      ierr = adj_html_eqn(fp, adjointer, adj_eqn, i, "new_timestep");
     }
     else {
       if (iteration != adj_eqn.variable.iteration)
-        fprintf(fp, "<tr class=\"new_iteration\">\n");
+    	  ierr = adj_html_eqn(fp, adjointer, adj_eqn, i, "");
       else
-        fprintf(fp, "<tr>\n");
+    	  ierr = adj_html_eqn(fp, adjointer, adj_eqn, i, "");
     }
 
-    ierr = adj_html_eqn(fp, adjointer, adj_eqn, i);
+
     if (ierr != ADJ_OK)
     {
       fclose(fp);

@@ -790,7 +790,7 @@ module libadjoint
       use libadjoint_data_structures
       use iso_c_binding
       type(adj_adjointer), intent(in) :: adjointer
-      character(kind=c_char), dimension(ADJ_NAME_LEN), intent(in) :: filename
+      character(kind=c_char), dimension(*), intent(in) :: filename
       integer(kind=c_int), intent(in), value :: type
       integer(kind=c_int) :: ierr
     end function adj_adjointer_to_html_c
@@ -1232,23 +1232,19 @@ module libadjoint
     integer, intent(in) :: type
     integer :: ierr
     
-    character(kind=c_char), dimension(ADJ_NAME_LEN) :: filename_c
+    character(kind=c_char), dimension(:), allocatable :: filename_c
     integer :: j
 
-    if (len_trim(filename) .ge. ADJ_NAME_LEN - 1) then
-      ! Can't set the error message from Fortran, I think?
-      ierr = ADJ_ERR_INVALID_INPUTS
-    end if
+    allocate(filename_c(len_trim(filename)+1))
 
     do j=1,len_trim(filename)
       filename_c(j) = filename(j:j)
     end do
-    do j=len_trim(filename)+1,ADJ_NAME_LEN
-      filename_c(j) = c_null_char
-    end do
-    filename_c(ADJ_NAME_LEN) = c_null_char
+    filename_c(len_trim(filename)+1) = c_null_char
 
     ierr = adj_adjointer_to_html_c(adjointer, filename_c, type)
+    
+    deallocate(filename_c)
   end function adj_adjointer_to_html
   
   function adj_evaluate_functional(adjointer, timestep, functional, output) result(ierr) 
