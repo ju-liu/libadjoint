@@ -299,6 +299,7 @@ int adj_get_adjoint_equation(adj_adjointer* adjointer, int equation, char* funct
 int adj_get_adjoint_solution(adj_adjointer* adjointer, int equation, char* functional, adj_vector* soln, adj_variable* adj_var)
 {
   int ierr;
+  int snaps;
 
   strncpy(adj_error_msg, "Need the solve data callback, but it hasn't been supplied.", ADJ_ERROR_MSG_BUF);
   if (adjointer->callbacks.vec_destroy == NULL) return ADJ_ERR_NEED_CALLBACK;
@@ -306,7 +307,11 @@ int adj_get_adjoint_solution(adj_adjointer* adjointer, int equation, char* funct
 
 
   struct Revolve *r = NULL;
-  call_R_adjust(r, 10);
+  
+  r = revolve_create_offline(10, 10);
+  snaps = revolve_adjust(r, 10);
+  r = revolve_create_offline(10, 10);
+revolve_destroy(r);
 
   return ADJ_OK;
 }
