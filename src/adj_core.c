@@ -300,20 +300,23 @@ int adj_get_adjoint_solution(adj_adjointer* adjointer, int equation, char* funct
 {
   int ierr;
   int snaps;
+  adj_matrix *lhs=NULL;
+  adj_vector *rhs=NULL;
 
   /* Check for the required callbacks */ 
   strncpy(adj_error_msg, "Need the solve data callback, but it hasn't been supplied.", ADJ_ERROR_MSG_BUF);
   if (adjointer->callbacks.vec_destroy == NULL) return ADJ_ERR_NEED_CALLBACK;
   strncpy(adj_error_msg, "", ADJ_ERROR_MSG_BUF);
 
-/*  ierr = adj_get_adjoint_equation(adjointer, equation, functional, lhs, rhs, adj_var)
+  ierr = adj_get_adjoint_equation(adjointer, equation, functional, lhs, rhs, adj_var);
   if (ierr!=ADJ_OK)
     return ierr;
-*/
+
+  /* Solve the linear system */
+  adjointer->callbacks.solve(*adj_var, *lhs, *rhs, soln); 
+  adjointer->callbacks.vec_destroy(rhs);
+  adjointer->callbacks.mat_destroy(lhs);
   
-
-
-
   CRevolve r;
   
   r = revolve_create_offline(10, 10);
