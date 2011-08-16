@@ -162,7 +162,7 @@ lib/libadjoint.a: $(COBJ) $(FOBJ) $(CPPOBJ)
 
 lib/libadjoint.so: $(COBJ) $(FOBJ) $(CPPOBJ) 
 	@echo "  LD $@"
-	@$(LD) $(LDFLAGS) -o $@ $(FOBJ) $(COBJ) $(CPPOBJ) $(PETSC_LDFLAGS) $(LIBS)
+	$(LD) $(LDFLAGS) -o $@ $(FOBJ) $(COBJ) $(CPPOBJ) $(PETSC_LDFLAGS) $(LIBS)
 
 clean:
 	@rm -f obj/*.o
@@ -214,9 +214,9 @@ test: lib/libadjoint.py
 install: lib/libadjoint.py
 lib/libadjoint.py: lib/libadjoint.so
 	@echo "  H2XML  include/libadjoint/libadjoint.h"
-	@$(H2XML) -q -I. include/libadjoint/libadjoint.h -o lib/libadjoint.xml
+	$(H2XML) -q -I. include/libadjoint/libadjoint.h -o lib/libadjoint.xml
 	@echo "  XML2PY lib/libadjoint.py"
-	@$(XML2PY) -r '^adj.*' -l lib/libadjoint.so lib/libadjoint.xml -o lib/libadjoint.py
+	$(XML2PY) -r '^adj.*' -l lib/libadjoint.so lib/libadjoint.xml -o lib/libadjoint.py
 	@rm -f lib/libadjoint.xml
 	@chmod a-x lib/libadjoint.py
 endif
