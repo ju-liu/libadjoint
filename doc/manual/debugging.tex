@@ -177,6 +177,38 @@ The use of this feature requires the \refapi{ADJ_VEC_SET_RANDOM_CB} and
 \refapi{ADJ_VEC_DOT_PRODUCT_CB} data callbacks.
 
 \defapis{adj_nonlinear_block_set_test_hermitian}
+\begin{boxwithtitle}{\texttt{adj_nonlinearblock_set_test_hermitian}}
+\begin{minipage}{\columnwidth}
+\begin{ccode}
+  int adj_block_set_test_hermitian(adj_block* block, int test_hermitian, 
+                                   int number_of_tests, adj_scalar tolerance)
+\end{ccode}
+\begin{fortrancode}
+  function adj_nonlinear_block_set_test_hermitian(nblock, test_hermitian, 
+                                     number_of_tests, tolerance) result(ierr)
+    type(adj_nonlinear_block), intent(inout) :: nblock
+    logical, intent(in) :: test_hermitian
+    integer(kind=c_int), intent(in), value :: number_of_tests
+    adj_scalar_f, intent(in), value :: tolerance
+    integer(kind=c_int) :: ierr
+  end function adj_nonlinear_block_set_test_hermitian
+\end{fortrancode}
+\end{minipage}
+\end{boxwithtitle}
+If this flag is set to \texttt{ADJ_TRUE} (C) or \texttt{.true.} (Fortran),
+then when the action of this nonlinear block is evaluated, \libadjoint will also perform
+a Hermitian consistency test for a block $A$. It will populate \texttt{number_of_tests}
+random vectors $x, y$, and check both sides of the identity
+\begin{equation*}
+\langle y, Ax \rangle = \langle A^* y, x \rangle,
+\end{equation*}
+to within a tolerance \texttt{tolerance}.
+
+If the comparison fails, \libadjoint
+will return an \refapi{ADJ_ERR_TOLERANCE_EXCEEDED}.
+
+The use of this feature requires the \refapi{ADJ_VEC_SET_RANDOM_CB} and
+\refapi{ADJ_VEC_DOT_PRODUCT_CB} data callbacks.
 
 \section{Checking gradient correctness} \label{sec:derivative_test}
 \defapis{adj_nonlinear_block_set_test_derivative}
