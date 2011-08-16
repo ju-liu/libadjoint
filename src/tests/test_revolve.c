@@ -5,7 +5,7 @@
 void test_revolve(void)
 {
   int snaps;
-  struct Revolve *r = NULL;
+  CRevolve r;
 
   snaps = revolve_adjust(r, 10);
   adj_test_assert(snaps == 3);

@@ -1,28 +1,40 @@
 #include "../include/libadjoint/revolve_c.h"
 
-extern "C" void* revolve_create_offline(int st, int sn) { return new Revolve(st, sn); }
-extern "C" void* revolve_create_multistage(int st, int sn, int sn_ram) { return new Revolve(st, sn, sn_ram); }
-extern "C" void* revolve_create_online(int sn) { return new Revolve(sn); }
-extern "C" void revolve_destroy(Revolve *r) { delete r; }
-
-extern "C" int revolve_adjust(Revolve* r, int steps) { return r->adjust(steps); }
-
-
-
-extern "C" int revolve_getadvances(Revolve *r) { return r->getadvances(); }
-extern "C" int revolve_getcheck(Revolve *r) { return r->getcheck(); }
-extern "C" int revolve_getcheckram(Revolve *r) { return r->getcheckram(); }
-extern "C" int revolve_getcheckrom(Revolve *r) { return r->getcheckrom(); }
-extern "C" int revolve_getcapo(Revolve *r)  { return r->getcapo(); }
-extern "C" int revolve_getfine(Revolve *r)  { return r->getfine(); }
-extern "C" int revolve_getinfo(Revolve *r)  { return r->getinfo(); }
-extern "C" int revolve_getoldcapo(Revolve *r) { return r->getoldcapo(); }
-extern "C" int revolve_getwhere(Revolve *r) 
+extern "C" CRevolve revolve_create_offline(int st, int sn) 
 { 
-  if (r->getwhere())
+  CRevolve r;
+  r.ptr = new Revolve(st, sn); 
+  return r;
+}
+extern "C" CRevolve revolve_create_multistage(int st, int sn, int sn_ram) 
+{ 
+  CRevolve r;
+  r.ptr = new Revolve(st, sn, sn_ram); 
+  return r;
+}
+extern "C" CRevolve revolve_create_online(int sn) 
+{ 
+  CRevolve r;
+  r.ptr = new Revolve(sn); 
+  return r;
+}
+extern "C" void revolve_destroy(CRevolve r) { delete (Revolve*) r.ptr; }
+
+extern "C" int revolve_adjust(CRevolve r, int steps) { return ((Revolve*) r.ptr)->adjust(steps); }
+
+extern "C" int revolve_getadvances(CRevolve r) { return ((Revolve*) r.ptr)->getadvances(); }
+extern "C" int revolve_getcheck(CRevolve r) { return ((Revolve*) r.ptr)->getcheck(); }
+extern "C" int revolve_getcheckram(CRevolve r) { return ((Revolve*) r.ptr)->getcheckram(); }
+extern "C" int revolve_getcheckrom(CRevolve r) { return ((Revolve*) r.ptr)->getcheckrom(); }
+extern "C" int revolve_getcapo(CRevolve r)  { return ((Revolve*) r.ptr)->getcapo(); }
+extern "C" int revolve_getfine(CRevolve r)  { return ((Revolve*) r.ptr)->getfine(); }
+extern "C" int revolve_getinfo(CRevolve r)  { return ((Revolve*) r.ptr)->getinfo(); }
+extern "C" int revolve_getoldcapo(CRevolve r) { return ((Revolve*) r.ptr)->getoldcapo(); }
+extern "C" int revolve_getwhere(CRevolve r) 
+{ 
+  if (((Revolve*) r.ptr)->getwhere())
     return 1;
   else
     return 0;
 }
-extern "C" void revolve_set_info(Revolve *r, int inf) { r->set_info(inf); }
-
+extern "C" void revolve_set_info(CRevolve r, int inf) { ((Revolve*) r.ptr)->set_info(inf); }

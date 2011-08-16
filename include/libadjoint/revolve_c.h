@@ -3,97 +3,82 @@
 #include "revolve.h"
 #endif
 
-#ifndef __cplusplus
-struct Revolve;
-#endif
+typedef struct 
+{
+  void *ptr;
+} CRevolve;
 
 #ifdef __cplusplus
-extern "C" void* revolve_create_offline(int st, int sn);
-#else
-void* revolve_create_offline(int st, int sn); 
+extern "C" 
 #endif
+CRevolve revolve_create_offline(int st, int sn);
 
 #ifdef __cplusplus
-extern "C" void* revolve_create_multistage(int st, int sn, int sn_ram);
-#else
-void* revolve_create_multistage(int st, int sn, int sn_ram); 
+extern "C" 
 #endif
+CRevolve revolve_create_multistage(int st, int sn, int sn_ram);
 
 #ifdef __cplusplus
-extern "C" void* revolve_create_online(int sn);
-#else
-void* revolve_create_online(int sn);
+extern "C" 
 #endif
+CRevolve revolve_create_online(int sn);
 
 #ifdef __cplusplus
-extern "C" void revolve_destroy(Revolve *r);
-#else
-void revolve_destroy(struct Revolve *r);
+extern "C" 
 #endif
+void revolve_destroy(CRevolve r);
 
 #ifdef __cplusplus
-extern "C" int revolve_adjust(Revolve *r, int steps);
-#else
-int revolve_adjust(struct Revolve *r, int steps); 
+extern "C" 
 #endif
+int revolve_adjust(CRevolve r, int steps);
 
 #ifdef __cplusplus
-extern "C" int revolve_getadvances(Revolve *r);
-#else
-int revolve_getadvances(struct Revolve *r); 
+extern "C" 
 #endif
+int revolve_getadvances(CRevolve r);
 
 #ifdef __cplusplus
-extern "C" int revolve_getcheck(Revolve *r);
-#else
-int revolve_getcheck(struct Revolve *r); 
+extern "C" 
 #endif
+int revolve_getcheck(CRevolve r);
 
 #ifdef __cplusplus
-extern "C" int revolve_getcheckram(Revolve *r);
-#else
-int revolve_getcheckram(struct Revolve *r); 
+extern "C" 
 #endif
+int revolve_getcheckram(CRevolve r);
 
 #ifdef __cplusplus
-extern "C" int revolve_getcheckrom(Revolve *r);
-#else
-int revolve_getcheckrom(struct Revolve *r); 
+extern "C" 
 #endif
+int revolve_getcheckrom(CRevolve r);
 
 #ifdef __cplusplus
-extern "C" int revolve_getcapo(Revolve *r);
-#else
-int revolve_getcapo(struct Revolve *r); 
+extern "C" 
 #endif
+int revolve_getcapo(CRevolve r);
 
 #ifdef __cplusplus
-extern "C" int revolve_getfine(Revolve *r);
-#else
-int revolve_getfine(struct Revolve *r); 
+extern "C" 
 #endif
+int revolve_getfine(CRevolve r);
 
 #ifdef __cplusplus
-extern "C" int revolve_getinfo(Revolve *r);
-#else
-int revolve_getinfo(struct Revolve *r); 
+extern "C" 
 #endif
-
+int revolve_getinfo(CRevolve r);
 
 #ifdef __cplusplus
-extern "C" int revolve_getoldcapo(Revolve *r);
-#else
-int revolve_getoldcapo(struct Revolve *r); 
+extern "C" 
 #endif
+int revolve_getoldcapo(CRevolve r);
 
 #ifdef __cplusplus
-extern "C" int revolve_getwhere(Revolve *r);
-#else
-int revolve_getwhere(struct Revolve *r); 
+extern "C" 
 #endif
+int revolve_getwhere(CRevolve r);
 
 #ifdef __cplusplus
-extern "C" int revolve_setinfo(Revolve *r, int inf);
-#else
-int revolve_setinfo(struct Revolve *r, int inf); 
+extern "C" 
 #endif
+int revolve_setinfo(CRevolve r, int inf);
