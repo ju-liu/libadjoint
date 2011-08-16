@@ -28,7 +28,7 @@ void* revolve_create_online(int sn);
 #ifdef __cplusplus
 extern "C" void revolve_destroy(Revolve *r);
 #else
-void revolve_destroy(Revolve *r);
+void revolve_destroy(struct Revolve *r);
 #endif
 
 #ifdef __cplusplus
@@ -87,9 +87,9 @@ int revolve_getoldcapo(struct Revolve *r);
 #endif
 
 #ifdef __cplusplus
-extern "C" bool revolve_getwhere(Revolve *r);
+extern "C" int revolve_getwhere(Revolve *r);
 #else
-bool revolve_getwhere(struct Revolve *r); 
+int revolve_getwhere(struct Revolve *r); 
 #endif
 
 #ifdef __cplusplus

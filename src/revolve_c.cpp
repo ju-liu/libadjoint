@@ -17,6 +17,12 @@ extern "C" int revolve_getcapo(Revolve *r)  { return r->getcapo(); }
 extern "C" int revolve_getfine(Revolve *r)  { return r->getfine(); }
 extern "C" int revolve_getinfo(Revolve *r)  { return r->getinfo(); }
 extern "C" int revolve_getoldcapo(Revolve *r) { return r->getoldcapo(); }
-extern "C" bool revolve_getwhere(Revolve *r) { return r->getwhere(); }
-extern "C" void revolve_set_info(Revolve *r, int inf) { return r->set_info(inf); }
+extern "C" int revolve_getwhere(Revolve *r) 
+{ 
+  if (r->getwhere())
+    return 1;
+  else
+    return 0;
+}
+extern "C" void revolve_set_info(Revolve *r, int inf) { r->set_info(inf); }
 

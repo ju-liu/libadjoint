@@ -311,7 +311,7 @@ int adj_get_adjoint_solution(adj_adjointer* adjointer, int equation, char* funct
   r = revolve_create_offline(10, 10);
   snaps = revolve_adjust(r, 10);
   r = revolve_create_offline(10, 10);
-revolve_destroy(r);
+  revolve_destroy(r);
 
   return ADJ_OK;
 }
