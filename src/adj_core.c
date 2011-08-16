@@ -327,7 +327,7 @@ int adj_get_forward_equation(adj_adjointer* adjointer, int equation, adj_matrix*
   if (adjointer->forward_source_callback == NULL)
   {
     snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "You have asked for a forward equation, but without a source term, all fields will be zero.");
-    return ADJ_ERR_INVALID_INPUTS;
+    return ADJ_ERR_NEED_CALLBACK;
   }
 
   fwd_eqn = adjointer->equations[equation];

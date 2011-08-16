@@ -33,6 +33,8 @@ void petsc_mat_destroy_proc(adj_matrix *mat);
 #ifdef HAVE_PETSC
 adj_vector petsc_vec_to_adj_vector(Vec* v);
 Vec petsc_vec_from_adj_vector(adj_vector vector);
+adj_matrix petsc_mat_to_adj_matrix(Mat* v);
+Mat petsc_mat_from_adj_matrix(adj_matrix matrix);
 #endif
 
 #endif

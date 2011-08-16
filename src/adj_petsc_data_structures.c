@@ -5,7 +5,6 @@ int adj_set_petsc_data_callbacks(adj_adjointer* adjointer)
   int ierr;
 #ifdef HAVE_PETSC
   PetscInitializeNoArguments();
-#endif
   ierr = adj_register_data_callback(adjointer, ADJ_VEC_DUPLICATE_CB, (void (*)(void)) petsc_vec_duplicate_proc);
   adj_chkierr(ierr);
   ierr = adj_register_data_callback(adjointer, ADJ_VEC_AXPY_CB,(void (*)(void)) petsc_vec_axpy_proc);
@@ -28,6 +27,10 @@ int adj_set_petsc_data_callbacks(adj_adjointer* adjointer)
   adj_chkierr(ierr);
   ierr = adj_register_data_callback(adjointer, ADJ_MAT_DUPLICATE_CB,(void (*)(void)) petsc_mat_duplicate_proc);
   adj_chkierr(ierr);
+#else
+  ierr = ADJ_ERR_INVALID_INPUTS;
+  snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Sorry, libadjoint was compiled without PETSc support.");
+#endif
 
   return ierr;
 }
@@ -202,6 +205,21 @@ Vec petsc_vec_from_adj_vector(adj_vector vv)
 {
   Vec v;
   v = *(Vec*) vv.ptr;
+  return v;
+}
+
+adj_matrix petsc_mat_to_adj_matrix(Mat* v)
+{
+  adj_matrix vv;
+  vv.ptr = (void*)v;
+  vv.klass = 0;
+  return vv;
+}
+
+Mat petsc_mat_from_adj_matrix(adj_matrix vv)
+{
+  Mat v;
+  v = *(Mat*) vv.ptr;
   return v;
 }
 #endif
