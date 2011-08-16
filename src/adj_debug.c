@@ -102,7 +102,7 @@ int adj_test_nonlinear_derivative_action_transpose(adj_adjointer* adjointer, adj
 {
   int i;
   int ierr;
-  void (*nonlinear_derivative_action_func)(int nvar, adj_variable* variables, adj_vector* dependencies, adj_variable derivative, adj_vector contraction, int hermitian, adj_vector input, adj_scalar coefficient, void* context, adj_vector* output) = NULL;
+  void (*nonlinear_derivative_action_func)(int ndepends, adj_variable* variables, adj_vector* dependencies, adj_variable derivative, adj_vector contraction, int hermitian, adj_vector input, adj_scalar coefficient, void* context, adj_vector* output) = NULL;
   adj_vector x, y, Gx, GTy;
   adj_scalar yGx, GTyx;
 
@@ -183,8 +183,8 @@ int adj_test_nonlinear_derivative_action_consistency(adj_adjointer* adjointer, a
 
   int i, j;
   int ierr;
-  void (*nonlinear_derivative_action_func)(int nvar, adj_variable* variables, adj_vector* dependencies, adj_variable derivative, adj_vector contraction, int hermitian, adj_vector input, adj_scalar coefficient, void* context, adj_vector* output) = NULL;
-  void (*nonlinear_action_func)(int nvar, adj_variable* variables, adj_vector* dependencies, adj_vector input, void* context, adj_vector* output) = NULL;
+  void (*nonlinear_derivative_action_func)(int ndepends, adj_variable* variables, adj_vector* dependencies, adj_variable derivative, adj_vector contraction, int hermitian, adj_vector input, adj_scalar coefficient, void* context, adj_vector* output) = NULL;
+  void (*nonlinear_action_func)(int ndepends, adj_variable* variables, adj_vector* dependencies, adj_vector input, void* context, adj_vector* output) = NULL;
   adj_scalar perturbation; /* the magnitude of the perturbation */
   adj_scalar* unscaled_perturbation; /* the direction of the perturbation */
   adj_scalar* perturbations; /* an array, with perturbation in each entry */

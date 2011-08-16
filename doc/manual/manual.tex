@@ -68,7 +68,6 @@
     pdfauthor   = {Patrick Farrell <patrick.farrell06@imperial.ac.uk>}
 }
 
-\usemintedstyle{tango}
 \definecolor{c}{RGB}{117,80,123}
 \definecolor{fortran}{RGB}{143,89,2}
 \definecolor{framecolour}{RGB}{211,215,207}
@@ -105,6 +104,8 @@
 \fancyhead[LO]{\leftmark}
 \renewcommand{\sectionmark}[1]{\renewcommand{\leftmark}{\thesection\qquad #1}}
 \renewcommand{\chaptermark}[1]{\renewcommand{\rightmark}{#1}}
+
+\def\appendixautorefname{appendix}
 
 \definecolor{fillcolor}{HTML}{CC0000}
 \definecolor{titlecolor}{HTML}{FFFFFF}

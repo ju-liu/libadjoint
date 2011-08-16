@@ -1,4 +1,4 @@
-subroutine block_action_callback(nvar, variables, dependencies, hermitian, coefficient, input, context, output_vec) bind(c)
+subroutine block_action_callback(ndepends, variables, dependencies, hermitian, coefficient, input, context, output_vec) bind(c)
   use libadjoint
   use libadjoint_petsc_data_structures
   use iso_c_binding
@@ -6,9 +6,9 @@ subroutine block_action_callback(nvar, variables, dependencies, hermitian, coeff
 #include "libadjoint/adj_fortran.h"
 #include "libadjoint/adj_petsc_f.h"
 
-  integer(kind=c_int), intent(in), value :: nvar
-  type(adj_variable), dimension(nvar), intent(in) :: variables
-  type(adj_vector), dimension(nvar), intent(in) :: dependencies
+  integer(kind=c_int), intent(in), value :: ndepends
+  type(adj_variable), dimension(ndepends), intent(in) :: variables
+  type(adj_vector), dimension(ndepends), intent(in) :: dependencies
   integer(kind=c_int), intent(in), value :: hermitian
   adj_scalar_f, intent(in), value :: coefficient
   type(adj_vector), intent(in), value :: input
@@ -27,7 +27,7 @@ subroutine block_action_callback(nvar, variables, dependencies, hermitian, coeff
 
 end subroutine block_action_callback
 
-subroutine nonlinear_derivative_action_callback(nvar, variables, dependencies, derivative, contraction, hermitian, &
+subroutine nonlinear_derivative_action_callback(ndepends, variables, dependencies, derivative, contraction, hermitian, &
                                                 & input, coefficient, context, output_vec) bind(c)
   use libadjoint
   use libadjoint_petsc_data_structures
@@ -36,9 +36,9 @@ subroutine nonlinear_derivative_action_callback(nvar, variables, dependencies, d
 #include "libadjoint/adj_fortran.h"
 #include "libadjoint/adj_petsc_f.h"
 
-  integer(kind=c_int), intent(in), value :: nvar
-  type(adj_variable), dimension(nvar), intent(in) :: variables
-  type(adj_vector), dimension(nvar), intent(in) :: dependencies
+  integer(kind=c_int), intent(in), value :: ndepends
+  type(adj_variable), dimension(ndepends), intent(in) :: variables
+  type(adj_vector), dimension(ndepends), intent(in) :: dependencies
   type(adj_variable), intent(in), value :: derivative
   type(adj_vector), intent(in), value :: contraction
   integer(kind=c_int), intent(in), value :: hermitian
@@ -58,7 +58,8 @@ subroutine nonlinear_derivative_action_callback(nvar, variables, dependencies, d
 #endif
 end subroutine nonlinear_derivative_action_callback
 
-subroutine identity_assembly_callback(nvar, variables, dependencies, hermitian, coefficient, context, output_mat, rhs_vec) bind(c)
+subroutine identity_assembly_callback(ndepends, variables, dependencies, hermitian, coefficient, & 
+                                    & context, output_mat, rhs_vec) bind(c)
   use libadjoint
   use libadjoint_petsc_data_structures
   use iso_c_binding
@@ -66,9 +67,9 @@ subroutine identity_assembly_callback(nvar, variables, dependencies, hermitian, 
 #include "libadjoint/adj_fortran.h"
 #include "libadjoint/adj_petsc_f.h"
 
-  integer(kind=c_int), intent(in), value :: nvar
-  type(adj_variable), dimension(nvar), intent(in) :: variables
-  type(adj_vector), dimension(nvar), intent(in) :: dependencies
+  integer(kind=c_int), intent(in), value :: ndepends
+  type(adj_variable), dimension(ndepends), intent(in) :: variables
+  type(adj_vector), dimension(ndepends), intent(in) :: dependencies
   integer(kind=c_int), intent(in), value :: hermitian
   adj_scalar_f, intent(in), value :: coefficient
   type(c_ptr), intent(in), value :: context
@@ -200,7 +201,7 @@ subroutine test_adj_nonlinear_derivative_action_callback
   call adj_chkierr(ierr)
   ierr = adj_register_operator_callback(adjointer, ADJ_BLOCK_ASSEMBLY_CB, "IdentityOperator", &
   & c_funloc(identity_assembly_callback))
-  ierr = adj_get_adjoint_equation(adjointer, functional="Drag", equation=1, lhs=lhs, rhs=rhs, variable=adj_var1)
+  ierr = adj_get_adjoint_equation(adjointer, functional="Drag", equation=1, lhs=lhs, rhs=rhs, adj_var=adj_var1)
   call adj_chkierr(ierr)
   call adj_test_assert(ierr == 0, "Should have worked")
 
@@ -227,7 +228,7 @@ subroutine test_adj_nonlinear_derivative_action_callback
   ierr = adj_record_variable(adjointer, u0, storage)
   call adj_test_assert(ierr == 0, "Should have worked")
 
-  ierr = adj_get_adjoint_equation(adjointer, functional="Drag", equation=0, lhs=lhs, rhs=rhs, variable=adj_var0)
+  ierr = adj_get_adjoint_equation(adjointer, functional="Drag", equation=0, lhs=lhs, rhs=rhs, adj_var=adj_var0)
   call adj_test_assert(ierr == ADJ_ERR_NEED_CALLBACK, "Should not have worked")
 
   ! Register the callback for the block action
@@ -235,7 +236,7 @@ subroutine test_adj_nonlinear_derivative_action_callback
          & c_funloc(block_action_callback))
   call adj_test_assert(ierr == ADJ_OK, "Should have worked")
 
-  ierr = adj_get_adjoint_equation(adjointer, functional="Drag", equation=0, lhs=lhs, rhs=rhs, variable=adj_var0)
+  ierr = adj_get_adjoint_equation(adjointer, functional="Drag", equation=0, lhs=lhs, rhs=rhs, adj_var=adj_var0)
   call adj_test_assert(ierr /= ADJ_OK, "Should not have worked")
 
   ! Register the callback for the nonlinear derivative action
@@ -243,7 +244,7 @@ subroutine test_adj_nonlinear_derivative_action_callback
                            & c_funloc(nonlinear_derivative_action_callback))
   call adj_test_assert(ierr == ADJ_OK, "Should have worked")
 
-  ierr = adj_get_adjoint_equation(adjointer, functional="Drag", equation=0, lhs=lhs, rhs=rhs, variable=adj_var0)
+  ierr = adj_get_adjoint_equation(adjointer, functional="Drag", equation=0, lhs=lhs, rhs=rhs, adj_var=adj_var0)
   call adj_test_assert(ierr == 0, "Should have worked")
  
    ! The rhs should now be -2*u0_val

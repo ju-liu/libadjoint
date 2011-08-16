@@ -14,7 +14,7 @@ void test_adj_evaluate_block_action(void)
 #include "libadjoint/adj_petsc.h"
 
 
-void matrix_action_callback(int nb_variables, adj_variable* variables, adj_vector* dependencies, int hermitian, adj_scalar coefficient, adj_vector input, void* context, adj_vector* output);
+void matrix_action_callback(int ndepends, adj_variable* variables, adj_vector* dependencies, int hermitian, adj_scalar coefficient, adj_vector input, void* context, adj_vector* output);
 
 void test_adj_test_action_transpose(void)
 {
@@ -36,11 +36,11 @@ void test_adj_test_action_transpose(void)
   adj_test_assert(ierr==ADJ_OK, "Should have worked");
 }
 
-void matrix_action_callback(int nb_variables, adj_variable* variables, adj_vector* dependencies, int hermitian, adj_scalar coefficient, adj_vector input, void* context, adj_vector* output)
+void matrix_action_callback(int ndepends, adj_variable* variables, adj_vector* dependencies, int hermitian, adj_scalar coefficient, adj_vector input, void* context, adj_vector* output)
 {
   (void) hermitian;
   (void) context;
-  (void) nb_variables;
+  (void) ndepends;
   (void) variables;
   (void) dependencies;
   Vec input_shifted;

@@ -232,36 +232,36 @@ module libadjoint
       type(adj_vector), intent(out) :: soln
     end subroutine adj_solve_proc
 
-    subroutine adj_nonlinear_colouring_proc(nvar, variables, dependencies, derivative, context, sz, colouring) bind(c)
+    subroutine adj_nonlinear_colouring_proc(ndepends, variables, dependencies, derivative, context, sz, colouring) bind(c)
       use iso_c_binding
       use libadjoint_data_structures
-      integer(kind=c_int), intent(in), value :: nvar
-      type(adj_variable), dimension(nvar), intent(in) :: variables
-      type(adj_vector), dimension(nvar), intent(in) :: dependencies
+      integer(kind=c_int), intent(in), value :: ndepends
+      type(adj_variable), dimension(ndepends), intent(in) :: variables
+      type(adj_vector), dimension(ndepends), intent(in) :: dependencies
       type(adj_variable), intent(in), value :: derivative
       type(c_ptr), intent(in), value :: context
       integer(kind=c_int), intent(in), value :: sz
       integer(kind=c_int), dimension(sz), intent(out) :: colouring
     end subroutine adj_nonlinear_colouring_proc
 
-    subroutine adj_nonlinear_action_proc(nvar, variables, dependencies, input, context, output) bind(c)
+    subroutine adj_nonlinear_action_proc(ndepends, variables, dependencies, input, context, output) bind(c)
       use iso_c_binding
       use libadjoint_data_structures
-      integer(kind=c_int), intent(in), value :: nvar
-      type(adj_variable), dimension(nvar), intent(in) :: variables
-      type(adj_vector), dimension(nvar), intent(in) :: dependencies
+      integer(kind=c_int), intent(in), value :: ndepends
+      type(adj_variable), dimension(ndepends), intent(in) :: variables
+      type(adj_vector), dimension(ndepends), intent(in) :: dependencies
       type(adj_vector), intent(in), value :: input
       type(c_ptr), intent(in), value :: context
       type(adj_vector), intent(out) :: output
     end subroutine adj_nonlinear_action_proc
 
-    subroutine adj_nonlinear_derivative_action_proc(nvar, variables, dependencies, derivative, contraction, hermitian, &
+    subroutine adj_nonlinear_derivative_action_proc(ndepends, variables, dependencies, derivative, contraction, hermitian, &
                                                   & input, coefficient, context, output) bind(c)
       use iso_c_binding
       use libadjoint_data_structures
-      integer(kind=c_int), intent(in), value :: nvar
-      type(adj_variable), dimension(nvar), intent(in) :: variables
-      type(adj_vector), dimension(nvar), intent(in) :: dependencies
+      integer(kind=c_int), intent(in), value :: ndepends
+      type(adj_variable), dimension(ndepends), intent(in) :: variables
+      type(adj_vector), dimension(ndepends), intent(in) :: dependencies
       type(adj_variable), intent(in), value :: derivative
       type(adj_vector), intent(in), value :: contraction
       integer(kind=c_int), intent(in), value :: hermitian
@@ -271,13 +271,13 @@ module libadjoint
       type(adj_vector), intent(out) :: output
     end subroutine adj_nonlinear_derivative_action_proc
 
-    subroutine adj_nonlinear_derivative_assembly_proc(nvar, variables, dependencies, derivative, contraction, hermitian, &
+    subroutine adj_nonlinear_derivative_assembly_proc(ndepends, variables, dependencies, derivative, contraction, hermitian, &
                                                     & context, output) bind(c)
       use iso_c_binding
       use libadjoint_data_structures
-      integer(kind=c_int), intent(in) :: nvar
-      type(adj_variable), dimension(nvar), intent(in) :: variables
-      type(adj_vector), dimension(nvar), intent(in) :: dependencies
+      integer(kind=c_int), intent(in) :: ndepends
+      type(adj_variable), dimension(ndepends), intent(in) :: variables
+      type(adj_vector), dimension(ndepends), intent(in) :: dependencies
       type(adj_variable), intent(in) :: derivative
       type(adj_vector), intent(in) :: contraction
       logical(kind=c_bool), intent(in) :: hermitian
@@ -285,12 +285,12 @@ module libadjoint
       type(adj_matrix), intent(out) :: output
     end subroutine adj_nonlinear_derivative_assembly_proc
    
-    subroutine adj_block_action_proc(nvar, variables, dependencies, hermitian, coefficient, input, context, output) bind(c)
+    subroutine adj_block_action_proc(ndepends, variables, dependencies, hermitian, coefficient, input, context, output) bind(c)
       use iso_c_binding
       use libadjoint_data_structures
-      integer(kind=c_int), intent(in), value :: nvar
-      type(adj_variable), dimension(nvar), intent(in) :: variables
-      type(adj_vector), dimension(nvar), intent(in) :: dependencies
+      integer(kind=c_int), intent(in), value :: ndepends
+      type(adj_variable), dimension(ndepends), intent(in) :: variables
+      type(adj_vector), dimension(ndepends), intent(in) :: dependencies
       integer(kind=c_int), intent(in), value :: hermitian
       adj_scalar_f, intent(in), value :: coefficient
       type(adj_vector), intent(in), value :: input
@@ -298,12 +298,12 @@ module libadjoint
       type(adj_vector), intent(out) :: output
     end subroutine adj_block_action_proc
 
-    subroutine adj_block_assembly_proc(nvar, variables, dependencies, hermitian, coefficient, context, output, rhs) bind(c)
+    subroutine adj_block_assembly_proc(ndepends, variables, dependencies, hermitian, coefficient, context, output, rhs) bind(c)
       use iso_c_binding
       use libadjoint_data_structures
-      integer(kind=c_int), intent(in), value :: nvar
-      type(adj_variable), dimension(nvar), intent(in) :: variables
-      type(adj_vector), dimension(nvar), intent(in) :: dependencies
+      integer(kind=c_int), intent(in), value :: ndepends
+      type(adj_variable), dimension(ndepends), intent(in) :: variables
+      type(adj_vector), dimension(ndepends), intent(in) :: dependencies
       integer(kind=c_int), intent(in), value :: hermitian
       adj_scalar_f, intent(in), value :: coefficient
       type(c_ptr), intent(in), value :: context
@@ -529,13 +529,12 @@ module libadjoint
       integer(kind=c_int) :: ierr
     end function adj_destroy_adjointer
 
-    function adj_set_option(adjointer, option, choice) result(ierr) bind(c, name='adj_set_option')
+    function adj_deactivate_adjointer(adjointer) result(ierr) bind(c, name='adj_deactivate_adjointer')
       use libadjoint_data_structures
       use iso_c_binding
       type(adj_adjointer), intent(inout) :: adjointer
-      integer(kind=c_int), intent(in), value :: option, choice 
       integer(kind=c_int) :: ierr
-    end function adj_set_option
+    end function adj_deactivate_adjointer
 
     function adj_equation_count(adjointer, count) result(ierr) bind(c, name='adj_equation_count')
       use libadjoint_data_structures
@@ -774,7 +773,7 @@ module libadjoint
       integer(kind=c_int) :: ierr
     end function adj_get_adjoint_solution_c
 
-    function adj_get_forward_equation(adjointer, equation, lhs, rhs, variable) result(ierr) &
+    function adj_get_forward_equation(adjointer, equation, lhs, rhs, fwd_var) result(ierr) &
             & bind(c, name='adj_get_forward_equation')
       use libadjoint_data_structures
       use iso_c_binding
@@ -782,7 +781,7 @@ module libadjoint
       integer(kind=c_int), intent(in), value :: equation
       type(adj_matrix), intent(out) :: lhs
       type(adj_vector), intent(out) :: rhs
-      type(adj_variable), intent(out) :: variable
+      type(adj_variable), intent(out) :: fwd_var
       integer(kind=c_int) :: ierr
     end function adj_get_forward_equation
     
@@ -869,17 +868,22 @@ module libadjoint
 
   contains
 
-  function adj_get_adjoint_equation(adjointer, equation, functional, lhs, rhs, variable) result(ierr)
+  function adj_get_adjoint_equation(adjointer, equation, functional, lhs, rhs, adj_var) result(ierr)
     type(adj_adjointer), intent(inout) :: adjointer
     integer(kind=c_int), intent(in), value :: equation
     character(len=*), intent(in) :: functional
     type(adj_matrix), intent(out) :: lhs
     type(adj_vector), intent(out) :: rhs
-    type(adj_variable), intent(out) :: variable
+    type(adj_variable), intent(out) :: adj_var
     integer(kind=c_int) :: ierr
     
     character(kind=c_char), dimension(ADJ_NAME_LEN) :: functional_c
     integer :: j
+
+    if (len_trim(functional) .ge. ADJ_NAME_LEN - 1) then
+      ! Can't set the error message from Fortran, I think?
+      ierr = ADJ_ERR_INVALID_INPUTS
+    end if
 
     do j=1,len_trim(functional)
       functional_c(j) = functional(j:j)
@@ -889,7 +893,7 @@ module libadjoint
     end do
     functional_c(ADJ_NAME_LEN) = c_null_char
 
-    ierr = adj_get_adjoint_equation_c(adjointer, equation, functional_c, lhs, rhs, variable)
+    ierr = adj_get_adjoint_equation_c(adjointer, equation, functional_c, lhs, rhs, adj_var)
   end function adj_get_adjoint_equation
 
   function adj_get_adjoint_solution(adjointer, equation, functional, soln, variable) result(ierr)
@@ -930,6 +934,12 @@ module libadjoint
     else
       auxiliary_c = ADJ_FALSE
     end if
+
+    if (len_trim(name) .ge. ADJ_NAME_LEN - 1) then
+      ! Can't set the error message from Fortran, I think?
+      ierr = ADJ_ERR_INVALID_INPUTS
+    end if
+
     do j=1,len_trim(name)
       name_c(j) = name(j:j)
     end do
@@ -971,6 +981,11 @@ module libadjoint
     integer :: j
     type(c_ptr) :: context_c
 
+    if (len_trim(name) .ge. ADJ_NAME_LEN - 1) then
+      ! Can't set the error message from Fortran, I think?
+      ierr = ADJ_ERR_INVALID_INPUTS
+    end if
+
     do j=1,len_trim(name)
       name_c(j) = name(j:j)
     end do
@@ -1008,6 +1023,11 @@ module libadjoint
     type(c_ptr) :: nblock_ptr
     type(c_ptr) :: context_c
 
+    if (len_trim(name) .ge. ADJ_NAME_LEN - 1) then
+      ! Can't set the error message from Fortran, I think?
+      ierr = ADJ_ERR_INVALID_INPUTS
+    end if
+
     do j=1,len_trim(name)
       name_c(j) = name(j:j)
     end do
@@ -1040,6 +1060,11 @@ module libadjoint
 
     character(kind=c_char), dimension(ADJ_NAME_LEN) :: name_c
     integer :: j
+
+    if (len_trim(name) .ge. ADJ_NAME_LEN - 1) then
+      ! Can't set the error message from Fortran, I think?
+      ierr = ADJ_ERR_INVALID_INPUTS
+    end if
 
     do j=1,len_trim(name)
       name_c(j) = name(j:j)
@@ -1082,6 +1107,11 @@ module libadjoint
     character(kind=c_char), dimension(ADJ_NAME_LEN) :: functional_c
     integer :: j
 
+    if (len_trim(functional) .ge. ADJ_NAME_LEN - 1) then
+      ! Can't set the error message from Fortran, I think?
+      ierr = ADJ_ERR_INVALID_INPUTS
+    end if
+
     do j=1,len_trim(functional)
       functional_c(j) = functional(j:j)
     end do
@@ -1102,6 +1132,11 @@ module libadjoint
 
     character(kind=c_char), dimension(ADJ_NAME_LEN) :: functional_c
     integer :: j
+
+    if (len_trim(functional) .ge. ADJ_NAME_LEN - 1) then
+      ! Can't set the error message from Fortran, I think?
+      ierr = ADJ_ERR_INVALID_INPUTS
+    end if
 
     do j=1,len_trim(functional)
       functional_c(j) = functional(j:j)
@@ -1125,6 +1160,11 @@ module libadjoint
     character(kind=c_char), dimension(ADJ_NAME_LEN) :: functional_c
     integer :: j
 
+    if (len_trim(functional) .ge. ADJ_NAME_LEN - 1) then
+      ! Can't set the error message from Fortran, I think?
+      ierr = ADJ_ERR_INVALID_INPUTS
+    end if
+
     do j=1,len_trim(functional)
       functional_c(j) = functional(j:j)
     end do
@@ -1144,6 +1184,11 @@ module libadjoint
 
     character(kind=c_char), dimension(ADJ_NAME_LEN) :: name_c
     integer :: j
+
+    if (len_trim(name) .ge. ADJ_NAME_LEN - 1) then
+      ! Can't set the error message from Fortran, I think?
+      ierr = ADJ_ERR_INVALID_INPUTS
+    end if
 
     do j=1,len_trim(name)
       name_c(j) = name(j:j)
@@ -1165,6 +1210,11 @@ module libadjoint
     character(kind=c_char), dimension(ADJ_NAME_LEN) :: name_c
     integer :: j
 
+    if (len_trim(name) .ge. ADJ_NAME_LEN - 1) then
+      ! Can't set the error message from Fortran, I think?
+      ierr = ADJ_ERR_INVALID_INPUTS
+    end if
+
     do j=1,len_trim(name)
       name_c(j) = name(j:j)
     end do
@@ -1184,6 +1234,11 @@ module libadjoint
     
     character(kind=c_char), dimension(ADJ_NAME_LEN) :: filename_c
     integer :: j
+
+    if (len_trim(filename) .ge. ADJ_NAME_LEN - 1) then
+      ! Can't set the error message from Fortran, I think?
+      ierr = ADJ_ERR_INVALID_INPUTS
+    end if
 
     do j=1,len_trim(filename)
       filename_c(j) = filename(j:j)
@@ -1205,6 +1260,11 @@ module libadjoint
     
     character(kind=c_char), dimension(ADJ_NAME_LEN) :: functional_c
     integer :: j
+
+    if (len_trim(functional) .ge. ADJ_NAME_LEN - 1) then
+      ! Can't set the error message from Fortran, I think?
+      ierr = ADJ_ERR_INVALID_INPUTS
+    end if
 
     do j=1,len_trim(functional)
       functional_c(j) = functional(j:j)

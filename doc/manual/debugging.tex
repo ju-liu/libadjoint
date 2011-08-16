@@ -6,16 +6,229 @@
 \vspace{\fill}
 \newpage
 
-\defapi{adj_chkierr}
+\section{Handling return codes}
+Almost all public \libadjoint functions return an integer return code,
+like PETSc or MPI. After every call to a \libadjoint routine, the developer
+should inspect the return code for success or failure. This inspection is
+performed with the \refapi{adj_chkierr} routine.
+\defapis{adj_chkierr}
+\begin{boxwithtitle}{\texttt{adj_chkierr}}
+\begin{minipage}{\columnwidth}
+\begin{ccode}
+  void adj_chkierr(int ierr);
+\end{ccode}
+\begin{fortrancode}
+  subroutine adj_chkierr(ierr)
+    integer(kind=c_int), intent(in), value :: ierr
+  end subroutine adj_chkierr
+\end{fortrancode}
+\end{minipage}
+\end{boxwithtitle}
+This routine inspects the return code from other \libadjoint functions,
+and possibly prints out useful debugging information. If the return code
+indicates success, this routine does nothing. If the return code indicates
+a warning, this routine prints out the error message set by \libadjoint,
+and returns. If the return code indicates an error, this routine prints out the
+error message set by \libadjoint, and aborts execution.
+
+A full list of the possible return codes is given in \autoref{chap:return_codes}.
 \section{HTML output of the adjointer state}
 \defapis{adj_adjointer_to_html}
-\section{Comparing against the original forward run} \label{sec:replay}
+\begin{boxwithtitle}{\texttt{adj_adjointer_to_html}}
+\begin{minipage}{\columnwidth}
+\begin{ccode}
+  int adj_adjointer_to_html(adj_adjointer* adjointer, char* filename, int type);
+\end{ccode}
+\begin{fortrancode}
+  function adj_adjointer_to_html(adjointer, filename, type) result(ierr)
+    type(adj_adjointer), intent(in) :: adjointer
+    character(len=*), intent(in) :: filename
+    integer(kind=c_int), intent(in), value :: type
+    integer(kind=c_int) :: ierr
+  end function adj_adjointer_to_html
+\end{fortrancode}
+\end{minipage}
+\end{boxwithtitle}
+This routine prints a HTML visualisation of the adjointer state to disk. Currently,
+this function supports two constants for \texttt{type}: \texttt{ADJ_FORWARD} and
+\texttt{ADJ_ADJOINT}.
+\section{Comparing against the original forward run} \label{sec:compare}
+As documented in section \autoref{sec:replay}, \libadjoint can replay the forward
+run. A very powerful debugging strategy is to replay the forward run, \emph{comparing
+each recomputed variable to its value computed during the actual forward model run}.
+To facilitate this, \libadjoint offers two functions that act on the \refapi{adj_storage_data}
+type before it is passed to \refapi{adj_record_variable}.
 \defapis{adj_storage_set_compare}
+\begin{boxwithtitle}{\texttt{adj_storage_set_compare}}
+\begin{minipage}{\columnwidth}
+\begin{ccode}
+  int adj_storage_set_compare(adj_storage_data* data, int compare, 
+                              adj_scalar comparison_tolerance);
+\end{ccode}
+\begin{fortrancode}
+  function adj_storage_set_compare(data, compare, comparison_tolerance)
+           result(ierr)
+    type(adj_storage_data), intent(inout) :: data
+    logical, intent(in) :: compare
+    adj_scalar_f, intent(in) :: comparison_tolerance
+    integer(kind=c_int) :: ierr
+  end function adj_storage_set_compare
+\end{fortrancode}
+\end{minipage}
+\end{boxwithtitle}
+If this flag is set to \texttt{ADJ_TRUE} (C) or \texttt{.true.} (Fortran),
+then \refapi{adj_record_variable} will compare the value supplied with any value
+that had been previously recorded. To ``compare'' means to compute
+\begin{equation*}
+\texttt{diff} = \left|\left| v_{\textrm{new}} - v_{\textrm{old}} \right|\right|,
+\end{equation*}
+and return a warning \refapi{ADJ_WARN_COMPARISON_FAILED} if \texttt{diff} is greater
+than the specified \texttt{comparison_tolerance}.
+
+This feature is most useful if the forward model has been run in a debugging mode that
+recorded the value of every variable computed using \refapi{adj_record_variable}. Then,
+with this feature, \libadjoint can compare its interpretation of the forward model against
+the truth, and issue warnings on any differences that inform the model developer exactly
+where the annotation and the model differ.
+
+The use of this feature requires the \refapi{ADJ_VEC_GET_NORM_CB} data callback.
+
 \defapis{adj_storage_set_overwrite}
-\section{Checking operator transposition}
+\begin{boxwithtitle}{\texttt{adj_storage_set_overwrite}}
+\begin{minipage}{\columnwidth}
+\begin{ccode}
+  int adj_storage_set_overwrite(adj_storage_data* data, int overwrite);
+\end{ccode}
+\begin{fortrancode}
+  function adj_storage_set_overwrite(data, overwrite)
+           result(ierr)
+    type(adj_storage_data), intent(inout) :: data
+    logical, intent(in) :: overwrite
+    integer(kind=c_int) :: ierr
+  end function adj_storage_set_overwrite
+\end{fortrancode}
+\end{minipage}
+\end{boxwithtitle}
+If this flag is set to \texttt{ADJ_TRUE} (C) or \texttt{.true.} (Fortran),
+then \refapi{adj_record_variable} will overwrite any value previously recorded
+with the value supplied. Without this flag, \refapi{adj_record_variable} will
+return an \refapi{ADJ_WARN_ALREADY_RECORDED} and not replace the previous value.
+
+This feature is useful when comparing the forward replay against the original
+model run. If the forward replay is very slighly wrong, it may pass a comparison
+activated with \refapi{adj_storage_set_compare}, but this initial error will
+not propagate unless the new (incorrect) value is used instead of the old (correct)
+value in previous calculations.
+
+\section{Checking the Hermitian of operators}
+One common class of bugs is implementing the Hermitian of 
+each operator that features in the forward annotation. Typically,
+the Hermitian case will have to be written specially, as the forward
+model will not use it. If the operator is explicitly available as a matrix,
+computing its Hermitian action is straightforward; however, if the operator is never
+stored, then computing its Hermitian action may not be so easy. Therefore,
+it is very useful to have a facility to automatically check the consistency
+of the Hermitian and non-Hermitian case.
+
+The idea of the Hermitian check is to compute both sides of the identity
+\begin{equation*}
+\langle y, Ax \rangle = \langle A^* y, x \rangle,
+\end{equation*}
+and check that they are equal to within some tolerance. In the
+\refapi{adj_block_set_test_hermitian} case, $A$ is the block
+itself; in the \refapi{adj_nonlinear_block_set_test_hermitian}
+case, $A$ is the Jacobian of the nonlinear block with respect to its nonlinear
+dependency.
+
 \defapis{adj_block_set_test_hermitian}
+\begin{boxwithtitle}{\texttt{adj_block_set_test_hermitian}}
+\begin{minipage}{\columnwidth}
+\begin{ccode}
+  int adj_block_set_test_hermitian(adj_block* block, int test_hermitian,
+                                   int number_of_tests,
+                                   adj_scalar tolerance);
+\end{ccode}
+\begin{fortrancode}
+  function adj_block_set_test_hermitian(block, test_hermitian,
+                                        number_of_tests, tolerance)
+                                        result(ierr)
+    type(adj_block), intent(inout) :: block
+    logical, intent(in) :: test_hermitian
+    integer(kind=c_int), intent(in), value :: number_of_tests
+    adj_scalar_f, intent(in), value :: tolerance
+    integer(kind=c_int) :: ierr
+  end function adj_block_set_test_hermitian
+\end{fortrancode}
+\end{minipage}
+\end{boxwithtitle}
+If this flag is set to \texttt{ADJ_TRUE} (C) or \texttt{.true.} (Fortran),
+then when the action of this block is evaluated, \libadjoint will also perform
+a Hermitian consistency test for a block $A$. It will populate \texttt{number_of_tests}
+random vectors $x, y$, and check both sides of the identity
+\begin{equation*}
+\langle y, Ax \rangle = \langle A^* y, x \rangle,
+\end{equation*}
+to within a tolerance \texttt{tolerance}.
+
+If the comparison fails, \libadjoint
+will return an \refapi{ADJ_ERR_TOLERANCE_EXCEEDED}.
+
+The use of this feature requires the \refapi{ADJ_VEC_SET_RANDOM_CB} and
+\refapi{ADJ_VEC_DOT_PRODUCT_CB} data callbacks.
+
 \defapis{adj_nonlinear_block_set_test_hermitian}
+\begin{boxwithtitle}{\texttt{adj_nonlinearblock_set_test_hermitian}}
+\begin{minipage}{\columnwidth}
+\begin{ccode}
+  int adj_block_set_test_hermitian(adj_block* block, int test_hermitian, 
+                                   int number_of_tests, adj_scalar tolerance)
+\end{ccode}
+\begin{fortrancode}
+  function adj_nonlinear_block_set_test_hermitian(nblock, test_hermitian, 
+                                     number_of_tests, tolerance) result(ierr)
+    type(adj_nonlinear_block), intent(inout) :: nblock
+    logical, intent(in) :: test_hermitian
+    integer(kind=c_int), intent(in), value :: number_of_tests
+    adj_scalar_f, intent(in), value :: tolerance
+    integer(kind=c_int) :: ierr
+  end function adj_nonlinear_block_set_test_hermitian
+\end{fortrancode}
+\end{minipage}
+\end{boxwithtitle}
+If this flag is set to \texttt{ADJ_TRUE} (C) or \texttt{.true.} (Fortran),
+then when the action of this nonlinear block is evaluated, \libadjoint will also perform
+a Hermitian consistency test for a block $A$. It will populate \texttt{number_of_tests}
+random vectors $x, y$, and check both sides of the identity
+\begin{equation*}
+\langle y, Ax \rangle = \langle A^* y, x \rangle,
+\end{equation*}
+to within a tolerance \texttt{tolerance}.
+
+If the comparison fails, \libadjoint
+will return an \refapi{ADJ_ERR_TOLERANCE_EXCEEDED}.
+
+The use of this feature requires the \refapi{ADJ_VEC_SET_RANDOM_CB} and
+\refapi{ADJ_VEC_DOT_PRODUCT_CB} data callbacks.
+
 \section{Checking gradient correctness} \label{sec:derivative_test}
 \defapis{adj_nonlinear_block_set_test_derivative}
+
 \section{\texttt{adj_adjointer} consistency check}
 \defapis{adj_adjointer_check_consistency}
+\begin{boxwithtitle}{\texttt{adj_adjointer_check_consistency}}
+\begin{minipage}{\columnwidth}
+\begin{ccode}
+  int adj_adjointer_check_consistency(adj_adjointer* adjointer);
+\end{ccode}
+\begin{fortrancode}
+  function adj_adjointer_check_consistency(adjointer) result(ierr)
+    type(adj_adjointer), intent(in) :: adjointer
+    integer(kind=c_int) :: ierr
+  end function adj_adjointer_check_consistency
+\end{fortrancode}
+\end{minipage}
+\end{boxwithtitle}
+This routine runs miscellaneous debugging checks to ensure the validity
+of a given annotation. For example, it checks that all non-auxiliary
+variables seen by \libadjoint have an equation set and that the system
+presented is lower triangular.
