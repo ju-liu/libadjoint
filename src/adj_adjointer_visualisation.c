@@ -266,14 +266,37 @@ void adj_html_vars(FILE* fp, adj_adjointer* adjointer, int type)
   fprintf(fp, "<tr>\n");
   for (i = 0; i < adjointer->nequations; i++)
   {
-    adj_var = adjointer->equations[i].variable;
-    adj_var.type = type;
-    adj_variable_str(adj_var, adj_name, ADJ_NAME_LEN);
-    ierr = adj_has_variable_value(adjointer, adj_var);
-    if (ierr != ADJ_OK)
-    	fprintf(fp, "<th class=\"headercell box_rotate redfont\">%s</th>\n", adj_name);
+    if (type!=ADJ_ADJOINT)
+    {
+			adj_var = adjointer->equations[i].variable;
+			adj_var.type = type;
+			adj_variable_str(adj_var, adj_name, ADJ_NAME_LEN);
+			ierr = adj_has_variable_value(adjointer, adj_var);
+			if (ierr != ADJ_OK)
+				fprintf(fp, "<th class=\"headercell box_rotate redfont\">%s</th>\n", adj_name);
+			else
+				fprintf(fp, "<th class=\"headercell box_rotate greenfont\">%s</th>\n", adj_name);
+    }
     else
-    	fprintf(fp, "<th class=\"headercell box_rotate greenfont\">%s</th>\n", adj_name);
+    {
+    	/* Loop over the defined functionals */
+    	adj_func_deriv_callback *func_deriv_cb = adjointer->functional_derivative_list.firstnode;
+    	fprintf(fp, "<th>\n", adj_name);
+    	while (func_deriv_cb != NULL)
+    	{
+				adj_var = adjointer->equations[i].variable;
+				adj_var.type = type;
+				strncpy(adj_var.functional, func_deriv_cb->name, ADJ_NAME_LEN);
+				adj_variable_str(adj_var, adj_name, ADJ_NAME_LEN);
+				ierr = adj_has_variable_value(adjointer, adj_var);
+				if (ierr != ADJ_OK)
+					fprintf(fp, "<div class=\"headercell box_rotate redfont\">%s</div>\n", adj_name);
+				else
+					fprintf(fp, "<div class=\"headercell box_rotate greenfont\">%s</div>\n", adj_name);
+    		func_deriv_cb = func_deriv_cb->next;
+    	}
+    	fprintf(fp, "</th>\n", adj_name);
+    }
   }
   fprintf(fp, "</tr>\n");
  }
