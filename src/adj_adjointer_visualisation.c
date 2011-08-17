@@ -281,7 +281,7 @@ void adj_html_vars(FILE* fp, adj_adjointer* adjointer, int type)
     {
     	/* Loop over the defined functionals */
     	adj_func_deriv_callback *func_deriv_cb = adjointer->functional_derivative_list.firstnode;
-    	fprintf(fp, "<th>\n", adj_name);
+    	fprintf(fp, "<th>\n");
     	while (func_deriv_cb != NULL)
     	{
 				adj_var = adjointer->equations[i].variable;
@@ -295,7 +295,7 @@ void adj_html_vars(FILE* fp, adj_adjointer* adjointer, int type)
 					fprintf(fp, "<div class=\"headercell box_rotate greenfont\">%s</div>\n", adj_name);
     		func_deriv_cb = func_deriv_cb->next;
     	}
-    	fprintf(fp, "</th>\n", adj_name);
+    	fprintf(fp, "</th>\n");
     }
   }
   fprintf(fp, "</tr>\n");
