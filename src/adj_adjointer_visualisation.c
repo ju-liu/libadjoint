@@ -523,11 +523,14 @@ int adj_html_adjoint_eqn(FILE* fp, adj_adjointer* adjointer, adj_equation fwd_eq
                 	if (ierr != ADJ_OK)
                 		return ierr;
 
-    							strncat(desc[col], "\n\n+\n\n ", ADJ_NAME_LEN);
+    							strncat(desc[col], "\n\n+\n\n", ADJ_NAME_LEN);
     							strncat(desc[col], "Derivative of ", ADJ_NAME_LEN);
     							strncat(desc[col], depending_eqn.blocks[j].nonlinear_block.name, ADJ_NAME_LEN);
-    							strncat(desc[col], " with respect to ", ADJ_NAME_LEN);
+    							strncat(desc[col], "\nwith respect to ", ADJ_NAME_LEN);
     							adj_variable_str(fwd_var, buf, ADJ_NAME_LEN);
+    							strncat(desc[col], buf, ADJ_NAME_LEN);
+    							strncat(desc[col], "\ncontracted with ", ADJ_NAME_LEN);
+    							adj_variable_str(depending_eqn.targets[j], buf, ADJ_NAME_LEN);
     							strncat(desc[col], buf, ADJ_NAME_LEN);
     							strncat(desc[col], "\n------------------", ADJ_NAME_LEN);
     							strncat(desc[col], "\nCoefficient: ", ADJ_NAME_LEN);
