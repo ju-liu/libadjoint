@@ -14,6 +14,9 @@ void test_adj_forget_adjoint_equation(void)
 
 void drag_derivative(adj_adjointer* adjointer, adj_variable derivative, int ndepends, adj_variable* variables, adj_vector* dependencies, char* name, adj_vector* output);
 void burgers_operator_assembly(int ndepends, adj_variable* variables, adj_vector* dependencies, int hermitian, adj_scalar coefficient, void* context, adj_matrix* output, adj_vector* rhs);
+void timestepping_operator_action(int ndepends, adj_variable* variables, adj_vector* dependencies, int hermitian, adj_scalar coefficient, adj_vector input, void* context, adj_vector* output);
+void advection_derivative_operator_action(int ndepends, adj_variable* variables, adj_vector* dependencies, adj_variable derivative, adj_vector contraction, int hermitian, adj_vector input, adj_scalar coefficient, void* context, adj_vector* output);
+
 
 
 void test_revolve_checkpoint(void)
@@ -42,6 +45,12 @@ void test_revolve_checkpoint(void)
   ierr = adj_register_functional_derivative_callback(&adjointer, "Drag", drag_derivative); 
   adj_test_assert(ierr == ADJ_OK, "Should have worked");
   ierr =  adj_register_operator_callback(&adjointer, ADJ_BLOCK_ASSEMBLY_CB, "BurgersOperator", (void (*)(void)) burgers_operator_assembly);
+  adj_test_assert(ierr == ADJ_OK, "Should have worked");
+  ierr =  adj_register_operator_callback(&adjointer, ADJ_BLOCK_ASSEMBLY_CB, "IdentityOperator", (void (*)(void)) burgers_operator_assembly);
+  adj_test_assert(ierr == ADJ_OK, "Should have worked");
+  ierr =  adj_register_operator_callback(&adjointer, ADJ_BLOCK_ACTION_CB, "TimesteppingOperator", (void (*)(void)) timestepping_operator_action);
+  adj_test_assert(ierr == ADJ_OK, "Should have worked");
+  ierr =  adj_register_operator_callback(&adjointer, ADJ_NBLOCK_DERIVATIVE_ACTION_CB, "AdvectionOperator", (void (*)(void)) advection_derivative_operator_action);
   adj_test_assert(ierr == ADJ_OK, "Should have worked");
 
 
@@ -125,6 +134,10 @@ void drag_derivative(adj_adjointer* adjointer, adj_variable derivative, int ndep
 {
   int dim=2;
   Vec *output_vec;
+  (void) ndepends;
+  (void) variables;
+  (void) dependencies;
+
   output_vec = (Vec*) malloc(sizeof(Vec));
   VecCreateSeq(PETSC_COMM_SELF, dim, output_vec);
   VecSet(*output_vec, 1.0);
@@ -133,10 +146,15 @@ void drag_derivative(adj_adjointer* adjointer, adj_variable derivative, int ndep
 
 void burgers_operator_assembly(int ndepends, adj_variable* variables, adj_vector* dependencies, int hermitian, adj_scalar coefficient, void* context, adj_matrix* output_mat, adj_vector* rhs_vec)
 {
-  int ierr;
   int dim=2;
   Mat *output;
   Vec *rhs, *ones;
+  (void) ndepends;
+  (void) variables;
+  (void) dependencies;
+  (void) hermitian;
+  (void) coefficient;
+  (void) context;
 
   output = (Mat*) malloc(sizeof(Mat));
   rhs = (Vec*) malloc(sizeof(Vec));
@@ -153,5 +171,41 @@ void burgers_operator_assembly(int ndepends, adj_variable* variables, adj_vector
     MatHermitianTranspose(*output, MAT_REUSE_MATRIX, output);
   *rhs_vec = petsc_vec_to_adj_vector(rhs);
   *output_mat = petsc_mat_to_adj_matrix(output);
+}
+
+void timestepping_operator_action(int ndepends, adj_variable* variables, adj_vector* dependencies, int hermitian, adj_scalar coefficient, adj_vector input, void* context, adj_vector* output)
+{
+  Vec *output_vec;
+  (void) ndepends;
+  (void) variables;
+  (void) dependencies;
+  (void) hermitian;
+  (void) coefficient;
+  (void) context;
+
+  output_vec = (Vec*) malloc(sizeof(Vec));
+
+  VecDuplicate(petsc_vec_from_adj_vector(input), output_vec);
+  VecCopy(petsc_vec_from_adj_vector(input), *output_vec);
+  *output = petsc_vec_to_adj_vector(output_vec);
+}
+
+void advection_derivative_operator_action(int ndepends, adj_variable* variables, adj_vector* dependencies, adj_variable derivative, adj_vector contraction, int hermitian, adj_vector input, adj_scalar coefficient, void* context, adj_vector* output)
+{
+  Vec *output_vec;
+  (void) ndepends;
+  (void) variables;
+  (void) dependencies;
+  (void) derivative; 
+  (void) contraction;
+  (void) hermitian;
+  (void) coefficient;
+  (void) context;
+
+  output_vec = (Vec*) malloc(sizeof(Vec));
+
+  VecDuplicate(petsc_vec_from_adj_vector(input), output_vec);
+  VecCopy(petsc_vec_from_adj_vector(input), *output_vec);
+  *output = petsc_vec_to_adj_vector(output_vec);
 }
 #endif
