@@ -11,10 +11,6 @@ int adj_create_adjointer(adj_adjointer* adjointer)
   adjointer->ntimesteps = 0;
   adjointer->timestep_data = NULL;
 
-  adjointer->revolve_data.nsnaps = -1;
-  adjointer->revolve_data.snaps_in_ram = -1;
-  adjointer->revolve_data.nsteps = -1;
-
   adjointer->varhash = NULL;
   adjointer->vardata.firstnode = NULL;
   adjointer->vardata.lastnode = NULL;
