@@ -881,20 +881,22 @@ module libadjoint
 
   function adj_create_variable(name, timestep, iteration, auxiliary, variable) result(ierr)
     character(len=*), intent(in) :: name
-    integer, intent(in) :: timestep, iteration
-    logical, intent(in) :: auxiliary
+    integer, intent(in) :: timestep
+    integer, intent(in), optional :: iteration
+    logical, intent(in), optional :: auxiliary
     type(adj_variable), intent(out) :: variable
     integer :: ierr
 
     character(kind=c_char), dimension(ADJ_NAME_LEN) :: name_c
     integer :: j
-    integer :: auxiliary_c
+    integer :: auxiliary_c, iteration_c
 
-    if (auxiliary) then
+    if (present_and_true(auxiliary)) then
       auxiliary_c = ADJ_TRUE
     else
       auxiliary_c = ADJ_FALSE
     end if
+
     do j=1,len_trim(name)
       name_c(j) = name(j:j)
     end do
@@ -903,7 +905,27 @@ module libadjoint
     end do
     name_c(ADJ_NAME_LEN) = c_null_char
 
-    ierr = adj_create_variable_c(name_c, timestep, iteration, auxiliary_c, variable)
+    if (present(iteration)) then
+      iteration_c = iteration
+    else
+      iteration_c = 0
+    end if
+
+    ierr = adj_create_variable_c(name_c, timestep, iteration_c, auxiliary_c, variable)
+
+    contains
+
+    function present_and_true(bool) result(out)
+      logical, intent(in), optional :: bool
+      logical :: out
+
+      out = .false.
+      if (present(bool)) then
+        if (bool) then
+          out = .true.
+        end if
+      end if
+    end function present_and_true
   end function adj_create_variable
 
   function adj_variable_get_name(variable, name) result(ierr)
