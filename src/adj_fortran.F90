@@ -87,6 +87,14 @@ module libadjoint_data_structures
     type(c_ptr) :: lastnode
   end type adj_func_deriv_callback_list
 
+  type, bind(c) :: adj_revolve_data
+    type(c_ptr) :: ptr 
+    integer(kind=c_int) :: nsnaps
+    integer(kind=c_int) :: snaps_in_ram
+    integer(kind=c_int) :: nsteps
+
+  end type adj_revolve_data
+
   type, bind(c) :: adj_adjointer
     integer(kind=c_int) :: nequations
     integer(kind=c_int) :: equations_sz
@@ -99,6 +107,7 @@ module libadjoint_data_structures
     type(adj_variable_data_list) :: vardata
 
     integer(kind=c_int), dimension(ADJ_NO_OPTIONS) :: options
+    type(adj_revolve_data) :: revolve_data
 
     type(adj_data_callbacks) :: callbacks
     type(adj_op_callback_list) :: nonlinear_colouring_list

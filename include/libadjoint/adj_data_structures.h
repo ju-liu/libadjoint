@@ -225,7 +225,8 @@ typedef struct
 
 typedef struct
 {
-  int nsnaps;
+  void* ptr; /* Due to a bug in gfortran-4.5 we need a (unused) pointer for the fotran interface */
+  int nsnaps; 
   int snaps_in_ram;
   int nsteps;
 } adj_revolve_data;
