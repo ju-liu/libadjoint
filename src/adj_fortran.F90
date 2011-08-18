@@ -1514,6 +1514,21 @@ module libadjoint
 
 end module libadjoint
 
+
+module libadjoint_test_tools
+  use iso_c_binding
+  implicit none
+
+  interface
+    function adj_sizeof_adjointer() result(size) bind(c, name='adj_sizeof_adjointer')
+      use iso_c_binding
+      integer(kind=c_int) :: size
+    end function adj_sizeof_adjointer
+  end interface
+
+end module libadjoint_test_tools 
+
+
 module libadjoint_petsc_data_structures
 
   use libadjoint
