@@ -24,13 +24,17 @@
 #define ADJ_AUXILIARY_VARIABLE 1
 
 /* options for the adjointer */
-#define ADJ_NO_OPTIONS 2
+#define ADJ_NO_OPTIONS 3
 #define ADJ_ACTIVITY 0
 #define ADJ_ISP_ORDER 1
+#define ADJ_CHECKPOINT_STRATEGY 2
 
 /* whichever value is zero defines the default */
 #define ADJ_ACTIVITY_ADJOINT 0
 #define ADJ_ACTIVITY_NOTHING 1
+
+#define ADJ_CHECKPOINT_NONE 0
+#define ADJ_CHECKPOINT_REVOLVE 1
 
 #define ADJ_ISP_SECONDORDER 0
 #define ADJ_ISP_FIRSTORDER 1

@@ -223,6 +223,13 @@ typedef struct
   adj_functional_data* functional_data_end;
 } adj_timestep_data;
 
+typedef struct
+{
+  int nsnaps;
+  int snaps_in_ram;
+  int nsteps;
+} adj_revolve_data;
+
 typedef struct adj_adjointer
 {
   int nequations; /* Number of equations we have registered */
@@ -231,6 +238,8 @@ typedef struct adj_adjointer
 
   int ntimesteps; /* Number of timesteps we have seen */
   adj_timestep_data* timestep_data; /* Data for each timestep we have seen */
+  
+  adj_revolve_data revolve_data; /* A data struct for revolve related information */
 
   adj_variable_hash* varhash; /* The hash table for looking up information about variables */
   adj_variable_data_list vardata; /* We also store a linked list so we can walk all our variable data */

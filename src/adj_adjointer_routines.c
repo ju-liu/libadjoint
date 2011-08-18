@@ -11,6 +11,10 @@ int adj_create_adjointer(adj_adjointer* adjointer)
   adjointer->ntimesteps = 0;
   adjointer->timestep_data = NULL;
 
+  adjointer->revolve_data.nsnaps = -1;
+  adjointer->revolve_data.snaps_in_ram = -1;
+  adjointer->revolve_data.nsteps = -1;
+
   adjointer->varhash = NULL;
   adjointer->vardata.firstnode = NULL;
   adjointer->vardata.lastnode = NULL;
@@ -172,6 +176,17 @@ int adj_destroy_adjointer(adj_adjointer* adjointer)
 int adj_deactivate_adjointer(adj_adjointer* adjointer)
 {
   return adj_set_option(adjointer, ADJ_ACTIVITY, ADJ_ACTIVITY_NOTHING);
+}
+
+int adj_set_checkpoint_strategy(adj_adjointer* adjointer, int strategy)
+{
+  return adj_set_option(adjointer, ADJ_CHECKPOINT_STRATEGY, strategy);
+}
+
+int adj_get_checkpoint_strategy(adj_adjointer* adjointer, int* strategy)
+{
+  *strategy = adjointer->options[ADJ_CHECKPOINT_STRATEGY];
+  return ADJ_OK;
 }
 
 int adj_register_equation(adj_adjointer* adjointer, adj_equation equation)
