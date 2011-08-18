@@ -11,8 +11,8 @@ subroutine test_adj_datatype_size
   integer(kind=c_int) :: size_c
 
   ierr = adj_create_adjointer(adjointer)
-  size_f = adj_sizeof_adjointer()
-  size_c = sizeof(adjointer)
+  size_c = adj_sizeof_adjointer()
+  size_f = c_sizeof(adjointer)
   if (size_c /= size_f) then
     print *, "Sizeof adjointer in C: ", size_c
     print *, "Sizeof adjointer in Fortran: ", size_f

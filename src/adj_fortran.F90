@@ -1,6 +1,7 @@
 #include "libadjoint/adj_fortran.h"
 ! Yes, writing this file really was as boring as you would imagine
 
+! In particular because the oder of the variables in types has to conform with the definition in C (!).
 module libadjoint_data_structures
   use iso_c_binding
   implicit none
@@ -88,7 +89,6 @@ module libadjoint_data_structures
   end type adj_func_deriv_callback_list
 
   type, bind(c) :: adj_revolve_data
-    type(c_ptr) :: ptr 
     integer(kind=c_int) :: nsnaps
     integer(kind=c_int) :: snaps_in_ram
     integer(kind=c_int) :: nsteps
@@ -96,18 +96,19 @@ module libadjoint_data_structures
   end type adj_revolve_data
 
   type, bind(c) :: adj_adjointer
+    type(c_ptr) :: equations
     integer(kind=c_int) :: nequations
     integer(kind=c_int) :: equations_sz
-    type(c_ptr) :: equations
 
     integer(kind=c_int) :: ntimesteps
     type(c_ptr) :: timestep_data
+
+    type(adj_revolve_data) :: revolve_data
 
     type(c_ptr) :: varhash
     type(adj_variable_data_list) :: vardata
 
     integer(kind=c_int), dimension(ADJ_NO_OPTIONS) :: options
-    type(adj_revolve_data) :: revolve_data
 
     type(adj_data_callbacks) :: callbacks
     type(adj_op_callback_list) :: nonlinear_colouring_list
@@ -546,6 +547,32 @@ module libadjoint
       type(adj_adjointer), intent(inout) :: adjointer
       integer(kind=c_int) :: ierr
     end function adj_deactivate_adjointer
+
+    function adj_set_checkpoint_strategy(adjointer, strategy) result(ierr) bind(c, name='adj_set_checkpoint_strategy')
+      use libadjoint_data_structures
+      use iso_c_binding
+      type(adj_adjointer), intent(inout) :: adjointer
+      integer(kind=c_int), value :: strategy
+      integer(kind=c_int) :: ierr
+    end function adj_set_checkpoint_strategy
+
+    function adj_get_checkpoint_strategy(adjointer, strategy) result(ierr) bind(c, name='adj_get_checkpoint_strategy')
+      use libadjoint_data_structures
+      use iso_c_binding
+      type(adj_adjointer), intent(inout) :: adjointer
+      integer(kind=c_int) :: strategy
+      integer(kind=c_int) :: ierr
+    end function adj_get_checkpoint_strategy
+
+    function adj_set_revolve_options(adjointer, steps, snaps, snaps_in_ram) result(ierr) bind(c, name='adj_set_revolve_options')
+      use libadjoint_data_structures
+      use iso_c_binding
+      type(adj_adjointer), intent(inout) :: adjointer
+      integer(kind=c_int), value :: steps 
+      integer(kind=c_int), value :: snaps 
+      integer(kind=c_int), value :: snaps_in_ram 
+      integer(kind=c_int) :: ierr
+    end function adj_set_revolve_options
 
     function adj_equation_count(adjointer, count) result(ierr) bind(c, name='adj_equation_count')
       use libadjoint_data_structures

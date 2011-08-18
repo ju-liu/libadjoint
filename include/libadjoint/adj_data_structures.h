@@ -225,17 +225,16 @@ typedef struct
 
 typedef struct
 {
-  void* ptr; /* Due to a bug in gfortran-4.5 we need a (unused) pointer for the fotran interface */
-  int nsnaps; 
+  int snaps; 
   int snaps_in_ram;
-  int nsteps;
+  int steps;
 } adj_revolve_data;
 
 typedef struct adj_adjointer
 {
+  adj_equation* equations; /* Array of equations we have registered */
   int nequations; /* Number of equations we have registered */
   int equations_sz; /* Number of equations we can store without mallocing -- not the same! */
-  adj_equation* equations; /* Array of equations we have registered */
 
   int ntimesteps; /* Number of timesteps we have seen */
   adj_timestep_data* timestep_data; /* Data for each timestep we have seen */

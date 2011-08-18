@@ -22,6 +22,8 @@ void advection_derivative_operator_action(int ndepends, adj_variable* variables,
 void test_revolve_checkpoint(void)
 {
   int steps = 20;
+  int snaps = 3;
+  int snaps_in_ram = 0;
   int timestep, nb_eqs;
   adj_adjointer adjointer;
   adj_nonlinear_block V;
@@ -37,7 +39,13 @@ void test_revolve_checkpoint(void)
   /* Variables for the adjoint */  
   adj_variable lambda;
 
-  adj_create_adjointer(&adjointer);
+  ierr = adj_create_adjointer(&adjointer);
+  adj_test_assert(ierr == ADJ_OK, "Should have worked");
+
+  ierr = adj_set_checkpoint_strategy(&adjointer, ADJ_CHECKPOINT_REVOLVE);
+  adj_test_assert(ierr == ADJ_OK, "Should have worked");
+  ierr = adj_set_revolve_options(&adjointer, steps, snaps, snaps_in_ram);
+  adj_test_assert(ierr == ADJ_OK, "Should have worked");
 
   /* Register callbacks */
   ierr = adj_set_petsc_data_callbacks(&adjointer);
