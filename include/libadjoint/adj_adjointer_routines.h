@@ -15,7 +15,7 @@ int adj_set_checkpoint_strategy(adj_adjointer* adjointer, int strategy);
 int adj_get_checkpoint_strategy(adj_adjointer* adjointer, int* strategy);
 int adj_set_revolve_options(adj_adjointer* adjointer, int steps, int snaps, int snaps_in_ram);
 int adj_equation_count(adj_adjointer* adjointer, int* count);
-int adj_register_equation(adj_adjointer* adjointer, adj_equation equation);
+int adj_register_equation(adj_adjointer* adjointer, adj_equation equation, int* checkpoint_storage);
 int adj_record_variable(adj_adjointer* adjointer, adj_variable var, adj_storage_data storage);
 int adj_register_operator_callback(adj_adjointer* adjointer, int type, char* name, void (*fn)(void));
 int adj_register_data_callback(adj_adjointer* adjointer, int type, void (*fn)(void));
@@ -57,5 +57,7 @@ int adj_append_unique(int** array, int* array_sz, int value);
 int adj_extend_timestep_data(adj_adjointer* adjointer, int extent);
 int adj_extend_functional_data(adj_timestep_data* timestep_data, int extent);
 int adj_minval(int* array, int array_sz);
+int adj_get_revolve_checkpoint_storage(adj_adjointer* adjointer, adj_equation equation, int* checkpoint_storage); 
+int adj_initialise_revolve(adj_adjointer* adjointer);
 #endif
 #endif

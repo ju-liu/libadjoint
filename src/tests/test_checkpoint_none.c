@@ -19,12 +19,13 @@ void advection_derivative_operator_action(int ndepends, adj_variable* variables,
 
 
 
-void test_revolve_checkpoint(void)
+void test_checkpoint_none(void)
 {
   int steps = 20;
   int snaps = 3;
   int snaps_in_ram = -1;
   int timestep, nb_eqs;
+  int cs;
   adj_adjointer adjointer;
   adj_nonlinear_block V;
   adj_block B[2], I;
@@ -42,7 +43,7 @@ void test_revolve_checkpoint(void)
   ierr = adj_create_adjointer(&adjointer);
   adj_test_assert(ierr == ADJ_OK, "Should have worked");
 
-  ierr = adj_set_checkpoint_strategy(&adjointer, ADJ_CHECKPOINT_REVOLVE);
+  ierr = adj_set_checkpoint_strategy(&adjointer, ADJ_CHECKPOINT_REVOLVE_OFFLINE);
   adj_test_assert(ierr == ADJ_OK, "Should have worked");
 
   ierr = adj_set_revolve_options(&adjointer, steps, snaps, snaps_in_ram);
@@ -76,7 +77,7 @@ void test_revolve_checkpoint(void)
   adj_create_block("IdentityOperator", NULL, NULL, &I);
   ierr = adj_create_equation(u[1], 1, &I, &u[1], &eqn);
   adj_test_assert(ierr == ADJ_OK, "Should have worked");
-  ierr = adj_register_equation(&adjointer, eqn);
+  ierr = adj_register_equation(&adjointer, eqn, &cs);
   adj_test_assert(ierr == ADJ_OK, "Should have worked");
   ierr = adj_destroy_equation(&eqn);
   adj_test_assert(ierr == ADJ_OK, "Should have worked");
@@ -97,7 +98,7 @@ void test_revolve_checkpoint(void)
     adj_create_block("BurgersOperator", &V, NULL, &B[1]);
     ierr = adj_create_equation(u[1], 2, B, u, &eqn);
     adj_test_assert(ierr == ADJ_OK, "Should have worked");
-    ierr = adj_register_equation(&adjointer, eqn);
+    ierr = adj_register_equation(&adjointer, eqn, &cs);
     adj_test_assert(ierr == ADJ_OK, "Should have worked");
     ierr = adj_destroy_equation(&eqn);
     adj_test_assert(ierr == ADJ_OK, "Should have worked");

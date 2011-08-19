@@ -230,6 +230,9 @@ typedef struct
   int snaps; 
   int snaps_in_ram;
   int steps;
+  /* The current revolve state */
+  CACTION current_action;
+  int current_timestep;
 } adj_revolve_data;
 
 typedef struct adj_adjointer

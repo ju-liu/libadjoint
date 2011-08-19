@@ -22,7 +22,7 @@ void test_adj_forget_adjoint_equation(void)
   adj_variable u_tmp[2];
   adj_variable_data* data_ptr;
   adj_equation eqn;
-  int ierr;
+  int ierr, cs;
   int adj_equations_u0[3] = {0, 1, 2};
   int adj_equations_u10[3] = {0, 1, 2};
   int adj_equations_u11[5] = {0, 1, 2, 3, 4};
@@ -51,7 +51,7 @@ void test_adj_forget_adjoint_equation(void)
   adj_create_block("IdentityOperator", NULL, NULL, &I);
   ierr = adj_create_equation(u[0], 1, &I, &u[0], &eqn);
   adj_test_assert(ierr == ADJ_OK, "Should have worked");
-  ierr = adj_register_equation(&adjointer, eqn);
+  ierr = adj_register_equation(&adjointer, eqn, &cs);
   adj_test_assert(ierr == ADJ_OK, "Should have worked");
   ierr = adj_destroy_equation(&eqn);
   adj_test_assert(ierr == ADJ_OK, "Should have worked");
@@ -62,7 +62,7 @@ void test_adj_forget_adjoint_equation(void)
   adj_create_block("BurgersOperator", &V, NULL, &B[1]);
   ierr = adj_create_equation(u[1], 2, B, u, &eqn);
   adj_test_assert(ierr == ADJ_OK, "Should have worked");
-  ierr = adj_register_equation(&adjointer, eqn);
+  ierr = adj_register_equation(&adjointer, eqn, &cs);
   adj_test_assert(ierr == ADJ_OK, "Should have worked");
   ierr = adj_destroy_equation(&eqn);
   adj_test_assert(ierr == ADJ_OK, "Should have worked");
@@ -78,7 +78,7 @@ void test_adj_forget_adjoint_equation(void)
   u_tmp[1] = u[2];
   ierr = adj_create_equation(u[2], 2, B, u_tmp, &eqn);
   adj_test_assert(ierr == ADJ_OK, "Should have worked");
-  ierr = adj_register_equation(&adjointer, eqn);
+  ierr = adj_register_equation(&adjointer, eqn, &cs);
   adj_test_assert(ierr == ADJ_OK, "Should have worked");
   ierr = adj_destroy_equation(&eqn);
   adj_test_assert(ierr == ADJ_OK, "Should have worked");
@@ -92,7 +92,7 @@ void test_adj_forget_adjoint_equation(void)
   adj_create_block("BurgersOperator", &V, NULL, &B[1]);
   ierr = adj_create_equation(u[3], 2, B, &u[2], &eqn);
   adj_test_assert(ierr == ADJ_OK, "Should have worked");
-  ierr = adj_register_equation(&adjointer, eqn);
+  ierr = adj_register_equation(&adjointer, eqn, &cs);
   adj_test_assert(ierr == ADJ_OK, "Should have worked");
   ierr = adj_destroy_equation(&eqn);
   adj_test_assert(ierr == ADJ_OK, "Should have worked");
@@ -108,7 +108,7 @@ void test_adj_forget_adjoint_equation(void)
   u_tmp[1] = u[4];
   ierr = adj_create_equation(u[4], 2, B, u_tmp, &eqn);
   adj_test_assert(ierr == ADJ_OK, "Should have worked");
-  ierr = adj_register_equation(&adjointer, eqn);
+  ierr = adj_register_equation(&adjointer, eqn, &cs);
   adj_test_assert(ierr == ADJ_OK, "Should have worked");
   ierr = adj_destroy_equation(&eqn);
   adj_test_assert(ierr == ADJ_OK, "Should have worked");

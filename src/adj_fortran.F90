@@ -98,6 +98,8 @@ module libadjoint_data_structures
     integer(kind=c_int) :: snaps_in_ram
     integer(kind=c_int) :: nsteps
 
+    integer(kind=c_int) :: current_action
+    integer(kind=c_int) :: current_timestep
   end type adj_revolve_data
 
   type, bind(c) :: adj_adjointer
@@ -587,13 +589,14 @@ module libadjoint
       integer(kind=c_int) :: ierr
     end function adj_equation_count
 
-    function adj_register_equation(adjointer, equation) result(ierr) bind(c, name='adj_register_equation')
+    function adj_register_equation_c(adjointer, equation, checkpoint_storage) result(ierr) bind(c, name='adj_register_equation')
       use libadjoint_data_structures
       use iso_c_binding
       type(adj_adjointer), intent(inout) :: adjointer
       type(adj_equation), intent(in), value :: equation
+      integer(kind=c_int), intent(out) :: checkpoint_storage 
       integer(kind=c_int) :: ierr
-    end function adj_register_equation
+    end function adj_register_equation_c
 
     function adj_record_variable(adjointer, variable, storage) result(ierr) bind(c, name='adj_record_variable')
       use libadjoint_data_structures
@@ -1093,6 +1096,21 @@ module libadjoint
 
     ierr = adj_create_block_c(name_c, nblock_ptr, context_c, block)
   end function adj_create_block
+
+  function adj_register_equation(adjointer, equation, checkpoint_storage) result(ierr) 
+    type(adj_adjointer), intent(inout) :: adjointer
+    type(adj_equation), intent(in), value :: equation
+    integer(kind=c_int), intent(out), optional :: checkpoint_storage 
+    integer(kind=c_int) :: ierr
+
+    integer :: dummy
+
+    if (present(checkpoint_storage)) then
+      ierr = adj_register_equation_c(adjointer, equation, checkpoint_storage)
+    else
+      ierr = adj_register_equation_c(adjointer, equation, dummy)
+    end if
+  end function adj_register_equation
 
   function adj_register_operator_callback(adjointer, type, name, fnptr) result(ierr)
     type(adj_adjointer), intent(inout) :: adjointer

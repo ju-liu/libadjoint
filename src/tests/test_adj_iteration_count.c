@@ -10,7 +10,7 @@ void test_adj_iteration_count(void)
   adj_variable u[3];
   adj_variable u_tmp[2];
   adj_equation eqn;
-  int ierr, count;
+  int ierr, count, cs;
 
   adj_create_adjointer(&adjointer);
 
@@ -22,7 +22,7 @@ void test_adj_iteration_count(void)
   adj_create_block("IdentityOperator", NULL, NULL, &I);
   ierr = adj_create_equation(u[0], 1, &I, &u[0], &eqn);
   adj_test_assert(ierr == ADJ_OK, "Should have worked");
-  ierr = adj_register_equation(&adjointer, eqn);
+  ierr = adj_register_equation(&adjointer, eqn, &cs);
   adj_test_assert(ierr == ADJ_OK, "Should have worked");
   ierr = adj_destroy_equation(&eqn);
   adj_test_assert(ierr == ADJ_OK, "Should have worked");
@@ -33,7 +33,7 @@ void test_adj_iteration_count(void)
   adj_create_block("BurgersOperator", &V, NULL, &B[1]);
   ierr = adj_create_equation(u[1], 2, B, u, &eqn);
   adj_test_assert(ierr == ADJ_OK, "Should have worked");
-  ierr = adj_register_equation(&adjointer, eqn);
+  ierr = adj_register_equation(&adjointer, eqn, &cs);
   adj_test_assert(ierr == ADJ_OK, "Should have worked");
   ierr = adj_destroy_equation(&eqn);
   adj_test_assert(ierr == ADJ_OK, "Should have worked");
@@ -49,7 +49,7 @@ void test_adj_iteration_count(void)
   u_tmp[1] = u[2];
   ierr = adj_create_equation(u[2], 2, B, u_tmp, &eqn);
   adj_test_assert(ierr == ADJ_OK, "Should have worked");
-  ierr = adj_register_equation(&adjointer, eqn);
+  ierr = adj_register_equation(&adjointer, eqn, &cs);
   adj_test_assert(ierr == ADJ_OK, "Should have worked");
   ierr = adj_destroy_equation(&eqn);
   adj_test_assert(ierr == ADJ_OK, "Should have worked");
