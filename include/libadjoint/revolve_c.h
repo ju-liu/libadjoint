@@ -11,6 +11,11 @@ typedef struct
   void *ptr;
 } CRevolve;
 
+typedef enum 
+{ 
+  advance, takeshot, restore, firsturn, youturn, terminate, error
+} CACTION;
+
 #ifdef __cplusplus
 extern "C" 
 #endif
@@ -30,6 +35,11 @@ CRevolve revolve_create_online(int sn);
 extern "C" 
 #endif
 void revolve_destroy(CRevolve r);
+
+#ifdef __cplusplus
+extern "C" 
+#endif
+CACTION revolve(CRevolve r); 
 
 #ifdef __cplusplus
 extern "C" 
@@ -85,5 +95,10 @@ int revolve_getwhere(CRevolve r);
 extern "C" 
 #endif
 int revolve_setinfo(CRevolve r, int inf);
+
+#ifdef __cplusplus
+extern "C" 
+#endif
+const char* revolve_caction_string(CACTION action);
 
 #endif

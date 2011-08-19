@@ -22,6 +22,12 @@ extern "C" void revolve_destroy(CRevolve r) { delete (Revolve*) r.ptr; }
 
 extern "C" int revolve_adjust(CRevolve r, int steps) { return ((Revolve*) r.ptr)->adjust(steps); }
 
+extern "C" CACTION revolve(CRevolve r) 
+{
+  int res = ((Revolve*) r.ptr)->revolve(); 
+  return (CACTION) res;
+}
+
 extern "C" int revolve_getadvances(CRevolve r) { return ((Revolve*) r.ptr)->getadvances(); }
 extern "C" int revolve_getcheck(CRevolve r) { return ((Revolve*) r.ptr)->getcheck(); }
 extern "C" int revolve_getcheckram(CRevolve r) { return ((Revolve*) r.ptr)->getcheckram(); }
@@ -38,3 +44,8 @@ extern "C" int revolve_getwhere(CRevolve r)
     return 0;
 }
 extern "C" void revolve_set_info(CRevolve r, int inf) { ((Revolve*) r.ptr)->set_info(inf); }
+
+const char* revolve_caction_string(CACTION action) { 
+ static const char *CACTION_NAME[] = { "advance", "takeshot", "restore", "firsturn", "youturn", "terminate", "error"};
+  return CACTION_NAME[action]; 
+};
