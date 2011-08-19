@@ -559,7 +559,7 @@ module libadjoint
       use libadjoint_data_structures
       use iso_c_binding
       type(adj_adjointer), intent(inout) :: adjointer
-      integer(kind=c_int), value :: strategy
+      integer(kind=c_int), intent(in), value :: strategy
       integer(kind=c_int) :: ierr
     end function adj_set_checkpoint_strategy
 
@@ -567,7 +567,7 @@ module libadjoint
       use libadjoint_data_structures
       use iso_c_binding
       type(adj_adjointer), intent(inout) :: adjointer
-      integer(kind=c_int) :: strategy
+      integer(kind=c_int), intent(out) :: strategy
       integer(kind=c_int) :: ierr
     end function adj_get_checkpoint_strategy
 
@@ -575,9 +575,9 @@ module libadjoint
       use libadjoint_data_structures
       use iso_c_binding
       type(adj_adjointer), intent(inout) :: adjointer
-      integer(kind=c_int), value :: steps 
-      integer(kind=c_int), value :: snaps 
-      integer(kind=c_int), value :: snaps_in_ram 
+      integer(kind=c_int), intent(in), value :: steps 
+      integer(kind=c_int), intent(in), value :: snaps 
+      integer(kind=c_int), intent(in), value :: snaps_in_ram 
       integer(kind=c_int) :: ierr
     end function adj_set_revolve_options
 

@@ -226,13 +226,12 @@ typedef struct
 
 typedef struct
 {
-  CRevolve revolve;
-  int snaps; 
-  int snaps_in_ram;
-  int steps;
-  /* The current revolve state */
-  CACTION current_action;
-  int current_timestep;
+  CRevolve revolve; /* The C wrapper of the Revolve object */
+  int snaps; /* The number of available (disk) checkpoint slots */
+  int snaps_in_ram; /* The number of available RAM checkpoint slots */
+  int steps; /* The total number of timesteps in the simulation */
+  CACTION current_action; /* The revolve action which is currently being executed */
+  int current_timestep; /* The timestep which is currently being executed in the model. */
 } adj_revolve_data;
 
 typedef struct adj_adjointer

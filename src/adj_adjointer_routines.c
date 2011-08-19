@@ -525,7 +525,7 @@ int adj_get_revolve_checkpoint_storage(adj_adjointer* adjointer, adj_equation eq
       char buf[ADJ_NAME_LEN];
       adj_variable_str(equation.variable, buf, ADJ_NAME_LEN);
       snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "The adjointer and revolve are not consistent (in adj_register_equation of variable %s). This can happen when one tries to register an equation after solving the first adjoint equation.", buf);
-      return ADJ_ERR_INTERNAL_ERROR;
+      return ADJ_ERR_REVOLVE_ERROR;
     }
   }
   else
@@ -563,7 +563,7 @@ int adj_get_revolve_checkpoint_storage(adj_adjointer* adjointer, adj_equation eq
       {
         adj_variable_str(equation.variable, buf, ADJ_NAME_LEN);
         snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "An internal error occured: The adjointer and revolve are out of sync (in adj_register_equation of variable %s).", buf);
-        return ADJ_ERR_INTERNAL_ERROR;
+        return ADJ_ERR_REVOLVE_ERROR;
       }
 
       if (adjointer->revolve_data.current_timestep == capo)
@@ -578,10 +578,10 @@ int adj_get_revolve_checkpoint_storage(adj_adjointer* adjointer, adj_equation eq
           if (revolve_getwhere(adjointer->revolve_data.revolve))
               *checkpoint_storage = ADJ_CHECKPOINT_STORAGE_MEMORY;
           else
-              *checkpoint_storage = ADJ_CHECKPOINT_STORAGE_DISC;
+              *checkpoint_storage = ADJ_CHECKPOINT_STORAGE_DISK;
         }
         else
-          *checkpoint_storage = ADJ_CHECKPOINT_STORAGE_DISC;
+          *checkpoint_storage = ADJ_CHECKPOINT_STORAGE_DISK;
 
         adjointer->revolve_data.current_action = revolve(adjointer->revolve_data.revolve);
         break;
@@ -592,12 +592,12 @@ int adj_get_revolve_checkpoint_storage(adj_adjointer* adjointer, adj_equation eq
       case CACTION_ERROR:
         adj_variable_str(equation.variable, buf, ADJ_NAME_LEN);
         snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "An internal error occured: Irregular termination of revolve (in adj_register_equation of variable %s).", buf);
-        return ADJ_ERR_INTERNAL_ERROR;
+        return ADJ_ERR_REVOLVE_ERROR;
 
       default:
         adj_variable_str(equation.variable, buf, ADJ_NAME_LEN);
         snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "An internal error occured: The adjointer and revolve are out of sync (in adj_register_equation of variable %s).", buf);
-        return ADJ_ERR_INTERNAL_ERROR;
+        return ADJ_ERR_REVOLVE_ERROR;
   }
 
   return ADJ_OK;
@@ -614,16 +614,40 @@ int adj_initialise_revolve(adj_adjointer* adjointer)
   if (ierr != ADJ_OK) return ierr;
 
   /* Offline checkpointing */
-  if ((cs==ADJ_CHECKPOINT_REVOLVE_OFFLINE) && (steps>0) && (snaps>0) && (snaps_in_ram<=0))
-    adjointer->revolve_data.revolve = revolve_create_offline(steps, snaps);
+  if (cs==ADJ_CHECKPOINT_REVOLVE_OFFLINE) 
+  {
+    if ((steps>0) && (snaps>0) && (snaps_in_ram<=0))
+      adjointer->revolve_data.revolve = revolve_create_offline(steps, snaps);
+    else
+    {
+      snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "You chose to use offline revolve as checkpointing strategy but have not configured it correctly. Make sure you call adj_set_revolve_options with positive 'steps' and 'snaps' arguments.");
+      return ADJ_ERR_INVALID_INPUTS;
+    }
+  }
 
   /* Offline checkpointing with different stores */
-  else if ((cs==ADJ_CHECKPOINT_REVOLVE_MULTISTAGE) && (steps>0) && (snaps>0) && (snaps_in_ram>0))
-    adjointer->revolve_data.revolve = revolve_create_multistage(steps, snaps, snaps_in_ram);
+  else if (cs==ADJ_CHECKPOINT_REVOLVE_MULTISTAGE)
+  { 
+    if ((steps>0) && (snaps>0) && (snaps_in_ram>0))
+      adjointer->revolve_data.revolve = revolve_create_multistage(steps, snaps, snaps_in_ram);
+    else
+    {
+      snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "You chose to use multistage revolve as checkpointing strategy but have not configured it correctly. Make sure you call adj_set_revolve_options with positive 'steps', 'snaps' and 'snaps_in_ram' arguments.");
+      return ADJ_ERR_INVALID_INPUTS;
+    }
+  }
 
   /* Online checkpointing */
-  else if ((cs==ADJ_CHECKPOINT_REVOLVE_ONLINE) && (snaps>0))
-    adjointer->revolve_data.revolve = revolve_create_online(snaps);
+  else if (cs==ADJ_CHECKPOINT_REVOLVE_ONLINE) 
+  {
+    if (snaps>0)
+      adjointer->revolve_data.revolve = revolve_create_online(snaps);
+    else
+    {
+      snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "You chose to use online revolve as checkpointing strategy but have not configured it correctly. Make sure you call adj_set_revolve_options with a positive 'snaps' argument.");
+      return ADJ_ERR_INVALID_INPUTS;
+    }
+  }
 
   else
   {

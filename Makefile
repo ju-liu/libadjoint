@@ -182,8 +182,6 @@ clean:
 	@rm -f lib/*.so
 	@echo "  RM lib/*.so"
 	@rm -f lib/*.py
-	@echo "  RM include/libadjoint/adj_constants_f.h"
-	@rm -f include/libadjoint/adj_constants_f.h
 	@echo "  RM lib/*.py"
 	@rm -f tags
 	@rm -f include/libadjoint/adj_constants_f.h include/libadjoint/adj_error_handling_f.h
