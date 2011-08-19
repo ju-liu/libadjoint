@@ -34,6 +34,7 @@ int adj_create_adjointer(adj_adjointer* adjointer)
   adjointer->revolve_data.steps = 0;
   adjointer->revolve_data.snaps = 0;
   adjointer->revolve_data.snaps_in_ram = 0;
+  adjointer->revolve_data.revolve.ptr = NULL;
 
   adjointer->nonlinear_colouring_list.firstnode = NULL;
   adjointer->nonlinear_colouring_list.lastnode = NULL;
@@ -491,6 +492,38 @@ int adj_register_equation(adj_adjointer* adjointer, adj_equation equation)
       }
     }
   }
+
+  /* Checkpointing */
+
+  ierr = adj_get_checkpoint_strategy(adjointer, &i);
+  if (ierr != ADJ_OK) return ierr;
+
+  if (i==ADJ_CHECKPOINT_REVOLVE)
+  {
+    int steps = adjointer->revolve_data.steps;
+    int snaps = adjointer->revolve_data.snaps;
+    int snaps_in_ram = adjointer->revolve_data.snaps_in_ram;
+
+    /* Initialise Revolve if not done before */
+    if (adjointer->revolve_data.revolve.ptr == NULL)
+    {
+	  if ((steps>0) && (snaps>0) && (snaps_in_ram<=0))
+		// Offline checkpointing
+		adjointer->revolve_data.revolve = revolve_create_offline(steps, snaps);
+	  else if ((steps>0) && (snaps>0) && (snaps_in_ram>0))
+		// Offline checkpointing with different stores
+		adjointer->revolve_data.revolve = revolve_create_multistage(steps, snaps, snaps_in_ram);
+	  else if (snaps>0)
+		// Online checkpointing
+		adjointer->revolve_data.revolve = revolve_create_online(snaps);
+	  else
+	  {
+		snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "You chose to use revolve as checkpointing strategy but have not configured it correctly.");
+		return ADJ_ERR_INVALID_INPUTS;
+	  }
+    }
+  }
+
   return ADJ_OK;
 }
 

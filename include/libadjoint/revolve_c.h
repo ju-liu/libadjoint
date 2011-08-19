@@ -1,3 +1,6 @@
+#ifndef ADJ_REVOLVE_H
+#define ADJ_REVOLVE_H
+
 #ifdef __cplusplus
 #include <iostream>
 #include "revolve.h"
@@ -82,3 +85,5 @@ int revolve_getwhere(CRevolve r);
 extern "C" 
 #endif
 int revolve_setinfo(CRevolve r, int inf);
+
+#endif

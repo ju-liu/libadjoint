@@ -5,6 +5,7 @@
 #include <assert.h>
 #include "adj_constants.h"
 #include "uthash.h"
+#include "revolve_c.h"
 
 typedef struct
 {
@@ -225,6 +226,7 @@ typedef struct
 
 typedef struct
 {
+  CRevolve revolve;
   int snaps; 
   int snaps_in_ram;
   int steps;

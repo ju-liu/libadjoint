@@ -88,7 +88,12 @@ module libadjoint_data_structures
     type(c_ptr) :: lastnode
   end type adj_func_deriv_callback_list
 
+  type, bind(c) :: CRevolve
+    type(c_ptr) :: revolve
+  end type CRevolve
+
   type, bind(c) :: adj_revolve_data
+    type(CRevolve) :: revolve
     integer(kind=c_int) :: nsnaps
     integer(kind=c_int) :: snaps_in_ram
     integer(kind=c_int) :: nsteps
