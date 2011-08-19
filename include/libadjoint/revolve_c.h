@@ -13,7 +13,7 @@ typedef struct
 
 typedef enum 
 { 
-  advance, takeshot, restore, firsturn, youturn, terminate, error
+  CACTION_ADVANCE, CACTION_TAKESHOT, CACTION_RESTORE, CACTION_FIRSTRUN, CACTION_YOUTURN, CACTION_TERMINATE, CACTION_ERROR
 } CACTION;
 
 #ifdef __cplusplus
