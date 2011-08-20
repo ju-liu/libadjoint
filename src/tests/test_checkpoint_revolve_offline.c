@@ -16,12 +16,11 @@ void drag_derivative(adj_adjointer* adjointer, adj_variable derivative, int ndep
 void burgers_operator_assembly(int ndepends, adj_variable* variables, adj_vector* dependencies, int hermitian, adj_scalar coefficient, void* context, adj_matrix* output, adj_vector* rhs);
 void timestepping_operator_action(int ndepends, adj_variable* variables, adj_vector* dependencies, int hermitian, adj_scalar coefficient, adj_vector input, void* context, adj_vector* output);
 void advection_derivative_operator_action(int ndepends, adj_variable* variables, adj_vector* dependencies, adj_variable derivative, adj_vector contraction, int hermitian, adj_vector input, adj_scalar coefficient, void* context, adj_vector* output);
-
-
+void source(adj_adjointer* adjointer, adj_variable variable, int ndepends, adj_variable* variables, adj_vector* dependencies, void* context, adj_vector* output, int* has_output);
 
 void test_checkpoint_revolve_offline(void)
 {
-  int steps = 10;
+  int steps = 4;
   int snaps = 2;
   int snaps_in_ram = -1;
   int timestep, nb_eqs;
@@ -52,6 +51,8 @@ void test_checkpoint_revolve_offline(void)
   /* Register callbacks */
   ierr = adj_set_petsc_data_callbacks(&adjointer);
   adj_test_assert(ierr == ADJ_OK, "Should have worked");
+  ierr = adj_register_forward_source_callback(&adjointer, source); 
+  adj_test_assert(ierr == ADJ_OK, "Should have worked");
   ierr = adj_register_functional_derivative_callback(&adjointer, "Drag", drag_derivative); 
   adj_test_assert(ierr == ADJ_OK, "Should have worked");
   ierr =  adj_register_operator_callback(&adjointer, ADJ_BLOCK_ASSEMBLY_CB, "BurgersOperator", (void (*)(void)) burgers_operator_assembly);
@@ -79,7 +80,7 @@ void test_checkpoint_revolve_offline(void)
   adj_test_assert(ierr == ADJ_OK, "Should have worked");
   ierr = adj_register_equation(&adjointer, eqn, &cs);
   adj_test_assert(ierr == ADJ_OK, "Should have worked");
-  printf("Checkpoint strategty for timestep %i: %i\n", 0, cs);
+  printf("Checkpoint strategy for timestep %i: %i\n", 0, cs);
   ierr = adj_destroy_equation(&eqn);
   adj_test_assert(ierr == ADJ_OK, "Should have worked");
 
@@ -142,6 +143,18 @@ void test_checkpoint_revolve_offline(void)
 
 }
 
+void source(adj_adjointer* adjointer, adj_variable variable, int ndepends, adj_variable* variables, adj_vector* dependencies, void* context, adj_vector* output, int* has_output)
+{
+  (void) adjointer;
+  (void) variable;
+  (void) ndepends;
+  (void) variables;
+  (void) dependencies;
+  (void) context;
+  (void) output;
+  *has_output=ADJ_FALSE;
+}
+
 void drag_derivative(adj_adjointer* adjointer, adj_variable derivative, int ndepends, adj_variable* variables, adj_vector* dependencies, char* name, adj_vector* output)
 {
   int dim=2;
@@ -149,6 +162,9 @@ void drag_derivative(adj_adjointer* adjointer, adj_variable derivative, int ndep
   (void) ndepends;
   (void) variables;
   (void) dependencies;
+  (void) adjointer;
+  (void) derivative;
+  (void) name;
 
   output_vec = (Vec*) malloc(sizeof(Vec));
   VecCreateSeq(PETSC_COMM_SELF, dim, output_vec);

@@ -44,6 +44,7 @@ extern "C" int revolve_getwhere(CRevolve r)
     return 0;
 }
 extern "C" void revolve_set_info(CRevolve r, int inf) { ((Revolve*) r.ptr)->set_info(inf); }
+extern "C" void revolve_turn(CRevolve r, int fine) { ((Revolve*) r.ptr)->turn(fine); }
 
 const char* revolve_caction_string(CACTION action) { 
  static const char *CACTION_NAME[] = { "advance", "takeshot", "restore", "firsturn", "youturn", "terminate", "error"};

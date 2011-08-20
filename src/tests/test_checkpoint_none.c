@@ -22,8 +22,6 @@ void advection_derivative_operator_action(int ndepends, adj_variable* variables,
 void test_checkpoint_none(void)
 {
   int steps = 20;
-  int snaps = 3;
-  int snaps_in_ram = -1;
   int timestep, nb_eqs;
   int cs;
   adj_adjointer adjointer;
@@ -41,12 +39,6 @@ void test_checkpoint_none(void)
   adj_variable lambda;
 
   ierr = adj_create_adjointer(&adjointer);
-  adj_test_assert(ierr == ADJ_OK, "Should have worked");
-
-  ierr = adj_set_checkpoint_strategy(&adjointer, ADJ_CHECKPOINT_REVOLVE_OFFLINE);
-  adj_test_assert(ierr == ADJ_OK, "Should have worked");
-
-  ierr = adj_set_revolve_options(&adjointer, steps, snaps, snaps_in_ram);
   adj_test_assert(ierr == ADJ_OK, "Should have worked");
 
   /* Register callbacks */
@@ -147,6 +139,9 @@ void drag_derivative(adj_adjointer* adjointer, adj_variable derivative, int ndep
   (void) ndepends;
   (void) variables;
   (void) dependencies;
+  (void) derivative;
+  (void) adjointer;
+  (void) name;
 
   output_vec = (Vec*) malloc(sizeof(Vec));
   VecCreateSeq(PETSC_COMM_SELF, dim, output_vec);

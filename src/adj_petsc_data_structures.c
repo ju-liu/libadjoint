@@ -148,6 +148,10 @@ void petsc_solve_proc(adj_variable var, adj_matrix mat, adj_vector rhs, adj_vect
     if (!assembled)
       MatAssemblyEnd(petsc_mat_from_adj_matrix(mat), MAT_FINAL_ASSEMBLY);
 
+    /* Create the output vector */
+    Vec *sol_vec=(Vec*) malloc(sizeof(Vec));
+    MatGetVecs(petsc_mat_from_adj_matrix(mat), sol_vec, NULL);
+
     KSPCreate(PETSC_COMM_WORLD, &ksp);
     KSPSetOperators(ksp, petsc_mat_from_adj_matrix(mat), petsc_mat_from_adj_matrix(mat), DIFFERENT_NONZERO_PATTERN);
 
@@ -156,7 +160,8 @@ void petsc_solve_proc(adj_variable var, adj_matrix mat, adj_vector rhs, adj_vect
     PCSetType(pc, PCLU);
     KSPSetTolerances(ksp, 1.e-7, PETSC_DEFAULT, PETSC_DEFAULT, PETSC_DEFAULT);
     
-    KSPSolve(ksp,petsc_vec_from_adj_vector(rhs), petsc_vec_from_adj_vector(*soln));
+    KSPSolve(ksp,petsc_vec_from_adj_vector(rhs), *sol_vec);
+    *soln=petsc_vec_to_adj_vector(sol_vec);
 #else
     (void) mat;
     (void) rhs;

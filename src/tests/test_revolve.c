@@ -8,7 +8,6 @@ void test_revolve(void)
 {
   int steps=5;
   int snaps;
-  int snaps_in_ram;
   int timestep;
 
   int checkpoint_time[2]; /* Saves the timestep of the checkpoints */

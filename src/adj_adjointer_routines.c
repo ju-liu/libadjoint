@@ -536,6 +536,11 @@ int adj_get_revolve_checkpoint_storage(adj_adjointer* adjointer, adj_equation eq
     /* Set the intial revolve state */
     adjointer->revolve_data.current_action = revolve(adjointer->revolve_data.revolve);
     adjointer->revolve_data.current_timestep = equation.variable.timestep;
+    if (equation.variable.timestep!=0) 
+    {
+      snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "With revolve as checkpoint strategy the first equation has solve for a variable at timestep 0.");
+      return ADJ_ERR_INVALID_INPUTS;
+    }
   }
 
   /* Check that the equations are registered chronologically */
@@ -546,10 +551,10 @@ int adj_get_revolve_checkpoint_storage(adj_adjointer* adjointer, adj_equation eq
     return ADJ_ERR_INVALID_INPUTS;
   }
 
-  /* Update revolve state's timestep */
+  /* Update revolve state */
   adjointer->revolve_data.current_timestep = equation.variable.timestep;
 
-  /* Determine if a checpoint is requested and of which type */
+  /* Determine if a checkpoint is requested and of which type */
   switch (adjointer->revolve_data.current_action)
   {
 
@@ -558,7 +563,7 @@ int adj_get_revolve_checkpoint_storage(adj_adjointer* adjointer, adj_equation eq
       oldcapo = revolve_getoldcapo(adjointer->revolve_data.revolve);
 
       /* make sure that Revolve and the adjointer are in sync */
-      if ((adjointer->revolve_data.current_timestep < oldcapo) || (adjointer->revolve_data.current_timestep > capo))
+      if ((adjointer->revolve_data.current_timestep <= oldcapo) || (adjointer->revolve_data.current_timestep > capo))
       {
         adj_variable_str(equation.variable, buf, ADJ_NAME_LEN);
         snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "An internal error occured: The adjointer and revolve are out of sync (in adj_register_equation of variable %s).", buf);
@@ -567,8 +572,9 @@ int adj_get_revolve_checkpoint_storage(adj_adjointer* adjointer, adj_equation eq
 
       if (adjointer->revolve_data.current_timestep == capo)
         adjointer->revolve_data.current_action = revolve(adjointer->revolve_data.revolve);
-        /* Note: There is no break here since we might want to take a checkpoint of the current equation */
-      else
+
+      /* In the case we want to take a checkpoint, we do not break here and execute the next case as well */
+      if (adjointer->revolve_data.current_action != CACTION_TAKESHOT)
         break;
 
       case CACTION_TAKESHOT:
@@ -593,7 +599,7 @@ int adj_get_revolve_checkpoint_storage(adj_adjointer* adjointer, adj_equation eq
         snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "An internal error occured: Irregular termination of revolve (in adj_register_equation of variable %s).", buf);
         return ADJ_ERR_REVOLVE_ERROR;
 
-      default:
+      default: /* This case includes CACTION_YOUTURN which is only expected when restoring from a checkpoint */
         adj_variable_str(equation.variable, buf, ADJ_NAME_LEN);
         snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "An internal error occured: The adjointer and revolve are out of sync (in adj_register_equation of variable %s).", buf);
         return ADJ_ERR_REVOLVE_ERROR;

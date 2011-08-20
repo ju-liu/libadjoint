@@ -13,4 +13,5 @@ int adj_get_forward_solution(adj_adjointer* adjointer, int equation, adj_vector*
 
 #ifndef ADJ_HIDE_FROM_USER
 int adj_replay_forward_equations(adj_adjointer* adjointer, int start_equation, int stop_equation);
+int adj_revolve_to_adjoint_equation(adj_adjointer* adjointer, int equation);
 #endif

@@ -34,7 +34,8 @@ int revolve_getfine(CRevolve r);
 int revolve_getinfo(CRevolve r);
 int revolve_getoldcapo(CRevolve r);
 int revolve_getwhere(CRevolve r);
-int revolve_setinfo(CRevolve r, int inf);
+void revolve_setinfo(CRevolve r, int inf);
+void revolve_turn(CRevolve r, int fine);
 const char* revolve_caction_string(CACTION action);
 #ifdef __cplusplus
 }

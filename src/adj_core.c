@@ -301,12 +301,26 @@ int adj_get_adjoint_solution(adj_adjointer* adjointer, int equation, char* funct
   int ierr;
   adj_matrix lhs;
   adj_vector rhs;
+  int cs;
 
   /* Check for the required callbacks */ 
-  strncpy(adj_error_msg, "Need the solve data callback, but it hasn't been supplied.", ADJ_ERROR_MSG_BUF);
-  if (adjointer->callbacks.solve == NULL) return ADJ_ERR_NEED_CALLBACK;
-  strncpy(adj_error_msg, "", ADJ_ERROR_MSG_BUF);
+  if (adjointer->callbacks.solve == NULL)
+  {   
+    strncpy(adj_error_msg, "Need the solve data callback, but it hasn't been supplied.", ADJ_ERROR_MSG_BUF);
+    return ADJ_ERR_NEED_CALLBACK;
+  }
 
+  /* If using revolve, we might have to restore from a checkpoint before the adjoint equation can be solved */
+  ierr = adj_get_checkpoint_strategy(adjointer, &cs);
+  if (ierr != ADJ_OK) return ierr;
+
+  if ((cs==ADJ_CHECKPOINT_REVOLVE_OFFLINE) || (cs==ADJ_CHECKPOINT_REVOLVE_MULTISTAGE) || (cs==ADJ_CHECKPOINT_REVOLVE_ONLINE))
+  {
+    ierr = adj_revolve_to_adjoint_equation(adjointer, equation);
+    if (ierr != ADJ_OK) return ierr;
+  }
+
+  /* At this point, all the dependencies are available to assemble the adjoint equation */
   ierr = adj_get_adjoint_equation(adjointer, equation, functional, &lhs, &rhs, adj_var);
   if (ierr!=ADJ_OK)
     return ierr;
@@ -316,6 +330,93 @@ int adj_get_adjoint_solution(adj_adjointer* adjointer, int equation, char* funct
   adjointer->callbacks.vec_destroy(&rhs);
   adjointer->callbacks.mat_destroy(&lhs);
 
+  return ADJ_OK;
+}
+
+int adj_revolve_to_adjoint_equation(adj_adjointer* adjointer, int equation)
+{
+  int ierr, cs;
+  int capo, oldcapo;
+  int start_eqn, end_eqn;
+  int replay = ADJ_TRUE;
+
+  ierr = adj_get_checkpoint_strategy(adjointer, &cs);
+  if (ierr != ADJ_OK) return ierr;
+
+  while(replay)
+  {
+    switch (adjointer->revolve_data.current_action)
+    {
+      case CACTION_ADVANCE:
+        oldcapo = revolve_getoldcapo(adjointer->revolve_data.revolve);
+        capo = revolve_getcapo(adjointer->revolve_data.revolve);
+
+        ierr = adj_timestep_start_equation(adjointer, oldcapo, &start_eqn);
+        if (ierr != ADJ_OK) return ierr;
+        ierr = adj_timestep_end_equation(adjointer, capo, &end_eqn);
+        if (ierr != ADJ_OK) return ierr;
+
+        ierr = adj_replay_forward_equations(adjointer, start_eqn, end_eqn);
+        if (ierr != ADJ_OK) return ierr;
+
+        adjointer->revolve_data.current_timestep = capo;
+        adjointer->revolve_data.current_action = revolve(adjointer->revolve_data.revolve);
+        break;
+
+      case CACTION_TAKESHOT:
+        /* TODO */
+        adjointer->revolve_data.current_action = revolve(adjointer->revolve_data.revolve);
+        break;
+
+      case CACTION_FIRSTRUN:
+        /* As opposed to CACTION_YOUTURN, in CACTION_FIRSTRUN we already integrated forward to the last timestep. */
+        if ((cs==ADJ_CHECKPOINT_REVOLVE_OFFLINE) || (cs==ADJ_CHECKPOINT_REVOLVE_MULTISTAGE))
+        {
+          /* Check that the forward simulation was run to the last timestep */
+          if (adjointer->revolve_data.current_timestep != adjointer->revolve_data.steps-1)
+          {
+            snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "You asked for an adjoint solution after solving timestep %i, but you told revolve that you are going to solve %i timesteps.", adjointer->revolve_data.current_timestep, adjointer->revolve_data.steps);
+            return ADJ_ERR_INVALID_INPUTS;
+          }
+        }
+        /* TODO: Online revolve wont work like this. Fix me! */
+        else if (cs==ADJ_CHECKPOINT_REVOLVE_ONLINE) 
+          revolve_turn(adjointer->revolve_data.revolve, adjointer->revolve_data.current_timestep);
+
+        replay=ADJ_FALSE;
+        break;
+
+      case CACTION_YOUTURN:
+        ierr = adj_replay_forward_equations(adjointer, adjointer->revolve_data.current_timestep, adjointer->revolve_data.current_timestep+1);
+        if (ierr != ADJ_OK) return ierr;
+
+        replay=ADJ_FALSE;
+        break;
+
+      case CACTION_RESTORE:
+        adjointer->revolve_data.current_timestep = revolve_getcapo(adjointer->revolve_data.revolve);
+        adjointer->revolve_data.current_action = revolve(adjointer->revolve_data.revolve);
+        break;
+
+      case CACTION_ERROR:
+        snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "An internal error occured: Irregular termination of revolve (in adj_adjoint_solution for equation %i).", equation);
+        return ADJ_ERR_REVOLVE_ERROR;
+
+      default:
+        snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "An internal error occured: The adjointer and revolve are out of sync (in adj_adjoint_solution for equation %i).", equation);
+        return ADJ_ERR_REVOLVE_ERROR;        
+    }
+
+  }
+
+  /* Check that the timesteps are in sync */
+  if (adjointer->revolve_data.current_timestep!=adjointer->equations[equation].variable.timestep)
+  {
+    strncpy(adj_error_msg, "You must loop over the adjoint equation chronologically backwards in time, but revolve thinks you do not.", ADJ_ERROR_MSG_BUF);
+    return ADJ_ERR_INVALID_INPUTS;
+  }
+
+  adjointer->revolve_data.current_action = revolve(adjointer->revolve_data.revolve);
   return ADJ_OK;
 }
 

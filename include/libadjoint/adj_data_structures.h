@@ -232,6 +232,8 @@ typedef struct
   int steps; /* The total number of timesteps in the simulation */
   CACTION current_action; /* The revolve action which is currently being executed */
   int current_timestep; /* The timestep which is currently being executed in the model. */
+                        /* This should be thought of as "Libadjoint has all the data to solve */
+                        /* for the first forward variable with timestep current_timestep" */
 } adj_revolve_data;
 
 typedef struct adj_adjointer
