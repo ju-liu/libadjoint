@@ -299,7 +299,6 @@ int adj_get_adjoint_equation(adj_adjointer* adjointer, int equation, char* funct
 int adj_get_adjoint_solution(adj_adjointer* adjointer, int equation, char* functional, adj_vector* soln, adj_variable* adj_var)
 {
   int ierr;
-  int snaps;
   adj_matrix lhs;
   adj_vector rhs;
 
@@ -316,13 +315,6 @@ int adj_get_adjoint_solution(adj_adjointer* adjointer, int equation, char* funct
   adjointer->callbacks.solve(*adj_var, lhs, rhs, soln); 
   adjointer->callbacks.vec_destroy(&rhs);
   adjointer->callbacks.mat_destroy(&lhs);
-  
-  CRevolve r;
-  
-  r = revolve_create_offline(10, 10);
-  snaps = revolve_adjust(r, 10);
-  r = revolve_create_offline(10, 10);
-  revolve_destroy(r);
 
   return ADJ_OK;
 }
@@ -449,3 +441,42 @@ int adj_get_forward_equation(adj_adjointer* adjointer, int equation, adj_matrix*
 
 }
 
+int adj_get_forward_solution(adj_adjointer* adjointer, int equation, adj_vector* soln, adj_variable* fwd_var)
+{
+  int ierr;
+  adj_matrix lhs;
+  adj_vector rhs;
+
+  /* Check for the required callbacks */ 
+  strncpy(adj_error_msg, "Need the solve data callback, but it hasn't been supplied.", ADJ_ERROR_MSG_BUF);
+  if (adjointer->callbacks.solve == NULL) return ADJ_ERR_NEED_CALLBACK;
+  strncpy(adj_error_msg, "", ADJ_ERROR_MSG_BUF);
+
+  ierr = adj_get_forward_equation(adjointer, equation, &lhs, &rhs, fwd_var);
+  if (ierr!=ADJ_OK)
+    return ierr;
+
+  /* Solve the linear system */
+  adjointer->callbacks.solve(*fwd_var, lhs, rhs, soln); 
+  adjointer->callbacks.vec_destroy(&rhs);
+  adjointer->callbacks.mat_destroy(&lhs);
+  
+  return ADJ_OK;
+}
+
+int adj_replay_forward_equations(adj_adjointer* adjointer, int start_equation, int stop_equation)
+{
+  int equation;
+  int ierr;
+  adj_vector soln;
+  adj_variable var;
+
+  for (equation=start_equation; equation<=stop_equation; equation++)
+  {
+    ierr = adj_get_forward_solution(adjointer, equation, &soln, &var);
+    if (ierr!=ADJ_OK)
+      return ierr;
+  }
+
+  return ADJ_OK;
+}

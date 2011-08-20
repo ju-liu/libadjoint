@@ -549,7 +549,6 @@ int adj_get_revolve_checkpoint_storage(adj_adjointer* adjointer, adj_equation eq
   /* Update revolve state's timestep */
   adjointer->revolve_data.current_timestep = equation.variable.timestep;
 
-
   /* Determine if a checpoint is requested and of which type */
   switch (adjointer->revolve_data.current_action)
   {

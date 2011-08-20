@@ -830,6 +830,17 @@ module libadjoint
       type(adj_variable), intent(out) :: fwd_var
       integer(kind=c_int) :: ierr
     end function adj_get_forward_equation
+
+    function adj_get_forward_solution(adjointer, equation, soln, variable) result(ierr) &
+            & bind(c, name='adj_get_forward_solution')
+      use libadjoint_data_structures
+      use iso_c_binding
+      type(adj_adjointer), intent(inout) :: adjointer
+      integer(kind=c_int), intent(in), value :: equation
+      type(adj_vector), intent(out) :: soln
+      type(adj_variable), intent(out) :: variable
+      integer(kind=c_int) :: ierr
+    end function adj_get_forward_solution
     
     function adj_adjointer_to_html_c(adjointer, filename, type) result(ierr) &
             & bind(c, name='adj_adjointer_to_html')
