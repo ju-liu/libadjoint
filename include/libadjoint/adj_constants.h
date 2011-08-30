@@ -68,12 +68,14 @@
 #define ADJ_VEC_GET_NORM_CB 16
 #define ADJ_VEC_DOT_PRODUCT_CB 17
 #define ADJ_VEC_SET_RANDOM_CB 18
+#define ADJ_VEC_TO_FILE_CB 19
+#define ADJ_VEC_FROM_FILE_CB 20
 
-#define ADJ_MAT_DUPLICATE_CB 20
-#define ADJ_MAT_AXPY_CB 21
-#define ADJ_MAT_DESTROY_CB 22
+#define ADJ_MAT_DUPLICATE_CB 30
+#define ADJ_MAT_AXPY_CB 31
+#define ADJ_MAT_DESTROY_CB 32
 
-#define ADJ_SOLVE_CB 23
+#define ADJ_SOLVE_CB 40
 
 /* prealloc constant */
 #define ADJ_PREALLOC_SIZE 255

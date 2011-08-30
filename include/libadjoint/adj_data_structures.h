@@ -71,21 +71,21 @@ typedef struct
 
 typedef struct
 {
-  int storage_type;
-  int has_value;
-
-  /* Should we compare against something we already have? */
+	/* Should we compare against something we already have? */
   int compare;
   adj_scalar comparison_tolerance;
 
   /* Should we overwrite something that's already recorded? */
   int overwrite;
 
-  /* for ADJ_STORAGE_MEMORY */
   adj_vector value;
+  /* for ADJ_STORAGE_MEMORY */
+  int storage_memory_type;
+  int storage_memory_has_value;
 
   /* for ADJ_STORAGE_DISK */
-  char* filename;
+  int storage_disk_has_value;
+  char storage_disk_filename[ADJ_NAME_LEN];
 
   /* POD, temporal interpolation, ... */
 } adj_storage_data;
@@ -129,6 +129,8 @@ typedef struct
   void (*vec_get_norm)(adj_vector x, adj_scalar* norm);
   void (*vec_dot_product)(adj_vector x, adj_vector y, adj_scalar* val);
   void (*vec_set_random)(adj_vector* x);
+  void (*vec_to_file)(adj_vector x, char* filename);
+  void (*vec_from_file)(adj_vector* x, char *filename);
 
   void (*mat_duplicate)(adj_matrix matin, adj_matrix *matout);
   void (*mat_axpy)(adj_matrix *Y, adj_scalar alpha, adj_matrix X);

@@ -60,6 +60,8 @@ module libadjoint_data_structures
     type(c_funptr) :: vec_get_norm
     type(c_funptr) :: vec_dot_product
     type(c_funptr) :: vec_set_random
+    type(c_funptr) :: vec_to_file
+    type(c_funptr) :: vec_from_file
 
     type(c_funptr) :: mat_duplicate
     type(c_funptr) :: mat_axpy
@@ -142,13 +144,17 @@ module libadjoint_data_structures
   end type adj_matrix
 
   type, bind(c) :: adj_storage_data
-    integer(kind=c_int) :: storage_type
-    integer(kind=c_int) :: has_value
     integer(kind=c_int) :: compare
     adj_scalar_f :: comparison_tolerance
     integer(kind=c_int) :: overwrite
+
     type(adj_vector) :: value
-    type(c_ptr) :: filename
+
+    integer(kind=c_int) :: storage_memory_type
+    integer(kind=c_int) :: storage_memory_has_value
+
+    integer(kind=c_int) :: storage_disk_has_value
+    type(c_ptr) :: storage_disk_filename
   end type adj_storage_data
 
   type, bind(c) :: adj_dictionary
@@ -216,6 +222,18 @@ module libadjoint
       use libadjoint_data_structures
       type(adj_vector), intent(inout) :: x
     end subroutine adj_vec_set_random
+
+    subroutine adj_vec_to_file(x, filename) bind(c)
+      use libadjoint_data_structures
+      type(adj_vector), intent(in), value :: x
+      character(kind=c_char), dimension(ADJ_NAME_LEN), intent(in) :: filename
+    end subroutine adj_vec_to_file
+
+    subroutine adj_vec_from_file(x, filename) bind(c)
+      use libadjoint_data_structures
+      type(adj_vector), intent(out) :: x
+      character(kind=c_char), dimension(ADJ_NAME_LEN), intent(in) :: filename
+    end subroutine adj_vec_from_file
 
     subroutine adj_mat_duplicate_proc(matin, matout) bind(c)
       ! Allocate a new matrix, using a given matrix as the model
@@ -776,6 +794,14 @@ module libadjoint
       type(adj_storage_data), intent(inout) :: mem
       integer(kind=c_int) :: ierr
     end function adj_storage_memory_incref
+
+    function adj_storage_disk(val, mem) result(ierr) bind(c, name='adj_storage_disk')
+      use libadjoint_data_structures
+      use iso_c_binding
+      type(adj_vector), intent(in), value :: val
+      type(adj_storage_data), intent(inout) :: mem
+      integer(kind=c_int) :: ierr
+    end function adj_storage_disk
 
     function adj_storage_set_compare_c(mem, compare, comparison_tolerance) result(ierr) bind(c, name='adj_storage_set_compare')
       use libadjoint_data_structures

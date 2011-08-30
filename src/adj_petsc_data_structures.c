@@ -21,6 +21,10 @@ int adj_set_petsc_data_callbacks(adj_adjointer* adjointer)
   adj_chkierr(ierr);
   ierr = adj_register_data_callback(adjointer, ADJ_VEC_DOT_PRODUCT_CB,(void (*)(void)) petsc_vec_dot_product_proc);
   adj_chkierr(ierr);
+  ierr = adj_register_data_callback(adjointer, ADJ_VEC_TO_FILE_CB,(void (*)(void)) petsc_vec_to_file_proc);
+  adj_chkierr(ierr);
+  ierr = adj_register_data_callback(adjointer, ADJ_VEC_FROM_FILE_CB,(void (*)(void)) petsc_vec_from_file_proc);
+  adj_chkierr(ierr);
   ierr = adj_register_data_callback(adjointer, ADJ_MAT_AXPY_CB,(void (*)(void)) petsc_mat_axpy_proc);
   adj_chkierr(ierr);
   ierr = adj_register_data_callback(adjointer, ADJ_MAT_DESTROY_CB,(void (*)(void)) petsc_mat_destroy_proc);
@@ -93,6 +97,42 @@ void petsc_vec_dot_product_proc(adj_vector x, adj_vector y, adj_scalar* val)
     (void) x;
     (void) y;
     (void) val;
+#endif
+}
+
+void petsc_vec_to_file_proc(adj_vector x, char* filename)
+{
+#ifdef HAVE_PETSC
+	FILE* istream;
+
+	if ((istream = fopen(filename, "r+")))
+	{
+		printf("Warning: Overwriting data in file '%s'\n", filename);
+		fclose(istream);
+	}
+
+  PetscViewer viewer;
+  PetscViewerBinaryOpen(PETSC_COMM_WORLD,filename,FILE_MODE_WRITE,&viewer);
+  VecView(petsc_vec_from_adj_vector(x),viewer);
+  PetscViewerDestroy(viewer);
+#else
+    (void) x;
+    (void) filename;
+#endif
+}
+
+void petsc_vec_from_file_proc(adj_vector *x, char* filename)
+{
+#ifdef HAVE_PETSC
+  Vec *vec=(Vec*) malloc(sizeof(Vec));
+  PetscViewer viewer;
+  PetscViewerBinaryOpen(PETSC_COMM_WORLD,filename,FILE_MODE_READ,&viewer);
+  VecLoad(viewer,PETSC_NULL,vec);
+  PetscViewerDestroy(viewer);
+  *x = petsc_vec_to_adj_vector(vec);
+#else
+    (void) x;
+    (void) filename;
 #endif
 }
 

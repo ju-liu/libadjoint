@@ -338,12 +338,15 @@ int adj_revolve_to_adjoint_equation(adj_adjointer* adjointer, int equation)
   int ierr, cs;
   int capo, oldcapo;
   int start_eqn, end_eqn;
-  int replay = ADJ_TRUE;
+  int loop = ADJ_TRUE;
+
+  adj_variable_data* var_data;
+  adj_variable var;
 
   ierr = adj_get_checkpoint_strategy(adjointer, &cs);
   if (ierr != ADJ_OK) return ierr;
 
-  while(replay)
+  while(loop)
   {
     switch (adjointer->revolve_data.current_action)
     {
@@ -353,7 +356,7 @@ int adj_revolve_to_adjoint_equation(adj_adjointer* adjointer, int equation)
 
         ierr = adj_timestep_start_equation(adjointer, oldcapo, &start_eqn);
         if (ierr != ADJ_OK) return ierr;
-        ierr = adj_timestep_end_equation(adjointer, capo, &end_eqn);
+        ierr = adj_timestep_end_equation(adjointer, capo-1, &end_eqn);
         if (ierr != ADJ_OK) return ierr;
 
         ierr = adj_replay_forward_equations(adjointer, start_eqn, end_eqn);
@@ -364,8 +367,37 @@ int adj_revolve_to_adjoint_equation(adj_adjointer* adjointer, int equation)
         break;
 
       case CACTION_TAKESHOT:
-        /* TODO */
-        adjointer->revolve_data.current_action = revolve(adjointer->revolve_data.revolve);
+        /* Record all forward variables in memory to disk */
+      	/* Loop over all variables */
+      	var_data = adjointer->vardata.firstnode;
+      	while (var_data!=NULL)
+      	{
+      		/* Ignore adjoint variables */
+      		if (var_data->equation<0)
+      		{
+      			var_data = var_data->next;
+      			continue;
+      		}
+
+        	var = adjointer->equations[var_data->equation].variable;
+      		if (var_data->storage.storage_memory_has_value && !var_data->storage.storage_disk_has_value)
+      		{
+      			adj_storage_data storage;
+
+      			char filename[ADJ_NAME_LEN];
+      			adj_variable_str(var, filename, ADJ_NAME_LEN);
+      			strncat(filename, ".dat", 4);
+
+						ierr = adj_storage_disk(var_data->storage.value, &storage);
+						if (ierr != ADJ_OK) return ierr;
+
+						ierr = adj_record_variable(adjointer, var, storage);
+						if (ierr != ADJ_OK) return ierr;
+      		}
+      		var_data = var_data->next;
+      	}
+
+      	adjointer->revolve_data.current_action = revolve(adjointer->revolve_data.revolve);
         break;
 
       case CACTION_FIRSTRUN:
@@ -379,18 +411,23 @@ int adj_revolve_to_adjoint_equation(adj_adjointer* adjointer, int equation)
             return ADJ_ERR_INVALID_INPUTS;
           }
         }
-        /* TODO: Online revolve wont work like this. Fix me! */
+        /* TODO: Online revolve will not work like this. Fix me! */
         else if (cs==ADJ_CHECKPOINT_REVOLVE_ONLINE) 
           revolve_turn(adjointer->revolve_data.revolve, adjointer->revolve_data.current_timestep);
 
-        replay=ADJ_FALSE;
+        loop=ADJ_FALSE;
         break;
 
       case CACTION_YOUTURN:
-        ierr = adj_replay_forward_equations(adjointer, adjointer->revolve_data.current_timestep, adjointer->revolve_data.current_timestep+1);
+        ierr = adj_timestep_start_equation(adjointer, adjointer->revolve_data.current_timestep, &start_eqn);
+        if (ierr != ADJ_OK) return ierr;
+        ierr = adj_timestep_end_equation(adjointer, adjointer->revolve_data.current_timestep, &end_eqn);
         if (ierr != ADJ_OK) return ierr;
 
-        replay=ADJ_FALSE;
+        ierr = adj_replay_forward_equations(adjointer, start_eqn, end_eqn);
+        if (ierr != ADJ_OK) return ierr;
+
+        loop=ADJ_FALSE;
         break;
 
       case CACTION_RESTORE:
@@ -578,6 +615,9 @@ int adj_replay_forward_equations(adj_adjointer* adjointer, int start_equation, i
     if (ierr!=ADJ_OK)
       return ierr;
   }
+
+  /* Forget everything that is not needed for future calculations */
+  /* TODO */
 
   return ADJ_OK;
 }

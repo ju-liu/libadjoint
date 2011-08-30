@@ -20,8 +20,8 @@ void source(adj_adjointer* adjointer, adj_variable variable, int ndepends, adj_v
 
 void test_checkpoint_revolve_offline(void)
 {
-  int steps = 4;
-  int snaps = 2;
+  int steps = 20;
+  int snaps = 3;
   int snaps_in_ram = -1;
   int timestep, nb_eqs;
   int cs;
@@ -35,6 +35,8 @@ void test_checkpoint_revolve_offline(void)
   adj_vector value;
   int dim=2;
   adj_storage_data storage;
+  char filename_fwd[ADJ_NAME_LEN];
+  char filename_adj[ADJ_NAME_LEN];
 
   /* Variables for the adjoint */  
   adj_variable lambda;
@@ -69,8 +71,6 @@ void test_checkpoint_revolve_offline(void)
   VecCreateSeq(PETSC_COMM_SELF, dim, &vec);
   VecSet(vec, 1.0);
   value = petsc_vec_to_adj_vector(&vec);
-  ierr = adj_storage_memory_copy(value, &storage);
-  adj_test_assert(ierr == ADJ_OK, "Should have worked");
 
   /* Initial condition */
   timestep = 0;
@@ -81,11 +81,22 @@ void test_checkpoint_revolve_offline(void)
   ierr = adj_register_equation(&adjointer, eqn, &cs);
   adj_test_assert(ierr == ADJ_OK, "Should have worked");
   printf("Checkpoint strategy for timestep %i: %i\n", 0, cs);
+  adj_test_assert(cs!=ADJ_CHECKPOINT_STORAGE_MEMORY, "Offline checkpointing should not use storage_memory");
   ierr = adj_destroy_equation(&eqn);
   adj_test_assert(ierr == ADJ_OK, "Should have worked");
 
-  ierr = adj_record_variable(&adjointer, u[1], storage);
-  adj_test_assert(ierr == ADJ_OK, "Should have worked");
+  if (cs==ADJ_CHECKPOINT_STORAGE_DISK)
+  {
+  	/* We do not need anything for the initial checkpoint */
+		//ierr = adj_storage_disk(value, &storage);
+		//adj_test_assert(ierr == ADJ_OK, "Should have worked");
+		//ierr = adj_record_variable(&adjointer, u[1], storage);
+		//adj_test_assert(ierr == ADJ_OK, "Should have worked");
+  }
+ 		ierr = adj_storage_memory_copy(value, &storage);
+ 		adj_test_assert(ierr == ADJ_OK, "Should have worked");
+    ierr = adj_record_variable(&adjointer, u[1], storage);
+    adj_test_assert(ierr == ADJ_OK, "Should have worked");
 
 
   /* A typical time loop */
@@ -102,13 +113,26 @@ void test_checkpoint_revolve_offline(void)
     adj_test_assert(ierr == ADJ_OK, "Should have worked");
     ierr = adj_register_equation(&adjointer, eqn, &cs);
     adj_test_assert(ierr == ADJ_OK, "Should have worked");
-  printf("Checkpoint strategty for timestep %i: %i\n", timestep, cs);
+    printf("Checkpoint strategy for timestep %i: %i\n", timestep, cs);
     ierr = adj_destroy_equation(&eqn);
     adj_test_assert(ierr == ADJ_OK, "Should have worked");
     adj_destroy_nonlinear_block(&V);
     adj_destroy_block(&B[0]);
     adj_destroy_block(&B[1]);
 
+
+    if (cs==ADJ_CHECKPOINT_STORAGE_DISK)
+    {
+//  		ierr = adj_storage_disk(value, &storage);
+//  		adj_test_assert(ierr == ADJ_OK, "Should have worked");
+  		/* A checkpoint needs the the old velocity only */
+//  		ierr = adj_record_variable(&adjointer, u[0], storage);
+//  		adj_test_assert(ierr == ADJ_OK, "Should have worked");
+  		//ierr = adj_record_variable(&adjointer, u[1], storage);
+  		//adj_test_assert(ierr == ADJ_OK, "Should have worked");
+    }
+ 		ierr = adj_storage_memory_copy(value, &storage);
+ 		adj_test_assert(ierr == ADJ_OK, "Should have worked");
     ierr = adj_record_variable(&adjointer, u[1], storage);
     adj_test_assert(ierr == ADJ_OK, "Should have worked");
   }
@@ -137,6 +161,14 @@ void test_checkpoint_revolve_offline(void)
 
     /* Now forget unnecessary variables */
     ierr = adj_forget_adjoint_equation(&adjointer, timestep);
+    adj_test_assert(ierr == ADJ_OK, "Should have worked");
+
+    sprintf(filename_fwd, "test_revolve_checkpoint_forward_%i.html", timestep);
+    sprintf(filename_adj, "test_revolve_checkpoint_adjoint_%i.html", timestep);
+
+    ierr = adj_adjointer_to_html(&adjointer, filename_fwd, ADJ_FORWARD);
+    adj_test_assert(ierr == ADJ_OK, "Should have worked");
+    ierr = adj_adjointer_to_html(&adjointer, filename_adj, ADJ_ADJOINT);
     adj_test_assert(ierr == ADJ_OK, "Should have worked");
 
   }

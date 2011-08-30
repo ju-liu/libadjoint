@@ -262,6 +262,7 @@ void adj_html_vars(FILE* fp, adj_adjointer* adjointer, int type)
   int i, ierr;
   char adj_name[ADJ_NAME_LEN];
   adj_variable adj_var;
+  adj_variable_data* data_ptr;
   fprintf(fp, "<div style=\"height:150px\"></div>\n");
   fprintf(fp, "<tr>\n");
   for (i = 0; i < adjointer->nequations; i++)
@@ -269,13 +270,34 @@ void adj_html_vars(FILE* fp, adj_adjointer* adjointer, int type)
     if (type!=ADJ_ADJOINT)
     {
 			adj_var = adjointer->equations[i].variable;
+
+			ierr = adj_has_variable_value(adjointer, adj_var);
+			/* Green color -> Variable is recorded, red otherwise */
+			if (ierr != ADJ_OK)
+				fprintf(fp, "<th class=\"headercell box_rotate redfont\">");
+			else
+				fprintf(fp, "<th class=\"headercell box_rotate greenfont\">");
+
+			/* Print the variablers name */
 			adj_var.type = type;
 			adj_variable_str(adj_var, adj_name, ADJ_NAME_LEN);
-			ierr = adj_has_variable_value(adjointer, adj_var);
-			if (ierr != ADJ_OK)
-				fprintf(fp, "<th class=\"headercell box_rotate redfont\">%s</th>\n", adj_name);
-			else
-				fprintf(fp, "<th class=\"headercell box_rotate greenfont\">%s</th>\n", adj_name);
+			fprintf(fp, "%s", adj_name);
+
+			/* Also print how the value is stored */
+			if (ierr==ADJ_OK) /* ierr from adj_has_variable_value is still valid */
+			{
+				fprintf(fp, " (");
+				ierr = adj_find_variable_data(&(adjointer->varhash), &adj_var, &data_ptr);
+				if (ierr==ADJ_OK)
+				{
+					if (data_ptr->storage.storage_memory_has_value)
+						fprintf(fp, "mem,");
+					if (data_ptr->storage.storage_disk_has_value)
+						fprintf(fp, "disk");
+				}
+				fprintf(fp, ")");
+			}
+			fprintf(fp, "</th>\n");
     }
     else
     {

@@ -34,6 +34,7 @@ int adj_timestep_set_functional_dependencies(adj_adjointer* adjointer, int times
 
 int adj_storage_memory_copy(adj_vector value, adj_storage_data* data);
 int adj_storage_memory_incref(adj_vector value, adj_storage_data* data);
+int adj_storage_disk(adj_vector value, adj_storage_data* data);
 int adj_storage_set_compare(adj_storage_data* data, int compare, adj_scalar comparison_tolerance);
 int adj_storage_set_overwrite(adj_storage_data* data, int overwrite);
 
@@ -48,9 +49,12 @@ int adj_find_functional_derivative_callback(adj_adjointer* adjointer, char* name
 int adj_get_variable_value(adj_adjointer* adjointer, adj_variable var, adj_vector* value);
 int adj_has_variable_value(adj_adjointer* adjointer, adj_variable var);
 int adj_forget_variable_value(adj_adjointer* adjointer, adj_variable_data* data);
+int adj_forget_variable_value_from_memory(adj_adjointer* adjointer, adj_variable_data* data);
+int adj_forget_variable_value_from_disk(adj_adjointer* adjointer, adj_variable_data* data);
 int adj_destroy_variable_data(adj_adjointer* adjointer, adj_variable_data* data);
 int adj_add_new_hash_entry(adj_adjointer* adjointer, adj_variable* var, adj_variable_data** data);
-int adj_record_variable_core(adj_adjointer* adjointer, adj_variable_data* data_ptr, adj_storage_data storage);
+int adj_record_variable_core_disk(adj_adjointer* adjointer, adj_variable_data* data_ptr, adj_storage_data storage);
+int adj_record_variable_core_memory(adj_adjointer* adjointer, adj_variable_data* data_ptr, adj_storage_data storage);
 int adj_record_variable_compare(adj_adjointer* adjointer, adj_variable_data* data_ptr, adj_variable var, adj_storage_data storage);
 
 int adj_append_unique(int** array, int* array_sz, int value);

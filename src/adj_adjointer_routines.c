@@ -24,6 +24,8 @@ int adj_create_adjointer(adj_adjointer* adjointer)
   adjointer->callbacks.vec_get_norm = NULL;
   adjointer->callbacks.vec_set_random = NULL;
   adjointer->callbacks.vec_dot_product = NULL;
+  adjointer->callbacks.vec_to_file = NULL;
+  adjointer->callbacks.vec_from_file = NULL;
 
   adjointer->callbacks.mat_duplicate = NULL;
   adjointer->callbacks.mat_axpy = NULL;
@@ -704,9 +706,19 @@ int adj_record_variable(adj_adjointer* adjointer, adj_variable var, adj_storage_
 
   assert(data_ptr != NULL);
 
-  if (!data_ptr->storage.has_value) /* If we don't have a value recorded, any compare or overwrite flags can be ignored */
+  if (storage.storage_memory_has_value && !data_ptr->storage.storage_memory_has_value) /* If we don't have a value recorded, any compare or overwrite flags can be ignored */
   {
-    return adj_record_variable_core(adjointer, data_ptr, storage);
+  	return adj_record_variable_core_memory(adjointer, data_ptr, storage);
+  }
+  else if (storage.storage_disk_has_value && !data_ptr->storage.storage_disk_has_value) /* If we don't have a value recorded, any compare or overwrite flags can be ignored */
+  {
+    /* Generate the filename */
+  	char filename[ADJ_NAME_LEN];
+  	adj_variable_str(var, filename, ADJ_NAME_LEN);
+  	strncat(filename, ".dat", 4);
+  	strncpy(storage.storage_disk_filename, filename, ADJ_NAME_LEN);
+
+    return adj_record_variable_core_disk(adjointer, data_ptr, storage);
   }
   else
   /* Sorry for the slight mess. The easiest way to understand this block is to build a 2x2 graph of
@@ -729,6 +741,12 @@ int adj_record_variable(adj_adjointer* adjointer, adj_variable var, adj_storage_
   {
     if (storage.compare)
     {
+      if (!storage.storage_memory_has_value) /* Comparing variables only works when recording to memory */ 
+      {
+        strncpy(adj_error_msg, "Overwriting of values and comparing with previously computed values currently only works when recording to memory.", ADJ_ERROR_MSG_BUF);
+        return ADJ_ERR_NOT_IMPLEMENTED;
+      }
+
       ierr = adj_record_variable_compare(adjointer, data_ptr, var, storage);
       compare_ierr = ierr;
       if (storage.overwrite)
@@ -738,7 +756,7 @@ int adj_record_variable(adj_adjointer* adjointer, adj_variable var, adj_storage_
         ierr = adj_forget_variable_value(adjointer, data_ptr);
         if (ierr != ADJ_OK) return ierr;
 
-        record_ierr = adj_record_variable_core(adjointer, data_ptr, storage); /* Overwrite the result anyway */
+        record_ierr = adj_record_variable_core_memory(adjointer, data_ptr, storage); /* Overwrite the result anyway */
         /* If no error happened from the recording, return the warning that the comparison failed;
            otherwise, return the (presumably more serious) error from the recording */
         if (record_ierr == ADJ_OK)
@@ -757,7 +775,7 @@ int adj_record_variable(adj_adjointer* adjointer, adj_variable var, adj_storage_
       {
         ierr = adj_forget_variable_value(adjointer, data_ptr);
         if (ierr != ADJ_OK) return ierr;
-        return adj_record_variable_core(adjointer, data_ptr, storage);
+        return adj_record_variable_core_memory(adjointer, data_ptr, storage);
       }
       else /* We don't have the overwrite flag */
       {
@@ -772,42 +790,61 @@ int adj_record_variable(adj_adjointer* adjointer, adj_variable var, adj_storage_
   return ADJ_OK; /* Should never get here, but keep the compiler quiet */
 }
 
-int adj_record_variable_core(adj_adjointer* adjointer, adj_variable_data* data_ptr, adj_storage_data storage)
+int adj_record_variable_core_memory(adj_adjointer* adjointer, adj_variable_data* data_ptr, adj_storage_data storage)
 {
   if (adjointer->callbacks.vec_duplicate == NULL)
   {
-    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "You have asked to compare a value against one already recorded, but no ADJ_VEC_DUPLICATE_CB callback has been provided.");
+    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "You have asked to record a value, but no ADJ_VEC_DUPLICATE_CB callback has been provided.");
     return ADJ_ERR_NEED_CALLBACK;
   }
   if (adjointer->callbacks.vec_axpy == NULL)
   {
-    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "You have asked to compare a value against one already recorded, but no ADJ_VEC_AXPY_CB callback has been provided.");
+    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "You have asked to record a value, but no ADJ_VEC_AXPY_CB callback has been provided.");
     return ADJ_ERR_NEED_CALLBACK;
   }
 
-  switch (storage.storage_type)
+  assert(storage.storage_memory_has_value);
+
+  switch (storage.storage_memory_type)
   {
     case ADJ_STORAGE_MEMORY_COPY:
-      if (adjointer->callbacks.vec_axpy == NULL) return ADJ_ERR_NEED_CALLBACK;
-      data_ptr->storage.storage_type = ADJ_STORAGE_MEMORY_COPY;
-      data_ptr->storage.has_value = storage.has_value;
+      data_ptr->storage.storage_memory_type = ADJ_STORAGE_MEMORY_COPY;
+      data_ptr->storage.storage_memory_has_value = storage.storage_memory_has_value;
       adjointer->callbacks.vec_duplicate(storage.value, &(data_ptr->storage.value));
       adjointer->callbacks.vec_axpy(&(data_ptr->storage.value), (adj_scalar)1.0, storage.value);
       break;
     case ADJ_STORAGE_MEMORY_INCREF:
-      data_ptr->storage = storage;
+      data_ptr->storage.storage_memory_type = ADJ_STORAGE_MEMORY_INCREF;
+      data_ptr->storage.storage_memory_has_value = storage.storage_memory_has_value;
       break;
     default:
-      strncpy(adj_error_msg, "Storage types other than ADJ_STORAGE_MEMORY_COPY and ADJ_STORAGE_MEMORY_INCREF  are not implemented yet.", ADJ_ERROR_MSG_BUF);
+      strncpy(adj_error_msg, "Memory storage types other than ADJ_STORAGE_MEMORY_COPY and ADJ_STORAGE_MEMORY_INCREF  are not implemented yet.", ADJ_ERROR_MSG_BUF);
       return ADJ_ERR_NOT_IMPLEMENTED;
   }
 
   return ADJ_OK;
 }
 
+int adj_record_variable_core_disk(adj_adjointer* adjointer, adj_variable_data* data_ptr, adj_storage_data storage)
+{
+  if (adjointer->callbacks.vec_to_file == NULL)
+  {
+    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "You have asked to record a value to disk, but no ADJ_VEC_TO_FILE_CB callback has been provided.");
+    return ADJ_ERR_NEED_CALLBACK;
+  }
+
+  assert(storage.storage_disk_has_value);
+
+  data_ptr->storage.storage_disk_has_value = storage.storage_disk_has_value;
+  strncpy(data_ptr->storage.storage_disk_filename, storage.storage_disk_filename, ADJ_NAME_LEN);
+  adjointer->callbacks.vec_to_file(storage.value, data_ptr->storage.storage_disk_filename);
+
+  return ADJ_OK;
+}
+
 int adj_record_variable_compare(adj_adjointer* adjointer, adj_variable_data* data_ptr, adj_variable var, adj_storage_data storage)
 {
-  if (data_ptr->storage.has_value && storage.compare)
+  if (data_ptr->storage.storage_memory_has_value && storage.compare)
   {
     adj_vector tmp;
     adj_scalar norm;
@@ -832,7 +869,7 @@ int adj_record_variable_compare(adj_adjointer* adjointer, adj_variable_data* dat
       snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "You have asked to compare a value against one already recorded, but no ADJ_VEC_DESTROY_CB callback has been provided.");
       return ADJ_ERR_NEED_CALLBACK;
     }
-    if (storage.storage_type != ADJ_STORAGE_MEMORY_COPY && storage.storage_type != ADJ_STORAGE_MEMORY_INCREF)
+    if (storage.storage_memory_type != ADJ_STORAGE_MEMORY_COPY && storage.storage_memory_type != ADJ_STORAGE_MEMORY_INCREF)
     {
       snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Sorry, comparison of values hasn't been generalised to storage types other than ADJ_STORAGE_MEMORY_COPY and ADJ_STORAGE_MEMORY_INCREF yet.");
       return ADJ_ERR_NOT_IMPLEMENTED;
@@ -960,6 +997,12 @@ int adj_register_data_callback(adj_adjointer* adjointer, int type, void (*fn)(vo
       break;
     case ADJ_VEC_SET_RANDOM_CB:
       adjointer->callbacks.vec_set_random = (void(*)(adj_vector* x)) fn;
+      break;
+    case ADJ_VEC_TO_FILE_CB:
+      adjointer->callbacks.vec_to_file = (void(*)(adj_vector x, char* filename)) fn;
+      break;
+    case ADJ_VEC_FROM_FILE_CB:
+      adjointer->callbacks.vec_from_file = (void(*)(adj_vector* x, char* filename)) fn;
       break;
 
     case ADJ_MAT_DUPLICATE_CB:
@@ -1095,7 +1138,7 @@ int adj_forget_adjoint_equation(adj_adjointer* adjointer, int equation)
   data = adjointer->vardata.firstnode;
   while (data != NULL)
   {
-    if (data->storage.has_value)
+    if (data->storage.storage_memory_has_value || data->storage.storage_disk_has_value)
     {
       should_we_delete = 1;
       /* Check the adjoint equations we could explicitly compute */
@@ -1236,7 +1279,7 @@ int adj_get_variable_value(adj_adjointer* adjointer, adj_variable var, adj_vecto
   ierr = adj_find_variable_data(&(adjointer->varhash), &var, &data_ptr);
   if (ierr != ADJ_OK) return ierr;
 
-  if (!data_ptr->storage.has_value)
+  if (!data_ptr->storage.storage_memory_has_value && !data_ptr->storage.storage_disk_has_value)
   {
     char buf[ADJ_NAME_LEN];
     adj_variable_str(var, buf, ADJ_NAME_LEN);
@@ -1246,14 +1289,22 @@ int adj_get_variable_value(adj_adjointer* adjointer, adj_variable var, adj_vecto
     return ierr;
   }
 
-  if ((data_ptr->storage.storage_type != ADJ_STORAGE_MEMORY_COPY) && (data_ptr->storage.storage_type != ADJ_STORAGE_MEMORY_INCREF))
+  /* Memory storage */
+  if (data_ptr->storage.storage_memory_has_value)
   {
-    ierr = ADJ_ERR_NOT_IMPLEMENTED;
-    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Sorry, storage strategies other than ADJ_STORAGE_MEMORY_COPY and ADJ_STORAGE_MEMORY_INCREF are not implemented yet.");
-    return ierr;
+   *value = data_ptr->storage.value;
+   return ADJ_OK;
   }
-
-  *value = data_ptr->storage.value;
+  /* Disk storage */
+  else if(data_ptr->storage.storage_disk_has_value)
+  {
+    if (adjointer->callbacks.vec_from_file == NULL)
+    {
+      snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "You have asked to get a value from disk, but no ADJ_VEC_FROM_FILE_CB callback has been provided.");
+      return ADJ_ERR_NEED_CALLBACK;
+    }
+    adjointer->callbacks.vec_from_file(value, data_ptr->storage.storage_disk_filename);
+  }
   return ADJ_OK;
 }
 
@@ -1271,7 +1322,7 @@ int adj_has_variable_value(adj_adjointer* adjointer, adj_variable var)
     return ierr;
   }
 
-  if (!data_ptr->storage.has_value)
+  if (!data_ptr->storage.storage_memory_has_value && !data_ptr->storage.storage_disk_has_value)
   {
     char buf[ADJ_NAME_LEN];
     adj_variable_str(var, buf, ADJ_NAME_LEN);
@@ -1285,15 +1336,53 @@ int adj_has_variable_value(adj_adjointer* adjointer, adj_variable var)
 
 int adj_forget_variable_value(adj_adjointer* adjointer, adj_variable_data* data)
 {
+  int ierr;
+
+  if (data->storage.storage_disk_has_value)
+  {
+    ierr = adj_forget_variable_value_from_disk(adjointer, data);
+    if (ierr != ADJ_OK) return ierr;
+  }
+  else if (data->storage.storage_memory_has_value)
+  {
+    ierr = adj_forget_variable_value_from_memory(adjointer, data);
+    if (ierr != ADJ_OK) return ierr;
+  }
+  return ADJ_OK;
+}
+
+int adj_forget_variable_value_from_disk(adj_adjointer* adjointer, adj_variable_data* data)
+{
+  FILE *istream;
+  int ierr;
+
+  assert(data->storage.storage_disk_has_value);
+  if (!(istream = fopen(data->storage.storage_disk_filename, "r+"))) { 
+    char buf[ADJ_NAME_LEN];
+    adj_variable_str(adjointer->equations[data->equation].variable, buf, ADJ_NAME_LEN);
+
+    ierr = ADJ_ERR_INVALID_INPUTS;
+    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Can not access variable %s in file '%s'.", buf, data->storage.storage_disk_filename);
+    return ierr;
+  }
+  fclose(istream); 
+
+  data->storage.storage_disk_has_value = ADJ_FALSE;
+  remove(data->storage.storage_disk_filename);
+  return ADJ_OK;
+}
+
+int adj_forget_variable_value_from_memory(adj_adjointer* adjointer, adj_variable_data* data)
+{
   if (adjointer->callbacks.vec_destroy == NULL)
   {
     strncpy(adj_error_msg, "Need vec_destroy data callback.", ADJ_ERROR_MSG_BUF);
     return ADJ_ERR_NEED_CALLBACK;
   }
 
-  assert(data->storage.has_value);
+  assert(data->storage.storage_memory_has_value);
 
-  data->storage.has_value = 0;
+  data->storage.storage_memory_has_value = ADJ_FALSE;
   adjointer->callbacks.vec_destroy(&(data->storage.value));
   return ADJ_OK;
 }
@@ -1325,7 +1414,7 @@ int adj_destroy_variable_data(adj_adjointer* adjointer, adj_variable_data* data)
     data->nadjoint_equations = 0;
   }
 
-  if (data->storage.has_value)
+  if (data->storage.storage_memory_has_value || data->storage.storage_disk_has_value)
     return adj_forget_variable_value(adjointer, data);
 
   return ADJ_OK;
@@ -1333,9 +1422,12 @@ int adj_destroy_variable_data(adj_adjointer* adjointer, adj_variable_data* data)
 
 int adj_storage_memory_copy(adj_vector value, adj_storage_data* data)
 {
-  data->has_value = ADJ_TRUE;
-  data->storage_type = ADJ_STORAGE_MEMORY_COPY;
+  data->storage_memory_has_value = ADJ_TRUE;
+  data->storage_memory_type = ADJ_STORAGE_MEMORY_COPY;
   data->value = value;
+
+  data->storage_disk_has_value = ADJ_FALSE;
+
   data->compare = ADJ_FALSE;
   data->comparison_tolerance = (adj_scalar)0.0;
   data->overwrite = ADJ_FALSE;
@@ -1344,9 +1436,26 @@ int adj_storage_memory_copy(adj_vector value, adj_storage_data* data)
 
 int adj_storage_memory_incref(adj_vector value, adj_storage_data* data)
 {
-  data->has_value = ADJ_TRUE;
-  data->storage_type = ADJ_STORAGE_MEMORY_INCREF;
+  data->storage_memory_has_value = ADJ_TRUE;
+  data->storage_memory_type = ADJ_STORAGE_MEMORY_INCREF;
   data->value = value;
+
+  data->storage_disk_has_value = ADJ_FALSE;
+
+  data->compare = ADJ_FALSE;
+  data->comparison_tolerance = (adj_scalar)0.0;
+  data->overwrite = ADJ_FALSE;
+  return ADJ_OK;
+}
+
+int adj_storage_disk(adj_vector value, adj_storage_data* data)
+{
+  data->value = value;
+  data->storage_memory_has_value = ADJ_FALSE;
+  data->storage_memory_type = ADJ_UNSET;
+
+  data->storage_disk_has_value = ADJ_TRUE;
+
   data->compare = ADJ_FALSE;
   data->comparison_tolerance = (adj_scalar)0.0;
   data->overwrite = ADJ_FALSE;
@@ -1410,8 +1519,9 @@ int adj_add_new_hash_entry(adj_adjointer* adjointer, adj_variable* var, adj_vari
   memset(*data, 0, sizeof(adj_variable_data));
   (*data)->equation = -1;
   (*data)->next = NULL;
-  (*data)->storage.has_value = 0;
-  (*data)->storage.storage_type = ADJ_UNSET;
+  (*data)->storage.storage_memory_has_value = 0;
+  (*data)->storage.storage_memory_type = ADJ_UNSET;
+  (*data)->storage.storage_disk_has_value = 0;
   (*data)->ntargeting_equations = 0;
   (*data)->targeting_equations = NULL;
   (*data)->ndepending_equations = 0;

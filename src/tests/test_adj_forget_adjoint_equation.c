@@ -206,7 +206,7 @@ int* has_values(adj_adjointer *adjointer, int nb_vars, adj_variable *vars)
   {
     ierr = adj_find_variable_data(&(adjointer->varhash), &vars[i], &data_ptr);
     if (ierr != ADJ_OK) adj_test_assert(ierr == ADJ_OK, "Should have passed");
-    ret[i] = data_ptr->storage.has_value;
+    ret[i] = data_ptr->storage.storage_memory_has_value;
   }
 
   return ret;
