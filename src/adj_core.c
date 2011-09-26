@@ -463,7 +463,7 @@ int adj_get_forward_equation(adj_adjointer* adjointer, int equation, adj_matrix*
   adj_equation fwd_eqn;
   adj_variable_data* fwd_data;
   adj_vector rhs_tmp;
-  int i;
+  int i, j;
   int has_output;
 
   if (adjointer->options[ADJ_ACTIVITY] == ADJ_ACTIVITY_NOTHING)
@@ -500,19 +500,53 @@ int adj_get_forward_equation(adj_adjointer* adjointer, int equation, adj_matrix*
   /* Check that we have all the forward values we need, before we start allocating stuff */
   for (i = 0; i < fwd_eqn.nblocks; i++)
   {
-    adj_variable other_adj_var;
+    adj_variable other_fwd_var;
+
+    /* Check that we have the nonlinear block dependencies */
+    if (fwd_eqn.blocks[i].has_nonlinear_block)
+    {
+    	adj_nonlinear_block nl_block;
+
+    	nl_block = fwd_eqn.blocks[i].nonlinear_block;
+    	for (j=0; j<nl_block.ndepends; j++)
+    	{
+    		other_fwd_var = nl_block.depends[j];
+    		ierr = adj_has_variable_value(adjointer, other_fwd_var);
+        if (ierr != ADJ_OK)
+        {
+          char buf[255];
+          adj_variable_str(other_fwd_var, buf, 255);
+          snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Need a value for variable %s, but don't have one.", buf);
+          return ADJ_ERR_NEED_VALUE;
+        }
+    	}
+    }
 
     /* Get the forward variable we want this to multiply */
-    other_adj_var = fwd_eqn.targets[i];
-    if (adj_variable_equal(fwd_var, &other_adj_var, 1)) continue; /* that term goes in the lhs */
+    other_fwd_var = fwd_eqn.targets[i];
+    if (adj_variable_equal(fwd_var, &other_fwd_var, 1)) continue; /* that term goes in the lhs */
     /* and now check it has a value */
-    ierr = adj_has_variable_value(adjointer, other_adj_var);
+    ierr = adj_has_variable_value(adjointer, other_fwd_var);
     if (ierr != ADJ_OK)
     {
       char buf[255];
-      adj_variable_str(other_adj_var, buf, 255);
+      adj_variable_str(other_fwd_var, buf, 255);
       snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Need a value for variable %s, but don't have one.", buf);
       return ADJ_ERR_NEED_VALUE;
+    }
+
+    /* Check the availability of the rhs dependencies */
+    for (j=0; j<fwd_eqn.nrhsdeps; j++)
+    {
+    	other_fwd_var = fwd_eqn.rhsdeps[j];
+    	ierr = adj_has_variable_value(adjointer, other_fwd_var);
+    	if (ierr != ADJ_OK)
+    	{
+    	  char buf[255];
+    	  adj_variable_str(other_fwd_var, buf, 255);
+    	  snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Need a value for variable %s, but don't have one.", buf);
+    	  return ADJ_ERR_NEED_VALUE;
+    	}
     }
   }
 
@@ -612,12 +646,12 @@ int adj_replay_forward_equations(adj_adjointer* adjointer, int start_equation, i
   for (equation=start_equation; equation<=stop_equation; equation++)
   {
     ierr = adj_get_forward_solution(adjointer, equation, &soln, &var);
-    if (ierr!=ADJ_OK)
-      return ierr;
-  }
+    if (ierr!=ADJ_OK) return ierr;
 
-  /* Forget everything that is not needed for future calculations */
-  /* TODO */
+    /* Forget everything that is not needed for future calculations */
+    ierr = adj_forget_forward_equation_until(adjointer, equation, stop_equation);
+    if (ierr!=ADJ_OK) return ierr;
+  }
 
   return ADJ_OK;
 }
