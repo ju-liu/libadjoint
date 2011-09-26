@@ -534,20 +534,20 @@ int adj_get_forward_equation(adj_adjointer* adjointer, int equation, adj_matrix*
       snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Need a value for variable %s, but don't have one.", buf);
       return ADJ_ERR_NEED_VALUE;
     }
+  }
 
-    /* Check the availability of the rhs dependencies */
-    for (j=0; j<fwd_eqn.nrhsdeps; j++)
-    {
-    	other_fwd_var = fwd_eqn.rhsdeps[j];
-    	ierr = adj_has_variable_value(adjointer, other_fwd_var);
-    	if (ierr != ADJ_OK)
-    	{
-    	  char buf[255];
-    	  adj_variable_str(other_fwd_var, buf, 255);
-    	  snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Need a value for variable %s, but don't have one.", buf);
-    	  return ADJ_ERR_NEED_VALUE;
-    	}
-    }
+  /* Check the availability of the rhs dependencies */
+  for (j=0; j<fwd_eqn.nrhsdeps; j++)
+  {
+  	other_fwd_var = fwd_eqn.rhsdeps[j];
+  	ierr = adj_has_variable_value(adjointer, other_fwd_var);
+  	if (ierr != ADJ_OK)
+  	{
+  	  char buf[255];
+  	  adj_variable_str(other_fwd_var, buf, 255);
+  	  snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Need a value for variable %s, but don't have one.", buf);
+  	  return ADJ_ERR_NEED_VALUE;
+  	}
   }
 
   /* --------------------------------------------------------------------------
