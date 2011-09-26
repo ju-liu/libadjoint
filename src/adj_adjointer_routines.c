@@ -1181,9 +1181,21 @@ int adj_forget_adjoint_equation(adj_adjointer* adjointer, int equation)
 
 /*
  * Forgets the forward variables that are not needed for any forward equations larger than "equation"
- * TODO: Do not delete checkpoint variables.
  */
 int adj_forget_forward_equation(adj_adjointer* adjointer, int equation)
+{
+  int last_equation, ierr;
+  ierr = adj_equation_count(adjointer, &last_equation);
+  if (ierr != ADJ_OK) return ierr;
+
+	return adj_forget_forward_equation_until(adjointer, equation, last_equation);
+}
+
+/*
+ * Like adj_forget_forward_equation, but assumes that the annotation stops at last_equation.
+ * TODO: Do not delete checkpoint variables.
+ */
+int adj_forget_forward_equation_until(adj_adjointer* adjointer, int equation, int last_equation)
 {
   adj_variable_data* data;
   int should_we_delete;
@@ -1211,7 +1223,7 @@ int adj_forget_forward_equation(adj_adjointer* adjointer, int equation)
       /* Check the forward equations we could explicitly compute */
       for (i = 0; i < data->ntargeting_equations; i++)
       {
-        if (equation < data->targeting_equations[i])
+        if (equation < data->targeting_equations[i] && data->targeting_equations[i] <= last_equation)
         {
           should_we_delete = 0;
           break;
@@ -1220,7 +1232,7 @@ int adj_forget_forward_equation(adj_adjointer* adjointer, int equation)
 
       for (i = 0; i < data->ndepending_equations; i++)
       {
-        if (equation < data->depending_equations[i])
+        if (equation < data->depending_equations[i] && data->depending_equations[i] <= last_equation)
         {
           should_we_delete = 0;
           break;
@@ -1231,7 +1243,7 @@ int adj_forget_forward_equation(adj_adjointer* adjointer, int equation)
          right-hand-sides for */
       for (i = 0; i < data->nrhs_equations; i++)
       {
-        if (equation < data->rhs_equations[i])
+        if (equation < data->rhs_equations[i] && data->rhs_equations[i] <= last_equation)
         {
           should_we_delete = 0;
           break;
@@ -1250,7 +1262,6 @@ int adj_forget_forward_equation(adj_adjointer* adjointer, int equation)
 
   return ADJ_OK;
 }
-
 int adj_find_operator_callback(adj_adjointer* adjointer, int type, char* name, void (**fn)(void))
 {
   adj_op_callback_list* cb_list_ptr;

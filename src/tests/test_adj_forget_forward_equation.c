@@ -142,7 +142,6 @@ void test_adj_forget_forward_equation(void)
   }
 
   /* No variables should be stored anymore ... */
-
   var_data=adjointer.vardata.firstnode;
   while(var_data!=NULL)
   {
