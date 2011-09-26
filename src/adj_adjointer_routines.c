@@ -1179,6 +1179,78 @@ int adj_forget_adjoint_equation(adj_adjointer* adjointer, int equation)
   return ADJ_OK;
 }
 
+/*
+ * Forgets the forward variables that are not needed for any forward equations larger than "equation"
+ * TODO: Do not delete checkpoint variables.
+ */
+int adj_forget_forward_equation(adj_adjointer* adjointer, int equation)
+{
+  adj_variable_data* data;
+  int should_we_delete;
+  int i;
+  int ierr;
+
+  if (adjointer->options[ADJ_ACTIVITY] == ADJ_ACTIVITY_NOTHING) return ADJ_OK;
+
+  if (equation >= adjointer->nequations)
+  {
+    strncpy(adj_error_msg, "No such equation.", ADJ_ERROR_MSG_BUF);
+    return ADJ_ERR_INVALID_INPUTS;
+  }
+
+  data = adjointer->vardata.firstnode;
+  while (data != NULL)
+  {
+  	/* Only forget forward variables */
+  	if (!adjointer->equations[data->equation].targets->type==ADJ_FORWARD)
+  		continue;
+
+    if (data->storage.storage_memory_has_value || data->storage.storage_disk_has_value)
+    {
+      should_we_delete = 1;
+      /* Check the forward equations we could explicitly compute */
+      for (i = 0; i < data->ntargeting_equations; i++)
+      {
+        if (equation < data->targeting_equations[i])
+        {
+          should_we_delete = 0;
+          break;
+        }
+      }
+
+      for (i = 0; i < data->ndepending_equations; i++)
+      {
+        if (equation < data->depending_equations[i])
+        {
+          should_we_delete = 0;
+          break;
+        }
+      }
+
+      /* Also check that it isn't necessary for any timesteps we still have to compute
+         right-hand-sides for */
+      for (i = 0; i < data->nrhs_equations; i++)
+      {
+        if (equation < data->rhs_equations[i])
+        {
+          should_we_delete = 0;
+          break;
+        }
+      }
+
+      if (should_we_delete)
+      {
+        ierr = adj_forget_variable_value(adjointer, data);
+        if (ierr != ADJ_OK) return ierr;
+      }
+    }
+
+    data = data->next;
+  }
+
+  return ADJ_OK;
+}
+
 int adj_find_operator_callback(adj_adjointer* adjointer, int type, char* name, void (**fn)(void))
 {
   adj_op_callback_list* cb_list_ptr;
@@ -1343,7 +1415,7 @@ int adj_forget_variable_value(adj_adjointer* adjointer, adj_variable_data* data)
     ierr = adj_forget_variable_value_from_disk(adjointer, data);
     if (ierr != ADJ_OK) return ierr;
   }
-  else if (data->storage.storage_memory_has_value)
+  if (data->storage.storage_memory_has_value)
   {
     ierr = adj_forget_variable_value_from_memory(adjointer, data);
     if (ierr != ADJ_OK) return ierr;

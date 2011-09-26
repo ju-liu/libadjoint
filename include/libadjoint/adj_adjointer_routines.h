@@ -42,6 +42,7 @@ int adj_storage_set_overwrite(adj_storage_data* data, int overwrite);
 int adj_set_option(adj_adjointer* adjointer, int option, int choice);
 int adj_variable_get_ndepending_timesteps(adj_adjointer* adjointer, adj_variable variable, char* functional, int* ntimesteps);
 int adj_variable_get_depending_timestep(adj_adjointer* adjointer, adj_variable variable, char* functional, int k, int* timestep);
+int adj_forget_forward_equation(adj_adjointer* adjointer, int equation);
 
 int adj_find_operator_callback(adj_adjointer* adjointer, int type, char* name, void (**fn)(void));
 int adj_find_functional_callback(adj_adjointer* adjointer, char* name, void (**fn)(adj_adjointer* adjointer, int timestep, int ndepends, adj_variable* variables, adj_vector* dependencies, char* name, adj_scalar* output));

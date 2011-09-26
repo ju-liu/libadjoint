@@ -48,5 +48,5 @@ extern "C" void revolve_turn(CRevolve r, int fine) { ((Revolve*) r.ptr)->turn(fi
 
 const char* revolve_caction_string(CACTION action) { 
  static const char *CACTION_NAME[] = { "advance", "takeshot", "restore", "firsturn", "youturn", "terminate", "error"};
-  return CACTION_NAME[action]; 
+ return CACTION_NAME[action];
 };

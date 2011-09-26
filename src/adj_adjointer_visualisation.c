@@ -291,13 +291,27 @@ void adj_html_vars(FILE* fp, adj_adjointer* adjointer, int type)
 				if (ierr==ADJ_OK)
 				{
 					if (data_ptr->storage.storage_memory_has_value)
-						fprintf(fp, "mem,");
+						fprintf(fp, "mem");
 					if (data_ptr->storage.storage_disk_has_value)
-						fprintf(fp, "disk");
+						fprintf(fp, ",disk");
 				}
 				fprintf(fp, ")");
 			}
 			fprintf(fp, "</th>\n");
+    }
+    else if (adjointer->functional_derivative_list.firstnode==NULL)
+    {
+    	/* Adjoint output but no functional specified... */
+    	fprintf(fp, "<th>\n");
+    	adj_var = adjointer->equations[i].variable;
+			adj_var.type = type;
+			adj_variable_str(adj_var, adj_name, ADJ_NAME_LEN);
+			ierr = adj_has_variable_value(adjointer, adj_var);
+			if (ierr != ADJ_OK)
+				fprintf(fp, "<div class=\"headercell box_rotate redfont\">%s</div>\n", adj_name);
+			else
+				fprintf(fp, "<div class=\"headercell box_rotate greenfont\">%s</div>\n", adj_name);
+    	fprintf(fp, "</th>\n");
     }
     else
     {
