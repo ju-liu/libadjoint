@@ -26,6 +26,18 @@ int adj_adjointer_check_consistency(adj_adjointer* adjointer)
   return ADJ_OK;
 }
 
+int adj_adjointer_check_checkpoints(adj_adjointer* adjointer)
+{
+	/* TODO */
+	int i;
+	for (i=0; i<adjointer->nequations; i++)
+	{
+		if (adjointer->equations[i].checkpoint_type!=ADJ_CHECKPOINT_STORAGE_NONE)
+			printf("Equation %i has checkpoint type %i", i, adjointer->equations[i].checkpoint_type);
+	}
+	return ADJ_OK;
+}
+
 int adj_test_block_action_transpose(adj_adjointer* adjointer, adj_block block, adj_vector model_input, adj_vector model_output, int N, adj_scalar tol)
 {
   int i;
