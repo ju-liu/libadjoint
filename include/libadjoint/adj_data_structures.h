@@ -67,6 +67,7 @@ typedef struct
   int nrhsdeps;
   adj_variable* rhsdeps;
   void* rhs_context;
+  int checkpoint_type; /* Can we restart the computation from this equation using checkpoints? */
 } adj_equation;
 
 typedef struct
@@ -82,9 +83,11 @@ typedef struct
   /* for ADJ_STORAGE_MEMORY */
   int storage_memory_type;
   int storage_memory_has_value;
+  int storage_memory_is_checkpoint; /* checkpoints are not deleted by adj_forget_forward_equation */
 
   /* for ADJ_STORAGE_DISK */
   int storage_disk_has_value;
+  int storage_disk_is_checkpoint; /* checkpoints are not deleted by adj_forget_forward_equation */
   char storage_disk_filename[ADJ_NAME_LEN];
 
   /* POD, temporal interpolation, ... */

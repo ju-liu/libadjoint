@@ -48,6 +48,7 @@ module libadjoint_data_structures
     integer(kind=c_int) :: nrhsdeps
     type(c_ptr) :: rhsdeps
     type(c_ptr) :: rhs_context
+    integer(kind=c_int) :: checkpoint_type
   end type adj_equation
 
   type, bind(c) :: adj_data_callbacks
@@ -152,8 +153,10 @@ module libadjoint_data_structures
 
     integer(kind=c_int) :: storage_memory_type
     integer(kind=c_int) :: storage_memory_has_value
+    integer(kind=c_int) :: storage_memory_is_checkpoint
 
     integer(kind=c_int) :: storage_disk_has_value
+    integer(kind=c_int) :: storage_disk_is_checkpoint
     type(c_ptr) :: storage_disk_filename
   end type adj_storage_data
 
@@ -819,6 +822,14 @@ module libadjoint
       integer(kind=c_int), intent(in), value :: overwrite
       integer(kind=c_int) :: ierr
     end function adj_storage_set_overwrite_c
+
+    function adj_storage_set_checkpoint_c(mem, checkpoint) result(ierr) bind(c, name='adj_storage_set_checkpoint')
+      use libadjoint_data_structures
+      use iso_c_binding
+      type(adj_storage_data), intent(inout) :: mem
+      integer(kind=c_int), intent(in), value :: checkpoint
+      integer(kind=c_int) :: ierr
+    end function adj_storage_set_checkpoint_c
 
     function adj_get_adjoint_equation_c(adjointer, equation, functional, lhs, rhs, variable) result(ierr) &
             & bind(c, name='adj_get_adjoint_equation')
@@ -1520,6 +1531,22 @@ module libadjoint
 
     ierr = adj_storage_set_overwrite_c(data, overwrite_c)
   end function adj_storage_set_overwrite
+
+  function adj_storage_set_checkpoint(data, checkpoint) result(ierr)
+    type(adj_storage_data), intent(inout) :: data
+    logical, intent(in) :: checkpoint
+    integer(kind=c_int) :: ierr
+
+    integer(kind=c_int) :: checkpoint_c
+
+    if (checkpoint) then
+      checkpoint_c = ADJ_TRUE
+    else
+      checkpoint_c = ADJ_FALSE
+    end if
+
+    ierr = adj_storage_set_checkpoint_c(data, checkpoint_c)
+  end function adj_storage_set_checkpoint
 
   function adj_block_set_test_hermitian(block, test_hermitian, number_of_tests, tolerance) result(ierr)
     use libadjoint_data_structures
