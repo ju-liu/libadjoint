@@ -1409,6 +1409,14 @@ int adj_get_variable_value(adj_adjointer* adjointer, adj_variable var, adj_vecto
 
 int adj_has_variable_value(adj_adjointer* adjointer, adj_variable var)
 {
+  if((adj_has_variable_value_memory(adjointer, var)==ADJ_OK) || (adj_has_variable_value_disk(adjointer, var)==ADJ_OK))
+  	return ADJ_OK;
+  else
+  	return ADJ_ERR_NEED_VALUE;
+}
+
+int adj_has_variable_value_memory(adj_adjointer* adjointer, adj_variable var)
+{
   int ierr;
   adj_variable_data* data_ptr;
 
@@ -1421,15 +1429,29 @@ int adj_has_variable_value(adj_adjointer* adjointer, adj_variable var)
     return ierr;
   }
 
-  if (!data_ptr->storage.storage_memory_has_value && !data_ptr->storage.storage_disk_has_value)
+  if (!data_ptr->storage.storage_memory_has_value)
+    return ADJ_ERR_NEED_VALUE;
+
+  return ADJ_OK;
+}
+
+int adj_has_variable_value_disk(adj_adjointer* adjointer, adj_variable var)
+{
+  int ierr;
+  adj_variable_data* data_ptr;
+
+  ierr = adj_find_variable_data(&(adjointer->varhash), &var, &data_ptr);
+  if (ierr != ADJ_OK)
   {
     char buf[ADJ_NAME_LEN];
     adj_variable_str(var, buf, ADJ_NAME_LEN);
-
-    ierr = ADJ_ERR_NEED_VALUE;
-    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Need a value for %s, but don't have one recorded.", buf);
+    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Need a value for %s, but have never seen it.", buf);
     return ierr;
   }
+
+  if (!data_ptr->storage.storage_disk_has_value)
+    return ADJ_ERR_NEED_VALUE;
+
   return ADJ_OK;
 }
 

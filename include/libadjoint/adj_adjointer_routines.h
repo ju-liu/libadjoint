@@ -51,6 +51,8 @@ int adj_find_functional_callback(adj_adjointer* adjointer, char* name, void (**f
 int adj_find_functional_derivative_callback(adj_adjointer* adjointer, char* name, void (**fn)(adj_adjointer* adjointer, adj_variable variable, int ndepends, adj_variable* variables, adj_vector* dependencies, char* name, adj_vector* output));
 int adj_get_variable_value(adj_adjointer* adjointer, adj_variable var, adj_vector* value);
 int adj_has_variable_value(adj_adjointer* adjointer, adj_variable var);
+int adj_has_variable_value_memory(adj_adjointer* adjointer, adj_variable var);
+int adj_has_variable_value_disk(adj_adjointer* adjointer, adj_variable var);
 int adj_forget_variable_value(adj_adjointer* adjointer, adj_variable_data* data);
 int adj_forget_variable_value_from_memory(adj_adjointer* adjointer, adj_variable_data* data);
 int adj_forget_variable_value_from_disk(adj_adjointer* adjointer, adj_variable_data* data);
