@@ -88,16 +88,12 @@ void test_checkpoint_revolve_offline(void)
   if (cs==ADJ_CHECKPOINT_STORAGE_DISK)
   {
   	/* We do not need anything for the initial checkpoint */
-		//ierr = adj_storage_disk(value, &storage);
-		//adj_test_assert(ierr == ADJ_OK, "Should have worked");
-		//ierr = adj_record_variable(&adjointer, u[1], storage);
-		//adj_test_assert(ierr == ADJ_OK, "Should have worked");
   }
- 		ierr = adj_storage_memory_copy(value, &storage);
- 		adj_test_assert(ierr == ADJ_OK, "Should have worked");
-    ierr = adj_record_variable(&adjointer, u[1], storage);
-    adj_test_assert(ierr == ADJ_OK, "Should have worked");
 
+  ierr = adj_storage_memory_copy(value, &storage);
+	adj_test_assert(ierr == ADJ_OK, "Should have worked");
+  ierr = adj_record_variable(&adjointer, u[1], storage);
+  adj_test_assert(ierr == ADJ_OK, "Should have worked");
 
   /* A typical time loop */
   for (timestep=1;timestep<steps; timestep++)
@@ -123,13 +119,15 @@ void test_checkpoint_revolve_offline(void)
 
     if (cs==ADJ_CHECKPOINT_STORAGE_DISK)
     {
-//  		ierr = adj_storage_disk(value, &storage);
-//  		adj_test_assert(ierr == ADJ_OK, "Should have worked");
+  		ierr = adj_storage_disk(value, &storage);
+  		adj_test_assert(ierr == ADJ_OK, "Should have worked");
+  		ierr = adj_storage_set_checkpoint(&storage, ADJ_TRUE);
+  		adj_test_assert(ierr == ADJ_OK, "Should have worked");
   		/* A checkpoint needs the the old velocity only */
-//  		ierr = adj_record_variable(&adjointer, u[0], storage);
-//  		adj_test_assert(ierr == ADJ_OK, "Should have worked");
-  		//ierr = adj_record_variable(&adjointer, u[1], storage);
-  		//adj_test_assert(ierr == ADJ_OK, "Should have worked");
+  		ierr = adj_record_variable(&adjointer, u[0], storage);
+  		adj_test_assert(ierr == ADJ_OK, "Should have worked");
+  		ierr = adj_record_variable(&adjointer, u[1], storage);
+  		adj_test_assert(ierr == ADJ_OK, "Should have worked");
     }
  		ierr = adj_storage_memory_copy(value, &storage);
  		adj_test_assert(ierr == ADJ_OK, "Should have worked");
@@ -137,14 +135,19 @@ void test_checkpoint_revolve_offline(void)
     adj_test_assert(ierr == ADJ_OK, "Should have worked");
   }
 
+  ierr = adj_equation_count(&adjointer, &nb_eqs);
+  adj_test_assert(ierr == ADJ_OK, "Should have worked");
+  adj_test_assert(nb_eqs  == steps, "Number of timesteps should be the same the number of registered equations");
+
+  /* Forget the variables of the previous last timestep */
+  ierr = adj_forget_forward_equation(&adjointer, steps-2);
+  adj_test_assert(ierr == ADJ_OK, "Should have worked");
+
+
   ierr = adj_adjointer_to_html(&adjointer, "test_revolve_checkpoint_forward.html", ADJ_FORWARD);
   adj_test_assert(ierr == ADJ_OK, "Should have worked");
   ierr = adj_adjointer_to_html(&adjointer, "test_revolve_checkpoint_adjoint.html", ADJ_ADJOINT);
   adj_test_assert(ierr == ADJ_OK, "Should have worked");
-
-  ierr = adj_equation_count(&adjointer, &nb_eqs);
-  adj_test_assert(ierr == ADJ_OK, "Should have worked");
-  adj_test_assert(nb_eqs  == steps, "Number of timesteps should be the same the number of registered equations");
 
   /* A typical adjoint solve */
   for (timestep=steps-1;timestep>=0; timestep--)

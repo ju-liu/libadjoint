@@ -141,13 +141,14 @@ void test_adj_forget_forward_equation(void)
     adj_test_assert(ierr == ADJ_OK, "Should have worked");
   }
 
-  /* No variables should be stored anymore ... */
+  /* Besides checkpoints, no variables should be stored anymore ... */
   var_data=adjointer.vardata.firstnode;
   while(var_data!=NULL)
   {
-  	adj_test_assert(var_data->storage.storage_memory_has_value==ADJ_FALSE, "Should have worked");
-  	adj_test_assert(var_data->storage.storage_disk_has_value==ADJ_FALSE, "Should have worked");
-  	var_data=var_data->next;
+ 		adj_test_assert(var_data->storage.storage_memory_has_value==var_data->storage.storage_memory_is_checkpoint, "Should have worked");
+ 		adj_test_assert(var_data->storage.storage_disk_has_value==var_data->storage.storage_disk_is_checkpoint, "Should have worked");
+
+ 		var_data=var_data->next;
   }
 
 }
