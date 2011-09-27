@@ -278,7 +278,7 @@ void adj_html_vars(FILE* fp, adj_adjointer* adjointer, int type)
 			else
 				fprintf(fp, "<th class=\"headercell box_rotate greenfont\">");
 
-			/* Print the variablers name */
+			/* Print the variables name */
 			adj_var.type = type;
 			adj_variable_str(adj_var, adj_name, ADJ_NAME_LEN);
 			fprintf(fp, "%s", adj_name);
@@ -286,14 +286,27 @@ void adj_html_vars(FILE* fp, adj_adjointer* adjointer, int type)
 			/* Also print how the value is stored */
 			if (ierr==ADJ_OK) /* ierr from adj_has_variable_value is still valid */
 			{
+				int comma = 0;
 				fprintf(fp, " (");
 				ierr = adj_find_variable_data(&(adjointer->varhash), &adj_var, &data_ptr);
 				if (ierr==ADJ_OK)
 				{
 					if (data_ptr->storage.storage_memory_has_value)
+					{
+						if (comma) fprintf(fp, ",");
+						else comma = 1;
 						fprintf(fp, "mem");
+						if (data_ptr->storage.storage_memory_is_checkpoint)
+							fprintf(fp, "(checkpoint)");
+					}
 					if (data_ptr->storage.storage_disk_has_value)
-						fprintf(fp, ",disk");
+					{
+						if (comma) fprintf(fp, ",");
+						else comma = 1;
+						fprintf(fp, "disk");
+						if (data_ptr->storage.storage_disk_is_checkpoint)
+							fprintf(fp, "(checkpoint)");
+					}
 				}
 				fprintf(fp, ")");
 			}
