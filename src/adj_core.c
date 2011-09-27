@@ -407,7 +407,7 @@ int adj_revolve_to_adjoint_equation(adj_adjointer* adjointer, int equation)
           /* Check that the forward simulation was run to the last timestep */
           if (adjointer->revolve_data.current_timestep != adjointer->revolve_data.steps-1)
           {
-            snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "You asked for an adjoint solution after solving timestep %i, but you told revolve that you are going to solve %i timesteps.", adjointer->revolve_data.current_timestep, adjointer->revolve_data.steps);
+            snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "You asked for an adjoint solution after solving %i forward timestep, but you told revolve that you are going to solve %i forward timesteps.", adjointer->revolve_data.current_timestep, adjointer->revolve_data.steps);
             return ADJ_ERR_INVALID_INPUTS;
           }
         }
@@ -537,9 +537,11 @@ int adj_get_forward_equation(adj_adjointer* adjointer, int equation, adj_matrix*
   }
 
   /* Check the availability of the rhs dependencies */
-  for (j=0; j<fwd_eqn.nrhsdeps; j++)
+  for (i=0; i<fwd_eqn.nrhsdeps; i++)
   {
-  	other_fwd_var = fwd_eqn.rhsdeps[j];
+  	adj_variable other_fwd_var;
+
+  	other_fwd_var = fwd_eqn.rhsdeps[i];
   	ierr = adj_has_variable_value(adjointer, other_fwd_var);
   	if (ierr != ADJ_OK)
   	{
