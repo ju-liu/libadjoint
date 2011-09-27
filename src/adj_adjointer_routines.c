@@ -498,14 +498,19 @@ int adj_register_equation(adj_adjointer* adjointer, adj_equation equation, int* 
     }
   }
 
-  /* Set the checkpointing flag */
+  /* Set the checkpoint flag */
+  /* TODO: Do all this logic in adj_create_equation and set the flag in adj_create_equation??? */
   *checkpoint_storage = ADJ_CHECKPOINT_STORAGE_NONE;
 
   ierr = adj_get_checkpoint_strategy(adjointer, &cs);
   if (ierr != ADJ_OK) return ierr;
 
   if ((cs==ADJ_CHECKPOINT_REVOLVE_OFFLINE) || (cs==ADJ_CHECKPOINT_REVOLVE_MULTISTAGE) || (cs==ADJ_CHECKPOINT_REVOLVE_ONLINE))
-    adj_get_revolve_checkpoint_storage(adjointer, equation, checkpoint_storage);
+  {
+    ierr = adj_get_revolve_checkpoint_storage(adjointer, equation, checkpoint_storage);
+    if (ierr != ADJ_OK) return ierr;
+    adjointer->equations[adjointer->nequations - 1].checkpoint_type = *checkpoint_storage;
+  }
 
   return ADJ_OK;
 }
@@ -1193,7 +1198,6 @@ int adj_forget_forward_equation(adj_adjointer* adjointer, int equation)
 
 /*
  * Like adj_forget_forward_equation, but assumes that the annotation stops at last_equation.
- * TODO: Do not delete checkpoint variables.
  */
 int adj_forget_forward_equation_until(adj_adjointer* adjointer, int equation, int last_equation)
 {
@@ -1214,8 +1218,11 @@ int adj_forget_forward_equation_until(adj_adjointer* adjointer, int equation, in
   while (data != NULL)
   {
   	/* Only forget forward variables */
-  	if (!adjointer->equations[data->equation].targets->type==ADJ_FORWARD)
+  	if (adjointer->equations[data->equation].targets->type!=ADJ_FORWARD)
+  	{
+  		data = data->next;
   		continue;
+  	}
 
     if (data->storage.storage_memory_has_value || data->storage.storage_disk_has_value)
     {
@@ -1252,8 +1259,17 @@ int adj_forget_forward_equation_until(adj_adjointer* adjointer, int equation, in
 
       if (should_we_delete)
       {
-        ierr = adj_forget_variable_value(adjointer, data);
-        if (ierr != ADJ_OK) return ierr;
+      	/* Forget variables that are not checkpoints */
+      	if (data->storage.storage_disk_has_value && !data->storage.storage_disk_is_checkpoint)
+      	{
+      		ierr = adj_forget_variable_value_from_disk(adjointer, data);
+      		if (ierr != ADJ_OK) return ierr;
+      	}
+      	if (data->storage.storage_memory_has_value && !data->storage.storage_memory_is_checkpoint)
+      	{
+      		ierr = adj_forget_variable_value_from_memory(adjointer, data);
+      		if (ierr != ADJ_OK) return ierr;
+      	}
       }
     }
 
@@ -1574,6 +1590,19 @@ int adj_storage_set_overwrite(adj_storage_data* data, int overwrite)
 
   data->overwrite = overwrite;
   return ADJ_OK;
+}
+
+int adj_storage_set_checkpoint(adj_storage_data* data, int checkpoint)
+{
+	if (checkpoint != ADJ_TRUE && checkpoint != ADJ_FALSE)
+	{
+	  snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "checkpoint must either be ADJ_TRUE or ADJ_FALSE.");
+	  return ADJ_ERR_INVALID_INPUTS;
+	}
+
+	data->storage_memory_is_checkpoint=checkpoint;
+	data->storage_disk_is_checkpoint=checkpoint;
+	return ADJ_OK;
 }
 
 int adj_add_new_hash_entry(adj_adjointer* adjointer, adj_variable* var, adj_variable_data** data)
