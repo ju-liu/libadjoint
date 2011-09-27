@@ -126,8 +126,8 @@ void test_checkpoint_revolve_offline(void)
   		/* A checkpoint needs the the old velocity only */
   		ierr = adj_record_variable(&adjointer, u[0], storage);
   		adj_test_assert(ierr == ADJ_OK, "Should have worked");
-  		ierr = adj_record_variable(&adjointer, u[1], storage);
-  		adj_test_assert(ierr == ADJ_OK, "Should have worked");
+  		//ierr = adj_record_variable(&adjointer, u[1], storage);
+  		//adj_test_assert(ierr == ADJ_OK, "Should have worked");
     }
  		ierr = adj_storage_memory_copy(value, &storage);
  		adj_test_assert(ierr == ADJ_OK, "Should have worked");

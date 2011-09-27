@@ -95,7 +95,7 @@ typedef struct
 
 typedef struct adj_variable_data
 {
-  int equation; /* the equation that solves for this variable */
+  int equation; /* the equation that solves for this variable. If the data belongs to a adjoint variable, this will be set to -1 */
 
   int ntargeting_equations; /* any equations that target this variable */
   int* targeting_equations;

@@ -28,82 +28,172 @@ int adj_adjointer_check_consistency(adj_adjointer* adjointer)
 
 int adj_adjointer_check_checkpoints(adj_adjointer* adjointer)
 {
+	int cp_num, cp_iter, need_checkpoint;
+	int* cp_eqns;
 	int eqn_num, i, j, ierr;
 	adj_equation eqn;
 	char* checkpoint_type_str;
 	char adj_checkpoint_types_str[4][ADJ_ERROR_MSG_BUF] = {"ADJ_CHECKPOINT_STORAGE_NONE",
   						"ADJ_CHECKPOINT_STORAGE_MEMORY","ADJ_CHECKPOINT_STORAGE_DISK"};
 
+
 	if (adjointer->options[ADJ_ACTIVITY] == ADJ_ACTIVITY_NOTHING) return ADJ_OK;
 
+	/* Query the checkpoint equations */
+	cp_num = 0;
+	/* First get the number of checkpoints */
 	for (eqn_num=0; eqn_num<adjointer->nequations; eqn_num++)
 	{
 		eqn = adjointer->equations[eqn_num];
-
+		if (eqn.checkpoint_type != ADJ_CHECKPOINT_STORAGE_NONE)
+			cp_num++;
+	}
+	cp_eqns = (int*) malloc(sizeof(int)*cp_num);
+	ADJ_CHKMALLOC(cp_eqns);
+	/* Then get the equation number of each checkpoint */
+	i=0;
+	for (eqn_num=0; eqn_num<adjointer->nequations; eqn_num++)
+	{
+		eqn = adjointer->equations[eqn_num];
 		if (eqn.checkpoint_type != ADJ_CHECKPOINT_STORAGE_NONE)
 		{
-			checkpoint_type_str = adj_checkpoint_types_str[eqn.checkpoint_type];
-			printf("Equation %i has checkpoint type %s\n", eqn_num, checkpoint_type_str);
-
-		  /* Check that we have all the forward values we need to restart the simulation */
-		  for (i=0; i<eqn.nblocks; i++)
-		  {
-		    adj_variable fwd_var;
-
-		    /* Check that we have the nonlinear block dependencies */
-		    if (eqn.blocks[i].has_nonlinear_block)
-		    {
-		    	adj_nonlinear_block nl_block;
-
-		    	nl_block = eqn.blocks[i].nonlinear_block;
-		    	for (j=0; j<nl_block.ndepends; j++)
-		    	{
-		    		fwd_var = nl_block.depends[j];
-
-		    	  if (strcmp(checkpoint_type_str, "ADJ_CHECKPOINT_STORAGE_MEMORY")==0)
-		    	  	if ((adj_has_variable_value_memory(adjointer, fwd_var)!=ADJ_OK) || (adj_is_checkpoint_variable_memory(adjointer, fwd_var)!=ADJ_TRUE))
-							{
-								char buf[255];
-								adj_variable_str(fwd_var, buf, 255);
-								snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Need a memory checkpoint value for variable %s, but don't have one.", buf);
-								return ADJ_ERR_NEED_VALUE;
-							}
-		    	  if (strcmp(checkpoint_type_str, "ADJ_CHECKPOINT_STORAGE_DISK")==0)
-		    	  	if ((adj_has_variable_value_disk(adjointer, fwd_var)!=ADJ_OK) || (adj_is_checkpoint_variable_disk(adjointer, fwd_var)!=ADJ_TRUE))
-		    	  	{
-								char buf[255];
-								adj_variable_str(fwd_var, buf, 255);
-								snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Need a disk checkpoint value for variable %s, but don't have one.", buf);
-								return ADJ_ERR_NEED_VALUE;
-		    	  	}
-		    	}
-		    }
-
-		    /* Get the forward variable we want this to multiply */
-		    fwd_var = eqn.targets[i];
-		    if (adj_variable_equal(&eqn.variable, &fwd_var, 1)) continue; /* that term goes in the lhs */
-		    /* and now check it has the checkpoint value */
-		    if (strcmp(checkpoint_type_str, "ADJ_CHECKPOINT_STORAGE_MEMORY") && !adj_has_variable_value_memory(adjointer, fwd_var))
-		    {
-		      char buf[255];
-		      adj_variable_str(fwd_var, buf, 255);
-		      snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Need a checkpoint value for variable %s in memory, but don't have one.", buf);
-		      return ADJ_ERR_NEED_VALUE;
-		    }
-		    if (strcmp(checkpoint_type_str, "ADJ_CHECKPOINT_STORAGE_DISK") && !adj_has_variable_value_disk(adjointer, fwd_var))
-		    {
-		      char buf[255];
-		      adj_variable_str(fwd_var, buf, 255);
-		      snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Need a checkpoint value for variable %s on disk, but don't have one.", buf);
-		   	  return ADJ_ERR_NEED_VALUE;
-		   	}
-		  }
-
-		  /* Check that we have all the values for the adjoint solves */
-		  /* TODO */
+			cp_eqns[i]=eqn_num;
+			i++;
 		}
-
 	}
+
+	for (cp_iter=0; cp_iter<cp_num; cp_iter++)
+	{
+		eqn = adjointer->equations[cp_eqns[cp_iter]];
+
+		checkpoint_type_str = adj_checkpoint_types_str[eqn.checkpoint_type];
+		printf("Equation %i has checkpoint type %s\n", cp_eqns[cp_iter], checkpoint_type_str);
+
+		/* Check that we have all the forward values we need to restart the simulation */
+		for (i=0; i<eqn.nblocks; i++)
+		{
+			adj_variable fwd_var;
+
+			/* Check that we have the nonlinear block dependencies */
+			if (eqn.blocks[i].has_nonlinear_block)
+			{
+				adj_nonlinear_block nl_block;
+
+				nl_block = eqn.blocks[i].nonlinear_block;
+				for (j=0; j<nl_block.ndepends; j++)
+				{
+					fwd_var = nl_block.depends[j];
+
+					if (strcmp(checkpoint_type_str, "ADJ_CHECKPOINT_STORAGE_MEMORY")==0)
+						if ((adj_has_variable_value_memory(adjointer, fwd_var)!=ADJ_OK) || (adj_is_checkpoint_variable_memory(adjointer, fwd_var)!=ADJ_TRUE))
+						{
+							char buf[255];
+							adj_variable_str(fwd_var, buf, 255);
+							snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Need a memory checkpoint value for variable %s, but don't have one.", buf);
+							return ADJ_ERR_NEED_VALUE;
+						}
+					if (strcmp(checkpoint_type_str, "ADJ_CHECKPOINT_STORAGE_DISK")==0)
+						if ((adj_has_variable_value_disk(adjointer, fwd_var)!=ADJ_OK) || (adj_is_checkpoint_variable_disk(adjointer, fwd_var)!=ADJ_TRUE))
+						{
+							char buf[255];
+							adj_variable_str(fwd_var, buf, 255);
+							snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Need a disk checkpoint value for variable %s, but don't have one.", buf);
+							return ADJ_ERR_NEED_VALUE;
+						}
+				}
+			}
+
+			/* Get the forward variable we want this to multiply */
+			fwd_var = eqn.targets[i];
+			if (adj_variable_equal(&eqn.variable, &fwd_var, 1)) continue; /* that term goes in the lhs */
+			/* and now check it has the checkpoint value */
+			if (strcmp(checkpoint_type_str, "ADJ_CHECKPOINT_STORAGE_MEMORY") && !adj_has_variable_value_memory(adjointer, fwd_var))
+			{
+				char buf[255];
+				adj_variable_str(fwd_var, buf, 255);
+				snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Need a checkpoint value for variable %s in memory, but don't have one.", buf);
+				return ADJ_ERR_NEED_VALUE;
+			}
+			if (strcmp(checkpoint_type_str, "ADJ_CHECKPOINT_STORAGE_DISK") && !adj_has_variable_value_disk(adjointer, fwd_var))
+			{
+				char buf[255];
+				adj_variable_str(fwd_var, buf, 255);
+				snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Need a checkpoint value for variable %s on disk, but don't have one.", buf);
+				return ADJ_ERR_NEED_VALUE;
+			}
+		}
+	}
+
+	{
+		adj_variable_data* data;
+
+		/* Check we have the required variables for the adjoint equations */
+		data = adjointer->vardata.firstnode;
+		/* Loop over every variable */
+		while (data != NULL)
+		{
+			/* We are only interested in forward variables */
+			if (data->equation<0)
+				continue;
+
+			/* Find out in which checkpoint slot the variable is computed */
+			for (cp_iter=0; cp_iter<cp_num; cp_iter++)
+			{
+				if (data->adjoint_equations[i]<cp_eqns[cp_iter])
+					break;
+			}
+
+			need_checkpoint = 0;
+
+			/* So now we know that this forward variable is computed in the checkpoint slot [cp_iter-1, cp_iter],
+			 * i.e. somewhere in equations >= cp_eqns[cp_iter-1] and n=min(cp_eqns[cp_iter], adjointer->nequations).
+			 * If there is an adjoint equation that needs this variable and is not in the checkpoint slot,
+			 * then we have to have it stored as a checkpoint.
+			 */
+			for (i = 0; i < data->nadjoint_equations; i++)
+			{
+				/* We need a checkpoint if there is an adjoint equation >= cp_eqns[cp_iter-1]
+				 * which needs a variable that is computed before cp_eqns[cp_iter-1].
+				 */
+				if (data->adjoint_equations[i]>=cp_eqns[cp_iter-1])
+				{
+					if (data->equation<cp_eqns[cp_iter-1])
+						need_checkpoint = 1;
+				}
+
+			}
+
+			/* Also check for dependencies of the functional right-hand-sides */
+			if (data->ndepending_timesteps > 0)
+			{
+				int start_equation, min_timestep;
+				min_timestep = adj_minval(data->depending_timesteps, data->ndepending_timesteps);
+				ierr = adj_timestep_start_equation(adjointer, min_timestep, &start_equation);
+				assert(ierr == ADJ_OK);
+
+				if (cp_eqns[cp_iter-1] > start_equation)
+				{
+					need_checkpoint = 1;
+				}
+			}
+
+			if (need_checkpoint)
+			{
+				adj_variable var = adjointer->equations[data->equation].variable;
+
+				if (adj_has_variable_value(adjointer, var)!=ADJ_OK)
+				{
+					char buf[255];
+					adj_variable_str(var, buf, 255);
+					snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Need a checkpoint value for variable %s, but don't have one.", buf);
+					return ADJ_ERR_NEED_VALUE;
+				}
+			}
+			data = data->next;
+		}
+	}
+
+	free(cp_eqns);
 	return ADJ_OK;
 }
 
