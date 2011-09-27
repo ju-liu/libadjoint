@@ -149,6 +149,9 @@ void test_checkpoint_revolve_offline(void)
   ierr = adj_adjointer_to_html(&adjointer, "test_revolve_checkpoint_adjoint.html", ADJ_ADJOINT);
   adj_test_assert(ierr == ADJ_OK, "Should have worked");
 
+  ierr = adj_adjointer_check_checkpoints(&adjointer);
+  adj_test_assert(ierr == ADJ_OK, "Should have worked");
+
   /* A typical adjoint solve */
   for (timestep=steps-1;timestep>=0; timestep--)
   {
