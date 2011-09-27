@@ -1221,7 +1221,7 @@ int adj_forget_forward_equation_until(adj_adjointer* adjointer, int equation, in
   while (data != NULL)
   {
   	/* Only forget forward variables */
-  	if (adjointer->equations[data->equation].targets->type!=ADJ_FORWARD)
+  	if (data->equation<0) /* Adjoint variables have no forward equation */
   	{
   		data = data->next;
   		continue;
