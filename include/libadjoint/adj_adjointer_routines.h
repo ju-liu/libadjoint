@@ -53,6 +53,8 @@ int adj_get_variable_value(adj_adjointer* adjointer, adj_variable var, adj_vecto
 int adj_has_variable_value(adj_adjointer* adjointer, adj_variable var);
 int adj_has_variable_value_memory(adj_adjointer* adjointer, adj_variable var);
 int adj_has_variable_value_disk(adj_adjointer* adjointer, adj_variable var);
+int adj_is_checkpoint_variable_memory(adj_adjointer* adjointer, adj_variable var);
+int adj_is_checkpoint_variable_disk(adj_adjointer* adjointer, adj_variable var);
 int adj_forget_variable_value(adj_adjointer* adjointer, adj_variable_data* data);
 int adj_forget_variable_value_from_memory(adj_adjointer* adjointer, adj_variable_data* data);
 int adj_forget_variable_value_from_disk(adj_adjointer* adjointer, adj_variable_data* data);

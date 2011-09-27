@@ -815,12 +815,14 @@ int adj_record_variable_core_memory(adj_adjointer* adjointer, adj_variable_data*
     case ADJ_STORAGE_MEMORY_COPY:
       data_ptr->storage.storage_memory_type = ADJ_STORAGE_MEMORY_COPY;
       data_ptr->storage.storage_memory_has_value = storage.storage_memory_has_value;
+      data_ptr->storage.storage_memory_is_checkpoint = storage.storage_memory_is_checkpoint;
       adjointer->callbacks.vec_duplicate(storage.value, &(data_ptr->storage.value));
       adjointer->callbacks.vec_axpy(&(data_ptr->storage.value), (adj_scalar)1.0, storage.value);
       break;
     case ADJ_STORAGE_MEMORY_INCREF:
       data_ptr->storage.storage_memory_type = ADJ_STORAGE_MEMORY_INCREF;
       data_ptr->storage.storage_memory_has_value = storage.storage_memory_has_value;
+      data_ptr->storage.storage_memory_is_checkpoint = storage.storage_memory_is_checkpoint;
       break;
     default:
       strncpy(adj_error_msg, "Memory storage types other than ADJ_STORAGE_MEMORY_COPY and ADJ_STORAGE_MEMORY_INCREF  are not implemented yet.", ADJ_ERROR_MSG_BUF);
@@ -841,6 +843,7 @@ int adj_record_variable_core_disk(adj_adjointer* adjointer, adj_variable_data* d
   assert(storage.storage_disk_has_value);
 
   data_ptr->storage.storage_disk_has_value = storage.storage_disk_has_value;
+  data_ptr->storage.storage_disk_is_checkpoint = storage.storage_disk_is_checkpoint;
   strncpy(data_ptr->storage.storage_disk_filename, storage.storage_disk_filename, ADJ_NAME_LEN);
   adjointer->callbacks.vec_to_file(storage.value, data_ptr->storage.storage_disk_filename);
 
@@ -1455,6 +1458,40 @@ int adj_has_variable_value_disk(adj_adjointer* adjointer, adj_variable var)
   return ADJ_OK;
 }
 
+int adj_is_checkpoint_variable_disk(adj_adjointer* adjointer, adj_variable var)
+{
+  int ierr;
+  adj_variable_data* data_ptr;
+
+  ierr = adj_find_variable_data(&(adjointer->varhash), &var, &data_ptr);
+  if (ierr != ADJ_OK)
+  {
+    char buf[ADJ_NAME_LEN];
+    adj_variable_str(var, buf, ADJ_NAME_LEN);
+    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Need a value for %s, but have never seen it.", buf);
+    return ierr;
+  }
+
+  return data_ptr->storage.storage_disk_is_checkpoint;
+}
+
+int adj_is_checkpoint_variable_memory(adj_adjointer* adjointer, adj_variable var)
+{
+  int ierr;
+  adj_variable_data* data_ptr;
+
+  ierr = adj_find_variable_data(&(adjointer->varhash), &var, &data_ptr);
+  if (ierr != ADJ_OK)
+  {
+    char buf[ADJ_NAME_LEN];
+    adj_variable_str(var, buf, ADJ_NAME_LEN);
+    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Need a value for %s, but have never seen it.", buf);
+    return ierr;
+  }
+
+  return data_ptr->storage.storage_memory_is_checkpoint;
+}
+
 int adj_forget_variable_value(adj_adjointer* adjointer, adj_variable_data* data)
 {
   int ierr;
@@ -1552,6 +1589,8 @@ int adj_storage_memory_copy(adj_vector value, adj_storage_data* data)
   data->compare = ADJ_FALSE;
   data->comparison_tolerance = (adj_scalar)0.0;
   data->overwrite = ADJ_FALSE;
+  data->storage_memory_is_checkpoint = ADJ_FALSE;
+  data->storage_disk_is_checkpoint = ADJ_FALSE;
   return ADJ_OK;
 }
 
@@ -1566,6 +1605,8 @@ int adj_storage_memory_incref(adj_vector value, adj_storage_data* data)
   data->compare = ADJ_FALSE;
   data->comparison_tolerance = (adj_scalar)0.0;
   data->overwrite = ADJ_FALSE;
+  data->storage_memory_is_checkpoint = ADJ_FALSE;
+  data->storage_disk_is_checkpoint = ADJ_FALSE;
   return ADJ_OK;
 }
 
@@ -1580,6 +1621,8 @@ int adj_storage_disk(adj_vector value, adj_storage_data* data)
   data->compare = ADJ_FALSE;
   data->comparison_tolerance = (adj_scalar)0.0;
   data->overwrite = ADJ_FALSE;
+  data->storage_memory_is_checkpoint = ADJ_FALSE;
+  data->storage_disk_is_checkpoint = ADJ_FALSE;
   return ADJ_OK;
 }
 

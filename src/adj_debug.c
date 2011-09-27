@@ -60,20 +60,22 @@ int adj_adjointer_check_checkpoints(adj_adjointer* adjointer)
 		    	{
 		    		fwd_var = nl_block.depends[j];
 
-		    	  if (strcmp(checkpoint_type_str, "ADJ_CHECKPOINT_STORAGE_MEMORY") && !adj_has_variable_value_memory(adjointer, fwd_var))
-		        {
-		          char buf[255];
-		          adj_variable_str(fwd_var, buf, 255);
-		          snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Need a checkpoint value for variable %s in memory, but don't have one.", buf);
-		          return ADJ_ERR_NEED_VALUE;
-		        }
-		    	  if (strcmp(checkpoint_type_str, "ADJ_CHECKPOINT_STORAGE_DISK") && !adj_has_variable_value_disk(adjointer, fwd_var))
-		        {
-		          char buf[255];
-		          adj_variable_str(fwd_var, buf, 255);
-		          snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Need a checkpoint value for variable %s on disk, but don't have one.", buf);
-		          return ADJ_ERR_NEED_VALUE;
-		        }
+		    	  if (strcmp(checkpoint_type_str, "ADJ_CHECKPOINT_STORAGE_MEMORY")==0)
+		    	  	if ((adj_has_variable_value_memory(adjointer, fwd_var)!=ADJ_OK) || (adj_is_checkpoint_variable_memory(adjointer, fwd_var)!=ADJ_TRUE))
+							{
+								char buf[255];
+								adj_variable_str(fwd_var, buf, 255);
+								snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Need a memory checkpoint value for variable %s, but don't have one.", buf);
+								return ADJ_ERR_NEED_VALUE;
+							}
+		    	  if (strcmp(checkpoint_type_str, "ADJ_CHECKPOINT_STORAGE_DISK")==0)
+		    	  	if ((adj_has_variable_value_disk(adjointer, fwd_var)!=ADJ_OK) || (adj_is_checkpoint_variable_disk(adjointer, fwd_var)!=ADJ_TRUE))
+		    	  	{
+								char buf[255];
+								adj_variable_str(fwd_var, buf, 255);
+								snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Need a disk checkpoint value for variable %s, but don't have one.", buf);
+								return ADJ_ERR_NEED_VALUE;
+		    	  	}
 		    	}
 		    }
 
