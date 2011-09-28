@@ -644,15 +644,24 @@ int adj_replay_forward_equations(adj_adjointer* adjointer, int start_equation, i
   int ierr;
   adj_vector soln;
   adj_variable var;
+  adj_storage_data storage;
 
   for (equation=start_equation; equation<=stop_equation; equation++)
   {
     ierr = adj_get_forward_solution(adjointer, equation, &soln, &var);
     if (ierr!=ADJ_OK) return ierr;
 
+ 		ierr = adj_storage_memory_copy(soln, &storage);
+ 		if (ierr!=ADJ_OK) return ierr;
+    ierr = adj_record_variable(adjointer, var, storage);
+    if (ierr<0)
+    	adj_chkierr(ierr);
+    else if (ierr!=ADJ_OK)
+    	return ierr;
+
     /* Forget everything that is not needed for future calculations */
-    ierr = adj_forget_forward_equation_until(adjointer, equation, stop_equation);
-    if (ierr!=ADJ_OK) return ierr;
+    //ierr = adj_forget_forward_equation_until(adjointer, equation, stop_equation);
+    //if (ierr!=ADJ_OK) return ierr;
   }
 
   return ADJ_OK;

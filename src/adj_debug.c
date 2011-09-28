@@ -28,7 +28,7 @@ int adj_adjointer_check_consistency(adj_adjointer* adjointer)
 
 int adj_adjointer_check_checkpoints(adj_adjointer* adjointer)
 {
-	int cp_num, cp_iter, need_checkpoint;
+	int cp_num, cp_iter;
 	int* cp_eqns;
 	int eqn_num, i, j, ierr;
 	adj_equation eqn;
@@ -142,8 +142,6 @@ int adj_adjointer_check_checkpoints(adj_adjointer* adjointer)
 				if (data->adjoint_equations[i]<cp_eqns[cp_iter])
 					break;
 			}
-
-			need_checkpoint = 0;
 
 			/* Check for dependencies of the functional right-hand-sides */
 			if (data->ndepending_timesteps > 0)
