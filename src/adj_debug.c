@@ -145,25 +145,7 @@ int adj_adjointer_check_checkpoints(adj_adjointer* adjointer)
 
 			need_checkpoint = 0;
 
-			/* So now we know that this forward variable is computed in the checkpoint slot [cp_iter-1, cp_iter],
-			 * i.e. somewhere in equations >= cp_eqns[cp_iter-1] and n=min(cp_eqns[cp_iter], adjointer->nequations).
-			 * If there is an adjoint equation that needs this variable and is not in the checkpoint slot,
-			 * then we have to have it stored as a checkpoint.
-			 */
-			for (i = 0; i < data->nadjoint_equations; i++)
-			{
-				/* We need a checkpoint if there is an adjoint equation >= cp_eqns[cp_iter-1]
-				 * which needs a variable that is computed before cp_eqns[cp_iter-1].
-				 */
-				if (data->adjoint_equations[i]>=cp_eqns[cp_iter-1])
-				{
-					if (data->equation<cp_eqns[cp_iter-1])
-						need_checkpoint = 1;
-				}
-
-			}
-
-			/* Also check for dependencies of the functional right-hand-sides */
+			/* Check for dependencies of the functional right-hand-sides */
 			if (data->ndepending_timesteps > 0)
 			{
 				int start_equation, min_timestep;
@@ -173,22 +155,18 @@ int adj_adjointer_check_checkpoints(adj_adjointer* adjointer)
 
 				if (cp_eqns[cp_iter-1] > start_equation)
 				{
-					need_checkpoint = 1;
+					adj_variable var = adjointer->equations[data->equation].variable;
+
+					if (adj_has_variable_value(adjointer, var)!=ADJ_OK)
+					{
+						char buf[255];
+						adj_variable_str(var, buf, 255);
+						snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Need a checkpoint value for variable %s (functional dependency), but don't have one.", buf);
+						return ADJ_ERR_NEED_VALUE;
+					}
 				}
 			}
 
-			if (need_checkpoint)
-			{
-				adj_variable var = adjointer->equations[data->equation].variable;
-
-				if (adj_has_variable_value(adjointer, var)!=ADJ_OK)
-				{
-					char buf[255];
-					adj_variable_str(var, buf, 255);
-					snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Need a checkpoint value for variable %s, but don't have one.", buf);
-					return ADJ_ERR_NEED_VALUE;
-				}
-			}
 			data = data->next;
 		}
 	}
