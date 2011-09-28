@@ -648,20 +648,26 @@ int adj_replay_forward_equations(adj_adjointer* adjointer, int start_equation, i
 
   for (equation=start_equation; equation<=stop_equation; equation++)
   {
-    ierr = adj_get_forward_solution(adjointer, equation, &soln, &var);
-    if (ierr!=ADJ_OK) return ierr;
+  	/* We might have this solution already in memory because it is a checkpoint variable,
+  	 * in which case we do not have to solve the forward solution for this equation.
+  	 */
+		if (adj_has_variable_value(adjointer, adjointer->equations[equation].variable)!=ADJ_OK)
+		{
+			ierr = adj_get_forward_solution(adjointer, equation, &soln, &var);
+			if (ierr!=ADJ_OK) return ierr;
 
- 		ierr = adj_storage_memory_copy(soln, &storage);
- 		if (ierr!=ADJ_OK) return ierr;
-    ierr = adj_record_variable(adjointer, var, storage);
-    if (ierr<0)
-    	adj_chkierr(ierr);
-    else if (ierr!=ADJ_OK)
-    	return ierr;
+			ierr = adj_storage_memory_copy(soln, &storage);
+			if (ierr!=ADJ_OK) return ierr;
+			ierr = adj_record_variable(adjointer, var, storage);
+			if (ierr<0)
+				adj_chkierr(ierr);
+			else if (ierr!=ADJ_OK)
+				return ierr;
 
-    /* Forget everything that is not needed for future calculations */
-    //ierr = adj_forget_forward_equation_until(adjointer, equation, stop_equation);
-    //if (ierr!=ADJ_OK) return ierr;
+			/* Forget everything that is not needed for future calculations */
+			//ierr = adj_forget_forward_equation_until(adjointer, equation, stop_equation);
+			//if (ierr!=ADJ_OK) return ierr;
+		}
   }
 
   return ADJ_OK;
