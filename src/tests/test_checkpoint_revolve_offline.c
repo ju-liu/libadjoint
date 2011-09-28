@@ -116,6 +116,9 @@ void test_checkpoint_revolve_offline(void)
     adj_destroy_block(&B[0]);
     adj_destroy_block(&B[1]);
 
+    /* We need a checkpoint at the last timestep */
+    if (timestep==steps-1)
+    	cs=ADJ_CHECKPOINT_STORAGE_MEMORY;
 
     if (cs==ADJ_CHECKPOINT_STORAGE_DISK)
     {
@@ -129,10 +132,15 @@ void test_checkpoint_revolve_offline(void)
   		//ierr = adj_record_variable(&adjointer, u[1], storage);
   		//adj_test_assert(ierr == ADJ_OK, "Should have worked");
     }
- 		ierr = adj_storage_memory_copy(value, &storage);
- 		adj_test_assert(ierr == ADJ_OK, "Should have worked");
-    ierr = adj_record_variable(&adjointer, u[1], storage);
-    adj_test_assert(ierr == ADJ_OK, "Should have worked");
+    else if (cs==ADJ_CHECKPOINT_STORAGE_MEMORY)
+    {
+			ierr = adj_storage_memory_copy(value, &storage);
+			adj_test_assert(ierr == ADJ_OK, "Should have worked");
+			ierr = adj_storage_set_checkpoint(&storage, ADJ_TRUE);
+			adj_test_assert(ierr == ADJ_OK, "Should have worked");
+			ierr = adj_record_variable(&adjointer, u[0], storage);
+			adj_test_assert(ierr == ADJ_OK, "Should have worked");
+    }
   }
 
   ierr = adj_equation_count(&adjointer, &nb_eqs);
@@ -141,6 +149,7 @@ void test_checkpoint_revolve_offline(void)
 
   /* Forget the variables of the previous last timestep */
   ierr = adj_forget_forward_equation(&adjointer, steps-2);
+  //ierr = adj_forget_forward_equation_until(&adjointer, 6, 7);
   adj_test_assert(ierr == ADJ_OK, "Should have worked");
 
 

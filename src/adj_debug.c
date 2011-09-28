@@ -39,6 +39,13 @@ int adj_adjointer_check_checkpoints(adj_adjointer* adjointer)
 
 	if (adjointer->options[ADJ_ACTIVITY] == ADJ_ACTIVITY_NOTHING) return ADJ_OK;
 
+	/* The last equation is also a checkpoint equation of type ADJ_CHECKPOINT_STORAGE_MEMORY
+	 * We assume that adj_adjointer_check_checkpoints is called at the last equation,
+	 * hence we will set the checkpoint flag now.
+   */
+	if (adjointer->equations[adjointer->nequations-1].checkpoint_type==ADJ_CHECKPOINT_STORAGE_NONE)
+		adjointer->equations[adjointer->nequations-1].checkpoint_type=ADJ_CHECKPOINT_STORAGE_MEMORY;
+
 	/* Query the checkpoint equations */
 	cp_num = 0;
 	/* First get the number of checkpoints */

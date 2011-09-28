@@ -598,9 +598,6 @@ int adj_get_revolve_checkpoint_storage(adj_adjointer* adjointer, adj_equation eq
         adjointer->revolve_data.current_action = revolve(adjointer->revolve_data.revolve);
         break;
 
-      case CACTION_FIRSTRUN:
-        break;
-
       case CACTION_ERROR:
         adj_variable_str(equation.variable, buf, ADJ_NAME_LEN);
         snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "An internal error occured: Irregular termination of revolve (in adj_register_equation of variable %s).", buf);
@@ -1188,7 +1185,10 @@ int adj_forget_adjoint_equation(adj_adjointer* adjointer, int equation)
 }
 
 /*
- * Forgets the forward variables that are not needed for any forward equations larger than "equation"
+ * Forgets forward variables that are not needed for
+ * solving any forward equations larger than "equation"
+ * AND
+ * are not needed for any adjoint equations larger than "equation".
  */
 int adj_forget_forward_equation(adj_adjointer* adjointer, int equation)
 {
@@ -1196,7 +1196,7 @@ int adj_forget_forward_equation(adj_adjointer* adjointer, int equation)
   ierr = adj_equation_count(adjointer, &last_equation);
   if (ierr != ADJ_OK) return ierr;
 
-	return adj_forget_forward_equation_until(adjointer, equation, last_equation);
+	return adj_forget_forward_equation_until(adjointer, equation, last_equation-1);
 }
 
 /*
@@ -1233,10 +1233,21 @@ int adj_forget_forward_equation_until(adj_adjointer* adjointer, int equation, in
       /* Check the forward equations we could explicitly compute */
       for (i = 0; i < data->ntargeting_equations; i++)
       {
+      	/* If the variable_data refers to a variable that is a target variable in the equations of interest
+      	 * then we keep it.
+      	 */
         if (equation < data->targeting_equations[i] && data->targeting_equations[i] <= last_equation)
         {
-          should_we_delete = 0;
-          break;
+        	/* One exception:
+        	 * The lhs variable of the last equation is not needed to solve this equation, i.e. we can delete it
+        	 */
+        	if (!((data->targeting_equations[i] == last_equation) &&
+        		    (data->targeting_equations[i] == data->equation)))
+        	{
+              should_we_delete = 0;
+              break;
+        	}
+
         }
       }
 
