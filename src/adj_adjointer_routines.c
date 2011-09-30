@@ -593,7 +593,8 @@ int adj_checkpoint_equation(adj_adjointer* adjointer, int eqn_number, int cs)
 	  /* For that we loop over all timesteps that need 'variable' for the functional evaluation */
 	  /* and checkpoint its dependency variables */
 		{
-			adj_variable_data* var_data;
+			adj_variable var_dep;
+			adj_variable_data* var_data, *var_data_dep;
 			adj_functional_data* functional_data_ptr = NULL;
 			var = adjointer->equations[eqn_number_iter].variable;
 
@@ -609,8 +610,15 @@ int adj_checkpoint_equation(adj_adjointer* adjointer, int eqn_number, int cs)
 					int k;
 					for (k = 0; k < functional_data_ptr->ndepends; k++)
 					{
-						ierr = adj_checkpoint_variable(adjointer, functional_data_ptr->dependencies[k], cs);
-            if (ierr != ADJ_OK) return ierr;
+						var_dep=functional_data_ptr->dependencies[k];
+						ierr = adj_find_variable_data(&(adjointer->varhash), &var, &var_data_dep);
+						if (ierr != ADJ_OK) return ierr;
+
+						if (var_data_dep->equation<eqn_number)
+						{
+							ierr = adj_checkpoint_variable(adjointer, var_dep, cs);
+							if (ierr != ADJ_OK) return ierr;
+						}
 					}
 					functional_data_ptr = functional_data_ptr->next;
 				}
