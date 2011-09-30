@@ -515,6 +515,10 @@ int adj_register_equation(adj_adjointer* adjointer, adj_equation equation, int* 
   return ADJ_OK;
 }
 
+/* Creates a checkpoints for the given equation.
+ * Recorded are all variables that are computed at equations < eqn_number
+ * and that are required for forward/adjoint equations >= eqn_number
+ */
 int adj_checkpoint_equation(adj_adjointer* adjointer, int eqn_number, int cs)
 {
 	int eqn_number_iter, i, j, ierr;
@@ -630,6 +634,7 @@ int adj_checkpoint_equation(adj_adjointer* adjointer, int eqn_number, int cs)
 	return ADJ_OK;
 }
 
+/* Checkpoints the given variable  */
 int adj_checkpoint_variable(adj_adjointer* adjointer, adj_variable var, int cs)
 {
 	int ierr;
@@ -1342,9 +1347,7 @@ int adj_forget_adjoint_equation(adj_adjointer* adjointer, int equation)
 
 /*
  * Forgets forward variables that are not needed for
- * solving any forward equations larger than "equation"
- * AND
- * are not needed for any adjoint equations larger than "equation".
+ * solving any forward/adjoint equations larger than "equation"
  */
 int adj_forget_forward_equation(adj_adjointer* adjointer, int equation)
 {
@@ -1356,7 +1359,8 @@ int adj_forget_forward_equation(adj_adjointer* adjointer, int equation)
 }
 
 /*
- * Like adj_forget_forward_equation, but assumes that the annotation stops at last_equation.
+ * Like adj_forget_forward_equation, but assumes that we only want to
+ * solve the forward/adjoint equations until last_equation.
  */
 int adj_forget_forward_equation_until(adj_adjointer* adjointer, int equation, int last_equation)
 {
@@ -1374,10 +1378,11 @@ int adj_forget_forward_equation_until(adj_adjointer* adjointer, int equation, in
   }
 
   data = adjointer->vardata.firstnode;
+
   while (data != NULL)
   {
   	/* Only forget forward variables */
-  	if (data->equation<0) /* Adjoint variables have no forward equation */
+  	if (data->equation<0) /* Adjoint variables have no forward equation. TODO: @Patrick: Why is this? */
   	{
   		data = data->next;
   		continue;
@@ -1389,13 +1394,13 @@ int adj_forget_forward_equation_until(adj_adjointer* adjointer, int equation, in
       /* Check the forward equations we could explicitly compute */
       for (i = 0; i < data->ntargeting_equations; i++)
       {
-      	/* If the variable_data refers to a variable that is a target variable in the equations of interest
-      	 * then we keep it.
+      	/* If the variable is a target variable for one of the equations
+      	 * of interest then we keep it.
       	 */
         if (equation < data->targeting_equations[i] && data->targeting_equations[i] <= last_equation)
         {
-        	/* One exception:
-        	 * The lhs variable of the last equation is not needed to solve this equation, i.e. we can delete it
+        	/* One exception: The lhs variable of the last equation
+        	 * is not needed to solve the equation, i.e. we can delete it
         	 */
         	if (!((data->targeting_equations[i] == last_equation) &&
         		    (data->targeting_equations[i] == data->equation)))
@@ -1824,6 +1829,7 @@ int adj_storage_set_overwrite(adj_storage_data* data, int overwrite)
   return ADJ_OK;
 }
 
+/* Sets the checkpoint flag to all variables that are recorded with this storage object */
 int adj_storage_set_checkpoint(adj_storage_data* data, int checkpoint)
 {
 	if (checkpoint != ADJ_TRUE && checkpoint != ADJ_FALSE)

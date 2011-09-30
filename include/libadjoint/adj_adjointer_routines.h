@@ -37,7 +37,7 @@ int adj_storage_memory_incref(adj_vector value, adj_storage_data* data);
 int adj_storage_disk(adj_vector value, adj_storage_data* data);
 int adj_storage_set_compare(adj_storage_data* data, int compare, adj_scalar comparison_tolerance);
 int adj_storage_set_overwrite(adj_storage_data* data, int overwrite);
-int adj_storage_set_checkpoint(adj_storage_data* data, int checkpoint); /* Sets the checkpoint flag to all variables that are recorded with this storage object */
+int adj_storage_set_checkpoint(adj_storage_data* data, int checkpoint);
 
 #ifndef ADJ_HIDE_FROM_USER
 int adj_set_option(adj_adjointer* adjointer, int option, int choice);
@@ -71,10 +71,7 @@ int adj_minval(int* array, int array_sz);
 int adj_get_revolve_checkpoint_storage(adj_adjointer* adjointer, adj_equation equation, int* checkpoint_storage); 
 int adj_initialise_revolve(adj_adjointer* adjointer);
 
-/* Creates a checkpoints for the given equation.
- * Recorded are all variables that are computed at equations < eqn_number
- * and that are required for forward/adjoint equations >= eqn_number */
 int adj_checkpoint_equation(adj_adjointer* adjointer, int eqn_number, int checkpoint_strategy);
-int adj_checkpoint_variable(adj_adjointer* adjointer, adj_variable var, int checkpoint_strategy); /* Checkpoints the given variable  */
+int adj_checkpoint_variable(adj_adjointer* adjointer, adj_variable var, int checkpoint_strategy);
 #endif
 #endif
