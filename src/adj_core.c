@@ -341,8 +341,6 @@ int adj_revolve_to_adjoint_equation(adj_adjointer* adjointer, int equation)
   int loop = ADJ_TRUE;
   int debug = 1;
 
-  adj_variable_data* var_data;
-  adj_variable var;
 
   ierr = adj_get_checkpoint_strategy(adjointer, &cs);
   if (ierr != ADJ_OK) return ierr;
@@ -371,8 +369,7 @@ int adj_revolve_to_adjoint_equation(adj_adjointer* adjointer, int equation)
         break;
 
       case CACTION_TAKESHOT:
-        /* Record all forward variables in memory to disk */
-      	/* TODO: Record only the required variables */
+        /* Record all required forward variables for the first equation of the current timestep */
         if (debug)
         {
         	ierr = adj_timestep_start_equation(adjointer, adjointer->revolve_data.current_timestep, &start_eqn);
@@ -380,38 +377,9 @@ int adj_revolve_to_adjoint_equation(adj_adjointer* adjointer, int equation)
         	printf("Revolve: Create checkpoint of equation %i\n.", start_eqn);
         }
 
-      	/* Loop over all variables */
-      	var_data = adjointer->vardata.firstnode;
-      	while (var_data!=NULL)
-      	{
-      		/* Ignore adjoint variables */
-      		if (var_data->equation<0)
-      		{
-      			var_data = var_data->next;
-      			continue;
-      		}
-
-        	var = adjointer->equations[var_data->equation].variable;
-      		if (var_data->storage.storage_memory_has_value && !var_data->storage.storage_disk_has_value)
-      		{
-      			adj_storage_data storage;
-
-      			char filename[ADJ_NAME_LEN];
-      			adj_variable_str(var, filename, ADJ_NAME_LEN);
-      			strncat(filename, ".dat", 4);
-
-						ierr = adj_storage_disk(var_data->storage.value, &storage);
-						if (ierr != ADJ_OK) return ierr;
-						ierr = adj_storage_set_checkpoint(&storage, ADJ_TRUE);
-						if (ierr != ADJ_OK) return ierr;
-						ierr = adj_storage_disk(var_data->storage.value, &storage);
-						if (ierr != ADJ_OK) return ierr;
-
-						ierr = adj_record_variable(adjointer, var, storage);
-						if (ierr != ADJ_OK) return ierr;
-      		}
-      		var_data = var_data->next;
-      	}
+        /* TODO: use getwhere in Multistage checkpointing */
+        ierr = adj_checkpoint_equation(adjointer, start_eqn, ADJ_CHECKPOINT_STORAGE_DISK);
+        if (ierr != ADJ_OK) return ierr;
 
       	adjointer->revolve_data.current_action = revolve(adjointer->revolve_data.revolve);
         break;
@@ -419,7 +387,6 @@ int adj_revolve_to_adjoint_equation(adj_adjointer* adjointer, int equation)
       case CACTION_FIRSTRUN:
         if (debug)
         	printf("Revolve: First run");
-
 
         if ((cs==ADJ_CHECKPOINT_REVOLVE_OFFLINE) || (cs==ADJ_CHECKPOINT_REVOLVE_MULTISTAGE))
         {
@@ -480,6 +447,7 @@ int adj_revolve_to_adjoint_equation(adj_adjointer* adjointer, int equation)
   adjointer->revolve_data.current_action = revolve(adjointer->revolve_data.revolve);
   return ADJ_OK;
 }
+
 
 int adj_get_forward_equation(adj_adjointer* adjointer, int equation, adj_matrix* lhs, adj_vector* rhs, adj_variable* fwd_var)
 {

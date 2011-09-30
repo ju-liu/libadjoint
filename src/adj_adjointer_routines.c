@@ -515,6 +515,128 @@ int adj_register_equation(adj_adjointer* adjointer, adj_equation equation, int* 
   return ADJ_OK;
 }
 
+int adj_checkpoint_equation(adj_adjointer* adjointer, int eqn_number, int cs)
+{
+	int eqn_number_iter, i, j, ierr;
+	adj_equation eqn;
+  adj_variable var;
+
+  if (!(cs==ADJ_CHECKPOINT_STORAGE_MEMORY || cs==ADJ_CHECKPOINT_STORAGE_DISK))
+  	return ADJ_ERR_INVALID_INPUTS;
+
+  if (eqn_number<0 || eqn_number>=adjointer->equations_sz)
+  	return ADJ_ERR_INVALID_INPUTS;
+
+  /* We need to store any variables that might be required for equations >= eqn_number but are computed
+     in equations < eqn_number */
+  for (eqn_number_iter=eqn_number; eqn_number_iter<adjointer->equations_sz; eqn_number_iter++)
+  {
+  	eqn = adjointer->equations[eqn_number_iter];
+
+		/* Checkpoint all dependency variables of this equation */
+		for (i=0; i<eqn.nblocks; i++)
+		{
+			if (eqn.blocks[i].has_nonlinear_block==ADJ_TRUE)
+			{
+				adj_nonlinear_block nonlinear_block = eqn.blocks[i].nonlinear_block;
+				for (j=0; j<nonlinear_block.ndepends; j++)
+				{
+				  adj_variable_data* var_data;
+				  var = eqn.blocks[i].nonlinear_block.depends[j];
+					ierr = adj_find_variable_data(&(adjointer->varhash), &var, &var_data);
+					if (ierr != ADJ_OK) return ierr;
+
+					if (var_data->equation<eqn_number)
+					{
+						ierr = adj_checkpoint_variable(adjointer, var, cs);
+						if (ierr != ADJ_OK) return ierr;
+					}
+				}
+			}
+		}
+
+		/* Next checkpoint all target variables on the rhs */
+		for (i=0; i<eqn.nblocks; i++)
+		{
+		  adj_variable_data* var_data;
+			var=eqn.targets[i];
+
+			if (adj_variable_equal(&var, &eqn.variable, 1)) /* This variable goes on the lhs */
+				continue;
+
+			ierr = adj_find_variable_data(&(adjointer->varhash), &var, &var_data);
+			if (ierr != ADJ_OK) return ierr;
+
+			if (var_data->equation<eqn_number)
+			{
+				ierr = adj_checkpoint_variable(adjointer, var, cs);
+				if (ierr != ADJ_OK) return ierr;
+			}
+		}
+
+		/* Checkpoint the rhs dependencies */
+		for (i=0; i<eqn.nrhsdeps; i++)
+		{
+		  adj_variable_data* var_data;
+			var=eqn.rhsdeps[i];
+			ierr = adj_find_variable_data(&(adjointer->varhash), &var, &var_data);
+			if (ierr != ADJ_OK) return ierr;
+
+			if (var_data->equation<eqn_number)
+			{
+				ierr = adj_checkpoint_variable(adjointer, var, cs);
+				if (ierr != ADJ_OK) return ierr;
+			}
+		}
+
+		/* Checkpoint the functional derivative dependencies */
+		  /* TODO */
+  }
+
+	return ADJ_OK;
+}
+
+int adj_checkpoint_variable(adj_adjointer* adjointer, adj_variable var, int cs)
+{
+	int ierr;
+  adj_variable_data* var_data;
+	adj_storage_data storage;
+
+	ierr = adj_find_variable_data(&(adjointer->varhash), &var, &var_data);
+	if (ierr != ADJ_OK) return ierr;
+
+	if (!var_data->storage.storage_memory_has_value && !var_data->storage.storage_disk_has_value)
+	{
+    char buf[ADJ_NAME_LEN];
+    adj_variable_str(var, buf, ADJ_NAME_LEN);
+    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Trying to to checkpoint variable %s, but do not have it.", buf);
+    return ADJ_ERR_NEED_VALUE;
+	}
+
+	/* Do we have the value already as a checkpoint? */
+	if (((cs==ADJ_CHECKPOINT_STORAGE_DISK) && (var_data->storage.storage_disk_has_value==ADJ_TRUE)) ||
+			((cs==ADJ_CHECKPOINT_STORAGE_MEMORY) && (var_data->storage.storage_memory_has_value==ADJ_TRUE)))
+		return ADJ_OK;
+
+	char filename[ADJ_NAME_LEN];
+	adj_variable_str(var, filename, ADJ_NAME_LEN);
+	strncat(filename, ".dat", 4);
+
+	if (cs==ADJ_CHECKPOINT_STORAGE_DISK)
+		ierr = adj_storage_disk(var_data->storage.value, &storage);
+	else if  (cs==ADJ_CHECKPOINT_STORAGE_MEMORY)
+		/* TODO: adj_storage_memory_copy is application specific! */
+		ierr = adj_storage_memory_copy(var_data->storage.value, &storage);
+	if (ierr != ADJ_OK) return ierr;
+	ierr = adj_storage_set_checkpoint(&storage, ADJ_TRUE);
+	if (ierr != ADJ_OK) return ierr;
+
+	ierr = adj_record_variable(adjointer, var, storage);
+	if (ierr != ADJ_OK) return ierr;
+
+	return ADJ_OK;
+}
+
 int adj_get_revolve_checkpoint_storage(adj_adjointer* adjointer, adj_equation equation, int *checkpoint_storage)
 {
   int cs, ierr;
