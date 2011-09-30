@@ -527,7 +527,7 @@ int adj_checkpoint_equation(adj_adjointer* adjointer, int eqn_number, int cs)
   if (eqn_number<0 || eqn_number>=adjointer->nequations)
   	return ADJ_ERR_INVALID_INPUTS;
 
-  /* We need to store any variables that might be required for equations >= eqn_number but are computed
+  /* We store variables that are required for equations >= eqn_number but are computed
      in equations < eqn_number */
   for (eqn_number_iter=eqn_number; eqn_number_iter<adjointer->nequations; eqn_number_iter++)
   {
