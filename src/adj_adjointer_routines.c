@@ -529,7 +529,7 @@ int adj_checkpoint_equation(adj_adjointer* adjointer, int eqn_number, int cs)
 
   /* We need to store any variables that might be required for equations >= eqn_number but are computed
      in equations < eqn_number */
-  for (eqn_number_iter=eqn_number; eqn_number_iter<adjointer->equations_sz; eqn_number_iter++)
+  for (eqn_number_iter=eqn_number; eqn_number_iter<adjointer->nequations; eqn_number_iter++)
   {
   	eqn = adjointer->equations[eqn_number_iter];
 
@@ -589,8 +589,34 @@ int adj_checkpoint_equation(adj_adjointer* adjointer, int eqn_number, int cs)
 			}
 		}
 
-		/* Checkpoint the functional derivative dependencies */
-		  /* TODO */
+		/* Checkpoint the functional derivative dependencies for the adjoint rhs. */
+	  /* For that we loop over all timesteps that need 'variable' for the functional evaluation */
+	  /* and checkpoint its dependency variables */
+		{
+			adj_variable_data* var_data;
+			adj_functional_data* functional_data_ptr = NULL;
+			var = adjointer->equations[eqn_number_iter].variable;
+
+			ierr = adj_find_variable_data(&(adjointer->varhash), &var, &var_data);
+			if (ierr != ADJ_OK) return ierr;
+
+			for (i = 0; i < var_data->ndepending_timesteps; i++)
+			{
+				int timestep = var_data->depending_timesteps[i];
+				functional_data_ptr = adjointer->timestep_data[timestep].functional_data_start;
+				while (functional_data_ptr != NULL)
+				{
+					int k;
+					for (k = 0; k < functional_data_ptr->ndepends; k++)
+					{
+						ierr = adj_checkpoint_variable(adjointer, functional_data_ptr->dependencies[k], cs);
+            if (ierr != ADJ_OK) return ierr;
+					}
+					functional_data_ptr = functional_data_ptr->next;
+				}
+			}
+
+		}
   }
 
 	return ADJ_OK;
