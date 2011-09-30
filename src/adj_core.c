@@ -663,16 +663,16 @@ int adj_replay_forward_equations(adj_adjointer* adjointer, int start_equation, i
 				ierr = adj_storage_set_checkpoint(&storage, ADJ_TRUE);
 				if (ierr!=ADJ_OK) return ierr;
 			}
-
+			/* Record the result */
 			ierr = adj_record_variable(adjointer, var, storage);
 			if (ierr<0)
 				adj_chkierr(ierr);
 			else if (ierr!=ADJ_OK)
 				return ierr;
 
-				/* Forget everything that is not needed for future calculations */
-				//ierr = adj_forget_forward_equation_until(adjointer, equation, stop_equation);
-				//if (ierr!=ADJ_OK) return ierr;
+			/* Forget everything that is not needed for future calculations */
+			ierr = adj_forget_forward_equation_until(adjointer, equation, stop_equation);
+			if (ierr!=ADJ_OK) return ierr;
 		}
   }
 
