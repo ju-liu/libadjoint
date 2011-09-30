@@ -70,7 +70,11 @@ int adj_extend_functional_data(adj_timestep_data* timestep_data, int extent);
 int adj_minval(int* array, int array_sz);
 int adj_get_revolve_checkpoint_storage(adj_adjointer* adjointer, adj_equation equation, int* checkpoint_storage); 
 int adj_initialise_revolve(adj_adjointer* adjointer);
-int adj_checkpoint_equation(adj_adjointer* adjointer, int eqn_number, int checkpoint_strategy); /* Checkpoints the given equation so that libadjoint can restart from it */
+
+/* Creates a checkpoints for the given equation.
+ * Recorded are all variables that are computed at equations < eqn_number
+ * and that are required for forward/adjoint equations >= eqn_number */
+int adj_checkpoint_equation(adj_adjointer* adjointer, int eqn_number, int checkpoint_strategy);
 int adj_checkpoint_variable(adj_adjointer* adjointer, adj_variable var, int checkpoint_strategy); /* Checkpoints the given variable  */
 #endif
 #endif
