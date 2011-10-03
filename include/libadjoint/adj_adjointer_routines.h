@@ -36,6 +36,8 @@ int adj_storage_memory_copy(adj_vector value, adj_storage_data* data);
 int adj_storage_memory_incref(adj_vector value, adj_storage_data* data);
 int adj_storage_disk_copy(adj_vector value, adj_storage_data* data);
 int adj_storage_disk_incref(adj_vector value, adj_storage_data* data);
+int adj_storage_dummy_copy(adj_storage_data* data);
+int adj_storage_dummy_incref(adj_storage_data* data);
 int adj_storage_set_compare(adj_storage_data* data, int compare, adj_scalar comparison_tolerance);
 int adj_storage_set_overwrite(adj_storage_data* data, int overwrite);
 int adj_storage_set_checkpoint(adj_storage_data* data, int checkpoint);
@@ -63,6 +65,7 @@ int adj_destroy_variable_data(adj_adjointer* adjointer, adj_variable_data* data)
 int adj_add_new_hash_entry(adj_adjointer* adjointer, adj_variable* var, adj_variable_data** data);
 int adj_record_variable_core_disk(adj_adjointer* adjointer, adj_variable_data* data_ptr, adj_storage_data storage);
 int adj_record_variable_core_memory(adj_adjointer* adjointer, adj_variable_data* data_ptr, adj_storage_data storage);
+int adj_record_variable_core_dummy(adj_adjointer* adjointer, adj_variable_data* data_ptr, adj_storage_data storage);
 int adj_record_variable_compare(adj_adjointer* adjointer, adj_variable_data* data_ptr, adj_variable var, adj_storage_data storage);
 
 int adj_append_unique(int** array, int* array_sz, int value);

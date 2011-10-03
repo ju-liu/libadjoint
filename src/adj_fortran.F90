@@ -814,6 +814,20 @@ module libadjoint
       integer(kind=c_int) :: ierr
     end function adj_storage_disk_incref
 
+    function adj_storage_dummy_copy(mem) result(ierr) bind(c, name='adj_storage_dummy_copy')
+      use libadjoint_data_structures
+      use iso_c_binding
+      type(adj_storage_data), intent(inout) :: mem
+      integer(kind=c_int) :: ierr
+    end function adj_storage_dummy_copy
+
+    function adj_storage_dummy_incref(mem) result(ierr) bind(c, name='adj_storage_dummy_incref')
+      use libadjoint_data_structures
+      use iso_c_binding
+      type(adj_storage_data), intent(inout) :: mem
+      integer(kind=c_int) :: ierr
+    end function adj_storage_dummy_incref
+
     function adj_storage_set_compare_c(mem, compare, comparison_tolerance) result(ierr) bind(c, name='adj_storage_set_compare')
       use libadjoint_data_structures
       use iso_c_binding

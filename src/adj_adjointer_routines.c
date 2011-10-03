@@ -671,7 +671,7 @@ int adj_checkpoint_variable(adj_adjointer* adjointer, adj_variable var, int cs)
     {
 			char buf[ADJ_NAME_LEN];
       adj_variable_str(var, buf, ADJ_NAME_LEN);
-      snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Invalid storage type (%i) for variable %s. Expected ADJ_STORAGE_MEMORY_COPY or ADJ_STORAGE_MEMORY_INCREF.", var_data->storage.storage_memory_type, buf);
+      snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Invalid storage type (%i) for variable %s. Expected ADJ_STORAGE_MEMORY_COPY or ADJ_STORAGE_MEMORY_INCREF. Did you remember to set the memory storage type for every variable (using adj_storage_dummy_* and adj_record_variable)?", var_data->storage.storage_memory_type, buf);
       return ADJ_ERR_INVALID_INPUTS;
     }
 	else if  (cs==ADJ_CHECKPOINT_STORAGE_MEMORY)
@@ -892,11 +892,14 @@ int adj_record_variable(adj_adjointer* adjointer, adj_variable var, adj_storage_
 
   assert(data_ptr != NULL);
 
-  if (storage.storage_memory_has_value && !data_ptr->storage.storage_memory_has_value) /* If we don't have a value recorded, any compare or overwrite flags can be ignored */
-  {
+  /* If the input storage type does not have a value attached, we call the dummy record function. */
+  if (!storage.storage_memory_has_value && !storage.storage_disk_has_value)
+  	return adj_record_variable_core_dummy(adjointer, data_ptr, storage);
+
+  /* If we don't have a value recorded already, any compare or overwrite flags can be ignored */
+  else if (storage.storage_memory_has_value && !data_ptr->storage.storage_memory_has_value)
   	return adj_record_variable_core_memory(adjointer, data_ptr, storage);
-  }
-  else if (storage.storage_disk_has_value && !data_ptr->storage.storage_disk_has_value) /* If we don't have a value recorded, any compare or overwrite flags can be ignored */
+  else if (storage.storage_disk_has_value && !data_ptr->storage.storage_disk_has_value)
   {
     /* Generate the filename */
   	char filename[ADJ_NAME_LEN];
@@ -1045,10 +1048,21 @@ int adj_record_variable_core_disk(adj_adjointer* adjointer, adj_variable_data* d
 		return ADJ_ERR_INVALID_INPUTS;
 	}
 
+  data_ptr->storage.storage_memory_type = storage.storage_memory_type;
   data_ptr->storage.storage_disk_has_value = storage.storage_disk_has_value;
   data_ptr->storage.storage_disk_is_checkpoint = storage.storage_disk_is_checkpoint;
   strncpy(data_ptr->storage.storage_disk_filename, storage.storage_disk_filename, ADJ_NAME_LEN);
   adjointer->callbacks.vec_to_file(storage.value, data_ptr->storage.storage_disk_filename);
+
+  return ADJ_OK;
+}
+
+/* A dummy routine to set the memory storage type of a variable without actually recording the variable. This is needed for
+ * revolve to know whether to copy or incref variable values when replaying the forward equation. */
+int adj_record_variable_core_dummy(adj_adjointer* adjointer, adj_variable_data* data_ptr, adj_storage_data storage)
+{
+	(void) adjointer;
+	data_ptr->storage.storage_memory_type = storage.storage_memory_type;
 
   return ADJ_OK;
 }
@@ -1850,6 +1864,36 @@ int adj_storage_disk_incref(adj_vector value, adj_storage_data* data)
   data->storage_memory_type = ADJ_STORAGE_MEMORY_INCREF;
 
   data->storage_disk_has_value = ADJ_TRUE;
+
+  data->compare = ADJ_FALSE;
+  data->comparison_tolerance = (adj_scalar)0.0;
+  data->overwrite = ADJ_FALSE;
+  data->storage_memory_is_checkpoint = ADJ_FALSE;
+  data->storage_disk_is_checkpoint = ADJ_FALSE;
+  return ADJ_OK;
+}
+
+int adj_storage_dummy_copy(adj_storage_data* data)
+{
+  data->storage_memory_has_value = ADJ_FALSE;
+  data->storage_memory_type = ADJ_STORAGE_MEMORY_COPY;
+
+  data->storage_disk_has_value = ADJ_FALSE;
+
+  data->compare = ADJ_FALSE;
+  data->comparison_tolerance = (adj_scalar)0.0;
+  data->overwrite = ADJ_FALSE;
+  data->storage_memory_is_checkpoint = ADJ_FALSE;
+  data->storage_disk_is_checkpoint = ADJ_FALSE;
+  return ADJ_OK;
+}
+
+int adj_storage_dummy_incref(adj_storage_data* data)
+{
+  data->storage_memory_has_value = ADJ_FALSE;
+  data->storage_memory_type = ADJ_STORAGE_MEMORY_INCREF;
+
+  data->storage_disk_has_value = ADJ_FALSE;
 
   data->compare = ADJ_FALSE;
   data->comparison_tolerance = (adj_scalar)0.0;

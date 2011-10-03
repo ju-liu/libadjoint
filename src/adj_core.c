@@ -652,17 +652,37 @@ int adj_replay_forward_equations(adj_adjointer* adjointer, int start_equation, i
 			ierr = adj_get_forward_solution(adjointer, equation, &soln, &var);
 			if (ierr!=ADJ_OK) return ierr;
 
-			/* If we solved for a variable in the last timestep, then record it */
-  		/* TODO: adj_storage_memory_[copy, incref] is application specific */
-			ierr = adj_storage_memory_copy(soln, &storage);
-			if (ierr!=ADJ_OK) return ierr;
+			/* Record the solution to memory */
+			{
+				/* First we need to find out if we want to use adj_storage_memory_copy or adj_storage_memory_incref */
+			  adj_variable_data* var_data;
 
-			/* We checkpoint the last timestep so that adj_forget_forward_equation will not delete it */
+				ierr = adj_find_variable_data(&(adjointer->varhash), &var, &var_data);
+				if (ierr != ADJ_OK) return ierr;
+
+				/* The way of vector duplication (copy or incref) was provided when
+				 * the variable was recorded the first time */
+				if (var_data->storage.storage_memory_type==ADJ_STORAGE_MEMORY_COPY)
+					ierr = adj_storage_memory_copy(soln, &storage);
+				else if (var_data->storage.storage_memory_type==ADJ_STORAGE_MEMORY_INCREF)
+					ierr = adj_storage_memory_incref(soln, &storage);
+				else
+				{
+					char buf[ADJ_NAME_LEN];
+					adj_variable_str(var, buf, ADJ_NAME_LEN);
+					snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Invalid storage type (%i) for variable %s. Expected ADJ_STORAGE_MEMORY_COPY or ADJ_STORAGE_MEMORY_INCREF. Did you remember to set the memory storage type for every variable (using adj_storage_dummy and adj_record_variable)?", var_data->storage.storage_memory_type, buf);
+					return ADJ_ERR_INVALID_INPUTS;
+				}
+				if (ierr != ADJ_OK) return ierr;
+			}
+
+			/* We checkpoint the variables of the last timestep, so that adj_forget_forward_equation will not delete them */
 			if (var.timestep==stop_timestep)
 			{
 				ierr = adj_storage_set_checkpoint(&storage, ADJ_TRUE);
 				if (ierr!=ADJ_OK) return ierr;
 			}
+
 			/* Record the result */
 			ierr = adj_record_variable(adjointer, var, storage);
 			if (ierr<0)
