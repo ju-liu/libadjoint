@@ -798,13 +798,21 @@ module libadjoint
       integer(kind=c_int) :: ierr
     end function adj_storage_memory_incref
 
-    function adj_storage_disk(val, mem) result(ierr) bind(c, name='adj_storage_disk')
+    function adj_storage_disk_copy(val, mem) result(ierr) bind(c, name='adj_storage_disk_copy')
       use libadjoint_data_structures
       use iso_c_binding
       type(adj_vector), intent(in), value :: val
       type(adj_storage_data), intent(inout) :: mem
       integer(kind=c_int) :: ierr
-    end function adj_storage_disk
+    end function adj_storage_disk_copy
+
+    function adj_storage_disk_incref(val, mem) result(ierr) bind(c, name='adj_storage_disk_incref')
+      use libadjoint_data_structures
+      use iso_c_binding
+      type(adj_vector), intent(in), value :: val
+      type(adj_storage_data), intent(inout) :: mem
+      integer(kind=c_int) :: ierr
+    end function adj_storage_disk_incref
 
     function adj_storage_set_compare_c(mem, compare, comparison_tolerance) result(ierr) bind(c, name='adj_storage_set_compare')
       use libadjoint_data_structures

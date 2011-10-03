@@ -81,7 +81,7 @@ typedef struct
 
   adj_vector value;
   /* for ADJ_STORAGE_MEMORY */
-  int storage_memory_type;
+  int storage_memory_type; /* ADJ_STORAGE_MEMORY_COPY or ADJ_STORAGE_MEMORY_INCREF */
   int storage_memory_has_value;
   int storage_memory_is_checkpoint; /* checkpoints are not deleted by adj_forget_forward_equation */
 

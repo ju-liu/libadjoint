@@ -133,15 +133,13 @@ void test_checkpoint_revolve_offline(void)
 
     if (cs==ADJ_CHECKPOINT_STORAGE_DISK)
     {
-  		ierr = adj_storage_disk(value, &storage);
+  		ierr = adj_storage_disk_copy(value, &storage);
   		adj_test_assert(ierr == ADJ_OK, "Should have worked");
   		ierr = adj_storage_set_checkpoint(&storage, ADJ_TRUE);
   		adj_test_assert(ierr == ADJ_OK, "Should have worked");
   		/* A checkpoint needs the the old velocity only */
   		ierr = adj_record_variable(&adjointer, u[0], storage);
   		adj_test_assert(ierr == ADJ_OK, "Should have worked");
-  		//ierr = adj_record_variable(&adjointer, u[1], storage);
-  		//adj_test_assert(ierr == ADJ_OK, "Should have worked");
     }
     else if (cs==ADJ_CHECKPOINT_STORAGE_MEMORY)
     {
@@ -197,6 +195,7 @@ void test_checkpoint_revolve_offline(void)
     ierr = adj_adjointer_to_html(&adjointer, filename_adj, ADJ_ADJOINT);
     adj_test_assert(ierr == ADJ_OK, "Should have worked");
 
+    /* Compare the recorded forward variables with the expected results */
     if ((timestep>=14) || (timestep<=5))
     {
 			get_expected_values(timestep, &nb_expected_vars, expected_vars, memory_has_value, memory_is_checkpoint, disk_has_value, disk_is_checkpoint);

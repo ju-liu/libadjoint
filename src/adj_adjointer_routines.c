@@ -499,7 +499,6 @@ int adj_register_equation(adj_adjointer* adjointer, adj_equation equation, int* 
   }
 
   /* Set the checkpoint flag */
-  /* TODO: Do all this logic in adj_create_equation and set the flag in adj_create_equation??? */
   *checkpoint_storage = ADJ_CHECKPOINT_STORAGE_NONE;
 
   ierr = adj_get_checkpoint_strategy(adjointer, &cs);
@@ -662,10 +661,35 @@ int adj_checkpoint_variable(adj_adjointer* adjointer, adj_variable var, int cs)
 	strncat(filename, ".dat", 4);
 
 	if (cs==ADJ_CHECKPOINT_STORAGE_DISK)
-		ierr = adj_storage_disk(var_data->storage.value, &storage);
+		/* The way of vector duplication (copy or incref) was provided when
+		 * the variable was recorded the first time */
+		if (var_data->storage.storage_memory_type==ADJ_STORAGE_MEMORY_COPY)
+			ierr = adj_storage_disk_incref(var_data->storage.value, &storage);
+		else if (var_data->storage.storage_memory_type==ADJ_STORAGE_MEMORY_INCREF)
+			ierr = adj_storage_disk_incref(var_data->storage.value, &storage);
+		else
+    {
+			char buf[ADJ_NAME_LEN];
+      adj_variable_str(var, buf, ADJ_NAME_LEN);
+      snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Invalid storage type (%i) for variable %s. Expected ADJ_STORAGE_MEMORY_COPY or ADJ_STORAGE_MEMORY_INCREF.", var_data->storage.storage_memory_type, buf);
+      return ADJ_ERR_INVALID_INPUTS;
+    }
 	else if  (cs==ADJ_CHECKPOINT_STORAGE_MEMORY)
-		/* TODO: adj_storage_memory_copy is application specific! */
-		ierr = adj_storage_memory_copy(var_data->storage.value, &storage);
+	{
+		/* The way of vector duplication (copy or incref) was provided when
+		 * the variable was recorded the first time */
+		if (var_data->storage.storage_memory_type==ADJ_STORAGE_MEMORY_COPY)
+			ierr = adj_storage_memory_copy(var_data->storage.value, &storage);
+		else if (var_data->storage.storage_memory_type==ADJ_STORAGE_MEMORY_INCREF)
+			ierr = adj_storage_memory_incref(var_data->storage.value, &storage);
+		else
+    {
+			char buf[ADJ_NAME_LEN];
+      adj_variable_str(var, buf, ADJ_NAME_LEN);
+      snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Invalid storage type (%i) for variable %s. Expected ADJ_STORAGE_MEMORY_COPY or ADJ_STORAGE_MEMORY_INCREF.", var_data->storage.storage_memory_type, buf);
+      return ADJ_ERR_INVALID_INPUTS;
+    }
+	}
 	if (ierr != ADJ_OK) return ierr;
 	ierr = adj_storage_set_checkpoint(&storage, ADJ_TRUE);
 	if (ierr != ADJ_OK) return ierr;
@@ -679,8 +703,8 @@ int adj_checkpoint_variable(adj_adjointer* adjointer, adj_variable var, int cs)
 int adj_get_revolve_checkpoint_storage(adj_adjointer* adjointer, adj_equation equation, int *checkpoint_storage)
 {
   int cs, ierr;
-  char buf[ADJ_NAME_LEN];
   int oldcapo, capo;
+  char buf[ADJ_NAME_LEN];
 
   ierr = adj_get_checkpoint_strategy(adjointer, &cs);
   if (ierr != ADJ_OK) return ierr;
@@ -690,7 +714,6 @@ int adj_get_revolve_checkpoint_storage(adj_adjointer* adjointer, adj_equation eq
   {
     if ((adjointer->revolve_data.current_action != CACTION_ADVANCE) && (adjointer->revolve_data.current_action != CACTION_FIRSTRUN))
     {
-      char buf[ADJ_NAME_LEN];
       adj_variable_str(equation.variable, buf, ADJ_NAME_LEN);
       snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "The adjointer and revolve are not consistent (in adj_register_equation of variable %s). This can happen when one tries to register an equation after solving the first adjoint equation.", buf);
       return ADJ_ERR_REVOLVE_ERROR;
@@ -953,6 +976,7 @@ int adj_record_variable(adj_adjointer* adjointer, adj_variable var, adj_storage_
   return ADJ_OK; /* Should never get here, but keep the compiler quiet */
 }
 
+/* The core routine to record a variable to memory */
 int adj_record_variable_core_memory(adj_adjointer* adjointer, adj_variable_data* data_ptr, adj_storage_data storage)
 {
   if (adjointer->callbacks.vec_duplicate == NULL)
@@ -966,7 +990,17 @@ int adj_record_variable_core_memory(adj_adjointer* adjointer, adj_variable_data*
     return ADJ_ERR_NEED_CALLBACK;
   }
 
-  assert(storage.storage_memory_has_value);
+  if (storage.storage_memory_has_value!=ADJ_TRUE)
+  {
+  	snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Can not record a variable whose storage object has no value.");
+  	return ADJ_ERR_NEED_VALUE;
+  }
+
+  if (data_ptr->storage.storage_memory_has_value==ADJ_TRUE)
+	{
+		snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Trying to overwrite a variable value in adj_record_variable_core_memory which is not supported.");
+		return ADJ_ERR_INVALID_INPUTS;
+	}
 
   switch (storage.storage_memory_type)
   {
@@ -990,6 +1024,7 @@ int adj_record_variable_core_memory(adj_adjointer* adjointer, adj_variable_data*
   return ADJ_OK;
 }
 
+/* The core routine to record a variable to disk */
 int adj_record_variable_core_disk(adj_adjointer* adjointer, adj_variable_data* data_ptr, adj_storage_data storage)
 {
   if (adjointer->callbacks.vec_to_file == NULL)
@@ -998,7 +1033,17 @@ int adj_record_variable_core_disk(adj_adjointer* adjointer, adj_variable_data* d
     return ADJ_ERR_NEED_CALLBACK;
   }
 
-  assert(storage.storage_disk_has_value);
+  if (storage.storage_disk_has_value!=ADJ_TRUE)
+  {
+  	snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Can not record a variable whose storage object has no value.");
+  	return ADJ_ERR_NEED_VALUE;
+  }
+
+  if (data_ptr->storage.storage_disk_has_value==ADJ_TRUE)
+	{
+		snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Trying to overwrite a variable value in adj_record_variable_core_disk which is not supported.");
+		return ADJ_ERR_INVALID_INPUTS;
+	}
 
   data_ptr->storage.storage_disk_has_value = storage.storage_disk_has_value;
   data_ptr->storage.storage_disk_is_checkpoint = storage.storage_disk_is_checkpoint;
@@ -1782,11 +1827,27 @@ int adj_storage_memory_incref(adj_vector value, adj_storage_data* data)
   return ADJ_OK;
 }
 
-int adj_storage_disk(adj_vector value, adj_storage_data* data)
+int adj_storage_disk_copy(adj_vector value, adj_storage_data* data)
 {
   data->value = value;
   data->storage_memory_has_value = ADJ_FALSE;
-  data->storage_memory_type = ADJ_UNSET;
+  data->storage_memory_type = ADJ_STORAGE_MEMORY_COPY;
+
+  data->storage_disk_has_value = ADJ_TRUE;
+
+  data->compare = ADJ_FALSE;
+  data->comparison_tolerance = (adj_scalar)0.0;
+  data->overwrite = ADJ_FALSE;
+  data->storage_memory_is_checkpoint = ADJ_FALSE;
+  data->storage_disk_is_checkpoint = ADJ_FALSE;
+  return ADJ_OK;
+}
+
+int adj_storage_disk_incref(adj_vector value, adj_storage_data* data)
+{
+  data->value = value;
+  data->storage_memory_has_value = ADJ_FALSE;
+  data->storage_memory_type = ADJ_STORAGE_MEMORY_INCREF;
 
   data->storage_disk_has_value = ADJ_TRUE;
 
