@@ -117,7 +117,7 @@ void test_adj_forget_forward_equation(void)
 
     if (checkpoint_strategy[timestep]==ADJ_CHECKPOINT_STORAGE_DISK)
     {
-  		ierr = adj_storage_disk_copy(value, &storage);
+  		ierr = adj_storage_disk(value, &storage);
   		adj_test_assert(ierr == ADJ_OK, "Should have worked");
   		/* A checkpoint needs the the old velocity only */
   		ierr = adj_record_variable(&adjointer, u[0], storage);

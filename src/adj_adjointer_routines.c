@@ -208,7 +208,7 @@ int adj_register_equation(adj_adjointer* adjointer, adj_equation equation, int* 
   int ierr;
   int i;
   int j;
-  int cs; /* checkpoint strategy */
+  int checkpoint_strategy; /* ADJ_CHECKPOINT_STORAGE_NONE, ADJ_CHECKPOINT_STORAGE_MEMORY or ADJ_CHECKPOINT_STORAGE_DISK */
 
   if (adjointer->options[ADJ_ACTIVITY] == ADJ_ACTIVITY_NOTHING) return ADJ_OK;
 
@@ -501,10 +501,12 @@ int adj_register_equation(adj_adjointer* adjointer, adj_equation equation, int* 
   /* Set the checkpoint flag */
   *checkpoint_storage = ADJ_CHECKPOINT_STORAGE_NONE;
 
-  ierr = adj_get_checkpoint_strategy(adjointer, &cs);
+  ierr = adj_get_checkpoint_strategy(adjointer, &checkpoint_strategy);
   if (ierr != ADJ_OK) return ierr;
 
-  if ((cs==ADJ_CHECKPOINT_REVOLVE_OFFLINE) || (cs==ADJ_CHECKPOINT_REVOLVE_MULTISTAGE) || (cs==ADJ_CHECKPOINT_REVOLVE_ONLINE))
+  if ((checkpoint_strategy==ADJ_CHECKPOINT_REVOLVE_OFFLINE) || 
+      (checkpoint_strategy==ADJ_CHECKPOINT_REVOLVE_MULTISTAGE) || 
+      (checkpoint_strategy==ADJ_CHECKPOINT_REVOLVE_ONLINE))
   {
     ierr = adj_get_revolve_checkpoint_storage(adjointer, equation, checkpoint_storage);
     if (ierr != ADJ_OK) return ierr;
@@ -514,14 +516,14 @@ int adj_register_equation(adj_adjointer* adjointer, adj_equation equation, int* 
   return ADJ_OK;
 }
 
-/* Creates a checkpoints for the given equation.
- * Recorded are all variables that are computed at equations < eqn_number
+/* Creates a checkpoints for the given equation:
+ * Records all variables that are computed at equations < eqn_number
  * and that are required for forward/adjoint equations >= eqn_number
  */
 int adj_checkpoint_equation(adj_adjointer* adjointer, int eqn_number, int cs)
 {
-	int eqn_number_iter, i, j, ierr;
-	adj_equation eqn;
+  int eqn_number_iter, i, j, ierr;
+  adj_equation eqn;
   adj_variable var;
 
   if (!(cs==ADJ_CHECKPOINT_STORAGE_MEMORY || cs==ADJ_CHECKPOINT_STORAGE_DISK))
@@ -530,8 +532,9 @@ int adj_checkpoint_equation(adj_adjointer* adjointer, int eqn_number, int cs)
   if (eqn_number<0 || eqn_number>=adjointer->nequations)
   	return ADJ_ERR_INVALID_INPUTS;
 
-  /* We store variables that are required for equations >= eqn_number but are computed
-     in equations < eqn_number */
+  /* We store variables that are required for equations >= eqn_number 
+   * but are computed at an equation < eqn_number 
+   */
   for (eqn_number_iter=eqn_number; eqn_number_iter<adjointer->nequations; eqn_number_iter++)
   {
   	eqn = adjointer->equations[eqn_number_iter];
@@ -647,37 +650,32 @@ int adj_checkpoint_variable(adj_adjointer* adjointer, adj_variable var, int cs)
 	{
     char buf[ADJ_NAME_LEN];
     adj_variable_str(var, buf, ADJ_NAME_LEN);
-    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Trying to to checkpoint variable %s, but do not have it.", buf);
+    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Trying to to checkpoint variable %s, but it is not recorded.", buf);
     return ADJ_ERR_NEED_VALUE;
 	}
 
-	/* Do we have the value already as a checkpoint? */
-	if (((cs==ADJ_CHECKPOINT_STORAGE_DISK) && (var_data->storage.storage_disk_has_value==ADJ_TRUE)) ||
-			((cs==ADJ_CHECKPOINT_STORAGE_MEMORY) && (var_data->storage.storage_memory_has_value==ADJ_TRUE)))
+	/* Do we have the value already recorded?
+	 * Then all we have to do is to set the checkpoint flag */
+	if ((cs==ADJ_CHECKPOINT_STORAGE_DISK) && (var_data->storage.storage_disk_has_value==ADJ_TRUE))
+	{
+		var_data->storage.storage_disk_is_checkpoint = ADJ_TRUE;
 		return ADJ_OK;
+	}
+	else if ((cs==ADJ_CHECKPOINT_STORAGE_MEMORY) && (var_data->storage.storage_memory_has_value==ADJ_TRUE))
+	{
+		var_data->storage.storage_memory_is_checkpoint = ADJ_TRUE;
+		return ADJ_OK;
+	}
 
 	char filename[ADJ_NAME_LEN];
 	adj_variable_str(var, filename, ADJ_NAME_LEN);
 	strncat(filename, ".dat", 4);
 
 	if (cs==ADJ_CHECKPOINT_STORAGE_DISK)
-		/* The way of vector duplication (copy or incref) was provided when
-		 * the variable was recorded the first time */
-		if (var_data->storage.storage_memory_type==ADJ_STORAGE_MEMORY_COPY)
-			ierr = adj_storage_disk_incref(var_data->storage.value, &storage);
-		else if (var_data->storage.storage_memory_type==ADJ_STORAGE_MEMORY_INCREF)
-			ierr = adj_storage_disk_incref(var_data->storage.value, &storage);
-		else
-    {
-			char buf[ADJ_NAME_LEN];
-      adj_variable_str(var, buf, ADJ_NAME_LEN);
-      snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Invalid storage type (%i) for variable %s. Expected ADJ_STORAGE_MEMORY_COPY or ADJ_STORAGE_MEMORY_INCREF. Did you remember to set the memory storage type for every variable (using adj_storage_dummy_* and adj_record_variable)?", var_data->storage.storage_memory_type, buf);
-      return ADJ_ERR_INVALID_INPUTS;
-    }
+		ierr = adj_storage_disk(var_data->storage.value, &storage);
 	else if  (cs==ADJ_CHECKPOINT_STORAGE_MEMORY)
 	{
-		/* The way of vector duplication (copy or incref) was provided when
-		 * the variable was recorded the first time */
+		/* The way of vector duplication (copy or incref) must have been provided by the user */
 		if (var_data->storage.storage_memory_type==ADJ_STORAGE_MEMORY_COPY)
 			ierr = adj_storage_memory_copy(var_data->storage.value, &storage);
 		else if (var_data->storage.storage_memory_type==ADJ_STORAGE_MEMORY_INCREF)
@@ -706,13 +704,18 @@ int adj_get_revolve_checkpoint_storage(adj_adjointer* adjointer, adj_equation eq
   int oldcapo, capo;
   char buf[ADJ_NAME_LEN];
 
+  *checkpoint_storage = ADJ_CHECKPOINT_STORAGE_NONE;
+
   ierr = adj_get_checkpoint_strategy(adjointer, &cs);
   if (ierr != ADJ_OK) return ierr;
 
-  /* Initialise Revolve if not done before and otherwise do some consistency checks*/
+  /* Perform some revolve consistency checks or initialise revolve if not done before */
   if (adjointer->revolve_data.revolve.ptr != NULL)
   {
-    if ((adjointer->revolve_data.current_action != CACTION_ADVANCE) && (adjointer->revolve_data.current_action != CACTION_FIRSTRUN))
+  	/* This function is only called during the forward run when registering an equation.
+  	 * At that point revolve should always be in either CACTION_FIRSTRUN or CACTION_ADVANCE mode */
+    if ((adjointer->revolve_data.current_action != CACTION_ADVANCE) &&
+    		(adjointer->revolve_data.current_action != CACTION_FIRSTRUN))
     {
       adj_variable_str(equation.variable, buf, ADJ_NAME_LEN);
       snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "The adjointer and revolve are not consistent (in adj_register_equation of variable %s). This can happen when one tries to register an equation after solving the first adjoint equation.", buf);
@@ -724,18 +727,19 @@ int adj_get_revolve_checkpoint_storage(adj_adjointer* adjointer, adj_equation eq
     ierr = adj_initialise_revolve(adjointer);
     if (ierr != ADJ_OK) return ierr;
 
-    /* Set the intial revolve state */
+    /* Set the initial revolve state */
     adjointer->revolve_data.current_action = revolve(adjointer->revolve_data.revolve);
     adjointer->revolve_data.current_timestep = equation.variable.timestep;
     if (equation.variable.timestep!=0) 
     {
-      snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "With revolve as checkpoint strategy the first equation has solve for a variable at timestep 0.");
+      snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "With revolve as checkpoint strategy the first equation has to solve for a variable at timestep 0.");
       return ADJ_ERR_INVALID_INPUTS;
     }
   }
 
   /* Check that the equations are registered chronologically */
-  if ((adjointer->revolve_data.current_timestep != equation.variable.timestep) && (adjointer->revolve_data.current_timestep+1 != equation.variable.timestep))
+  if ((adjointer->revolve_data.current_timestep != equation.variable.timestep) &&
+  		(adjointer->revolve_data.current_timestep+1 != equation.variable.timestep))
   {
     adj_variable_str(equation.variable, buf, ADJ_NAME_LEN);
     snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "With revolve as checkpoint strategy the equations have to be registered chronologically, but equation for variable %s is out of order.", buf);
@@ -748,7 +752,6 @@ int adj_get_revolve_checkpoint_storage(adj_adjointer* adjointer, adj_equation eq
   /* Determine if a checkpoint is requested and of which type */
   switch (adjointer->revolve_data.current_action)
   {
-
     case CACTION_ADVANCE:
       capo = revolve_getcapo(adjointer->revolve_data.revolve);
       oldcapo = revolve_getoldcapo(adjointer->revolve_data.revolve);
@@ -761,10 +764,15 @@ int adj_get_revolve_checkpoint_storage(adj_adjointer* adjointer, adj_equation eq
         return ADJ_ERR_REVOLVE_ERROR;
       }
 
+      /* Since this function is called after adj_register_equation, we assume that
+       * we are about to solve for this equation. Hence, in the case that
+       * we reached the last timestep of an ADCANCE action, let's ask revolve
+       * what we have to do next. */
       if (adjointer->revolve_data.current_timestep == capo)
         adjointer->revolve_data.current_action = revolve(adjointer->revolve_data.revolve);
 
-      /* In the case we want to take a checkpoint, we do not break here and execute the next case as well */
+      /* In the case we want to take a checkpoint as next action,
+       * do not break here and execute the next case as well */
       if (adjointer->revolve_data.current_action != CACTION_TAKESHOT)
         break;
 
@@ -1048,7 +1056,6 @@ int adj_record_variable_core_disk(adj_adjointer* adjointer, adj_variable_data* d
 		return ADJ_ERR_INVALID_INPUTS;
 	}
 
-  data_ptr->storage.storage_memory_type = storage.storage_memory_type;
   data_ptr->storage.storage_disk_has_value = storage.storage_disk_has_value;
   data_ptr->storage.storage_disk_is_checkpoint = storage.storage_disk_is_checkpoint;
   strncpy(data_ptr->storage.storage_disk_filename, storage.storage_disk_filename, ADJ_NAME_LEN);
@@ -1841,27 +1848,11 @@ int adj_storage_memory_incref(adj_vector value, adj_storage_data* data)
   return ADJ_OK;
 }
 
-int adj_storage_disk_copy(adj_vector value, adj_storage_data* data)
+int adj_storage_disk(adj_vector value, adj_storage_data* data)
 {
   data->value = value;
   data->storage_memory_has_value = ADJ_FALSE;
-  data->storage_memory_type = ADJ_STORAGE_MEMORY_COPY;
-
-  data->storage_disk_has_value = ADJ_TRUE;
-
-  data->compare = ADJ_FALSE;
-  data->comparison_tolerance = (adj_scalar)0.0;
-  data->overwrite = ADJ_FALSE;
-  data->storage_memory_is_checkpoint = ADJ_FALSE;
-  data->storage_disk_is_checkpoint = ADJ_FALSE;
-  return ADJ_OK;
-}
-
-int adj_storage_disk_incref(adj_vector value, adj_storage_data* data)
-{
-  data->value = value;
-  data->storage_memory_has_value = ADJ_FALSE;
-  data->storage_memory_type = ADJ_STORAGE_MEMORY_INCREF;
+  data->storage_memory_type = ADJ_UNSET;
 
   data->storage_disk_has_value = ADJ_TRUE;
 
