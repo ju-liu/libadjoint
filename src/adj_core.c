@@ -314,6 +314,12 @@ int adj_get_adjoint_solution(adj_adjointer* adjointer, int equation, char* funct
   ierr = adj_get_checkpoint_strategy(adjointer, &cs);
   if (ierr != ADJ_OK) return ierr;
 
+  /* Online revolve needs to be told the total number of timesteps
+   * before solving the first adjoint equation */
+  if (cs==ADJ_CHECKPOINT_REVOLVE_ONLINE)
+  	if (equation==adjointer->nequations-1)
+  		revolve_turn(adjointer->revolve_data.revolve, adjointer->nequations);
+
   if ((cs==ADJ_CHECKPOINT_REVOLVE_OFFLINE) || (cs==ADJ_CHECKPOINT_REVOLVE_MULTISTAGE) || (cs==ADJ_CHECKPOINT_REVOLVE_ONLINE))
   {
     ierr = adj_revolve_to_adjoint_equation(adjointer, equation);
@@ -391,18 +397,12 @@ int adj_revolve_to_adjoint_equation(adj_adjointer* adjointer, int equation)
         if (debug)
         	printf("Revolve: First run");
 
-        if ((cs==ADJ_CHECKPOINT_REVOLVE_OFFLINE) || (cs==ADJ_CHECKPOINT_REVOLVE_MULTISTAGE))
-        {
-          /* Check that the forward simulation was run to the last timestep */
-          if (adjointer->revolve_data.current_timestep != adjointer->revolve_data.steps-1)
-          {
-            snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "You asked for an adjoint solution after solving %i forward timestep, but you told revolve that you are going to solve %i forward timesteps.", adjointer->revolve_data.current_timestep, adjointer->revolve_data.steps);
-            return ADJ_ERR_INVALID_INPUTS;
-          }
-        }
-        else if (cs==ADJ_CHECKPOINT_REVOLVE_ONLINE)
-        	/* TODO: Online revolve will not work like this. Fix me! */
-          revolve_turn(adjointer->revolve_data.revolve, adjointer->revolve_data.current_timestep);
+				/* Check that the forward simulation was run to the last timestep */
+				if (adjointer->revolve_data.current_timestep != adjointer->revolve_data.steps-1)
+				{
+					snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "You asked for an adjoint solution after solving %i forward timestep, but you told revolve that you are going to solve %i forward timesteps.", adjointer->revolve_data.current_timestep, adjointer->revolve_data.steps);
+					return ADJ_ERR_INVALID_INPUTS;
+				}
 
         /* Replay the last equation (if not already recorded)
          * This is done by leaving out the break here,
