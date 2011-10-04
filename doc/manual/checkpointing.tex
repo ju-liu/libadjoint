@@ -1,0 +1,74 @@
+\chapter{Checkpointing}
+
+\begin{synopsis}
+\end{synopsis}
+\minitoc
+\vspace{\fill}
+\newpage
+
+\section{Introduction}
+\libadjoint is distributed with Revolve, a library for optimal checkpointing for adjoint calculations. 
+\section{Initialisation}
+
+
+\defapis{adj_set_checkpoint_strategy}
+\begin{boxwithtitle}{Function interface for \texttt{adj_set_checkpoint_strategy}}
+\begin{minipage}{\columnwidth}
+\begin{ccode}
+  int adj_set_checkpoint_strategy(adj_adjointer* adjointer, int strategy);
+\end{ccode}
+\begin{fortrancode}
+function adj_set_checkpoint_strategy(adjointer, strategy) result(ierr) 
+  type(adj_adjointer), intent(inout) :: adjointer
+  integer(kind=c_int), intent(in), value :: strategy
+  integer(kind=c_int) :: ierr
+end function adj_set_checkpoint_strategy
+\end{fortrancode}
+\end{minipage}
+\end{boxwithtitle}
+
+This function sets the checkpointing strategy to be used. 
+The options for the argument \texttt{strategy} are:
+\begin{itemize}
+\item \texttt{ADJ_CHECKPOINT_NONE}: No checkpointing. The default.
+\item \texttt{ADJ_CHECKPOINT_REVOLVE_OFFLINE}: Uses Revolve in offline checkpointing mode.
+\item \texttt{ADJ_CHECKPOINT_REVOLVE_MULTISTAGE}: Uses Revolve in multistage checkpointing mode.
+\item \texttt{ADJ_CHECKPOINT_REVOLVE_ONLINE}: Uses Revolve in online checkpointing mode.
+\end{itemize}
+
+
+\defapis{adj_set_revolve_options}
+\begin{boxwithtitle}{Function interface for \texttt{adj_set_revolve_options}}
+\begin{minipage}{\columnwidth}
+\begin{ccode}
+int adj_set_revolve_options(adj_adjointer* adjointer, int steps, int snaps, 
+                            int snaps_in_ram);
+\end{ccode}
+\begin{fortrancode}
+function adj_set_revolve_options(adjointer, steps, snaps, snaps_in_ram) 
+         result(ierr) 
+  type(adj_adjointer), intent(inout) :: adjointer
+  integer(kind=c_int), intent(in), value :: steps 
+  integer(kind=c_int), intent(in), value :: snaps 
+  integer(kind=c_int), intent(in), value :: snaps_in_ram 
+  integer(kind=c_int) :: ierr
+end function adj_set_revolve_options
+\end{fortrancode}
+\end{minipage}
+\end{boxwithtitle}
+
+This function sets the checkpointing options if using a revolve checkpointing scheme. 
+\texttt{steps} is the total number of timesteps of the simulation.
+\texttt{snaps} specifies the overall number of checkpoint slots that \libadjoint may use.
+\texttt{snaps_in_ram} denotes the number checkpoints that may be stored in memory. 
+Hence the number of checkpoint stored on disk is $\texttt{snaps}-\texttt{snaps_in_ram}$
+
+Depending on the chosen checkpointing strategy, these options must fullfill these properties:
+\begin{itemize}
+\item \texttt{ADJ_CHECKPOINT_REVOLVE_OFFLINE}: $\texttt{steps}>0$ and $\texttt{snaps}>0$.
+\item \texttt{ADJ_CHECKPOINT_REVOLVE_MULTISTAGE}: $\texttt{steps}>0$, $\texttt{snaps}>0$ and $\texttt{snaps\_in\_ram}\ge0$.
+\item \texttt{ADJ_CHECKPOINT_REVOLVE_ONLINE}: $\texttt{snaps}>0$.
+\end{itemize}
+
+
+
