@@ -902,7 +902,10 @@ int adj_record_variable(adj_adjointer* adjointer, adj_variable var, adj_storage_
 
   /* If the input storage type does not have a value attached, we call the dummy record function. */
   if (!storage.storage_memory_has_value && !storage.storage_disk_has_value)
-  	return adj_record_variable_core_dummy(adjointer, data_ptr, storage);
+	{
+		snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Trying to record a variable from a storage object with no value attached.");
+		return ADJ_ERR_INVALID_INPUTS;
+	}
 
   /* If we don't have a value recorded already, any compare or overwrite flags can be ignored */
   else if (storage.storage_memory_has_value && !data_ptr->storage.storage_memory_has_value)
@@ -1060,16 +1063,6 @@ int adj_record_variable_core_disk(adj_adjointer* adjointer, adj_variable_data* d
   data_ptr->storage.storage_disk_is_checkpoint = storage.storage_disk_is_checkpoint;
   strncpy(data_ptr->storage.storage_disk_filename, storage.storage_disk_filename, ADJ_NAME_LEN);
   adjointer->callbacks.vec_to_file(storage.value, data_ptr->storage.storage_disk_filename);
-
-  return ADJ_OK;
-}
-
-/* A dummy routine to set the memory storage type of a variable without actually recording the variable. This is needed for
- * revolve to know whether to copy or incref variable values when replaying the forward equation. */
-int adj_record_variable_core_dummy(adj_adjointer* adjointer, adj_variable_data* data_ptr, adj_storage_data storage)
-{
-	(void) adjointer;
-	data_ptr->storage.storage_memory_type = storage.storage_memory_type;
 
   return ADJ_OK;
 }
