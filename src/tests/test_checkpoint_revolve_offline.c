@@ -153,12 +153,8 @@ void test_checkpoint_revolve_offline(void)
 
     /* solve for u[1] .... */
 
-    /* We need to dummy record the solution to tell revolve how
-     * to save results from while replaying
-     */
-		ierr = adj_storage_dummy_copy(&storage);
-		adj_test_assert(ierr == ADJ_OK, "Should have worked");
-		ierr = adj_record_variable(&adjointer, u[1], storage);
+    /* We need to tell revolve how to save results in memory while replaying */
+		ierr = adj_set_storage_memory_copy(&adjointer, &u[1]);
 		adj_test_assert(ierr == ADJ_OK, "Should have worked");
   }
 

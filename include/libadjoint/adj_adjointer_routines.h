@@ -35,8 +35,8 @@ int adj_timestep_set_functional_dependencies(adj_adjointer* adjointer, int times
 int adj_storage_memory_copy(adj_vector value, adj_storage_data* data);
 int adj_storage_memory_incref(adj_vector value, adj_storage_data* data);
 int adj_storage_disk(adj_vector value, adj_storage_data* data);
-int adj_storage_dummy_copy(adj_storage_data* data);
-int adj_storage_dummy_incref(adj_storage_data* data);
+int adj_set_storage_memory_copy(adj_adjointer* adjointer, adj_variable* var);
+int adj_set_storage_memory_incref(adj_adjointer* adjointer, adj_variable* var);
 int adj_storage_set_compare(adj_storage_data* data, int compare, adj_scalar comparison_tolerance);
 int adj_storage_set_overwrite(adj_storage_data* data, int overwrite);
 int adj_storage_set_checkpoint(adj_storage_data* data, int checkpoint);

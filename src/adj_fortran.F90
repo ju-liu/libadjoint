@@ -798,7 +798,7 @@ module libadjoint
       integer(kind=c_int) :: ierr
     end function adj_storage_memory_incref
 
-    function adj_storage_disk_copy(val, mem) result(ierr) bind(c, name='adj_storage_disk_copy')
+    function adj_storage_disk_copy(val, mem) result(ierr) bind(c, name='adj_storage_disk')
       use libadjoint_data_structures
       use iso_c_binding
       type(adj_vector), intent(in), value :: val
@@ -806,27 +806,21 @@ module libadjoint
       integer(kind=c_int) :: ierr
     end function adj_storage_disk_copy
 
-    function adj_storage_disk_incref(val, mem) result(ierr) bind(c, name='adj_storage_disk_incref')
+    function adj_set_storage_memory_copy(adjointer, variable) result(ierr) bind(c, name='adj_set_storage_memory_copy')
       use libadjoint_data_structures
       use iso_c_binding
-      type(adj_vector), intent(in), value :: val
-      type(adj_storage_data), intent(inout) :: mem
+      type(adj_adjointer), intent(inout) :: adjointer
+      type(adj_variable), intent(in) :: variable
       integer(kind=c_int) :: ierr
-    end function adj_storage_disk_incref
+    end function adj_set_storage_memory_copy
 
-    function adj_storage_dummy_copy(mem) result(ierr) bind(c, name='adj_storage_dummy_copy')
+    function adj_set_storage_memory_incref(adjointer, variable) result(ierr) bind(c, name='adj_set_storage_memory_incref')
       use libadjoint_data_structures
       use iso_c_binding
-      type(adj_storage_data), intent(inout) :: mem
+      type(adj_adjointer), intent(inout) :: adjointer
+      type(adj_variable), intent(in) :: variable
       integer(kind=c_int) :: ierr
-    end function adj_storage_dummy_copy
-
-    function adj_storage_dummy_incref(mem) result(ierr) bind(c, name='adj_storage_dummy_incref')
-      use libadjoint_data_structures
-      use iso_c_binding
-      type(adj_storage_data), intent(inout) :: mem
-      integer(kind=c_int) :: ierr
-    end function adj_storage_dummy_incref
+    end function adj_set_storage_memory_incref
 
     function adj_storage_set_compare_c(mem, compare, comparison_tolerance) result(ierr) bind(c, name='adj_storage_set_compare')
       use libadjoint_data_structures

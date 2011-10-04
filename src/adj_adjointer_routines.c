@@ -1864,33 +1864,37 @@ int adj_storage_disk(adj_vector value, adj_storage_data* data)
   return ADJ_OK;
 }
 
-int adj_storage_dummy_copy(adj_storage_data* data)
+int adj_set_storage_memory_copy(adj_adjointer* adjointer, adj_variable* var)
 {
-  data->storage_memory_has_value = ADJ_FALSE;
-  data->storage_memory_type = ADJ_STORAGE_MEMORY_COPY;
+  int ierr;
+  adj_variable_data* data_ptr;
 
-  data->storage_disk_has_value = ADJ_FALSE;
+  /* Find the associated variable data, or create a new one if not existent */
+  ierr = adj_find_variable_data(&(adjointer->varhash), var, &data_ptr);
+  if (ierr == ADJ_ERR_HASH_FAILED)
+  {
+    ierr = adj_add_new_hash_entry(adjointer, var, &data_ptr);
+    if (ierr != ADJ_OK) return ierr;
+  }
 
-  data->compare = ADJ_FALSE;
-  data->comparison_tolerance = (adj_scalar)0.0;
-  data->overwrite = ADJ_FALSE;
-  data->storage_memory_is_checkpoint = ADJ_FALSE;
-  data->storage_disk_is_checkpoint = ADJ_FALSE;
+  data_ptr->storage.storage_memory_type = ADJ_STORAGE_MEMORY_COPY;
   return ADJ_OK;
 }
 
-int adj_storage_dummy_incref(adj_storage_data* data)
+int adj_set_storage_memory_incref(adj_adjointer* adjointer, adj_variable* var)
 {
-  data->storage_memory_has_value = ADJ_FALSE;
-  data->storage_memory_type = ADJ_STORAGE_MEMORY_INCREF;
+  int ierr;
+  adj_variable_data* data_ptr;
 
-  data->storage_disk_has_value = ADJ_FALSE;
+  /* Find the associated variable data, or create a new one if not existent */
+  ierr = adj_find_variable_data(&(adjointer->varhash), var, &data_ptr);
+  if (ierr == ADJ_ERR_HASH_FAILED)
+  {
+    ierr = adj_add_new_hash_entry(adjointer, var, &data_ptr);
+    if (ierr != ADJ_OK) return ierr;
+  }
 
-  data->compare = ADJ_FALSE;
-  data->comparison_tolerance = (adj_scalar)0.0;
-  data->overwrite = ADJ_FALSE;
-  data->storage_memory_is_checkpoint = ADJ_FALSE;
-  data->storage_disk_is_checkpoint = ADJ_FALSE;
+  data_ptr->storage.storage_memory_type = ADJ_STORAGE_MEMORY_INCREF;
   return ADJ_OK;
 }
 
