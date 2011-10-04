@@ -12,7 +12,7 @@ int adj_create_adjointer(adj_adjointer* adjointer);
 int adj_destroy_adjointer(adj_adjointer* adjointer);
 int adj_deactivate_adjointer(adj_adjointer* adjointer);
 int adj_set_checkpoint_strategy(adj_adjointer* adjointer, int strategy);
-int adj_set_revolve_options(adj_adjointer* adjointer, int steps, int snaps, int snaps_in_ram);
+int adj_set_revolve_options(adj_adjointer* adjointer, int steps, int snaps, int snaps_in_ram, int verbose);
 int adj_equation_count(adj_adjointer* adjointer, int* count);
 int adj_register_equation(adj_adjointer* adjointer, adj_equation equation, int* checkpoint_storage);
 int adj_record_variable(adj_adjointer* adjointer, adj_variable var, adj_storage_data storage);

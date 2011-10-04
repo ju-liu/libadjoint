@@ -239,6 +239,7 @@ typedef struct
   int current_timestep; /* The timestep which is currently being executed in the model. */
                         /* This should be thought of as "Libadjoint has all the data to solve */
                         /* for the first forward variable with timestep current_timestep" */
+  int verbose; /* A flag that prints revolve specific information to the screen if set to ADJ_TRUE */
 } adj_revolve_data;
 
 typedef struct adj_adjointer

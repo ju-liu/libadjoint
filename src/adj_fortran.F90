@@ -584,15 +584,17 @@ module libadjoint
       integer(kind=c_int) :: ierr
     end function adj_set_checkpoint_strategy
 
-    function adj_set_revolve_options(adjointer, steps, snaps, snaps_in_ram) result(ierr) bind(c, name='adj_set_revolve_options')
+    function adj_set_revolve_options_c(adjointer, steps, snaps, snaps_in_ram, verbose) result(ierr) &
+                                     & bind(c, name='adj_set_revolve_options')
       use libadjoint_data_structures
       use iso_c_binding
       type(adj_adjointer), intent(inout) :: adjointer
       integer(kind=c_int), intent(in), value :: steps 
       integer(kind=c_int), intent(in), value :: snaps 
-      integer(kind=c_int), intent(in), value :: snaps_in_ram 
+      integer(kind=c_int), intent(in), value :: snaps_in_ram
+      integer(kind=c_int), intent(in), value :: verbose
       integer(kind=c_int) :: ierr
-    end function adj_set_revolve_options
+    end function adj_set_revolve_options_c
 
     function adj_equation_count(adjointer, count) result(ierr) bind(c, name='adj_equation_count')
       use libadjoint_data_structures
@@ -1483,6 +1485,24 @@ module libadjoint
 
     ierr = adj_variable_set_auxiliary_c(var, auxiliary_c)
   end function adj_variable_set_auxiliary
+
+  function adj_set_revolve_options(adjointer, steps, snaps, snaps_in_ram, verbose) result(ierr)
+    type(adj_adjointer), intent(inout) :: adjointer
+    integer(kind=c_int), intent(in) :: steps
+    integer(kind=c_int), intent(in) :: snaps
+    integer(kind=c_int), intent(in) :: snaps_in_ram
+    logical, intent(in) :: verbose
+    integer(kind=c_int) :: ierr
+    integer(kind=c_int) :: verbose_c
+
+    if (verbose) then
+      verbose_c = ADJ_TRUE
+    else
+      verbose_c = ADJ_FALSE
+    end if
+
+    ierr = adj_set_revolve_options_c(adjointer, steps, snaps, snaps_in_ram, verbose_c)
+  end function adj_set_revolve_options
 
   function adj_equation_set_rhs_dependencies(equation, rhsdeps, context) result(ierr)
     type(adj_equation), intent(inout) :: equation

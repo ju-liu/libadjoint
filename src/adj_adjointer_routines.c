@@ -38,7 +38,8 @@ int adj_create_adjointer(adj_adjointer* adjointer)
   adjointer->revolve_data.snaps_in_ram = 0;
   adjointer->revolve_data.revolve.ptr = NULL;
   adjointer->revolve_data.current_action = -1;
-  adjointer->revolve_data.current_timestep = -999999999;
+  adjointer->revolve_data.current_timestep = ADJ_UNSET;
+  adjointer->revolve_data.verbose = ADJ_FALSE;
 
   adjointer->nonlinear_colouring_list.firstnode = NULL;
   adjointer->nonlinear_colouring_list.lastnode = NULL;
@@ -194,11 +195,12 @@ int adj_get_checkpoint_strategy(adj_adjointer* adjointer, int* strategy)
   return ADJ_OK;
 }
 
-int adj_set_revolve_options(adj_adjointer* adjointer, int steps, int snaps, int snaps_in_ram)
+int adj_set_revolve_options(adj_adjointer* adjointer, int steps, int snaps, int snaps_in_ram, int verbose)
 {
   adjointer->revolve_data.steps=steps;  
   adjointer->revolve_data.snaps=snaps;  
   adjointer->revolve_data.snaps_in_ram=snaps_in_ram;  
+  adjointer->revolve_data.verbose=verbose;
   return ADJ_OK;
 }
 

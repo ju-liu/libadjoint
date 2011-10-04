@@ -44,7 +44,7 @@ void test_adj_forget_forward_equation(void)
   ierr = adj_set_checkpoint_strategy(&adjointer, ADJ_CHECKPOINT_REVOLVE_OFFLINE);
   adj_test_assert(ierr == ADJ_OK, "Should have worked");
 
-  ierr = adj_set_revolve_options(&adjointer, steps, snaps, snaps_in_ram);
+  ierr = adj_set_revolve_options(&adjointer, steps, snaps, snaps_in_ram, ADJ_TRUE);
   adj_test_assert(ierr == ADJ_OK, "Should have worked");
 
   /* Register callbacks */

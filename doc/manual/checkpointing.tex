@@ -42,15 +42,16 @@ The options for the argument \texttt{strategy} are:
 \begin{minipage}{\columnwidth}
 \begin{ccode}
 int adj_set_revolve_options(adj_adjointer* adjointer, int steps, int snaps, 
-                            int snaps_in_ram);
+                            int snaps_in_ram, int verbose);
 \end{ccode}
 \begin{fortrancode}
-function adj_set_revolve_options(adjointer, steps, snaps, snaps_in_ram) 
+function adj_set_revolve_options(adjointer, steps, snaps, snaps_in_ram, verbose) 
          result(ierr) 
   type(adj_adjointer), intent(inout) :: adjointer
-  integer(kind=c_int), intent(in), value :: steps 
-  integer(kind=c_int), intent(in), value :: snaps 
-  integer(kind=c_int), intent(in), value :: snaps_in_ram 
+  integer(kind=c_int), intent(in) :: steps 
+  integer(kind=c_int), intent(in) :: snaps 
+  integer(kind=c_int), intent(in) :: snaps_in_ram 
+  logical, intent(in) :: verbose 
   integer(kind=c_int) :: ierr
 end function adj_set_revolve_options
 \end{fortrancode}
@@ -63,12 +64,13 @@ This function sets the checkpointing options if using a revolve checkpointing sc
 \texttt{snaps_in_ram} denotes the number checkpoints that may be stored in memory. 
 Hence the number of checkpoint stored on disk is $\texttt{snaps}-\texttt{snaps_in_ram}$
 
-Depending on the chosen checkpointing strategy, these options must fullfill these properties:
+Depending on the chosen checkpointing strategy, these options must fulfill these properties:
 \begin{itemize}
 \item \texttt{ADJ_CHECKPOINT_REVOLVE_OFFLINE}: $\texttt{steps}>0$ and $\texttt{snaps}>0$.
 \item \texttt{ADJ_CHECKPOINT_REVOLVE_MULTISTAGE}: $\texttt{steps}>0$, $\texttt{snaps}>0$ and $\texttt{snaps\_in\_ram}\ge0$.
 \item \texttt{ADJ_CHECKPOINT_REVOLVE_ONLINE}: $\texttt{snaps}>0$.
 \end{itemize}
 
+If the flag \texttt{verbose} is set, \libadjoint will print revolve specific output to the screen. 
 
 
