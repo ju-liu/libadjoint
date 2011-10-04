@@ -103,6 +103,8 @@ module libadjoint_data_structures
 
     integer(kind=c_int) :: current_action
     integer(kind=c_int) :: current_timestep
+
+    integer(kind=c_int) :: verbose
   end type adj_revolve_data
 
   type, bind(c) :: adj_adjointer
