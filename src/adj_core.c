@@ -377,8 +377,11 @@ int adj_revolve_to_adjoint_equation(adj_adjointer* adjointer, int equation)
         	printf("Revolve: Create checkpoint of equation %i\n.", start_eqn);
         }
 
-        /* TODO: use getwhere in Multistage checkpointing */
-        ierr = adj_checkpoint_equation(adjointer, start_eqn, ADJ_CHECKPOINT_STORAGE_DISK);
+        /* in a multistage setting, we have to ask revolve where to store the checkpoint */
+        if ((cs==ADJ_CHECKPOINT_REVOLVE_MULTISTAGE) && (revolve_getwhere(adjointer->revolve_data.revolve)==1))
+        	ierr = adj_checkpoint_equation(adjointer, start_eqn, ADJ_CHECKPOINT_STORAGE_MEMORY);
+       	else
+        	ierr = adj_checkpoint_equation(adjointer, start_eqn, ADJ_CHECKPOINT_STORAGE_DISK);
         if (ierr != ADJ_OK) return ierr;
 
       	adjointer->revolve_data.current_action = revolve(adjointer->revolve_data.revolve);

@@ -584,14 +584,6 @@ module libadjoint
       integer(kind=c_int) :: ierr
     end function adj_set_checkpoint_strategy
 
-    function adj_get_checkpoint_strategy(adjointer, strategy) result(ierr) bind(c, name='adj_get_checkpoint_strategy')
-      use libadjoint_data_structures
-      use iso_c_binding
-      type(adj_adjointer), intent(inout) :: adjointer
-      integer(kind=c_int), intent(out) :: strategy
-      integer(kind=c_int) :: ierr
-    end function adj_get_checkpoint_strategy
-
     function adj_set_revolve_options(adjointer, steps, snaps, snaps_in_ram) result(ierr) bind(c, name='adj_set_revolve_options')
       use libadjoint_data_structures
       use iso_c_binding

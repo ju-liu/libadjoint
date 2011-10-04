@@ -817,7 +817,7 @@ int adj_initialise_revolve(adj_adjointer* adjointer)
   /* Offline checkpointing */
   if (cs==ADJ_CHECKPOINT_REVOLVE_OFFLINE) 
   {
-    if ((steps>0) && (snaps>0) && (snaps_in_ram<=0))
+    if ((steps>0) && (snaps>0))
       adjointer->revolve_data.revolve = revolve_create_offline(steps, snaps);
     else
     {
@@ -829,7 +829,7 @@ int adj_initialise_revolve(adj_adjointer* adjointer)
   /* Offline checkpointing with different stores */
   else if (cs==ADJ_CHECKPOINT_REVOLVE_MULTISTAGE)
   { 
-    if ((steps>0) && (snaps>0) && (snaps_in_ram>0))
+    if ((steps>0) && (snaps>0) && (snaps_in_ram>=0))
       adjointer->revolve_data.revolve = revolve_create_multistage(steps, snaps, snaps_in_ram);
     else
     {
