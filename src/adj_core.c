@@ -318,7 +318,10 @@ int adj_get_adjoint_solution(adj_adjointer* adjointer, int equation, char* funct
    * before solving the first adjoint equation */
   if (cs==ADJ_CHECKPOINT_REVOLVE_ONLINE)
   	if (equation==adjointer->nequations-1)
-  		revolve_turn(adjointer->revolve_data.revolve, adjointer->nequations);
+  	{
+  		adjointer->revolve_data.steps = adjointer->nequations;
+  		revolve_turn(adjointer->revolve_data.revolve, adjointer->revolve_data.steps);
+  	}
 
   if ((cs==ADJ_CHECKPOINT_REVOLVE_OFFLINE) || (cs==ADJ_CHECKPOINT_REVOLVE_MULTISTAGE) || (cs==ADJ_CHECKPOINT_REVOLVE_ONLINE))
   {

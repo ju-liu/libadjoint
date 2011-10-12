@@ -58,7 +58,7 @@ void test_checkpoint_revolve_online(void)
   ierr = adj_set_checkpoint_strategy(&adjointer, ADJ_CHECKPOINT_REVOLVE_ONLINE);
   adj_test_assert(ierr == ADJ_OK, "Should have worked");
 
-  ierr = adj_set_revolve_options(&adjointer, steps, snaps, snaps_in_ram, ADJ_TRUE);
+  ierr = adj_set_revolve_options(&adjointer, -1, snaps, snaps_in_ram, ADJ_TRUE); /* We do not tell revolve how many steps we are going to do */
   adj_test_assert(ierr == ADJ_OK, "Should have worked");
 
   /* Register callbacks */

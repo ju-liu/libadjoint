@@ -848,7 +848,10 @@ int adj_initialise_revolve(adj_adjointer* adjointer)
   else if (cs==ADJ_CHECKPOINT_REVOLVE_ONLINE) 
   {
     if (snaps>0)
+    {
       adjointer->revolve_data.revolve = revolve_create_online(snaps);
+      adjointer->revolve_data.steps = -1;
+    }
     else
     {
       snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "You chose to use online revolve as checkpointing strategy but have not configured it correctly. Make sure you call adj_set_revolve_options with a positive 'snaps' argument.");

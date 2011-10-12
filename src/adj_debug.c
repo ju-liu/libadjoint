@@ -38,7 +38,7 @@ int adj_adjointer_check_checkpoints(adj_adjointer* adjointer)
 	/* The last equation is also a checkpoint equation of type ADJ_CHECKPOINT_STORAGE_MEMORY
 	 * We assume that adj_adjointer_check_checkpoints is called after solving the last forward equation,
 	 * hence we will set the checkpoint flag now.
-	 TODO This assumption is wrong. the code should code to get_addjoint_equation
+	 * TODO: This assumption is wrong. the code should code to get_adjoint_equation
    */
 	adjointer->equations[adjointer->nequations-1].memory_checkpoint=ADJ_TRUE;
 
