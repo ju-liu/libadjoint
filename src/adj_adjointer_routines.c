@@ -908,7 +908,7 @@ int adj_record_variable(adj_adjointer* adjointer, adj_variable var, adj_storage_
 
   assert(data_ptr != NULL);
 
-  /* If the input storage type does not have a value attached, we call the dummy record function. */
+  /* The input storage type must have a value attached. */
   if (!storage.storage_memory_has_value && !storage.storage_disk_has_value)
 	{
 		snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Trying to record a variable from a storage object with no value attached.");
@@ -1036,6 +1036,7 @@ int adj_record_variable_core_memory(adj_adjointer* adjointer, adj_variable_data*
     case ADJ_STORAGE_MEMORY_INCREF:
       data_ptr->storage.storage_memory_type = ADJ_STORAGE_MEMORY_INCREF;
       data_ptr->storage.storage_memory_has_value = storage.storage_memory_has_value;
+      data_ptr->storage.value = storage.value;
       data_ptr->storage.storage_memory_is_checkpoint = storage.storage_memory_is_checkpoint;
       break;
     default:
