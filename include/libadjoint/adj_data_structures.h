@@ -67,7 +67,8 @@ typedef struct
   int nrhsdeps;
   adj_variable* rhsdeps;
   void* rhs_context;
-  int checkpoint_type; /* Can we restart the computation from this equation using checkpoints? */
+  int memory_checkpoint; /* Can we restart the computation from this equation using variables in memory? */
+  int disk_checkpoint; /* Can we restart the computation from this equation using variables on disk? */
 } adj_equation;
 
 typedef struct

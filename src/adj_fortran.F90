@@ -48,7 +48,8 @@ module libadjoint_data_structures
     integer(kind=c_int) :: nrhsdeps
     type(c_ptr) :: rhsdeps
     type(c_ptr) :: rhs_context
-    integer(kind=c_int) :: checkpoint_type
+    integer(kind=c_int) :: memory_checkpoint
+    integer(kind=c_int) :: disk_checkpoint
   end type adj_equation
 
   type, bind(c) :: adj_data_callbacks

@@ -67,7 +67,7 @@ Hence the number of checkpoint stored on disk is $\texttt{snaps}-\texttt{snaps_i
 Depending on the chosen checkpointing strategy, these options must fulfill these properties:
 \begin{itemize}
 \item \texttt{ADJ_CHECKPOINT_REVOLVE_OFFLINE}: $\texttt{steps}>0$ and $\texttt{snaps}>0$.
-\item \texttt{ADJ_CHECKPOINT_REVOLVE_MULTISTAGE}: $\texttt{steps}>0$, $\texttt{snaps}>0$ and $\texttt{snaps\_in\_ram}\ge0$.
+\item \texttt{ADJ_CHECKPOINT_REVOLVE_MULTISTAGE}: $\texttt{steps}>0$, $\texttt{snaps}>0$, $\texttt{snaps\_in\_ram}\ge0$ and $\texttt{snaps\_in\_ram}\le \texttt{snaps}$.
 \item \texttt{ADJ_CHECKPOINT_REVOLVE_ONLINE}: $\texttt{snaps}>0$.
 \end{itemize}
 

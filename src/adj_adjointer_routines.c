@@ -512,7 +512,11 @@ int adj_register_equation(adj_adjointer* adjointer, adj_equation equation, int* 
   {
     ierr = adj_get_revolve_checkpoint_storage(adjointer, equation, checkpoint_storage);
     if (ierr != ADJ_OK) return ierr;
-    adjointer->equations[adjointer->nequations - 1].checkpoint_type = *checkpoint_storage;
+
+    if (*checkpoint_storage==ADJ_CHECKPOINT_STORAGE_MEMORY)
+	    adjointer->equations[adjointer->nequations - 1].memory_checkpoint = ADJ_TRUE;
+    else if (*checkpoint_storage==ADJ_CHECKPOINT_STORAGE_DISK)
+    	adjointer->equations[adjointer->nequations - 1].disk_checkpoint = ADJ_TRUE;
   }
 
   return ADJ_OK;
@@ -831,7 +835,7 @@ int adj_initialise_revolve(adj_adjointer* adjointer)
   /* Offline checkpointing with different stores */
   else if (cs==ADJ_CHECKPOINT_REVOLVE_MULTISTAGE)
   { 
-    if ((steps>0) && (snaps>0) && (snaps_in_ram>=0))
+    if ((steps>0) && (snaps>0) && (snaps_in_ram>=0) && (snaps>=snaps_in_ram))
       adjointer->revolve_data.revolve = revolve_create_multistage(steps, snaps, snaps_in_ram);
     else
     {
@@ -851,10 +855,9 @@ int adj_initialise_revolve(adj_adjointer* adjointer)
       return ADJ_ERR_INVALID_INPUTS;
     }
   }
-
   else
   {
-    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "You chose to use revolve as checkpointing strategy but have not configured it correctly.");
+    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Unknown checkpointing strategy.");
     return ADJ_ERR_INVALID_INPUTS;
   }
 
@@ -1691,7 +1694,7 @@ int adj_has_variable_value_disk(adj_adjointer* adjointer, adj_variable var)
   return ADJ_OK;
 }
 
-int adj_is_checkpoint_variable_disk(adj_adjointer* adjointer, adj_variable var)
+int adj_is_variable_disk_checkpoint(adj_adjointer* adjointer, adj_variable var)
 {
   int ierr;
   adj_variable_data* data_ptr;
@@ -1708,7 +1711,7 @@ int adj_is_checkpoint_variable_disk(adj_adjointer* adjointer, adj_variable var)
   return data_ptr->storage.storage_disk_is_checkpoint;
 }
 
-int adj_is_checkpoint_variable_memory(adj_adjointer* adjointer, adj_variable var)
+int adj_is_variable_memory_checkpoint(adj_adjointer* adjointer, adj_variable var)
 {
   int ierr;
   adj_variable_data* data_ptr;

@@ -32,19 +32,15 @@ int adj_adjointer_check_checkpoints(adj_adjointer* adjointer)
 	int* cp_eqns;
 	int eqn_num, i, j, ierr;
 	adj_equation eqn;
-	char* checkpoint_type_str;
-	char adj_checkpoint_types_str[4][ADJ_ERROR_MSG_BUF] = {"ADJ_CHECKPOINT_STORAGE_NONE",
-  						"ADJ_CHECKPOINT_STORAGE_MEMORY","ADJ_CHECKPOINT_STORAGE_DISK"};
-
 
 	if (adjointer->options[ADJ_ACTIVITY] == ADJ_ACTIVITY_NOTHING) return ADJ_OK;
 
 	/* The last equation is also a checkpoint equation of type ADJ_CHECKPOINT_STORAGE_MEMORY
-	 * We assume that adj_adjointer_check_checkpoints is called at the last equation,
+	 * We assume that adj_adjointer_check_checkpoints is called after solving the last forward equation,
 	 * hence we will set the checkpoint flag now.
+	 TODO This assumption is wrong. the code should code to get_addjoint_equation
    */
-	if (adjointer->equations[adjointer->nequations-1].checkpoint_type==ADJ_CHECKPOINT_STORAGE_NONE)
-		adjointer->equations[adjointer->nequations-1].checkpoint_type=ADJ_CHECKPOINT_STORAGE_MEMORY;
+	adjointer->equations[adjointer->nequations-1].memory_checkpoint=ADJ_TRUE;
 
 	/* Query the checkpoint equations */
 	cp_num = 0;
@@ -52,7 +48,8 @@ int adj_adjointer_check_checkpoints(adj_adjointer* adjointer)
 	for (eqn_num=0; eqn_num<adjointer->nequations; eqn_num++)
 	{
 		eqn = adjointer->equations[eqn_num];
-		if (eqn.checkpoint_type != ADJ_CHECKPOINT_STORAGE_NONE)
+		if ((eqn.memory_checkpoint == ADJ_TRUE) ||
+				(eqn.disk_checkpoint == ADJ_TRUE))
 			cp_num++;
 	}
 	cp_eqns = (int*) malloc(sizeof(int)*cp_num);
@@ -62,19 +59,26 @@ int adj_adjointer_check_checkpoints(adj_adjointer* adjointer)
 	for (eqn_num=0; eqn_num<adjointer->nequations; eqn_num++)
 	{
 		eqn = adjointer->equations[eqn_num];
-		if (eqn.checkpoint_type != ADJ_CHECKPOINT_STORAGE_NONE)
+		if ((eqn.memory_checkpoint == ADJ_TRUE) ||
+				(eqn.disk_checkpoint == ADJ_TRUE))
 		{
 			cp_eqns[i]=eqn_num;
 			i++;
 		}
 	}
 
+	/* Now loop over every checkpoint and ensure that all required variables are recorded */
 	for (cp_iter=0; cp_iter<cp_num; cp_iter++)
 	{
 		eqn = adjointer->equations[cp_eqns[cp_iter]];
 
-		checkpoint_type_str = adj_checkpoint_types_str[eqn.checkpoint_type];
-		printf("Equation %i has checkpoint type %s\n", cp_eqns[cp_iter], checkpoint_type_str);
+		if (adjointer->revolve_data.verbose)
+		{
+			if (eqn.memory_checkpoint==ADJ_TRUE)
+				printf("Equation %i is a memory checkpoint.\n", cp_eqns[cp_iter]);
+			if (eqn.disk_checkpoint==ADJ_TRUE)
+				printf("Equation %i is a disk checkpoint.\n", cp_eqns[cp_iter]);
+		}
 
 		/* Check that we have all the forward values we need to restart the simulation */
 		for (i=0; i<eqn.nblocks; i++)
@@ -91,16 +95,16 @@ int adj_adjointer_check_checkpoints(adj_adjointer* adjointer)
 				{
 					fwd_var = nl_block.depends[j];
 
-					if (strcmp(checkpoint_type_str, "ADJ_CHECKPOINT_STORAGE_MEMORY")==0)
-						if ((adj_has_variable_value_memory(adjointer, fwd_var)!=ADJ_OK) || (adj_is_checkpoint_variable_memory(adjointer, fwd_var)!=ADJ_TRUE))
+					if (eqn.memory_checkpoint==ADJ_TRUE)
+						if ((adj_has_variable_value_memory(adjointer, fwd_var)!=ADJ_OK) || (adj_is_variable_memory_checkpoint(adjointer, fwd_var)!=ADJ_TRUE))
 						{
 							char buf[255];
 							adj_variable_str(fwd_var, buf, 255);
 							snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Need a memory checkpoint value for variable %s, but don't have one.", buf);
 							return ADJ_ERR_NEED_VALUE;
 						}
-					if (strcmp(checkpoint_type_str, "ADJ_CHECKPOINT_STORAGE_DISK")==0)
-						if ((adj_has_variable_value_disk(adjointer, fwd_var)!=ADJ_OK) || (adj_is_checkpoint_variable_disk(adjointer, fwd_var)!=ADJ_TRUE))
+					if (eqn.disk_checkpoint==ADJ_TRUE)
+						if ((adj_has_variable_value_disk(adjointer, fwd_var)!=ADJ_OK) || (adj_is_variable_disk_checkpoint(adjointer, fwd_var)!=ADJ_TRUE))
 						{
 							char buf[255];
 							adj_variable_str(fwd_var, buf, 255);
@@ -114,14 +118,14 @@ int adj_adjointer_check_checkpoints(adj_adjointer* adjointer)
 			fwd_var = eqn.targets[i];
 			if (adj_variable_equal(&eqn.variable, &fwd_var, 1)) continue; /* that term goes in the lhs */
 			/* and now check it has the checkpoint value */
-			if (strcmp(checkpoint_type_str, "ADJ_CHECKPOINT_STORAGE_MEMORY") && !adj_has_variable_value_memory(adjointer, fwd_var))
+			if ((eqn.memory_checkpoint==ADJ_TRUE) && (adj_has_variable_value_memory(adjointer, fwd_var)!=ADJ_OK))
 			{
 				char buf[255];
 				adj_variable_str(fwd_var, buf, 255);
 				snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Need a checkpoint value for variable %s in memory, but don't have one.", buf);
 				return ADJ_ERR_NEED_VALUE;
 			}
-			if (strcmp(checkpoint_type_str, "ADJ_CHECKPOINT_STORAGE_DISK") && !adj_has_variable_value_disk(adjointer, fwd_var))
+			if ((eqn.disk_checkpoint==ADJ_TRUE) && (adj_has_variable_value_disk(adjointer, fwd_var)!=ADJ_OK))
 			{
 				char buf[255];
 				adj_variable_str(fwd_var, buf, 255);

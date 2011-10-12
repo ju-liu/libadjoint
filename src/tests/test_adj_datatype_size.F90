@@ -13,10 +13,8 @@ subroutine test_adj_datatype_size
   ierr = adj_create_adjointer(adjointer)
   size_c = adj_sizeof_adjointer()
   size_f = c_sizeof(adjointer)
-  if (size_c /= size_f) then
-    print *, "Sizeof adjointer in C: ", size_c
-    print *, "Sizeof adjointer in Fortran: ", size_f
-  end if
+  print *, "Sizeof adjointer in C: ", size_c
+  print *, "Sizeof adjointer in Fortran: ", size_f
   call adj_test_assert(size_f == size_c, "Sizeof adjointer differ between C and Fortran. Check your Fortran interface.")
 
 end subroutine test_adj_datatype_size

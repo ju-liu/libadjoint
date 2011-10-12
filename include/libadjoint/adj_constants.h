@@ -45,7 +45,6 @@
 #define ADJ_CHECKPOINT_STORAGE_NONE 0
 #define ADJ_CHECKPOINT_STORAGE_MEMORY 1
 #define ADJ_CHECKPOINT_STORAGE_DISK 2
-/* if you add a new one, you must update the table in src/adj_debug.c */
 
 /* storage strategies */
 #define ADJ_STORAGE_MEMORY_COPY 0
