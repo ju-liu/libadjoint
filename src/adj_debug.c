@@ -508,7 +508,7 @@ int adj_test_nonlinear_derivative_action_consistency(adj_adjointer* adjointer, a
     /* fd_conv should be in [1.9, 2.1] */
     if (fabs((double) (grad_conv[i] - (adj_scalar) 2.0)) > 0.1)
     {
-      snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Expected the Taylor series remainder of operator %s to converge at second order, but got %f.", nonlinear_block_derivative.nonlinear_block.name, (double) grad_conv[i]);
+      snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Expected the Taylor series remainder of operator %s to converge at second order, but got %f (the error values are %e and %e).", nonlinear_block_derivative.nonlinear_block.name, (double) grad_conv[i], (double) (grad_errors[i]), (double) (grad_errors[i+1]));
       return_ierr = ADJ_WARN_COMPARISON_FAILED;
       break;
     }

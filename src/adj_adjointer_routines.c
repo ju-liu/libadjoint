@@ -761,28 +761,41 @@ int adj_get_revolve_checkpoint_storage(adj_adjointer* adjointer, adj_equation eq
     case CACTION_ADVANCE:
       capo = revolve_getcapo(adjointer->revolve_data.revolve);
       oldcapo = revolve_getoldcapo(adjointer->revolve_data.revolve);
+      if (adjointer->revolve_data.verbose)
+        printf("Revolve: Advance from timestep %i to timestep %i.\n", oldcapo, capo);
 
       /* make sure that Revolve and the adjointer are in sync */
-      if ((adjointer->revolve_data.current_timestep <= oldcapo) || (adjointer->revolve_data.current_timestep > capo))
+      if ((adjointer->revolve_data.current_timestep < oldcapo) || (adjointer->revolve_data.current_timestep > capo))
       {
         adj_variable_str(equation.variable, buf, ADJ_NAME_LEN);
         snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "An internal error occured: The adjointer and revolve are out of sync (in adj_register_equation of variable %s).", buf);
         return ADJ_ERR_REVOLVE_ERROR;
       }
 
-      /* Since this function is called after adj_register_equation, we assume that
-       * we are about to solve for this equation. Hence, in the case that
-       * we reached the last timestep of an ADCANCE action, let's ask revolve
-       * what we have to do next. */
+      /* Since this function is called after adj_register_equation, we assume that */
+      /* we are about to solve for this equation. Hence, in the case that */
+      /* we reached the last timestep of an ADCANCE action, let's ask revolve */
+      /* what we have to do next. */
       if (adjointer->revolve_data.current_timestep == capo)
         adjointer->revolve_data.current_action = revolve(adjointer->revolve_data.revolve);
 
-      /* In the case we want to take a checkpoint as next action,
-       * do not break here and execute the next case as well */
+      /* If the next action is FIRST_RUN, we solve the first equation of the very last timestep. */
+      /* By convention this equation is checkpointed as well */
+      if (adjointer->revolve_data.current_action == CACTION_FIRSTRUN)
+      {
+      	*checkpoint_storage = ADJ_CHECKPOINT_STORAGE_MEMORY;
+      	break;
+      }
+
+      /* Note: If revolve's next step is to take a checkpoint,  */
+      /*       then we want to proceed after this case  (by not breaking) */
       if (adjointer->revolve_data.current_action != CACTION_TAKESHOT)
         break;
 
       case CACTION_TAKESHOT:
+        if (adjointer->revolve_data.verbose)
+          printf("Revolve: Checkpoint timestep %i.\n", adjointer->revolve_data.current_timestep);
+
         if (cs==ADJ_CHECKPOINT_REVOLVE_MULTISTAGE)
         {
           if (revolve_getwhere(adjointer->revolve_data.revolve))
@@ -800,6 +813,16 @@ int adj_get_revolve_checkpoint_storage(adj_adjointer* adjointer, adj_equation eq
         adj_variable_str(equation.variable, buf, ADJ_NAME_LEN);
         snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "An internal error occured: Irregular termination of revolve (in adj_register_equation of variable %s).", buf);
         return ADJ_ERR_REVOLVE_ERROR;
+
+      case CACTION_FIRSTRUN:
+      	/* At that point we should be solving for the last equation. */
+      	if ((adjointer->revolve_data.steps-1) != adjointer->revolve_data.current_timestep)
+      	{
+					adj_variable_str(equation.variable, buf, ADJ_NAME_LEN);
+					snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "You told revolve that the last timestep is %i, but you are about to register an equation for variable %s with timestep %i.", adjointer->revolve_data.steps-1, buf, adjointer->revolve_data.current_timestep);
+					return ADJ_ERR_REVOLVE_ERROR;
+      	}
+      	break;
 
       default: /* This case includes CACTION_YOUTURN which is only expected when restoring from a checkpoint */
         adj_variable_str(equation.variable, buf, ADJ_NAME_LEN);
