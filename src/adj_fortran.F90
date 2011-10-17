@@ -724,6 +724,13 @@ module libadjoint
       integer(kind=c_int) :: ierr
     end function adj_adjointer_check_consistency
 
+    function adj_adjointer_check_checkpoints(adjointer) result(ierr) bind(c, name='adj_adjointer_check_checkpoints')
+      use libadjoint_data_structures
+      use iso_c_binding
+      type(adj_adjointer), intent(in) :: adjointer
+      integer(kind=c_int) :: ierr
+    end function adj_adjointer_check_checkpoints
+
     function adj_timestep_set_times(adjointer, timestep, start, end) result(ierr) bind(c, name='adj_timestep_set_times')
       use libadjoint_data_structures
       use iso_c_binding

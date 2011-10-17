@@ -366,7 +366,7 @@ int adj_revolve_to_adjoint_equation(adj_adjointer* adjointer, int equation)
         if (ierr != ADJ_OK) return ierr;
 
         if (adjointer->revolve_data.verbose)
-        	printf("Revolve: Replay from equation %i to equation %i.\n", start_eqn, end_eqn);
+        	printf("Revolve: Replay from equation %i (first equation of timestep %i) to equation %i (last equation of timestep %i).\n", start_eqn, oldcapo, end_eqn, capo-1);
 
         ierr = adj_replay_forward_equations(adjointer, start_eqn, end_eqn);
         if (ierr != ADJ_OK) return ierr;
@@ -381,7 +381,7 @@ int adj_revolve_to_adjoint_equation(adj_adjointer* adjointer, int equation)
       	if (ierr != ADJ_OK) return ierr;
 
       	if (adjointer->revolve_data.verbose)
-        	printf("Revolve: Create checkpoint of equation %i.\n", start_eqn);
+        	printf("Revolve: Create checkpoint of equation %i (first equation of timestep %i).\n", start_eqn, adjointer->revolve_data.current_timestep);
 
         /* in a multistage setting, we have to ask revolve where to store the checkpoint */
         if ((cs==ADJ_CHECKPOINT_REVOLVE_MULTISTAGE) && (revolve_getwhere(adjointer->revolve_data.revolve)==1))
@@ -416,7 +416,7 @@ int adj_revolve_to_adjoint_equation(adj_adjointer* adjointer, int equation)
         if (ierr != ADJ_OK) return ierr;
 
         if (adjointer->revolve_data.verbose)
-        	printf("Revolve: Replay from equation %i to equation %i.\n", start_eqn, end_eqn);
+        	printf("Revolve: Replay from equation %i (first equation of timestep %i) to equation %i (last equation of timestep %i).\n", start_eqn, adjointer->revolve_data.current_timestep, end_eqn, adjointer->revolve_data.current_timestep);
 
         ierr = adj_replay_forward_equations(adjointer, start_eqn, end_eqn);
         if (ierr != ADJ_OK) return ierr;
