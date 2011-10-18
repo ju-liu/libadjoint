@@ -1843,6 +1843,8 @@ int adj_destroy_variable_data(adj_adjointer* adjointer, adj_variable_data* data)
 
 int adj_storage_memory_copy(adj_vector value, adj_storage_data* data)
 {
+  memset(data, 0, sizeof(adj_storage_data));
+
   data->storage_memory_has_value = ADJ_TRUE;
   data->storage_memory_type = ADJ_STORAGE_MEMORY_COPY;
   data->value = value;
@@ -1859,6 +1861,8 @@ int adj_storage_memory_copy(adj_vector value, adj_storage_data* data)
 
 int adj_storage_memory_incref(adj_vector value, adj_storage_data* data)
 {
+  memset(data, 0, sizeof(adj_storage_data));
+
   data->storage_memory_has_value = ADJ_TRUE;
   data->storage_memory_type = ADJ_STORAGE_MEMORY_INCREF;
   data->value = value;
@@ -1875,6 +1879,8 @@ int adj_storage_memory_incref(adj_vector value, adj_storage_data* data)
 
 int adj_storage_disk(adj_vector value, adj_storage_data* data)
 {
+  memset(data, 0, sizeof(adj_storage_data));
+
   data->value = value;
   data->storage_memory_has_value = ADJ_FALSE;
   data->storage_memory_type = ADJ_UNSET;

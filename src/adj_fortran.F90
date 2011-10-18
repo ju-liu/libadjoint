@@ -160,7 +160,7 @@ module libadjoint_data_structures
 
     integer(kind=c_int) :: storage_disk_has_value
     integer(kind=c_int) :: storage_disk_is_checkpoint
-    type(c_ptr) :: storage_disk_filename
+    character(kind=c_char), dimension(ADJ_NAME_LEN) :: storage_disk_filename
   end type adj_storage_data
 
   type, bind(c) :: adj_dictionary
@@ -802,13 +802,13 @@ module libadjoint
       integer(kind=c_int) :: ierr
     end function adj_storage_memory_incref
 
-    function adj_storage_disk_copy(val, mem) result(ierr) bind(c, name='adj_storage_disk')
+    function adj_storage_disk(val, mem) result(ierr) bind(c, name='adj_storage_disk')
       use libadjoint_data_structures
       use iso_c_binding
       type(adj_vector), intent(in), value :: val
       type(adj_storage_data), intent(inout) :: mem
       integer(kind=c_int) :: ierr
-    end function adj_storage_disk_copy
+    end function adj_storage_disk
 
     function adj_set_storage_memory_copy(adjointer, variable) result(ierr) bind(c, name='adj_set_storage_memory_copy')
       use libadjoint_data_structures
