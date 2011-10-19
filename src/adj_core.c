@@ -642,44 +642,26 @@ int adj_replay_forward_equations(adj_adjointer* adjointer, int start_equation, i
   adj_storage_data storage;
 
 
-  /* Get the timstep of the last equation. Its solution will be recorded to memory */
+  /* Get the timstep of the last equation in the replay. Its solution will be recorded to memory */
   stop_timestep = adjointer->equations[stop_equation].variable.timestep;
 
   for (equation=start_equation; equation<=stop_equation; equation++)
   {
-  	/* We might have this solution already in memory because it is a checkpoint variable,
-  	 * in which case we do not have to solve the forward solution for this equation.
+  	/* We might have the solution of this equation already,
+  	 * in which case we do not have to solve for it.
   	 */
 		if (adj_has_variable_value(adjointer, adjointer->equations[equation].variable)!=ADJ_OK)
 		{
 			ierr = adj_get_forward_solution(adjointer, equation, &soln, &var);
 			if (ierr!=ADJ_OK) return ierr;
 
-			/* Record the solution to memory */
+			/* Record the solution to memory. We always use adj_storage_memory_copy for recording as it is a safe choice */
 			{
-				/* First we need to find out if we want to use adj_storage_memory_copy or adj_storage_memory_incref */
-			  adj_variable_data* var_data;
-
-				ierr = adj_find_variable_data(&(adjointer->varhash), &var, &var_data);
-				if (ierr != ADJ_OK) return ierr;
-
-				/* The way of vector duplication (copy or incref) was provided when
-				 * the variable was recorded the first time */
-				if (var_data->storage.storage_memory_type==ADJ_STORAGE_MEMORY_COPY)
-					ierr = adj_storage_memory_copy(soln, &storage);
-				else if (var_data->storage.storage_memory_type==ADJ_STORAGE_MEMORY_INCREF)
-					ierr = adj_storage_memory_incref(soln, &storage);
-				else
-				{
-					char buf[ADJ_NAME_LEN];
-					adj_variable_str(var, buf, ADJ_NAME_LEN);
-					snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Invalid storage type (%i) for variable %s. Expected ADJ_STORAGE_MEMORY_COPY or ADJ_STORAGE_MEMORY_INCREF. Did you remember to set the memory storage type for every variable (using adj_storage_dummy and adj_record_variable)?", var_data->storage.storage_memory_type, buf);
-					return ADJ_ERR_INVALID_INPUTS;
-				}
+				ierr = adj_storage_memory_copy(soln, &storage);
 				if (ierr != ADJ_OK) return ierr;
 			}
 
-			/* We checkpoint the variables of the last timestep, so that adj_forget_forward_equation will not delete them */
+			/* We checkpoint the variables of the last timestep in the replay, to ensure that adj_forget_forward_equation will not delete them */
 			if (var.timestep==stop_timestep)
 			{
 				ierr = adj_storage_set_checkpoint(&storage, ADJ_TRUE);

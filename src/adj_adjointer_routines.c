@@ -791,9 +791,6 @@ int adj_get_revolve_checkpoint_storage(adj_adjointer* adjointer, adj_equation eq
         break;
 
       case CACTION_TAKESHOT:
-        if (adjointer->revolve_data.verbose)
-          printf("Revolve: Checkpoint timestep %i.\n", adjointer->revolve_data.current_timestep);
-
         if (cs==ADJ_CHECKPOINT_REVOLVE_MULTISTAGE)
         {
           if (revolve_getwhere(adjointer->revolve_data.revolve))
@@ -803,6 +800,14 @@ int adj_get_revolve_checkpoint_storage(adj_adjointer* adjointer, adj_equation eq
         }
         else
           *checkpoint_storage = ADJ_CHECKPOINT_STORAGE_DISK;
+
+        if (adjointer->revolve_data.verbose)
+        {
+        	if (*checkpoint_storage == ADJ_CHECKPOINT_STORAGE_MEMORY)
+          	printf("Revolve: Checkpoint timestep %i in memory.\n", adjointer->revolve_data.current_timestep);
+        	else
+        		printf("Revolve: Checkpoint timestep %i on disk.\n", adjointer->revolve_data.current_timestep);
+        }
 
         adjointer->revolve_data.current_action = revolve(adjointer->revolve_data.revolve);
         break;

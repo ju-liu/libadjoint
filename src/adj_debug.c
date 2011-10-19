@@ -147,21 +147,29 @@ int adj_adjointer_check_checkpoints(adj_adjointer* adjointer)
 			}
 
 			/* Find out in which checkpoint slot the variable is computed */
-			for (cp_iter=0; cp_iter<cp_num; cp_iter++)
+			/* The first equation must be zero, otherwise */
+			/* we couldn't replay the whole forward system */
+			if(cp_eqns[0]!=0)
 			{
-				if (data->adjoint_equations[i]<cp_eqns[cp_iter])
+				snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Internal error: the first equation must be a checkpoint equation but it is not.");
+				return ADJ_ERR_REVOLVE_ERROR;
+			}
+
+			for (cp_iter=0; cp_iter<cp_num-1; cp_iter++)
+			{
+				if (data->equation<cp_eqns[cp_iter+1])
 					break;
 			}
 
 			/* Check for dependencies of the functional right-hand-sides */
 			if (data->ndepending_timesteps > 0)
 			{
-				int start_equation, min_timestep;
-				min_timestep = adj_minval(data->depending_timesteps, data->ndepending_timesteps);
-				ierr = adj_timestep_start_equation(adjointer, min_timestep, &start_equation);
+				int start_equation, max_timestep;
+				max_timestep = adj_minval(data->depending_timesteps, data->ndepending_timesteps);
+				ierr = adj_timestep_start_equation(adjointer, max_timestep, &start_equation);
 				assert(ierr == ADJ_OK);
 
-				if (cp_eqns[cp_iter-1] > start_equation)
+				if (cp_eqns[cp_iter] > start_equation)
 				{
 					adj_variable var = adjointer->equations[data->equation].variable;
 
