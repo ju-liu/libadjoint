@@ -329,6 +329,9 @@ int adj_get_adjoint_solution(adj_adjointer* adjointer, int equation, char* funct
     if (ierr != ADJ_OK) return ierr;
   }
 
+  if (adjointer->revolve_data.verbose)
+   	printf("Revolve: Solving adjoint equation %i.\n", equation);
+
   /* At this point, all the dependencies are available to assemble the adjoint equation */
   ierr = adj_get_adjoint_equation(adjointer, equation, functional, &lhs, &rhs, adj_var);
   if (ierr!=ADJ_OK)
@@ -338,6 +341,13 @@ int adj_get_adjoint_solution(adj_adjointer* adjointer, int equation, char* funct
   adjointer->callbacks.solve(*adj_var, lhs, rhs, soln); 
   adjointer->callbacks.vec_destroy(&rhs);
   adjointer->callbacks.mat_destroy(&lhs);
+
+  /* We can now safely un-checkoint this equation */
+  if ((cs==ADJ_CHECKPOINT_REVOLVE_OFFLINE) || (cs==ADJ_CHECKPOINT_REVOLVE_MULTISTAGE) || (cs==ADJ_CHECKPOINT_REVOLVE_ONLINE))
+  {
+    adjointer->equations[equation].disk_checkpoint=ADJ_FALSE;
+    adjointer->equations[equation].memory_checkpoint=ADJ_FALSE;
+  }
 
   return ADJ_OK;
 }
@@ -366,13 +376,17 @@ int adj_revolve_to_adjoint_equation(adj_adjointer* adjointer, int equation)
         if (ierr != ADJ_OK) return ierr;
 
         if (adjointer->revolve_data.verbose)
-        	printf("Revolve: Replay from equation %i (first equation of timestep %i) to equation %i (last equation of timestep %i).\n", start_eqn, oldcapo, end_eqn, capo-1);
+        	printf("====== Revolve: Replay from equation %i (first equation of timestep %i) to equation %i (last equation of timestep %i) =======\n", start_eqn, oldcapo, end_eqn, capo-1);
 
-        ierr = adj_replay_forward_equations(adjointer, start_eqn, end_eqn);
+        ierr = adj_replay_forward_equations(adjointer, start_eqn, end_eqn, ADJ_FALSE);
         if (ierr != ADJ_OK) return ierr;
 
         adjointer->revolve_data.current_timestep = capo;
         adjointer->revolve_data.current_action = revolve(adjointer->revolve_data.revolve);
+        assert((adjointer->revolve_data.current_action==CACTION_TAKESHOT) ||
+        		   (adjointer->revolve_data.current_action==CACTION_YOUTURN) ||
+        		   (adjointer->revolve_data.current_action==CACTION_FIRSTRUN));
+
         break;
 
       case CACTION_TAKESHOT:
@@ -394,9 +408,6 @@ int adj_revolve_to_adjoint_equation(adj_adjointer* adjointer, int equation)
         break;
 
       case CACTION_FIRSTRUN:
-        if (adjointer->revolve_data.verbose)
-        	printf("Revolve: First adjoint run.\n");
-
 				/* Check that the forward simulation was run to the last timestep */
 				if (adjointer->revolve_data.current_timestep != adjointer->revolve_data.steps-1)
 				{
@@ -415,11 +426,17 @@ int adj_revolve_to_adjoint_equation(adj_adjointer* adjointer, int equation)
         ierr = adj_timestep_end_equation(adjointer, adjointer->revolve_data.current_timestep, &end_eqn);
         if (ierr != ADJ_OK) return ierr;
 
-        if (adjointer->revolve_data.verbose)
-        	printf("Revolve: Replay from equation %i (first equation of timestep %i) to equation %i (last equation of timestep %i).\n", start_eqn, adjointer->revolve_data.current_timestep, end_eqn, adjointer->revolve_data.current_timestep);
+      	/* When replaying the timestep of the current adjoint equation, the replay records all variables of that timestep. */
+      	/* For that reason, we need to execute the replay only if we are about to solve the last equation of a timestep */
+      	if (equation==end_eqn)
+      	{
+					if (adjointer->revolve_data.verbose)
+						printf("====== Revolve: Replay from equation %i (first equation of timestep %i) to equation %i (last equation of timestep %i). ======\n", start_eqn, adjointer->revolve_data.current_timestep, end_eqn, adjointer->revolve_data.current_timestep);
 
-        ierr = adj_replay_forward_equations(adjointer, start_eqn, end_eqn);
-        if (ierr != ADJ_OK) return ierr;
+					/* While replaying, we want to store the solved variables as checkpoints to ensure that we have all variables available for the upcoming adjoint solve */
+					ierr = adj_replay_forward_equations(adjointer, start_eqn, end_eqn, ADJ_TRUE);
+					if (ierr != ADJ_OK) return ierr;
+      	}
 
         loop=ADJ_FALSE;
         break;
@@ -430,11 +447,11 @@ int adj_revolve_to_adjoint_equation(adj_adjointer* adjointer, int equation)
         break;
 
       case CACTION_ERROR:
-        snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "An internal error occured: Irregular termination of revolve (in adj_adjoint_solution for equation %i).", equation);
+        snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "An internal error occured: Irregular termination of revolve.");
         return ADJ_ERR_REVOLVE_ERROR;
 
       default:
-        snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "An internal error occured: The adjointer and revolve are out of sync (in adj_adjoint_solution for equation %i).", equation);
+        snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "An internal error occured: The adjointer and revolve are out of sync.");
         return ADJ_ERR_REVOLVE_ERROR;        
     }
 
@@ -447,8 +464,12 @@ int adj_revolve_to_adjoint_equation(adj_adjointer* adjointer, int equation)
     return ADJ_ERR_INVALID_INPUTS;
   }
 
-  adjointer->revolve_data.current_action = revolve(adjointer->revolve_data.revolve);
-  return ADJ_OK;
+  /* If this function was called just before solving the last adjoint equation of the current timestep, then we ask revolve what to do next */
+  if (equation==0 || adjointer->revolve_data.current_timestep!=adjointer->equations[equation-1].variable.timestep)
+	{
+		adjointer->revolve_data.current_action = revolve(adjointer->revolve_data.revolve);
+	}
+	return ADJ_OK;
 }
 
 
@@ -633,12 +654,18 @@ int adj_get_forward_solution(adj_adjointer* adjointer, int equation, adj_vector*
   return ADJ_OK;
 }
 
-int adj_replay_forward_equations(adj_adjointer* adjointer, int start_equation, int stop_equation)
+/* This function replays a forward solve starting from start_equation until (including) stop_equation */
+/* To keep the memory foot print as small as possible, the routine forgets variables as soon as possible, */
+/* keeping only variables which are needed to solve equations > stop_equation+1 */
+/* If the checkpoint_last_timestep flag is ADJ_TRUE, then the solution variables of the equations with */
+/* the same timestep as stop_equation will be  checkpointed. */
+int adj_replay_forward_equations(adj_adjointer* adjointer, int start_equation, int stop_equation, int checkpoint_last_timestep)
 {
   int equation, stop_timestep;
   int ierr;
   adj_vector soln;
   adj_variable var;
+  adj_variable_data* var_data;
   adj_storage_data storage;
 
 
@@ -652,33 +679,50 @@ int adj_replay_forward_equations(adj_adjointer* adjointer, int start_equation, i
   	 */
 		if (adj_has_variable_value(adjointer, adjointer->equations[equation].variable)!=ADJ_OK)
 		{
+			if (adjointer->revolve_data.verbose)
+				printf("Revolve: Replaying equation %i.\n", equation);
 			ierr = adj_get_forward_solution(adjointer, equation, &soln, &var);
 			if (ierr!=ADJ_OK) return ierr;
 
 			/* Record the solution to memory. We always use adj_storage_memory_copy for recording as it is a safe choice */
-			{
-				ierr = adj_storage_memory_copy(soln, &storage);
-				if (ierr != ADJ_OK) return ierr;
-			}
-
-			/* We checkpoint the variables of the last timestep in the replay, to ensure that adj_forget_forward_equation will not delete them */
-			if (var.timestep==stop_timestep)
-			{
-				ierr = adj_storage_set_checkpoint(&storage, ADJ_TRUE);
-				if (ierr!=ADJ_OK) return ierr;
-			}
-
-			/* Record the result */
+			ierr = adj_storage_memory_copy(soln, &storage);
+			if (ierr != ADJ_OK) return ierr;
 			ierr = adj_record_variable(adjointer, var, storage);
 			if (ierr<0)
 				adj_chkierr(ierr);
 			else if (ierr!=ADJ_OK)
 				return ierr;
 
-			/* Forget everything that is not needed for future calculations */
-			ierr = adj_forget_forward_equation_until(adjointer, equation, stop_equation);
-			if (ierr!=ADJ_OK) return ierr;
 		}
+		else
+		{
+			var = adjointer->equations[equation].variable;
+			if (adjointer->revolve_data.verbose)
+				printf("Revolve: No need to replay, have solution of equation %i already.\n", equation);
+		}
+
+		/* Checkpoint the equation if desired */
+		if (checkpoint_last_timestep==ADJ_TRUE && var.timestep==stop_timestep)
+		{
+			/* Mark the first equation of the last timestep as a checkpoint equation */
+			if ((equation>0) && (adjointer->equations[equation-1].variable.timestep!=adjointer->equations[equation].variable.timestep))
+			{
+				if (adjointer->revolve_data.verbose)
+					printf("Revolve: Checkpoint equation solution %i\n", equation);
+				ierr = adj_checkpoint_equation(adjointer, equation, ADJ_CHECKPOINT_STORAGE_MEMORY);
+				if (ierr!=ADJ_OK) return ierr;
+			}
+			/* And mark the solution variable as checkpoint */
+			if (adjointer->revolve_data.verbose)
+				printf("Revolve: Mark solution variable of equation %i as checkpointed.\n", equation);
+		  ierr = adj_find_variable_data(&(adjointer->varhash), &var, &var_data);
+		  assert(ierr == ADJ_OK);
+			var_data->storage.storage_memory_is_checkpoint=ADJ_TRUE;
+		}
+
+		/* Forget everything that is not needed for future forward calculations */
+		ierr = adj_forget_forward_equation(adjointer, equation);
+		if (ierr!=ADJ_OK) return ierr;
   }
 
   return ADJ_OK;

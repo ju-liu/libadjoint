@@ -158,6 +158,16 @@ void test_checkpoint_revolve_online(void)
 		adj_test_assert(ierr == ADJ_OK, "Should have worked");
   }
 
+  /* We can record the solution of the last timestep, but we do not have to: revolve will do it for us */
+  /*{
+		ierr = adj_storage_memory_copy(value, &storage);
+		adj_test_assert(ierr == ADJ_OK, "Should have worked");
+		ierr = adj_storage_set_checkpoint(&storage, ADJ_TRUE);
+		adj_test_assert(ierr == ADJ_OK, "Should have worked");
+		ierr = adj_record_variable(&adjointer, u[1], storage);
+		adj_test_assert(ierr == ADJ_OK, "Should have worked");
+  }*/
+
   ierr = adj_equation_count(&adjointer, &nb_eqs);
   adj_test_assert(ierr == ADJ_OK, "Should have worked");
   adj_test_assert(nb_eqs  == steps, "Number of timesteps should be the same the number of registered equations");

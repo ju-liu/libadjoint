@@ -36,6 +36,9 @@ int adj_adjointer_check_checkpoints(adj_adjointer* adjointer)
 
 	if (adjointer->options[ADJ_ACTIVITY] == ADJ_ACTIVITY_NOTHING) return ADJ_OK;
 
+	if (adjointer->revolve_data.verbose)
+		printf("======= Revolve: starting checkpoint check =======\n");
+
 	/* Query the checkpoint equations */
 	cp_num = 0;
 	/* First get the number of checkpoints */
@@ -69,9 +72,9 @@ int adj_adjointer_check_checkpoints(adj_adjointer* adjointer)
 		if (adjointer->revolve_data.verbose)
 		{
 			if (eqn.memory_checkpoint==ADJ_TRUE)
-				printf("Equation %i is a memory checkpoint.\n", cp_eqns[cp_iter]);
+				printf("Revolve: Equation %i is a memory checkpoint.\n", cp_eqns[cp_iter]);
 			if (eqn.disk_checkpoint==ADJ_TRUE)
-				printf("Equation %i is a disk checkpoint.\n", cp_eqns[cp_iter]);
+				printf("Revolve: Equation %i is a disk checkpoint.\n", cp_eqns[cp_iter]);
 		}
 
 		/* Check that we have all the forward values we need to restart the simulation */
@@ -188,6 +191,10 @@ int adj_adjointer_check_checkpoints(adj_adjointer* adjointer)
 	}
 
 	free(cp_eqns);
+
+	if (adjointer->revolve_data.verbose)
+		printf("Revolve: checkpoint check passed.\n");
+
 	return ADJ_OK;
 }
 
