@@ -283,6 +283,12 @@ void adj_html_vars(FILE* fp, adj_adjointer* adjointer, int type)
 			adj_variable_str(adj_var, adj_name, ADJ_NAME_LEN);
 			fprintf(fp, "%s", adj_name);
 
+			if (adjointer->equations[i].memory_checkpoint==ADJ_TRUE)
+				fprintf(fp, "(memory_checkpoint_equation)");
+			if (adjointer->equations[i].disk_checkpoint==ADJ_TRUE)
+				fprintf(fp, "(disk_checkpoint_equation)");
+
+
 			/* Also print how the value is stored */
 			if (ierr==ADJ_OK) /* ierr from adj_has_variable_value is still valid */
 			{
@@ -640,7 +646,6 @@ int adj_html_adjoint_system(adj_adjointer* adjointer, char* filename)
   adj_html_header(fp);
 
   adj_html_print_statistics(fp, adjointer);
-  adj_html_print_callback_information(fp, adjointer);
 
   fprintf(fp, "<h1>Adjoint system</h1>\n");
   if (adjointer->nequations==0)
@@ -677,6 +682,8 @@ int adj_html_adjoint_system(adj_adjointer* adjointer, char* filename)
   }
   adj_html_table_end(fp);
 
+  adj_html_print_callback_information(fp, adjointer);
+
   adj_html_footer(fp);
   fclose(fp);
   return ADJ_OK;
@@ -699,7 +706,6 @@ int adj_html_forward_system(adj_adjointer* adjointer, char* filename)
   adj_html_header(fp);
 
   adj_html_print_statistics(fp, adjointer);
-  adj_html_print_callback_information(fp, adjointer);
 
   fprintf(fp, "<h1>Forward system</h1>\n");
   if (adjointer->nequations==0)
@@ -736,6 +742,8 @@ int adj_html_forward_system(adj_adjointer* adjointer, char* filename)
     iteration = adj_eqn.variable.iteration;
   }
   adj_html_table_end(fp);
+
+  adj_html_print_callback_information(fp, adjointer);
 
   adj_html_footer(fp);
   fclose(fp);
