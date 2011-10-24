@@ -106,6 +106,8 @@ module libadjoint_data_structures
     integer(kind=c_int) :: current_timestep
 
     integer(kind=c_int) :: verbose
+    integer(kind=c_int) :: overwrite
+    adj_scalar_f :: comparison_tolerance
   end type adj_revolve_data
 
   type, bind(c) :: adj_adjointer
@@ -606,6 +608,16 @@ module libadjoint
       integer(kind=c_int), intent(in), value :: verbose
       integer(kind=c_int) :: ierr
     end function adj_set_revolve_options_c
+
+    function adj_set_revolve_debug_options_c(adjointer, overwrite, comparison_tolerance) result(ierr) &
+                                     & bind(c, name='adj_set_revolve_debug_options')
+      use libadjoint_data_structures
+      use iso_c_binding
+      type(adj_adjointer), intent(inout) :: adjointer
+      integer(kind=c_int), intent(in), value :: overwrite
+      adj_scalar_f, intent(in), value :: comparison_tolerance
+      integer(kind=c_int) :: ierr
+    end function adj_set_revolve_debug_options_c
 
     function adj_equation_count(adjointer, count) result(ierr) bind(c, name='adj_equation_count')
       use libadjoint_data_structures
@@ -1509,18 +1521,37 @@ module libadjoint
     integer(kind=c_int), intent(in) :: steps
     integer(kind=c_int), intent(in) :: snaps
     integer(kind=c_int), intent(in) :: snaps_in_ram
-    logical, intent(in) :: verbose
+    logical, intent(in), optional :: verbose
     integer(kind=c_int) :: ierr
     integer(kind=c_int) :: verbose_c
 
-    if (verbose) then
-      verbose_c = ADJ_TRUE
+    if (present(verbose)) then
+      if (verbose) then
+        verbose_c = ADJ_TRUE
+      end if
     else
       verbose_c = ADJ_FALSE
     end if
 
     ierr = adj_set_revolve_options_c(adjointer, steps, snaps, snaps_in_ram, verbose_c)
   end function adj_set_revolve_options
+
+  function adj_set_revolve_debug_options(adjointer, overwrite, comparison_tolerance) result(ierr)
+    type(adj_adjointer), intent(inout) :: adjointer
+    logical, intent(in) :: overwrite
+    adj_scalar_f, intent(in) :: comparison_tolerance
+
+    integer(kind=c_int) :: overwrite_c
+    integer(kind=c_int) :: ierr
+
+    if (overwrite) then
+      overwrite_c = ADJ_TRUE
+    else
+      overwrite_c = ADJ_FALSE
+    end if
+
+    ierr = adj_set_revolve_debug_options_c(adjointer, overwrite_c, comparison_tolerance)
+  end function adj_set_revolve_debug_options
 
   function adj_equation_set_rhs_dependencies(equation, rhsdeps, context) result(ierr)
     type(adj_equation), intent(inout) :: equation

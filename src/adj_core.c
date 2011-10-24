@@ -684,7 +684,8 @@ int adj_replay_forward_equations(adj_adjointer* adjointer, int start_equation, i
   	/* We might have the solution of this equation already,
   	 * in which case we do not have to solve for it.
   	 */
-		if (adj_has_variable_value(adjointer, adjointer->equations[equation].variable)!=ADJ_OK)
+		if ((adj_has_variable_value(adjointer, adjointer->equations[equation].variable)!=ADJ_OK) ||
+				 (adjointer->revolve_data.overwrite==ADJ_TRUE))
 		{
 			if (adjointer->revolve_data.verbose)
 				printf("Revolve: Replaying equation %i.\n", equation);
@@ -694,7 +695,15 @@ int adj_replay_forward_equations(adj_adjointer* adjointer, int start_equation, i
 			/* Record the solution to memory. We always use adj_storage_memory_copy for recording as it is a safe choice */
 			ierr = adj_storage_memory_copy(soln, &storage);
 			if (ierr != ADJ_OK) return ierr;
-			ierr = adj_record_variable(adjointer, var, storage);
+			if (adjointer->revolve_data.overwrite)
+			{
+				ierr = adj_storage_set_overwrite(&storage, ADJ_TRUE);
+				if (ierr != ADJ_OK) return ierr;
+				ierr = adj_storage_set_compare(&storage, ADJ_TRUE, adjointer->revolve_data.comparison_tolerance);
+				if (ierr != ADJ_OK) return ierr;
+			}
+
+		  ierr = adj_record_variable(adjointer, var, storage);
 			if (ierr<0)
 				adj_chkierr(ierr);
 			else if (ierr!=ADJ_OK)
@@ -729,8 +738,11 @@ int adj_replay_forward_equations(adj_adjointer* adjointer, int start_equation, i
 		}
 
 		/* Forget everything that is not needed for future forward calculations */
-		ierr = adj_forget_forward_equation(adjointer, equation);
-		if (ierr!=ADJ_OK) return ierr;
+		if (adjointer->revolve_data.overwrite!=ADJ_TRUE)
+		{
+			ierr = adj_forget_forward_equation(adjointer, equation);
+			if (ierr!=ADJ_OK) return ierr;
+		}
   }
 
   return ADJ_OK;

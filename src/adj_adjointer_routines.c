@@ -40,6 +40,8 @@ int adj_create_adjointer(adj_adjointer* adjointer)
   adjointer->revolve_data.current_action = -1;
   adjointer->revolve_data.current_timestep = ADJ_UNSET;
   adjointer->revolve_data.verbose = ADJ_FALSE;
+  adjointer->revolve_data.overwrite = ADJ_FALSE;
+  adjointer->revolve_data.comparison_tolerance = 0.0;
 
   adjointer->nonlinear_colouring_list.firstnode = NULL;
   adjointer->nonlinear_colouring_list.lastnode = NULL;
@@ -201,6 +203,13 @@ int adj_set_revolve_options(adj_adjointer* adjointer, int steps, int snaps, int 
   adjointer->revolve_data.snaps=snaps;  
   adjointer->revolve_data.snaps_in_ram=snaps_in_ram;  
   adjointer->revolve_data.verbose=verbose;
+  return ADJ_OK;
+}
+
+int adj_set_revolve_debug_options(adj_adjointer* adjointer, int overwrite, adj_scalar comparison_tolerance)
+{
+  adjointer->revolve_data.overwrite=overwrite;
+  adjointer->revolve_data.comparison_tolerance=comparison_tolerance;
   return ADJ_OK;
 }
 
@@ -1411,6 +1420,10 @@ int adj_forget_adjoint_equation(adj_adjointer* adjointer, int equation)
   int min_timestep;
 
   if (adjointer->options[ADJ_ACTIVITY] == ADJ_ACTIVITY_NOTHING) return ADJ_OK;
+
+  /* Dont delete any variables if we want to compare in the revolve replays */
+  if (adjointer->revolve_data.overwrite==ADJ_TRUE)
+	  return ADJ_OK;
 
   if (equation >= adjointer->nequations)
   {

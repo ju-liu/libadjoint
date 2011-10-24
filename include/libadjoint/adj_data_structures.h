@@ -241,6 +241,9 @@ typedef struct
                         /* This should be thought of as "Libadjoint has all the data to solve */
                         /* for the first forward variable with timestep current_timestep" */
   int verbose; /* A flag that prints revolve specific information to the screen if set to ADJ_TRUE */
+  int overwrite; /* A flag indicating if a replay should be performed even if that variable is already recorded. */
+                 /* The new value is compared with the existing one in order to check if the revolve replay produces the same solution than the original forward system */
+  adj_scalar comparison_tolerance; /* The comparison tolerance in case that overwrite is ADJ_TRUE */
 } adj_revolve_data;
 
 typedef struct adj_adjointer
