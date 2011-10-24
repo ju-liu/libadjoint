@@ -275,6 +275,7 @@ int adj_create_variable(char* name, int timestep, int iteration, int auxiliary, 
 int adj_variable_get_name(adj_variable var, char** name);
 int adj_variable_get_timestep(adj_variable var, int* timestep);
 int adj_variable_get_iteration(adj_variable var, int* iteration);
+int adj_variable_get_type(adj_variable var, int* type);
 int adj_variable_set_auxiliary(adj_variable* var, int auxiliary);
 int adj_create_nonlinear_block(char* name, int ndepends, adj_variable* depends, void* context, adj_nonlinear_block* nblock);
 int adj_destroy_nonlinear_block(adj_nonlinear_block* nblock);

@@ -417,6 +417,14 @@ module libadjoint
       integer(kind=c_int) :: ierr
     end function adj_variable_get_iteration
 
+    function adj_variable_get_type(var, type) result(ierr) bind(c, name='adj_variable_get_type')
+      use libadjoint_data_structures
+      use iso_c_binding
+      type(adj_variable), intent(in), value :: var
+      integer(kind=c_int), intent(out) :: type
+      integer(kind=c_int) :: ierr
+    end function adj_variable_get_type
+
     function adj_variable_set_auxiliary_c(var, auxiliary) result(ierr) bind(c, name='adj_variable_set_auxiliary')
       use libadjoint_data_structures
       use iso_c_binding

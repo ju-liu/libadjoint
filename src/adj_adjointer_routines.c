@@ -1451,8 +1451,17 @@ int adj_forget_adjoint_equation(adj_adjointer* adjointer, int equation)
 
       if (should_we_delete)
       {
-        ierr = adj_forget_variable_value(adjointer, data);
-        if (ierr != ADJ_OK) return ierr;
+      	/* Forget only non-checkpoint variables */
+      	if (data->storage.storage_disk_has_value && !data->storage.storage_disk_is_checkpoint)
+      	{
+      		ierr = adj_forget_variable_value_from_disk(adjointer, data);
+      		if (ierr != ADJ_OK) return ierr;
+      	}
+      	if (data->storage.storage_memory_has_value && !data->storage.storage_memory_is_checkpoint)
+      	{
+      		ierr = adj_forget_variable_value_from_memory(adjointer, data);
+      		if (ierr != ADJ_OK) return ierr;
+      	}
       }
     }
 
@@ -1551,7 +1560,7 @@ int adj_forget_forward_equation_until(adj_adjointer* adjointer, int equation, in
 
       if (should_we_delete)
       {
-      	/* Forget variables that are not checkpoints */
+      	/* Forget only non-checkpoint variables */
       	if (data->storage.storage_disk_has_value && !data->storage.storage_disk_is_checkpoint)
       	{
       		ierr = adj_forget_variable_value_from_disk(adjointer, data);

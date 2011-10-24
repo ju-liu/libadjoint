@@ -342,11 +342,18 @@ int adj_get_adjoint_solution(adj_adjointer* adjointer, int equation, char* funct
   adjointer->callbacks.vec_destroy(&rhs);
   adjointer->callbacks.mat_destroy(&lhs);
 
-  /* We can now safely un-checkoint this equation */
+  /* We can now safely un-checkoint this equation and its associated forward variable */
   if ((cs==ADJ_CHECKPOINT_REVOLVE_OFFLINE) || (cs==ADJ_CHECKPOINT_REVOLVE_MULTISTAGE) || (cs==ADJ_CHECKPOINT_REVOLVE_ONLINE))
   {
+  	adj_variable_data* data_ptr;
+
+    ierr = adj_find_variable_data(&(adjointer->varhash), &adjointer->equations[equation].variable, &data_ptr);
+    if (ierr != ADJ_OK) return ierr;
+
     adjointer->equations[equation].disk_checkpoint=ADJ_FALSE;
     adjointer->equations[equation].memory_checkpoint=ADJ_FALSE;
+    data_ptr->storage.storage_memory_is_checkpoint=ADJ_FALSE;
+    data_ptr->storage.storage_disk_is_checkpoint=ADJ_FALSE;
   }
 
   return ADJ_OK;

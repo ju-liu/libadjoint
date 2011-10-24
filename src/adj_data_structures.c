@@ -54,6 +54,12 @@ int adj_variable_get_iteration(adj_variable var, int* iteration)
   return ADJ_OK;
 }
 
+int adj_variable_get_type(adj_variable var, int* type)
+{
+  *type = var.type;
+  return ADJ_OK;
+}
+
 int adj_create_nonlinear_block(char* name, int ndepends, adj_variable* depends, void* context, adj_nonlinear_block* nblock)
 {
   size_t slen;
