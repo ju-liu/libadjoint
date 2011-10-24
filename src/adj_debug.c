@@ -134,8 +134,17 @@ int adj_adjointer_check_checkpoints(adj_adjointer* adjointer)
 		}
 	}
 
+	if (cp_num>0)
 	{
 		adj_variable_data* data;
+
+		/* The first checkpoint equation must be zero, otherwise */
+		/* we couldn't replay the whole forward system */
+		if(cp_eqns[0]!=0)
+		{
+			snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Internal error: the first equation must be a checkpoint equation but it is not.");
+			return ADJ_ERR_REVOLVE_ERROR;
+		}
 
 		/* Check we have the required variables for the adjoint equations */
 		data = adjointer->vardata.firstnode;
@@ -150,14 +159,6 @@ int adj_adjointer_check_checkpoints(adj_adjointer* adjointer)
 			}
 
 			/* Find out in which checkpoint slot the variable is computed */
-			/* The first equation must be zero, otherwise */
-			/* we couldn't replay the whole forward system */
-			if(cp_eqns[0]!=0)
-			{
-				snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Internal error: the first equation must be a checkpoint equation but it is not.");
-				return ADJ_ERR_REVOLVE_ERROR;
-			}
-
 			for (cp_iter=0; cp_iter<cp_num-1; cp_iter++)
 			{
 				if (data->equation<cp_eqns[cp_iter+1])
