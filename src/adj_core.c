@@ -700,6 +700,7 @@ int adj_replay_forward_equations(adj_adjointer* adjointer, int start_equation, i
 			else if (ierr!=ADJ_OK)
 				return ierr;
 
+		  adjointer->callbacks.vec_destroy(&soln);
 		}
 		else
 		{

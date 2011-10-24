@@ -1514,6 +1514,13 @@ int adj_forget_forward_equation_until(adj_adjointer* adjointer, int equation, in
   		continue;
   	}
 
+  	/* Only forget forward variables that are computed at equations <= equation */
+  	if (data->equation>equation)
+  	{
+  		data = data->next;
+  		continue;
+  	}
+
     if (data->storage.storage_memory_has_value || data->storage.storage_disk_has_value)
     {
       should_we_delete = 1;
