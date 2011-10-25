@@ -20,8 +20,8 @@ void source(adj_adjointer* adjointer, adj_variable variable, int ndepends, adj_v
 void test_adj_forget_forward_equation(void)
 {
   int steps = 5;
-  int snaps = 3;
-  int snaps_in_ram = -1;
+  int snaps = 4;
+  int snaps_in_ram = 1;
   int timestep, nb_eqs;
   int cs;
   adj_adjointer adjointer;

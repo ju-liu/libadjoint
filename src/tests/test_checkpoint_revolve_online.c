@@ -24,8 +24,8 @@ void get_expected_values(int timestep, int* nb_expected_vars, char expected_vars
 void test_checkpoint_revolve_online(void)
 {
   int steps = 20;
-  int snaps = 3;
-  int snaps_in_ram = -1;
+  int snaps = 4;
+  int snaps_in_ram = 1;
   int timestep, nb_eqs;
   int cs;
   adj_adjointer adjointer;
