@@ -870,9 +870,23 @@ int adj_get_revolve_checkpoint_storage(adj_adjointer* adjointer, adj_equation eq
 int adj_initialise_revolve(adj_adjointer* adjointer)
 {
   int steps = adjointer->revolve_data.steps;
-  int snaps = adjointer->revolve_data.snaps;
-  int snaps_in_ram = adjointer->revolve_data.snaps_in_ram;
+  int snaps = adjointer->revolve_data.snaps-1;
+  int snaps_in_ram = adjointer->revolve_data.snaps_in_ram-1;
   int cs, ierr;
+
+  /* We need one memory checkpoint to checkpoint the last timestep before a FIRSTRUN or YOUTURN action. */
+  if (snaps_in_ram<0)
+  {
+    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Checkpointing needs at least one memory checkpoint plus one disk or memory checkpoint.  Make sure you call adj_set_revolve_options with snaps_in_ram greater or equal than 1.");
+    return ADJ_ERR_INVALID_INPUTS;
+  }
+  /* We need at least one snapshot */
+  if (snaps<=0)
+  {
+    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Checkpointing needs at least one memory checkpoint plus one disk or memory checkpoint.  Make sure you call adj_set_revolve_options with snaps greater or equal than 2.");
+    return ADJ_ERR_INVALID_INPUTS;
+  }
+
 
   ierr = adj_get_checkpoint_strategy(adjointer, &cs);
   if (ierr != ADJ_OK) return ierr;
