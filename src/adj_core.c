@@ -350,6 +350,11 @@ int adj_get_adjoint_solution(adj_adjointer* adjointer, int equation, char* funct
     ierr = adj_find_variable_data(&(adjointer->varhash), &adjointer->equations[equation].variable, &data_ptr);
     if (ierr != ADJ_OK) return ierr;
 
+    if (adjointer->revolve_data.verbose)
+    	if ((adjointer->equations[equation].disk_checkpoint==ADJ_TRUE) ||
+    		  (adjointer->equations[equation].memory_checkpoint==ADJ_TRUE))
+        printf("Revolve: Delete checkpoint equation %i.\n", equation);
+
     adjointer->equations[equation].disk_checkpoint=ADJ_FALSE;
     adjointer->equations[equation].memory_checkpoint=ADJ_FALSE;
     data_ptr->storage.storage_memory_is_checkpoint=ADJ_FALSE;
@@ -725,7 +730,7 @@ int adj_replay_forward_equations(adj_adjointer* adjointer, int start_equation, i
 			if ((equation>0) && (adjointer->equations[equation-1].variable.timestep!=adjointer->equations[equation].variable.timestep))
 			{
 				if (adjointer->revolve_data.verbose)
-					printf("Revolve: Checkpoint equation solution %i\n", equation);
+					printf("Revolve: Checkpoint equation %i in memory.\n", equation);
 				ierr = adj_checkpoint_equation(adjointer, equation, ADJ_CHECKPOINT_STORAGE_MEMORY);
 				if (ierr!=ADJ_OK) return ierr;
 			}
