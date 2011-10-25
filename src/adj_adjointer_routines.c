@@ -220,6 +220,7 @@ int adj_register_equation(adj_adjointer* adjointer, adj_equation equation, int* 
   int i;
   int j;
   int checkpoint_strategy; /* ADJ_CHECKPOINT_STORAGE_NONE, ADJ_CHECKPOINT_STORAGE_MEMORY or ADJ_CHECKPOINT_STORAGE_DISK */
+  *checkpoint_storage = ADJ_CHECKPOINT_STORAGE_NONE;
 
   if (adjointer->options[ADJ_ACTIVITY] == ADJ_ACTIVITY_NOTHING) return ADJ_OK;
 
@@ -510,8 +511,6 @@ int adj_register_equation(adj_adjointer* adjointer, adj_equation equation, int* 
   }
 
   /* Set the checkpoint flag */
-  *checkpoint_storage = ADJ_CHECKPOINT_STORAGE_NONE;
-
   ierr = adj_get_checkpoint_strategy(adjointer, &checkpoint_strategy);
   if (ierr != ADJ_OK) return ierr;
 
