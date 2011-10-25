@@ -715,7 +715,7 @@ int adj_replay_forward_equations(adj_adjointer* adjointer, int start_equation, i
 		{
 			var = adjointer->equations[equation].variable;
 			if (adjointer->revolve_data.verbose)
-				printf("Revolve: No need to replay, have solution of equation %i already.\n", equation);
+				printf("Revolve: No need to replay equation %i.\n", equation);
 		}
 
 		/* Checkpoint the equation if desired */
@@ -729,9 +729,6 @@ int adj_replay_forward_equations(adj_adjointer* adjointer, int start_equation, i
 				ierr = adj_checkpoint_equation(adjointer, equation, ADJ_CHECKPOINT_STORAGE_MEMORY);
 				if (ierr!=ADJ_OK) return ierr;
 			}
-			/* And mark the solution variable as checkpoint */
-			if (adjointer->revolve_data.verbose)
-				printf("Revolve: Mark solution variable of equation %i as checkpointed.\n", equation);
 		  ierr = adj_find_variable_data(&(adjointer->varhash), &var, &var_data);
 		  assert(ierr == ADJ_OK);
 			var_data->storage.storage_memory_is_checkpoint=ADJ_TRUE;
