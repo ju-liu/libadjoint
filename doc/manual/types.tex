@@ -399,12 +399,13 @@ If the right hand side is not needed or the source term has no dependencies, thi
 \begin{boxwithtitle}{\texttt{adj_register_equation}}
 \begin{minipage}{\columnwidth}
 \begin{ccode}
-  int adj_register_equation(adj_adjointer* adjointer, adj_equation equation);
+  int adj_register_equation(adj_adjointer* adjointer, adj_equation equation, int* checkpoint_storage);
 \end{ccode}
 \begin{fortrancode}
   function adj_register_equation(adjointer, equation) result(ierr)
     type(adj_adjointer), intent(inout) :: adjointer
     type(adj_equation), intent(in), value :: equation
+    integer(kind=c_int), intent(out), optional :: checkpoint_storage 
     integer(kind=c_int) :: ierr
   end function adj_register_equation
 \end{fortrancode}
@@ -412,8 +413,14 @@ If the right hand side is not needed or the source term has no dependencies, thi
 \end{boxwithtitle}
 
 Registers the equation \texttt{equation} to the \texttt{adjointer}.
-
-
+The, in Fortran optional, argument \texttt{checkpoint_storage} determines if the equation is a checkpoint equation and of which type. 
+It takes one of these values:
+\begin{description}
+\item[\texttt{ADJ_CHECKPOINT_STORAGE_NONE}] No checkpoint.
+\item[\texttt{ADJ_CHECKPOINT_STORAGE_MEMORY}] Equation must be checkpointed in memory.
+\item[\texttt{ADJ_CHECKPOINT_STORAGE_DISK}] Equation must be checkpointed on disk.
+\end{description}
+If the checkpointing strategy is deactivated (the default) then \texttt{checkpoint_storage} will always be \texttt{ADJ_CHECKPOINT_STORAGE_NONE}.
 
 \defapis{adj_destroy_equation}
 \begin{boxwithtitle}{\texttt{adj_destroy_equation}}

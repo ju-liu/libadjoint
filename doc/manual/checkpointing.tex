@@ -66,9 +66,9 @@ Hence the number of checkpoint stored on disk is $\texttt{snaps}-\texttt{snaps_i
 
 Depending on the chosen checkpointing strategy, these options must fulfill these properties:
 \begin{itemize}
-\item \texttt{ADJ_CHECKPOINT_REVOLVE_OFFLINE}: $\texttt{steps}>0$ and $\texttt{snaps}>0$.
-\item \texttt{ADJ_CHECKPOINT_REVOLVE_MULTISTAGE}: $\texttt{steps}>0$, $\texttt{snaps}>0$, $\texttt{snaps\_in\_ram}\ge0$ and $\texttt{snaps\_in\_ram}\le \texttt{snaps}$.
-\item \texttt{ADJ_CHECKPOINT_REVOLVE_ONLINE}: $\texttt{snaps}>0$.
+\item \texttt{ADJ_CHECKPOINT_REVOLVE_OFFLINE}: $\texttt{steps}>1$ and $\texttt{snaps}>1$.
+\item \texttt{ADJ_CHECKPOINT_REVOLVE_MULTISTAGE}: $\texttt{steps}>1$, $\texttt{snaps}>1$, $\texttt{snaps\_in\_ram}\ge0$ and $\texttt{snaps\_in\_ram}\le \texttt{snaps}$.
+\item \texttt{ADJ_CHECKPOINT_REVOLVE_ONLINE}: $\texttt{snaps}>1$.
 \end{itemize}
 
 If the flag \texttt{verbose} is set, \libadjoint will print revolve specific output to the screen. 
@@ -115,6 +115,25 @@ end function adj_adjointer_check_checkpoints
 \end{minipage}
 \end{boxwithtitle}
 
-This function checks that all checkpoints are valid, i.e. that the required variables for restarting the simulation at the checkpoint equation are recorded.
-It should be called just before starting the adjoint loop.
-If the reutur value is \texttt{ADJ_OK}, then the required information is available for revolve to solve the adjoint system.
+This function checks that the validity of all checkpoints, i.e. that the required variables for restarting the simulation at the checkpoint equation are recorded.
+It should be called just before starting the adjoint main loop.
+If the return value is \texttt{ADJ_OK}, then the required information is available for revolve to solve the adjoint system.
+
+
+\defapis{adj_storage_set_checkpoint}
+\begin{boxwithtitle}{Function interface for \texttt{adj_storage_set_checkpoint}}
+\begin{minipage}{\columnwidth}
+\begin{ccode}
+int adj_storage_set_checkpoint(adj_storage_data* data, int checkpoint)
+\end{ccode}
+\begin{fortrancode}
+function adj_storage_set_checkpoint(data, checkpoint) result(ierr)
+  type(adj_storage_data), intent(inout) :: data
+  logical, intent(in) :: checkpoint
+  integer(kind=c_int) :: ierr
+end function adj_storage_set_checkpoint
+\end{fortrancode}
+\end{minipage}
+\end{boxwithtitle}
+
+This function marks a variable to be a checkpoint variable. This should be used for all variables that are required to restart from a checkpoint.
