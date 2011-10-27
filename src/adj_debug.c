@@ -97,7 +97,7 @@ int adj_adjointer_check_checkpoints(adj_adjointer* adjointer)
 						{
 							char buf[255];
 							adj_variable_str(fwd_var, buf, 255);
-							snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Need a memory checkpoint value for variable %s, but don't have one.", buf);
+							snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Need a memory checkpoint of variable %s, but don't have one.", buf);
 							return ADJ_ERR_NEED_VALUE;
 						}
 					if (eqn.disk_checkpoint==ADJ_TRUE)
@@ -105,7 +105,7 @@ int adj_adjointer_check_checkpoints(adj_adjointer* adjointer)
 						{
 							char buf[255];
 							adj_variable_str(fwd_var, buf, 255);
-							snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Need a disk checkpoint value for variable %s, but don't have one.", buf);
+							snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Need a disk checkpoint of variable %s, but don't have one.", buf);
 							return ADJ_ERR_NEED_VALUE;
 						}
 				}
@@ -120,7 +120,7 @@ int adj_adjointer_check_checkpoints(adj_adjointer* adjointer)
 				{
 					char buf[255];
 					adj_variable_str(fwd_var, buf, 255);
-					snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Need a memory checkpoint value for variable %s, but don't have one.", buf);
+					snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Need a memory checkpoint of variable %s, but don't have one.", buf);
 					return ADJ_ERR_NEED_VALUE;
 				}
 			if (eqn.disk_checkpoint==ADJ_TRUE)
@@ -128,7 +128,7 @@ int adj_adjointer_check_checkpoints(adj_adjointer* adjointer)
 				{
 					char buf[255];
 					adj_variable_str(fwd_var, buf, 255);
-					snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Need a disk checkpoint value for variable %s, but don't have one.", buf);
+					snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Need a disk checkpoint of variable %s, but don't have one.", buf);
 					return ADJ_ERR_NEED_VALUE;
 				}
 		}
@@ -181,7 +181,7 @@ int adj_adjointer_check_checkpoints(adj_adjointer* adjointer)
 					{
 						char buf[255];
 						adj_variable_str(var, buf, 255);
-						snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Need a checkpoint value for variable %s (functional dependency), but don't have one.", buf);
+						snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Need a checkpoint of variable %s (functional dependency), but don't have one.", buf);
 						return ADJ_ERR_NEED_VALUE;
 					}
 				}

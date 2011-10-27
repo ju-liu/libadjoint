@@ -73,7 +73,48 @@ Depending on the chosen checkpointing strategy, these options must fulfill these
 
 If the flag \texttt{verbose} is set, \libadjoint will print revolve specific output to the screen. 
 
+\defapis{adj_set_revolve_debug_options}
+\begin{boxwithtitle}{Function interface for \texttt{adj_set_revolve_debug_options}}
+\begin{minipage}{\columnwidth}
+\begin{ccode}
+int adj_set_revolve_debug_options(adj_adjointer* adjointer, int overwrite, 
+                                  adj_scalar comparison_tolerance);
+\end{ccode}
+\begin{fortrancode}
+function adj_set_revolve_debug_options(adjointer, overwrite, comparison_tolerance) 
+                                      result(ierr)
+  type(adj_adjointer), intent(inout) :: adjointer
+  logical, intent(in) :: overwrite
+  adj_scalar_f, intent(in) :: comparison_tolerance
+end function adj_set_revolve_debug_options
+\end{fortrancode}
+\end{minipage}
+\end{boxwithtitle}
+
+This function sets the debugging options for checkpointing. Its parameters are: 
+\begin{itemize}
+\item \texttt{overwrite}: This flag influences the behaviour of the internal replays of the checkpointing scheme. If \texttt{ADJ_TRUE}, then forward equations during a replay are solved even if a solution is already recorded. The computed value is then compared with the existing one, and prints a warning in case a specified tolerance is exceeded.
+\item \texttt{comparison_tolerance}: This parameter is only used when \texttt{overwrite=ADJ_TRUE}. It determines the tolerance for comparing recomputed with previously computed values.
+\end{itemize}
+The \texttt{overwrite} feature is used to ensures that the forward solutions and the checkpoint replay solutions are consistent.
+
+By default, i.e. if \refapi{adj_set_revolve_debug_options} is never called, \texttt{overwrite} is set to \texttt{ADJ_FALSE}.
 
 \defapis{adj_check_checkpoints}
+\begin{boxwithtitle}{Function interface for \texttt{adj_adjointer_check_checkpoints}}
+\begin{minipage}{\columnwidth}
+\begin{ccode}
+int adj_adjointer_check_checkpoints(adj_adjointer* adjointer);
+\end{ccode}
+\begin{fortrancode}
+function adj_adjointer_check_checkpoints(adjointer) result(ierr) 
+  type(adj_adjointer), intent(in) :: adjointer
+  integer(kind=c_int) :: ierr
+end function adj_adjointer_check_checkpoints
+\end{fortrancode}
+\end{minipage}
+\end{boxwithtitle}
 
-If this check passes, then all information is available for revolve to solve the adjoint system.
+
+
+If \refapi{adj_check_checkpoints} returns \texttt{ADJ_OK}, then the required information is available for revolve to solve the adjoint system.
