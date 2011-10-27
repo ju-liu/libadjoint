@@ -115,6 +115,6 @@ end function adj_adjointer_check_checkpoints
 \end{minipage}
 \end{boxwithtitle}
 
-
-
-If \refapi{adj_check_checkpoints} returns \texttt{ADJ_OK}, then the required information is available for revolve to solve the adjoint system.
+This function checks that all checkpoints are valid, i.e. that the required variables for restarting the simulation at the checkpoint equation are recorded.
+It should be called just before starting the adjoint loop.
+If the reutur value is \texttt{ADJ_OK}, then the required information is available for revolve to solve the adjoint system.
