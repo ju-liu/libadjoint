@@ -185,7 +185,7 @@ ifneq (,$(H2XML))
 all: lib/clibadjoint.py
 test: lib/clibadjoint.py
 install: lib/clibadjoint.py
-lib/clibadjoint.py: lib/libadjoint.so
+lib/clibadjoint.py: lib/libadjoint.so include/libadjoint/libadjoint.h
 	@echo "  H2XML  include/libadjoint/libadjoint.h"
 	@$(H2XML) -q -I. include/libadjoint/libadjoint.h -o lib/libadjoint.xml
 	@echo "  XML2PY lib/clibadjoint.py"
