@@ -152,8 +152,8 @@ clean:
 	@echo "  RM lib/*.a"
 	@rm -f lib/*.so
 	@echo "  RM lib/*.so"
-	@rm -f lib/*.py
-	@echo "  RM lib/*.py"
+	@rm -f lib/clibadjoint.py
+	@echo "  RM lib/clibadjoint.py"
 	@rm -f tags
 	@rm -f include/libadjoint/adj_constants_f.h include/libadjoint/adj_error_handling_f.h
 
@@ -202,9 +202,7 @@ install: lib/libadjoint.a lib/libadjoint.so
 ifneq (,$(H2XML))
 	@echo "  INSTALL $(PYDIR)"
 	@install -d $(PYDIR)
-	@install -m 644 lib/clibadjoint.py $(PYDIR)
-	@install -m 644 lib/exceptions.py $(PYDIR)
-	@install -m 644 lib/libadjoint.py $(PYDIR)
+	@install -m 644 lib/*.py $(PYDIR)
 	@sed -i "s@CDLL('lib/libadjoint.so')@CDLL('$(DESTDIR)/$(prefix)/lib/libadjoint.so')@" $(PYDIR)/clibadjoint.py
 endif
 	@echo "  INSTALL $(DESTDIR)/$(prefix)/include/libadjoint"
