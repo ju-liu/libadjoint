@@ -1,4 +1,4 @@
-\chapter{Checkpointing}
+\chapter{Checkpointing}\label{chap:checkpointing}
 
 \begin{synopsis}
 \end{synopsis}
@@ -27,7 +27,7 @@ end function adj_set_checkpoint_strategy
 \end{minipage}
 \end{boxwithtitle}
 
-This function sets the checkpointing strategy to be used. 
+This function defines the checkpointing strategy to be used. 
 The options for the argument \texttt{strategy} are:
 \begin{itemize}
 \item \texttt{ADJ_CHECKPOINT_NONE}: No checkpointing. The default.
@@ -58,13 +58,13 @@ end function adj_set_revolve_options
 \end{minipage}
 \end{boxwithtitle}
 
-This function sets the checkpointing options if using a revolve checkpointing scheme. 
-\texttt{steps} is the total number of timesteps of the simulation.
+This function sets the checkpointing options for revolve based checkpointing schemes: \texttt{ADJ_CHECKPOINT_REVOLVE_OFFLINE}, \texttt{ADJ_CHECKPOINT_REVOLVE_MULTISTAGE} and \texttt{ADJ_CHECKPOINT_REVOLVE_ONLINE}. 
+\texttt{steps} is the total number of timesteps of the simulation (if known).
 \texttt{snaps} specifies the overall number of checkpoint slots that \libadjoint may use.
 \texttt{snaps_in_ram} denotes the number checkpoints that may be stored in memory. 
 Hence the number of checkpoint stored on disk is $\texttt{snaps}-\texttt{snaps_in_ram}$
 
-Depending on the chosen checkpointing strategy, these options must fulfill these properties:
+Depending on the chosen checkpointing strategy, the function arguments must fulfill these properties:
 \begin{itemize}
 \item \texttt{ADJ_CHECKPOINT_REVOLVE_OFFLINE}: $\texttt{steps}>1$ and $\texttt{snaps}>1$.
 \item \texttt{ADJ_CHECKPOINT_REVOLVE_MULTISTAGE}: $\texttt{steps}>1$, $\texttt{snaps}>1$, $\texttt{snaps\_in\_ram}\ge0$ and $\texttt{snaps\_in\_ram}\le \texttt{snaps}$.
@@ -94,7 +94,7 @@ end function adj_set_revolve_debug_options
 This function sets the debugging options for checkpointing. Its parameters are: 
 \begin{itemize}
 \item \texttt{overwrite}: This flag influences the behaviour of the internal replays of the checkpointing scheme. If \texttt{ADJ_TRUE}, then forward equations during a replay are solved even if a solution is already recorded. The computed value is then compared with the existing one, and prints a warning in case a specified tolerance is exceeded.
-\item \texttt{comparison_tolerance}: This parameter is only used when \texttt{overwrite=ADJ_TRUE}. It determines the tolerance for comparing recomputed with previously computed values.
+\item \texttt{comparison_tolerance}: This parameter is only used when \texttt{overwrite=ADJ_TRUE}. It specifies the tolerance for comparing recomputed with previously computed values.
 \end{itemize}
 The \texttt{overwrite} feature is used to ensures that the forward solutions and the checkpoint replay solutions are consistent.
 
@@ -115,7 +115,7 @@ end function adj_adjointer_check_checkpoints
 \end{minipage}
 \end{boxwithtitle}
 
-This function checks that the validity of all checkpoints, i.e. that the required variables for restarting the simulation at the checkpoint equation are recorded.
+This function checks that the validity of all checkpoints, i.e. that the required variables for restarting the simulation at the checkpoint equation are correctly recorded.
 It should be called just before starting the adjoint main loop.
 If the return value is \texttt{ADJ_OK}, then the required information is available for revolve to solve the adjoint system.
 
@@ -137,3 +137,5 @@ end function adj_storage_set_checkpoint
 \end{boxwithtitle}
 
 This function marks a variable to be a checkpoint variable. This should be used for all variables that are required to restart from a checkpoint.
+
+

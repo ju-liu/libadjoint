@@ -332,6 +332,43 @@ When necessary: this data callback is necessary when the Hermitian test flag is
 activated on an \refapi{adj_block} with \refapi{adj_block_set_test_hermitian},
 or on an \refapi{adj_nonlinear_block} with \\\refapi{adj_nonlinear_block_set_test_hermitian}.
 
+\defapiss{ADJ_VEC_TO_FILE_CB}
+\begin{boxwithtitle}{\texttt{ADJ_VEC_TO_FILE_CB}}
+\begin{minipage}{\columnwidth}
+\begin{ccode}
+  void (*vec_to_file)(adj_vector x, char* filename);
+\end{ccode}
+\begin{fortrancode}
+  subroutine adj_vec_to_file(x, filename) 
+    type(adj_vector), intent(in), value :: x
+    character(kind=c_char), dimension(ADJ_NAME_LEN), intent(in) :: filename
+  end subroutine adj_vec_to_file
+\end{fortrancode}
+\end{minipage}
+\end{boxwithtitle}
+This data callback saves the provided vector into a file named \texttt{filename} on disk.
+
+When necessary: If a checkpointing scheme is used.
+
+
+\defapiss{ADJ_VEC_FROM_FILE_CB}
+\begin{boxwithtitle}{\texttt{ADJ_VEC_FROM_FILE_CB}}
+\begin{minipage}{\columnwidth}
+\begin{ccode}
+  void (*vec_from_file)(adj_vector* x, char *filename);
+\end{ccode}
+\begin{fortrancode}
+  subroutine adj_vec_from_file(x, filename) 
+    type(adj_vector), intent(out) :: x
+    character(kind=c_char), dimension(ADJ_NAME_LEN), intent(in) :: filename
+  end subroutine adj_vec_from_file
+\end{fortrancode}
+\end{minipage}
+\end{boxwithtitle}
+This data callback loads the vector from file \texttt{filename} on disk.
+
+When necessary: If a checkpointing scheme is used.
+
 \subsection{Matrix callbacks} \label{sec:matrix_callbacks}
 \defapiss{ADJ_MAT_DUPLICATE_CB}
 \begin{boxwithtitle}{\texttt{ADJ_MAT_DUPLICATE_CB}}
@@ -392,6 +429,28 @@ with a matrix; it is used to deallocate its memory and free
 its resources.
 
 When necessary: always.
+\defapiss{ADJ_SOLVE_CB}
+\begin{boxwithtitle}{\texttt{ADJ_SOLVE_CB}}
+\begin{minipage}{\columnwidth}
+\begin{ccode}
+  void solve(adj_variable var, adj_matrix mat, adj_vector rhs, adj_vector *soln);
+\end{ccode}
+\begin{fortrancode}
+  subroutine adj_solve(var, mat, rhs, soln) 
+    type(adj_variable), intent(in), value :: var
+    type(adj_matrix), intent(in), value :: mat
+    type(adj_vector), intent(in), value :: rhs
+    type(adj_vector), intent(out) :: soln
+  end subroutine adj_solve
+\end{fortrancode}
+\end{minipage}
+\end{boxwithtitle}
+Solves a linear system that computes the values of variable \texttt{var} and saves the result in \texttt{soln}:
+\begin{equation}
+\texttt{soln} \leftarrow \texttt{mat}^{-1}\texttt{rhs}.
+\end{equation}
+
+When necessary: for \refapi{adj_get_adjoint_solution} and \refapi{adj_get_forward_solution}. In particular it is required for checkpointing, see \autoref{chap:checkpointing}.
 \subsection{Supplied data callbacks}
 If the model uses a common library for its fundamental datatypes, rather than
 writing its own, it is possible to distribute the data callbacks with \libadjoint,
