@@ -35,13 +35,13 @@ int adj_timestep_set_functional_dependencies(adj_adjointer* adjointer, int times
 int adj_storage_memory_copy(adj_vector value, adj_storage_data* data);
 int adj_storage_memory_incref(adj_vector value, adj_storage_data* data);
 int adj_storage_disk(adj_vector value, adj_storage_data* data);
-int adj_set_storage_memory_copy(adj_adjointer* adjointer, adj_variable* var);
-int adj_set_storage_memory_incref(adj_adjointer* adjointer, adj_variable* var);
 int adj_storage_set_compare(adj_storage_data* data, int compare, adj_scalar comparison_tolerance);
 int adj_storage_set_overwrite(adj_storage_data* data, int overwrite);
 int adj_storage_set_checkpoint(adj_storage_data* data, int checkpoint);
 
 #ifndef ADJ_HIDE_FROM_USER
+int adj_set_storage_memory_copy(adj_adjointer* adjointer, adj_variable* var);
+int adj_set_storage_memory_incref(adj_adjointer* adjointer, adj_variable* var);
 int adj_set_option(adj_adjointer* adjointer, int option, int choice);
 int adj_variable_get_ndepending_timesteps(adj_adjointer* adjointer, adj_variable variable, char* functional, int* ntimesteps);
 int adj_variable_get_depending_timestep(adj_adjointer* adjointer, adj_variable variable, char* functional, int k, int* timestep);

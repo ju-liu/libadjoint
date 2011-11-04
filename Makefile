@@ -7,8 +7,8 @@ FOBJ = $(patsubst src/%.F90,obj/%.o,$(FSRC))
 CSRC = $(wildcard src/*.c)
 COBJ = $(patsubst src/%.c,obj/%.o,$(CSRC))
 
-CPPSRC = $(wildcard src/*.cpp)
-CPPOBJ = $(patsubst src/%.cpp,obj/%.o,$(CPPSRC))
+CXXSRC = $(wildcard src/*.cpp)
+CXXOBJ = $(patsubst src/%.cpp,obj/%.o,$(CPPSRC))
 
 ###############################################################################
 # Variables for unit tests                                                    #
@@ -68,16 +68,16 @@ endif
 
 # Compiler-specific stuff Vere
 CXX_VERSION = $(shell $(CXX) --version 2>&1) $(shell $(CXX) -V 2>&1)
-ifneq (,$(findstring cpp, $(CPP_VERSION)))
+ifneq (,$(findstring g++, $(CXX_VERSION)))
 	# g++-specific settings here
-	COMPILER_CPPFLAGS := -Wall -Wextra -Wunused-parameter -Wunused-result -Wunsafe-loop-optimizations -Wpointer-arith -ggdb3 -fstack-protector-all
+	COMPILER_CXXFLAGS := -Wall -Wextra -Wunused-parameter -Wunused-result -Wunsafe-loop-optimizations -Wpointer-arith -ggdb3 -fstack-protector-all
 endif
-ifneq (,$(findstring icc, $(CC_VERSION)))
+ifneq (,$(findstring icpc, $(CXX_VERSION)))
 	# i++-specific settings here
 	COMPILER_CPPFLAGS := -Wall 
 endif
 
-CPPFLAGS := $(CPPFLAGS) $(DBGFLAGS) $(PICFLAG) $(PETSC_CPPFLAGS) -Iinclude/ $(COMPILER_CPPFLAGS)
+CXXFLAGS := $(CXXFLAGS) $(DBGFLAGS) $(PICFLAG) $(PETSC_CPPFLAGS) -Iinclude/ $(COMPILER_CXXFLAGS)
 
 ###############################################################################
 # F90 compiler variables                                                      #
@@ -127,8 +127,7 @@ LDFLAGS := -shared -Wl,-soname,libadjoint.so
 # Variables for the python bindings                                           #
 ###############################################################################
 H2XML = $(shell which h2xml 2>/dev/null)
-# Disable the python interface because it does not work with the revolve interface.
-H2XML =
+H2XML := 
 XML2PY = $(shell which xml2py 2>/dev/null)
 PYDIR = $(shell python -c  "import distutils.sysconfig; print distutils.sysconfig.get_python_lib().replace('/usr/', '$(DESTDIR)/$(prefix)/')")
 
@@ -156,15 +155,15 @@ obj/%.o: src/%.c
 
 obj/%.o: src/%.cpp
 	@echo "  C++ $<"
-	@$(CXX) $(CPPFLAGS) -c -o $@ $<
+	@$(CXX) $(CXXFLAGS) -c -o $@ $<
 
-lib/libadjoint.a: $(COBJ) $(FOBJ) $(CPPOBJ)
+lib/libadjoint.a: $(COBJ) $(FOBJ) $(CXXOBJ)
 	@echo "  AR $@"
-	@$(AR) $(ARFLAGS) $@ $(FOBJ) $(COBJ) $(CPPOBJ)
+	@$(AR) $(ARFLAGS) $@ $(FOBJ) $(COBJ) $(CXXOBJ)
 
-lib/libadjoint.so: $(COBJ) $(FOBJ) $(CPPOBJ) 
+lib/libadjoint.so: $(COBJ) $(FOBJ) $(CXXOBJ) 
 	@echo "  LD $@"
-	@$(LD) $(LDFLAGS) -o $@ $(FOBJ) $(COBJ) $(CPPOBJ) $(PETSC_LDFLAGS) $(LIBS)
+	@$(LD) $(LDFLAGS) -o $@ $(FOBJ) $(COBJ) $(CXXOBJ) $(PETSC_LDFLAGS) $(LIBS)
 
 clean:
 	@rm -f obj/*.o

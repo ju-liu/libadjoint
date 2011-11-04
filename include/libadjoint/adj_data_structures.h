@@ -233,7 +233,7 @@ typedef struct
 typedef struct
 {
   CRevolve revolve; /* The C wrapper of the Revolve object */
-  int snaps; /* The number of available (disk) checkpoint slots */
+  int snaps; /* The total number of available checkpoint slots */
   int snaps_in_ram; /* The number of available RAM checkpoint slots */
   int steps; /* The total number of timesteps in the simulation */
   CACTION current_action; /* The revolve action which is currently being executed */
