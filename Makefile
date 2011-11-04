@@ -8,7 +8,7 @@ CSRC = $(wildcard src/*.c)
 COBJ = $(patsubst src/%.c,obj/%.o,$(CSRC))
 
 CXXSRC = $(wildcard src/*.cpp)
-CXXOBJ = $(patsubst src/%.cpp,obj/%.o,$(CPPSRC))
+CXXOBJ = $(patsubst src/%.cpp,obj/%.o,$(CXXSRC))
 
 ###############################################################################
 # Variables for unit tests                                                    #

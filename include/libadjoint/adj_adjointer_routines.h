@@ -3,6 +3,7 @@
 
 #include <assert.h>
 #include <stdio.h>
+#include <unistd.h>
 #include "adj_data_structures.h"
 #include "adj_variable_lookup.h"
 #include "adj_error_handling.h"

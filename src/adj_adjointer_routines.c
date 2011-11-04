@@ -514,16 +514,16 @@ int adj_register_equation(adj_adjointer* adjointer, adj_equation equation, int* 
   ierr = adj_get_checkpoint_strategy(adjointer, &checkpoint_strategy);
   if (ierr != ADJ_OK) return ierr;
 
-  if ((checkpoint_strategy==ADJ_CHECKPOINT_REVOLVE_OFFLINE) || 
-      (checkpoint_strategy==ADJ_CHECKPOINT_REVOLVE_MULTISTAGE) || 
-      (checkpoint_strategy==ADJ_CHECKPOINT_REVOLVE_ONLINE))
+  if ((checkpoint_strategy == ADJ_CHECKPOINT_REVOLVE_OFFLINE) || 
+      (checkpoint_strategy == ADJ_CHECKPOINT_REVOLVE_MULTISTAGE) || 
+      (checkpoint_strategy == ADJ_CHECKPOINT_REVOLVE_ONLINE))
   {
     ierr = adj_get_revolve_checkpoint_storage(adjointer, equation, checkpoint_storage);
     if (ierr != ADJ_OK) return ierr;
 
-    if (*checkpoint_storage==ADJ_CHECKPOINT_STORAGE_MEMORY)
+    if (*checkpoint_storage == ADJ_CHECKPOINT_STORAGE_MEMORY)
 	    adjointer->equations[adjointer->nequations - 1].memory_checkpoint = ADJ_TRUE;
-    else if (*checkpoint_storage==ADJ_CHECKPOINT_STORAGE_DISK)
+    else if (*checkpoint_storage == ADJ_CHECKPOINT_STORAGE_DISK)
     	adjointer->equations[adjointer->nequations - 1].disk_checkpoint = ADJ_TRUE;
   }
 
@@ -540,7 +540,7 @@ int adj_checkpoint_equation(adj_adjointer* adjointer, int eqn_number, int cs)
   adj_equation eqn;
   adj_variable var;
 
-  if (!(cs==ADJ_CHECKPOINT_STORAGE_MEMORY || cs==ADJ_CHECKPOINT_STORAGE_DISK))
+  if (!(cs == ADJ_CHECKPOINT_STORAGE_MEMORY || cs == ADJ_CHECKPOINT_STORAGE_DISK))
   	return ADJ_ERR_INVALID_INPUTS;
 
   if (eqn_number<0 || eqn_number>=adjointer->nequations)
@@ -556,7 +556,7 @@ int adj_checkpoint_equation(adj_adjointer* adjointer, int eqn_number, int cs)
 		/* Checkpoint all dependency variables of this equation */
 		for (i=0; i<eqn.nblocks; i++)
 		{
-			if (eqn.blocks[i].has_nonlinear_block==ADJ_TRUE)
+			if (eqn.blocks[i].has_nonlinear_block == ADJ_TRUE)
 			{
 				adj_nonlinear_block nonlinear_block = eqn.blocks[i].nonlinear_block;
 				for (j=0; j<nonlinear_block.ndepends; j++)
@@ -648,9 +648,9 @@ int adj_checkpoint_equation(adj_adjointer* adjointer, int eqn_number, int cs)
   }
 
   /* If everything worked fine until here, we can set the checkpoint flag */
-  if (cs==ADJ_CHECKPOINT_STORAGE_MEMORY)
+  if (cs == ADJ_CHECKPOINT_STORAGE_MEMORY)
   	adjointer->equations[eqn_number].memory_checkpoint = ADJ_TRUE;
-  else if (cs==ADJ_CHECKPOINT_STORAGE_DISK)
+  else if (cs == ADJ_CHECKPOINT_STORAGE_DISK)
   	adjointer->equations[eqn_number].disk_checkpoint = ADJ_TRUE;
   else
   	return ADJ_ERR_INVALID_INPUTS;
@@ -682,19 +682,19 @@ int adj_checkpoint_variable(adj_adjointer* adjointer, adj_variable var, int cs)
 	strncat(filename, ".dat", 4);
 
 	/* Case 1: variable is on disk and we want to checkpoint it in disk */
-	if ((cs==ADJ_CHECKPOINT_STORAGE_DISK) && (var_data->storage.storage_disk_has_value==ADJ_TRUE))
+	if ((cs == ADJ_CHECKPOINT_STORAGE_DISK) && (var_data->storage.storage_disk_has_value == ADJ_TRUE))
 	{
 		var_data->storage.storage_disk_is_checkpoint = ADJ_TRUE;
 		return ADJ_OK;
 	}
 	/* Case 2: variable is in memory and we want to checkpoint it in memory */
-	else if ((cs==ADJ_CHECKPOINT_STORAGE_MEMORY) && (var_data->storage.storage_memory_has_value==ADJ_TRUE))
+	else if ((cs == ADJ_CHECKPOINT_STORAGE_MEMORY) && (var_data->storage.storage_memory_has_value == ADJ_TRUE))
 	{
 		var_data->storage.storage_memory_is_checkpoint = ADJ_TRUE;
 		return ADJ_OK;
 	}
 	/* Case 3: variable is in memory and we want to checkpoint it on disk */
-	else if (cs==ADJ_CHECKPOINT_STORAGE_DISK && (var_data->storage.storage_disk_has_value!=ADJ_TRUE))
+	else if (cs == ADJ_CHECKPOINT_STORAGE_DISK && (var_data->storage.storage_disk_has_value != ADJ_TRUE))
 	{
 		ierr = adj_storage_disk(var_data->storage.value, &storage);
 		if (ierr != ADJ_OK) return ierr;
@@ -706,7 +706,7 @@ int adj_checkpoint_variable(adj_adjointer* adjointer, adj_variable var, int cs)
 		var_data->storage.storage_disk_is_checkpoint = ADJ_TRUE;
 	}
 	/* Case 4: variable is on disk and we want to checkpoint it in memory */
-	else if  (cs==ADJ_CHECKPOINT_STORAGE_MEMORY && (var_data->storage.storage_memory_has_value!=ADJ_TRUE))
+	else if  (cs == ADJ_CHECKPOINT_STORAGE_MEMORY && (var_data->storage.storage_memory_has_value != ADJ_TRUE))
 	{
 	  /* Check for the required callbacks */
 	  if (adjointer->callbacks.vec_from_file == NULL)
@@ -795,7 +795,7 @@ int adj_get_revolve_checkpoint_storage(adj_adjointer* adjointer, adj_equation eq
       {
         adjointer->revolve_data.current_action = revolve(adjointer->revolve_data.revolve);
         if (adjointer->revolve_data.verbose == ADJ_TRUE)
-        	if (adjointer->revolve_data.current_action==CACTION_FIRSTRUN)
+        	if (adjointer->revolve_data.current_action == CACTION_FIRSTRUN)
         		printf("Revolve: Solve last timestep %i.\n", adjointer->revolve_data.current_timestep);
       }
 
@@ -813,7 +813,7 @@ int adj_get_revolve_checkpoint_storage(adj_adjointer* adjointer, adj_equation eq
         break;
 
       case CACTION_TAKESHOT:
-        if (cs==ADJ_CHECKPOINT_REVOLVE_MULTISTAGE)
+        if (cs == ADJ_CHECKPOINT_REVOLVE_MULTISTAGE)
         {
           if (revolve_getwhere(adjointer->revolve_data.revolve))
               *checkpoint_storage = ADJ_CHECKPOINT_STORAGE_MEMORY;
@@ -835,9 +835,9 @@ int adj_get_revolve_checkpoint_storage(adj_adjointer* adjointer, adj_equation eq
         adjointer->revolve_data.current_action = revolve(adjointer->revolve_data.revolve);
         if (adjointer->revolve_data.verbose == ADJ_TRUE)
         {
-        	if (adjointer->revolve_data.current_action==CACTION_ADVANCE)
+        	if (adjointer->revolve_data.current_action == CACTION_ADVANCE)
         		printf("Revolve: Advance from timestep %i to timestep %i.\n", revolve_getoldcapo(adjointer->revolve_data.revolve), revolve_getcapo(adjointer->revolve_data.revolve));
-        	else if (adjointer->revolve_data.current_action==CACTION_FIRSTRUN)
+        	else if (adjointer->revolve_data.current_action == CACTION_FIRSTRUN)
         		printf("Revolve: Solving for the last timestep %i.\n", adjointer->revolve_data.current_timestep);
         }
         break;
@@ -892,7 +892,7 @@ int adj_initialise_revolve(adj_adjointer* adjointer)
 
   printf("Revolve: Checkpoint statistics:\n");
   /* Offline checkpointing */
-  if (cs==ADJ_CHECKPOINT_REVOLVE_OFFLINE) 
+  if (cs == ADJ_CHECKPOINT_REVOLVE_OFFLINE) 
   {
     if ((steps>0) && (snaps>0))
       adjointer->revolve_data.revolve = revolve_create_offline(steps, snaps);
@@ -904,7 +904,7 @@ int adj_initialise_revolve(adj_adjointer* adjointer)
   }
 
   /* Offline checkpointing with different stores */
-  else if (cs==ADJ_CHECKPOINT_REVOLVE_MULTISTAGE)
+  else if (cs == ADJ_CHECKPOINT_REVOLVE_MULTISTAGE)
   { 
     if ((steps>0) && (snaps>0) && (snaps_in_ram>=0) && (snaps>=snaps_in_ram))
       adjointer->revolve_data.revolve = revolve_create_multistage(steps, snaps, snaps_in_ram);
@@ -916,7 +916,7 @@ int adj_initialise_revolve(adj_adjointer* adjointer)
   }
 
   /* Online checkpointing */
-  else if (cs==ADJ_CHECKPOINT_REVOLVE_ONLINE) 
+  else if (cs == ADJ_CHECKPOINT_REVOLVE_ONLINE) 
   {
     if (snaps>0)
     {
@@ -1127,16 +1127,16 @@ int adj_record_variable_core_disk(adj_adjointer* adjointer, adj_variable_data* d
     return ADJ_ERR_NEED_CALLBACK;
   }
 
-  if (storage.storage_disk_has_value!=ADJ_TRUE)
+  if (storage.storage_disk_has_value != ADJ_TRUE)
   {
   	snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Can not record a variable whose storage object has no value.");
   	return ADJ_ERR_NEED_VALUE;
   }
 
-  if (data_ptr->storage.storage_disk_has_value==ADJ_TRUE)
+  if (data_ptr->storage.storage_disk_has_value == ADJ_TRUE)
 	{
 		snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Trying to overwrite a variable value in adj_record_variable_core_disk which is not supported.");
-		return ADJ_ERR_INVALID_INPUTS;
+		return ADJ_ERR_NOT_IMPLEMENTED;
 	}
 
   data_ptr->storage.storage_disk_has_value = storage.storage_disk_has_value;
@@ -1558,16 +1558,8 @@ int adj_forget_forward_equation_until(adj_adjointer* adjointer, int equation, in
       	 */
         if (equation < data->targeting_equations[i] && data->targeting_equations[i] <= last_equation)
         {
-        	/* One exception: The lhs variable of the last equation
-        	 * is not needed to solve the equation, i.e. we can delete it
-        	 */
-        	if (!((data->targeting_equations[i] == last_equation) &&
-        		    (data->targeting_equations[i] == data->equation)))
-        	{
-              should_we_delete = 0;
-              break;
-        	}
-
+          should_we_delete = 0;
+          break;
         }
       }
 
@@ -1743,7 +1735,7 @@ int adj_get_variable_value(adj_adjointer* adjointer, adj_variable var, adj_vecto
 
 int adj_has_variable_value(adj_adjointer* adjointer, adj_variable var)
 {
-  if((adj_has_variable_value_memory(adjointer, var)==ADJ_OK) || (adj_has_variable_value_disk(adjointer, var)==ADJ_OK))
+  if((adj_has_variable_value_memory(adjointer, var) == ADJ_OK) || (adj_has_variable_value_disk(adjointer, var) == ADJ_OK))
   	return ADJ_OK;
   else
   	return ADJ_ERR_NEED_VALUE;
@@ -1842,11 +1834,10 @@ int adj_forget_variable_value(adj_adjointer* adjointer, adj_variable_data* data)
 
 int adj_forget_variable_value_from_disk(adj_adjointer* adjointer, adj_variable_data* data)
 {
-  FILE *istream;
   int ierr;
 
   assert(data->storage.storage_disk_has_value);
-  if (!(istream = fopen(data->storage.storage_disk_filename, "r+"))) { 
+  if (access(data->storage.storage_disk_filename, W_OK) == -1) { 
     char buf[ADJ_NAME_LEN];
     adj_variable_str(adjointer->equations[data->equation].variable, buf, ADJ_NAME_LEN);
 
@@ -1854,7 +1845,6 @@ int adj_forget_variable_value_from_disk(adj_adjointer* adjointer, adj_variable_d
     snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Can not access variable %s in file '%s'.", buf, data->storage.storage_disk_filename);
     return ierr;
   }
-  fclose(istream); 
 
   data->storage.storage_disk_has_value = ADJ_FALSE;
   remove(data->storage.storage_disk_filename);
@@ -2120,7 +2110,7 @@ int adj_iteration_count(adj_adjointer* adjointer, adj_variable variable, int* co
   }
   while (ierr == ADJ_OK);
 
-  if (*count==0)
+  if (*count == 0)
   {
     char buf[ADJ_NAME_LEN];
     adj_variable_str(variable, buf, ADJ_NAME_LEN);
