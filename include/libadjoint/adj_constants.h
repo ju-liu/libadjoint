@@ -9,6 +9,7 @@
 
 #define adj_scalar double
 #define adj_scalar_f real(kind=c_double)
+#define adj_scalar_f_cast(X) real((X), kind=c_double)
 #define ADJ_SCALAR_EPS 1.0e-15
 
 #define ADJ_TRUE 1

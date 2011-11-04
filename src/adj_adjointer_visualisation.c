@@ -88,7 +88,7 @@ int adj_html_find_column_index(adj_adjointer* adjointer, adj_variable* variable,
     }
   }
   strncpy(adj_error_msg, "Variable not found.", ADJ_ERROR_MSG_BUF);
-  return ADJ_ERR_INVALID_INPUTS;
+  return adj_chkierr_auto(ADJ_ERR_INVALID_INPUTS);
 }
 
 /* Writes a html row containing the adjoint variables into fp */
@@ -134,7 +134,7 @@ int adj_html_eqn(FILE* fp, adj_adjointer* adjointer, adj_equation adj_eqn, int d
   {
     ierr = adj_html_find_column_index(adjointer, &adj_eqn.targets[i], &col);
     if (ierr != ADJ_OK)
-      return ierr;
+      return adj_chkierr_auto(ierr);
 
     strncpy(row[col], adj_eqn.blocks[i].name, ADJ_NAME_LEN);
     /* Fill in the description */
@@ -236,7 +236,7 @@ int adj_html_adjoint_eqn(FILE* fp, adj_adjointer* adjointer, adj_equation fwd_eq
       /* find the column in which this blocks belongs */
       ierr = adj_html_find_column_index(adjointer, &other_fwd_eqn.variable, &col);
       if (ierr != ADJ_OK)
-        return ierr;
+        return adj_chkierr_auto(ierr);
 
       other_adj_var = other_fwd_eqn.targets[j];
       other_adj_var.type = ADJ_ADJOINT;
@@ -307,7 +307,7 @@ int adj_html_adjoint_system(adj_adjointer* adjointer, char* filename)
   if (fp==NULL)
   {
     strncpy(adj_error_msg, "File could not be opened.", ADJ_ERROR_MSG_BUF);
-    return ADJ_ERR_INVALID_INPUTS;
+    return adj_chkierr_auto(ADJ_ERR_INVALID_INPUTS);
   }
 
   adj_html_header(fp);
@@ -341,7 +341,7 @@ int adj_html_adjoint_system(adj_adjointer* adjointer, char* filename)
     if (ierr != ADJ_OK)
     {
       fclose(fp);
-      return ierr;
+      return adj_chkierr_auto(ierr);
     }
     fprintf(fp, "</tr>\n");
     timestep = adj_eqn.variable.timestep;
@@ -365,7 +365,7 @@ int adj_html_forward_system(adj_adjointer* adjointer, char* filename)
   if (fp==NULL)
   {
     strncpy(adj_error_msg, "File could not be opened.", ADJ_ERROR_MSG_BUF);
-    return ADJ_ERR_INVALID_INPUTS;
+    return adj_chkierr_auto(ADJ_ERR_INVALID_INPUTS);
   }
 
   adj_html_header(fp);
@@ -399,7 +399,7 @@ int adj_html_forward_system(adj_adjointer* adjointer, char* filename)
     if (ierr != ADJ_OK)
     {
       fclose(fp);
-      return ierr;
+      return adj_chkierr_auto(ierr);
     }
     fprintf(fp, "</tr>\n");
     timestep = adj_eqn.variable.timestep;
@@ -419,5 +419,5 @@ int adj_adjointer_to_html(adj_adjointer* adjointer, char* filename, int type)
   else if(type == ADJ_ADJOINT)
     return adj_html_adjoint_system(adjointer, filename);
   else
-    return ADJ_ERR_INVALID_INPUTS;
+    return adj_chkierr_auto(ADJ_ERR_INVALID_INPUTS);
 }

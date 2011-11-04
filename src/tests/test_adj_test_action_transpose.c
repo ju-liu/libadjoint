@@ -28,7 +28,7 @@ void test_adj_test_action_transpose(void)
   adj_set_petsc_data_callbacks(&adjointer);
   adj_register_operator_callback(&adjointer, ADJ_BLOCK_ACTION_CB, "MatrixOperator", (void (*)(void)) matrix_action_callback);
 
-  adj_create_block("MatrixOperator", NULL, NULL, &matrix);
+  adj_create_block("MatrixOperator", NULL, NULL, 1.0, &matrix);
   VecCreateSeq(PETSC_COMM_SELF, dim, &input);
   VecCreateSeq(PETSC_COMM_SELF, dim, &output);
  

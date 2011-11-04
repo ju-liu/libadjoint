@@ -12,19 +12,19 @@ int adj_create_variable(char* name, int timestep, int iteration, int auxiliary, 
   if (slen > ADJ_NAME_LEN)
   {
     strncpy(adj_error_msg, "Name variable too long; recompile with bigger ADJ_NAME_LEN.", ADJ_ERROR_MSG_BUF);
-    return ADJ_ERR_INVALID_INPUTS;
+    return adj_chkierr_auto(ADJ_ERR_INVALID_INPUTS);
   }
 
   if (timestep < 0)
   {
     snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Cannot have a negative timestep %d.", timestep);
-    return ADJ_ERR_INVALID_INPUTS;
+    return adj_chkierr_auto(ADJ_ERR_INVALID_INPUTS);
   }
 
   if (iteration < 0)
   {
     snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Cannot have a negative iteration %d.", iteration);
-    return ADJ_ERR_INVALID_INPUTS;
+    return adj_chkierr_auto(ADJ_ERR_INVALID_INPUTS);
   }
 
   strncpy(var->name, name, ADJ_NAME_LEN);
@@ -54,7 +54,7 @@ int adj_variable_get_iteration(adj_variable var, int* iteration)
   return ADJ_OK;
 }
 
-int adj_create_nonlinear_block(char* name, int ndepends, adj_variable* depends, void* context, adj_nonlinear_block* nblock)
+int adj_create_nonlinear_block(char* name, int ndepends, adj_variable* depends, void* context, adj_scalar coefficient, adj_nonlinear_block* nblock)
 {
   size_t slen;
 
@@ -65,17 +65,17 @@ int adj_create_nonlinear_block(char* name, int ndepends, adj_variable* depends, 
   if (slen > ADJ_NAME_LEN)
   {
     strncpy(adj_error_msg, "Name variable too long; recompile with bigger ADJ_NAME_LEN.", ADJ_ERROR_MSG_BUF);
-    return ADJ_ERR_INVALID_INPUTS;
+    return adj_chkierr_auto(ADJ_ERR_INVALID_INPUTS);
   }
 
   if (ndepends <= 0)
   {
     strncpy(adj_error_msg, "For it to be nonlinear, it needs at least one dependency.", ADJ_ERROR_MSG_BUF);
-    return ADJ_ERR_INVALID_INPUTS;
+    return adj_chkierr_auto(ADJ_ERR_INVALID_INPUTS);
   }
 
   strncpy(nblock->name, name, ADJ_NAME_LEN);
-  nblock->coefficient = (adj_scalar)1.0;
+  nblock->coefficient = coefficient;
   nblock->context = context;
   nblock->ndepends = ndepends;
   nblock->depends = malloc(ndepends * sizeof(adj_variable));
@@ -101,7 +101,7 @@ int adj_nonlinear_block_set_coefficient(adj_nonlinear_block* nblock, adj_scalar 
   return ADJ_OK;
 }
 
-int adj_create_block(char* name, adj_nonlinear_block* nblock, void* context, adj_block* block)
+int adj_create_block(char* name, adj_nonlinear_block* nblock, void* context, adj_scalar coefficient, adj_block* block)
 {
   size_t slen;
 
@@ -112,7 +112,7 @@ int adj_create_block(char* name, adj_nonlinear_block* nblock, void* context, adj
   if (slen > ADJ_NAME_LEN)
   {
     strncpy(adj_error_msg, "Name variable too long; recompile with bigger ADJ_NAME_LEN.", ADJ_ERROR_MSG_BUF);
-    return ADJ_ERR_INVALID_INPUTS;
+    return adj_chkierr_auto(ADJ_ERR_INVALID_INPUTS);
   }
 
   strncpy(block->name, name, ADJ_NAME_LEN);
@@ -129,7 +129,7 @@ int adj_create_block(char* name, adj_nonlinear_block* nblock, void* context, adj
 
   block->context = context;
   block->hermitian = 0;
-  block->coefficient = (adj_scalar)1.0;
+  block->coefficient = coefficient;
   block->test_hermitian = ADJ_FALSE;
   block->number_of_tests = 0;
   block->tolerance = (adj_scalar) 0.0;
@@ -155,7 +155,7 @@ int adj_block_set_hermitian(adj_block* block, int hermitian)
   if (hermitian != ADJ_TRUE && hermitian != ADJ_FALSE)
   {
     snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "The hermitian argument should either be ADJ_TRUE or ADJ_FALSE.");
-    return ADJ_ERR_INVALID_INPUTS;
+    return adj_chkierr_auto(ADJ_ERR_INVALID_INPUTS);
   }
 
   block->hermitian = hermitian;
@@ -167,19 +167,19 @@ int adj_block_set_test_hermitian(adj_block* block, int test_hermitian, int numbe
   if (test_hermitian != ADJ_TRUE && test_hermitian != ADJ_FALSE)
   {
     snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "The test_hermitian argument should either be ADJ_TRUE or ADJ_FALSE.");
-    return ADJ_ERR_INVALID_INPUTS;
+    return adj_chkierr_auto(ADJ_ERR_INVALID_INPUTS);
   }
 
   if (number_of_tests <= 0)
   {
     snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "The number_of_tests argument must be positive.");
-    return ADJ_ERR_INVALID_INPUTS;
+    return adj_chkierr_auto(ADJ_ERR_INVALID_INPUTS);
   }
 
   if (tolerance < (adj_scalar) 0.0)
   {
     snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "The tolerance argument must be nonnegative.");
-    return ADJ_ERR_INVALID_INPUTS;
+    return adj_chkierr_auto(ADJ_ERR_INVALID_INPUTS);
   }
 
   block->test_hermitian = test_hermitian;
@@ -193,19 +193,19 @@ int adj_nonlinear_block_set_test_hermitian(adj_nonlinear_block* nblock, int test
   if (test_deriv_hermitian != ADJ_TRUE && test_deriv_hermitian != ADJ_FALSE)
   {
     snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "The test_deriv_hermitian argument should either be ADJ_TRUE or ADJ_FALSE.");
-    return ADJ_ERR_INVALID_INPUTS;
+    return adj_chkierr_auto(ADJ_ERR_INVALID_INPUTS);
   }
 
   if (number_of_tests <= 0)
   {
     snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "The number_of_tests argument must be positive.");
-    return ADJ_ERR_INVALID_INPUTS;
+    return adj_chkierr_auto(ADJ_ERR_INVALID_INPUTS);
   }
 
   if (tolerance < (adj_scalar) 0.0)
   {
     snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "The tolerance argument must be nonnegative.");
-    return ADJ_ERR_INVALID_INPUTS;
+    return adj_chkierr_auto(ADJ_ERR_INVALID_INPUTS);
   }
 
   nblock->test_deriv_hermitian = test_deriv_hermitian;
@@ -219,13 +219,13 @@ int adj_nonlinear_block_set_test_derivative(adj_nonlinear_block* nblock, int tes
   if (test_derivative != ADJ_TRUE && test_derivative != ADJ_FALSE)
   {
     snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "The test_derivative argument should either be ADJ_TRUE or ADJ_FALSE.");
-    return ADJ_ERR_INVALID_INPUTS;
+    return adj_chkierr_auto(ADJ_ERR_INVALID_INPUTS);
   }
 
   if (number_of_rounds <= 1)
   {
     snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "The number_of_rounds argument must be at least 2.");
-    return ADJ_ERR_INVALID_INPUTS;
+    return adj_chkierr_auto(ADJ_ERR_INVALID_INPUTS);
   }
 
   nblock->test_derivative = test_derivative;
@@ -274,14 +274,14 @@ int adj_create_equation(adj_variable var, int nblocks, adj_block* blocks, adj_va
     char buf[ADJ_NAME_LEN];
     adj_variable_str(var, buf, ADJ_NAME_LEN);
     snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Cannot register an equation for an auxiliary variable %s.", buf);
-    return ADJ_ERR_INVALID_INPUTS;
+    return adj_chkierr_auto(ADJ_ERR_INVALID_INPUTS);
   }
 
   /* Check we have a sane nblocks */
   if (nblocks < 1)
   {
     snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "You need at least one block in an equation.");
-    return ADJ_ERR_INVALID_INPUTS;
+    return adj_chkierr_auto(ADJ_ERR_INVALID_INPUTS);
   }
 
   /* So we haven't seen this variable before. Let's check that the equation actually references this variable.
@@ -297,7 +297,7 @@ int adj_create_equation(adj_variable var, int nblocks, adj_block* blocks, adj_va
       char buf[ADJ_NAME_LEN];
       adj_variable_str(var, buf, ADJ_NAME_LEN);
       snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Cannot target an auxiliary variable %s.", buf);
-      return ADJ_ERR_INVALID_INPUTS;
+      return adj_chkierr_auto(ADJ_ERR_INVALID_INPUTS);
     }
   }
 
@@ -306,7 +306,7 @@ int adj_create_equation(adj_variable var, int nblocks, adj_block* blocks, adj_va
     char buf[ADJ_NAME_LEN];
     adj_variable_str(var, buf, ADJ_NAME_LEN);
     snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Trying to register an equation for %s, but this equation doesn't target this variable.", buf);
-    return ADJ_ERR_INVALID_INPUTS;
+    return adj_chkierr_auto(ADJ_ERR_INVALID_INPUTS);
   }
 
   /* OK. We've done all the sanity checking we can. Let's build the adj_equation. */
@@ -320,7 +320,7 @@ int adj_create_equation(adj_variable var, int nblocks, adj_block* blocks, adj_va
     {
       int ierr;
       ierr = adj_copy_nonlinear_block(blocks[i].nonlinear_block, &equation->blocks[i].nonlinear_block);
-      if (ierr != ADJ_OK) return ierr;
+      if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
     }
   }
   equation->targets = (adj_variable*) malloc(nblocks * sizeof(adj_variable));
@@ -338,7 +338,7 @@ int adj_equation_set_rhs_dependencies(adj_equation* equation, int nrhsdeps, adj_
   if (nrhsdeps < 0)
   {
     snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "You can't have a negative number of dependencies.");
-    return ADJ_ERR_INVALID_INPUTS;
+    return adj_chkierr_auto(ADJ_ERR_INVALID_INPUTS);
   }
 
   equation->nrhsdeps = nrhsdeps;
@@ -358,7 +358,7 @@ int adj_destroy_equation(adj_equation* equation)
     if (equation->blocks[i].has_nonlinear_block)
     {
       ierr = adj_destroy_nonlinear_block(&equation->blocks[i].nonlinear_block);
-      if (ierr != ADJ_OK) return ierr;
+      if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
     }
   }
 
@@ -383,12 +383,12 @@ int adj_create_nonlinear_block_derivative(adj_adjointer* adjointer, adj_nonlinea
   if (adjointer->callbacks.vec_duplicate == NULL)
   {
     snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "We need the ADJ_VEC_DUPLICATE_CB callback to do nonlinear differentiation.");
-    return ADJ_ERR_NEED_CALLBACK;
+    return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
   }
   if (adjointer->callbacks.vec_axpy == NULL)
   {
     snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "We need the ADJ_VEC_AXPY_CB callback to do nonlinear differentiation.");
-    return ADJ_ERR_NEED_CALLBACK;
+    return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
   }
 
   deriv->nonlinear_block = nblock;
@@ -411,7 +411,7 @@ int adj_destroy_nonlinear_block_derivative(adj_adjointer* adjointer, adj_nonline
   if (adjointer->callbacks.vec_destroy == NULL)
   {
     snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "We need the ADJ_VEC_DESTROY_CB callback to destroy adj_nonlinear_block_derivatives.");
-    return ADJ_ERR_NEED_CALLBACK;
+    return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
   }
 
   adjointer->callbacks.vec_destroy(&(deriv->contraction));

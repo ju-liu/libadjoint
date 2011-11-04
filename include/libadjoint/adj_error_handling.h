@@ -29,6 +29,11 @@ char adj_error_msg[ADJ_ERROR_MSG_BUF];
 #define adj_chkierr(ierr) adj_chkierr_private(ierr, __FILE__, __LINE__)
 void adj_chkierr_private(int ierr, char* file, int line);
 
+#define adj_chkierr_auto(ierr) adj_chkierr_auto_private(ierr, __FILE__, __LINE__)
+int adj_chkierr_auto_private(int ierr, char* file, int line);
+
+int adj_set_error_checking(int check);
+
 #define ADJ_CHKMALLOC(x) \
   if ((void*) (x) == NULL) {\
     snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Memory allocation failed.");\

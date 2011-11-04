@@ -52,7 +52,7 @@ class NonlinearBlock(object):
     for i in range(len(dependencies)):
       deplist[i] = dependencies[i].var
 
-    clib.adj_create_nonlinear_block(name, len(dependencies), deplist, c_context, self.nblock)
+    clib.adj_create_nonlinear_block(name, len(dependencies), deplist, c_context, 1.0, self.nblock)
 
     if coefficient is not None:
       self.set_coefficient(coefficient)
