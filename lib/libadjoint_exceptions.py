@@ -2,6 +2,7 @@ class LibadjointException(Exception):
   pass
 
 class LibadjointErrorException(LibadjointException):
+  pass
 
 class LibadjointErrorInvalidInputs(LibadjointErrorException):
   pass
@@ -27,7 +28,7 @@ class LibadjointErrorToleranceExceeded(LibadjointErrorException):
 class LibadjointErrorMallocFailed(LibadjointErrorException):
   pass
 
-class LibadjointWarnException(LibadjointWarnException):
+class LibadjointWarnException(LibadjointException):
   pass
 
 class LibadjointWarnAlreadyRecorded(LibadjointWarnException):

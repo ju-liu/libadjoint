@@ -1,3 +1,1 @@
-usr/lib/python*/dist-packages/libadjoint.py
-usr/lib/python*/dist-packages/clibadjoint.py
-usr/lib/python*/dist-packages/exceptions.py
+usr/lib/python*/dist-packages/*.py

@@ -1,10 +1,10 @@
 import clibadjoint as clib
 import ctypes
-import exceptions
+import libadjoint_exceptions
 
 def handle_error(ierr):
   if ierr != 0:
-    exception = exceptions.get_exception(ierr)
+    exception = libadjoint_exceptions.get_exception(ierr)
     errstr  = clib.adj_get_error_string(ierr)
     raise exception, errstr
 
