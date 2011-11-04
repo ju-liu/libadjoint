@@ -252,6 +252,7 @@ int adj_variable_get_name(adj_variable var, char** name);
 int adj_variable_get_timestep(adj_variable var, int* timestep);
 int adj_variable_get_iteration(adj_variable var, int* iteration);
 int adj_variable_set_auxiliary(adj_variable* var, int auxiliary);
+int adj_variable_str(adj_variable var, char* name, size_t namelen);
 int adj_create_nonlinear_block(char* name, int ndepends, adj_variable* depends, void* context, adj_scalar coefficient, adj_nonlinear_block* nblock);
 int adj_destroy_nonlinear_block(adj_nonlinear_block* nblock);
 int adj_nonlinear_block_set_coefficient(adj_nonlinear_block* nblock, adj_scalar coefficient);
@@ -268,7 +269,6 @@ int adj_destroy_equation(adj_equation* equation);
 
 #ifndef ADJ_HIDE_FROM_USER
 int adj_variable_equal(adj_variable* var1, adj_variable* var2, int nvars);
-int adj_variable_str(adj_variable var, char* name, size_t namelen);
 int adj_create_nonlinear_block_derivative(adj_adjointer* adjointer, adj_nonlinear_block nblock, adj_variable fwd, adj_vector contraction, int hermitian, adj_nonlinear_block_derivative* deriv);
 int adj_destroy_nonlinear_block_derivative(adj_adjointer* adjointer, adj_nonlinear_block_derivative* deriv);
 int adj_copy_nonlinear_block(adj_nonlinear_block src, adj_nonlinear_block* dest);
