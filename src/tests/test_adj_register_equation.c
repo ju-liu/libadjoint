@@ -11,6 +11,7 @@ void test_adj_register_equation(void)
   adj_variable vars[2];
   adj_block blocks[2];
   adj_equation equation;
+  adj_term term1, term2;
 
   adj_create_variable("Velocity", 0, 0, ADJ_NORMAL_VARIABLE, &vars[0]);
   adj_create_variable("Velocity", 1, 0, ADJ_NORMAL_VARIABLE, &vars[1]);
@@ -38,6 +39,13 @@ void test_adj_register_equation(void)
 
   ierr=adj_create_equation(vars[1], 2, blocks, vars, &equation); 
   adj_test_assert(ierr== ADJ_OK, "Should work");
+  ierr=adj_create_term(1, blocks, vars, &term1);
+  adj_test_assert(ierr==ADJ_OK, "Should work");
+  ierr=adj_add_terms(term1, term1, &term2);
+  adj_test_assert(ierr==ADJ_OK, "Should work");
+  ierr=adj_add_term_to_equation(term2, &equation);
+  adj_test_assert(ierr==ADJ_OK, "Should work");
+
   ierr=adj_register_equation(&adjointer, equation, &cs);
   adj_test_assert(ierr == ADJ_OK, "Register equation");
   ierr=adj_destroy_equation(&equation);
