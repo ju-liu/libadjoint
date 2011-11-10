@@ -24,11 +24,14 @@ void petsc_vec_divide_proc(adj_vector *numerator, adj_vector denominator);
 void petsc_vec_getnorm_proc(adj_vector vec, adj_scalar* norm);
 void petsc_vec_set_random_proc(adj_vector* x);
 void petsc_vec_dot_product_proc(adj_vector x, adj_vector y, adj_scalar* val);
+void petsc_vec_to_file_proc(adj_vector x, char* filename); 
+void petsc_vec_from_file_proc(adj_vector* x, char* filename);
 
 void petsc_mat_getvec_proc(adj_matrix mat, adj_vector *left);
 void petsc_mat_axpy_proc(adj_matrix *Y, adj_scalar alpha, adj_matrix X);
 void petsc_mat_duplicate_proc(adj_matrix matin, adj_matrix *matout);
 void petsc_mat_destroy_proc(adj_matrix *mat);
+void petsc_solve_proc(adj_variable var, adj_matrix mat, adj_vector rhs, adj_vector *soln); 
 
 #ifdef HAVE_PETSC
 adj_vector petsc_vec_to_adj_vector(Vec* v);

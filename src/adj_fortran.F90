@@ -1,6 +1,7 @@
 #include "libadjoint/adj_fortran.h"
 ! Yes, writing this file really was as boring as you would imagine
 
+! In particular because the order of the variables in types has to conform with the definition in C (!).
 module libadjoint_data_structures
   use iso_c_binding
   implicit none
@@ -47,6 +48,8 @@ module libadjoint_data_structures
     integer(kind=c_int) :: nrhsdeps
     type(c_ptr) :: rhsdeps
     type(c_ptr) :: rhs_context
+    integer(kind=c_int) :: memory_checkpoint
+    integer(kind=c_int) :: disk_checkpoint
   end type adj_equation
 
   type, bind(c) :: adj_data_callbacks
@@ -59,10 +62,14 @@ module libadjoint_data_structures
     type(c_funptr) :: vec_get_norm
     type(c_funptr) :: vec_dot_product
     type(c_funptr) :: vec_set_random
+    type(c_funptr) :: vec_to_file
+    type(c_funptr) :: vec_from_file
 
     type(c_funptr) :: mat_duplicate
     type(c_funptr) :: mat_axpy
     type(c_funptr) :: mat_destroy
+
+    type(c_funptr) :: solve
   end type adj_data_callbacks
 
   type, bind(c) :: adj_variable_data_list
@@ -85,13 +92,33 @@ module libadjoint_data_structures
     type(c_ptr) :: lastnode
   end type adj_func_deriv_callback_list
 
+  type, bind(c) :: CRevolve
+    type(c_ptr) :: revolve
+  end type CRevolve
+
+  type, bind(c) :: adj_revolve_data
+    type(CRevolve) :: revolve
+    integer(kind=c_int) :: nsnaps
+    integer(kind=c_int) :: snaps_in_ram
+    integer(kind=c_int) :: nsteps
+
+    integer(kind=c_int) :: current_action
+    integer(kind=c_int) :: current_timestep
+
+    integer(kind=c_int) :: verbose
+    integer(kind=c_int) :: overwrite
+    adj_scalar_f :: comparison_tolerance
+  end type adj_revolve_data
+
   type, bind(c) :: adj_adjointer
+    type(c_ptr) :: equations
     integer(kind=c_int) :: nequations
     integer(kind=c_int) :: equations_sz
-    type(c_ptr) :: equations
 
     integer(kind=c_int) :: ntimesteps
     type(c_ptr) :: timestep_data
+
+    type(adj_revolve_data) :: revolve_data
 
     type(c_ptr) :: varhash
     type(adj_variable_data_list) :: vardata
@@ -123,13 +150,19 @@ module libadjoint_data_structures
   end type adj_matrix
 
   type, bind(c) :: adj_storage_data
-    integer(kind=c_int) :: storage_type
-    integer(kind=c_int) :: has_value
     integer(kind=c_int) :: compare
     adj_scalar_f :: comparison_tolerance
     integer(kind=c_int) :: overwrite
+
     type(adj_vector) :: value
-    type(c_ptr) :: filename
+
+    integer(kind=c_int) :: storage_memory_type
+    integer(kind=c_int) :: storage_memory_has_value
+    integer(kind=c_int) :: storage_memory_is_checkpoint
+
+    integer(kind=c_int) :: storage_disk_has_value
+    integer(kind=c_int) :: storage_disk_is_checkpoint
+    character(kind=c_char), dimension(ADJ_NAME_LEN) :: storage_disk_filename
   end type adj_storage_data
 
   type, bind(c) :: adj_dictionary
@@ -198,6 +231,18 @@ module libadjoint
       type(adj_vector), intent(inout) :: x
     end subroutine adj_vec_set_random
 
+    subroutine adj_vec_to_file(x, filename) bind(c)
+      use libadjoint_data_structures
+      type(adj_vector), intent(in), value :: x
+      character(kind=c_char), dimension(ADJ_NAME_LEN), intent(in) :: filename
+    end subroutine adj_vec_to_file
+
+    subroutine adj_vec_from_file(x, filename) bind(c)
+      use libadjoint_data_structures
+      type(adj_vector), intent(out) :: x
+      character(kind=c_char), dimension(ADJ_NAME_LEN), intent(in) :: filename
+    end subroutine adj_vec_from_file
+
     subroutine adj_mat_duplicate_proc(matin, matout) bind(c)
       ! Allocate a new matrix, using a given matrix as the model
       use iso_c_binding
@@ -222,36 +267,46 @@ module libadjoint
       type(adj_matrix), intent(inout) :: mat
     end subroutine adj_mat_destroy_proc
 
-    subroutine adj_nonlinear_colouring_proc(nvar, variables, dependencies, derivative, context, sz, colouring) bind(c)
+    subroutine adj_solve_proc(var, mat, rhs, soln) bind(c)
+      ! Solves for variable var by computing mat * soln = rhs 
       use iso_c_binding
       use libadjoint_data_structures
-      integer(kind=c_int), intent(in), value :: nvar
-      type(adj_variable), dimension(nvar), intent(in) :: variables
-      type(adj_vector), dimension(nvar), intent(in) :: dependencies
+      type(adj_variable), intent(in), value :: var
+      type(adj_matrix), intent(in), value :: mat
+      type(adj_vector), intent(in), value :: rhs
+      type(adj_vector), intent(out) :: soln
+    end subroutine adj_solve_proc
+
+    subroutine adj_nonlinear_colouring_proc(ndepends, variables, dependencies, derivative, context, sz, colouring) bind(c)
+      use iso_c_binding
+      use libadjoint_data_structures
+      integer(kind=c_int), intent(in), value :: ndepends
+      type(adj_variable), dimension(ndepends), intent(in) :: variables
+      type(adj_vector), dimension(ndepends), intent(in) :: dependencies
       type(adj_variable), intent(in), value :: derivative
       type(c_ptr), intent(in), value :: context
       integer(kind=c_int), intent(in), value :: sz
       integer(kind=c_int), dimension(sz), intent(out) :: colouring
     end subroutine adj_nonlinear_colouring_proc
 
-    subroutine adj_nonlinear_action_proc(nvar, variables, dependencies, input, context, output) bind(c)
+    subroutine adj_nonlinear_action_proc(ndepends, variables, dependencies, input, context, output) bind(c)
       use iso_c_binding
       use libadjoint_data_structures
-      integer(kind=c_int), intent(in), value :: nvar
-      type(adj_variable), dimension(nvar), intent(in) :: variables
-      type(adj_vector), dimension(nvar), intent(in) :: dependencies
+      integer(kind=c_int), intent(in), value :: ndepends
+      type(adj_variable), dimension(ndepends), intent(in) :: variables
+      type(adj_vector), dimension(ndepends), intent(in) :: dependencies
       type(adj_vector), intent(in), value :: input
       type(c_ptr), intent(in), value :: context
       type(adj_vector), intent(out) :: output
     end subroutine adj_nonlinear_action_proc
 
-    subroutine adj_nonlinear_derivative_action_proc(nvar, variables, dependencies, derivative, contraction, hermitian, &
+    subroutine adj_nonlinear_derivative_action_proc(ndepends, variables, dependencies, derivative, contraction, hermitian, &
                                                   & input, coefficient, context, output) bind(c)
       use iso_c_binding
       use libadjoint_data_structures
-      integer(kind=c_int), intent(in), value :: nvar
-      type(adj_variable), dimension(nvar), intent(in) :: variables
-      type(adj_vector), dimension(nvar), intent(in) :: dependencies
+      integer(kind=c_int), intent(in), value :: ndepends
+      type(adj_variable), dimension(ndepends), intent(in) :: variables
+      type(adj_vector), dimension(ndepends), intent(in) :: dependencies
       type(adj_variable), intent(in), value :: derivative
       type(adj_vector), intent(in), value :: contraction
       integer(kind=c_int), intent(in), value :: hermitian
@@ -261,13 +316,13 @@ module libadjoint
       type(adj_vector), intent(out) :: output
     end subroutine adj_nonlinear_derivative_action_proc
 
-    subroutine adj_nonlinear_derivative_assembly_proc(nvar, variables, dependencies, derivative, contraction, hermitian, &
+    subroutine adj_nonlinear_derivative_assembly_proc(ndepends, variables, dependencies, derivative, contraction, hermitian, &
                                                     & context, output) bind(c)
       use iso_c_binding
       use libadjoint_data_structures
-      integer(kind=c_int), intent(in) :: nvar
-      type(adj_variable), dimension(nvar), intent(in) :: variables
-      type(adj_vector), dimension(nvar), intent(in) :: dependencies
+      integer(kind=c_int), intent(in) :: ndepends
+      type(adj_variable), dimension(ndepends), intent(in) :: variables
+      type(adj_vector), dimension(ndepends), intent(in) :: dependencies
       type(adj_variable), intent(in) :: derivative
       type(adj_vector), intent(in) :: contraction
       logical(kind=c_bool), intent(in) :: hermitian
@@ -275,12 +330,12 @@ module libadjoint
       type(adj_matrix), intent(out) :: output
     end subroutine adj_nonlinear_derivative_assembly_proc
    
-    subroutine adj_block_action_proc(nvar, variables, dependencies, hermitian, coefficient, input, context, output) bind(c)
+    subroutine adj_block_action_proc(ndepends, variables, dependencies, hermitian, coefficient, input, context, output) bind(c)
       use iso_c_binding
       use libadjoint_data_structures
-      integer(kind=c_int), intent(in), value :: nvar
-      type(adj_variable), dimension(nvar), intent(in) :: variables
-      type(adj_vector), dimension(nvar), intent(in) :: dependencies
+      integer(kind=c_int), intent(in), value :: ndepends
+      type(adj_variable), dimension(ndepends), intent(in) :: variables
+      type(adj_vector), dimension(ndepends), intent(in) :: dependencies
       integer(kind=c_int), intent(in), value :: hermitian
       adj_scalar_f, intent(in), value :: coefficient
       type(adj_vector), intent(in), value :: input
@@ -288,12 +343,12 @@ module libadjoint
       type(adj_vector), intent(out) :: output
     end subroutine adj_block_action_proc
 
-    subroutine adj_block_assembly_proc(nvar, variables, dependencies, hermitian, coefficient, context, output, rhs) bind(c)
+    subroutine adj_block_assembly_proc(ndepends, variables, dependencies, hermitian, coefficient, context, output, rhs) bind(c)
       use iso_c_binding
       use libadjoint_data_structures
-      integer(kind=c_int), intent(in), value :: nvar
-      type(adj_variable), dimension(nvar), intent(in) :: variables
-      type(adj_vector), dimension(nvar), intent(in) :: dependencies
+      integer(kind=c_int), intent(in), value :: ndepends
+      type(adj_variable), dimension(ndepends), intent(in) :: variables
+      type(adj_vector), dimension(ndepends), intent(in) :: dependencies
       integer(kind=c_int), intent(in), value :: hermitian
       adj_scalar_f, intent(in), value :: coefficient
       type(c_ptr), intent(in), value :: context
@@ -363,6 +418,14 @@ module libadjoint
       integer(kind=c_int), intent(out) :: iteration
       integer(kind=c_int) :: ierr
     end function adj_variable_get_iteration
+
+    function adj_variable_get_type(var, type) result(ierr) bind(c, name='adj_variable_get_type')
+      use libadjoint_data_structures
+      use iso_c_binding
+      type(adj_variable), intent(in), value :: var
+      integer(kind=c_int), intent(out) :: type
+      integer(kind=c_int) :: ierr
+    end function adj_variable_get_type
 
     function adj_variable_set_auxiliary_c(var, auxiliary) result(ierr) bind(c, name='adj_variable_set_auxiliary')
       use libadjoint_data_structures
@@ -519,13 +582,42 @@ module libadjoint
       integer(kind=c_int) :: ierr
     end function adj_destroy_adjointer
 
-    function adj_set_option(adjointer, option, choice) result(ierr) bind(c, name='adj_set_option')
+    function adj_deactivate_adjointer(adjointer) result(ierr) bind(c, name='adj_deactivate_adjointer')
       use libadjoint_data_structures
       use iso_c_binding
       type(adj_adjointer), intent(inout) :: adjointer
-      integer(kind=c_int), intent(in), value :: option, choice 
       integer(kind=c_int) :: ierr
-    end function adj_set_option
+    end function adj_deactivate_adjointer
+
+    function adj_set_checkpoint_strategy(adjointer, strategy) result(ierr) bind(c, name='adj_set_checkpoint_strategy')
+      use libadjoint_data_structures
+      use iso_c_binding
+      type(adj_adjointer), intent(inout) :: adjointer
+      integer(kind=c_int), intent(in), value :: strategy
+      integer(kind=c_int) :: ierr
+    end function adj_set_checkpoint_strategy
+
+    function adj_set_revolve_options_c(adjointer, steps, snaps_on_disk, snaps_in_ram, verbose) result(ierr) &
+                                     & bind(c, name='adj_set_revolve_options')
+      use libadjoint_data_structures
+      use iso_c_binding
+      type(adj_adjointer), intent(inout) :: adjointer
+      integer(kind=c_int), intent(in), value :: steps 
+      integer(kind=c_int), intent(in), value :: snaps_on_disk
+      integer(kind=c_int), intent(in), value :: snaps_in_ram
+      integer(kind=c_int), intent(in), value :: verbose
+      integer(kind=c_int) :: ierr
+    end function adj_set_revolve_options_c
+
+    function adj_set_revolve_debug_options_c(adjointer, overwrite, comparison_tolerance) result(ierr) &
+                                     & bind(c, name='adj_set_revolve_debug_options')
+      use libadjoint_data_structures
+      use iso_c_binding
+      type(adj_adjointer), intent(inout) :: adjointer
+      integer(kind=c_int), intent(in), value :: overwrite
+      adj_scalar_f, intent(in), value :: comparison_tolerance
+      integer(kind=c_int) :: ierr
+    end function adj_set_revolve_debug_options_c
 
     function adj_equation_count(adjointer, count) result(ierr) bind(c, name='adj_equation_count')
       use libadjoint_data_structures
@@ -535,13 +627,14 @@ module libadjoint
       integer(kind=c_int) :: ierr
     end function adj_equation_count
 
-    function adj_register_equation(adjointer, equation) result(ierr) bind(c, name='adj_register_equation')
+    function adj_register_equation_c(adjointer, equation, checkpoint_storage) result(ierr) bind(c, name='adj_register_equation')
       use libadjoint_data_structures
       use iso_c_binding
       type(adj_adjointer), intent(inout) :: adjointer
       type(adj_equation), intent(in), value :: equation
+      integer(kind=c_int), intent(out) :: checkpoint_storage 
       integer(kind=c_int) :: ierr
-    end function adj_register_equation
+    end function adj_register_equation_c
 
     function adj_record_variable(adjointer, variable, storage) result(ierr) bind(c, name='adj_record_variable')
       use libadjoint_data_structures
@@ -651,6 +744,13 @@ module libadjoint
       integer(kind=c_int) :: ierr
     end function adj_adjointer_check_consistency
 
+    function adj_adjointer_check_checkpoints(adjointer) result(ierr) bind(c, name='adj_adjointer_check_checkpoints')
+      use libadjoint_data_structures
+      use iso_c_binding
+      type(adj_adjointer), intent(in) :: adjointer
+      integer(kind=c_int) :: ierr
+    end function adj_adjointer_check_checkpoints
+
     function adj_timestep_set_times(adjointer, timestep, start, end) result(ierr) bind(c, name='adj_timestep_set_times')
       use libadjoint_data_structures
       use iso_c_binding
@@ -722,6 +822,30 @@ module libadjoint
       integer(kind=c_int) :: ierr
     end function adj_storage_memory_incref
 
+    function adj_storage_disk(val, mem) result(ierr) bind(c, name='adj_storage_disk')
+      use libadjoint_data_structures
+      use iso_c_binding
+      type(adj_vector), intent(in), value :: val
+      type(adj_storage_data), intent(inout) :: mem
+      integer(kind=c_int) :: ierr
+    end function adj_storage_disk
+
+    function adj_set_storage_memory_copy(adjointer, variable) result(ierr) bind(c, name='adj_set_storage_memory_copy')
+      use libadjoint_data_structures
+      use iso_c_binding
+      type(adj_adjointer), intent(inout) :: adjointer
+      type(adj_variable), intent(in) :: variable
+      integer(kind=c_int) :: ierr
+    end function adj_set_storage_memory_copy
+
+    function adj_set_storage_memory_incref(adjointer, variable) result(ierr) bind(c, name='adj_set_storage_memory_incref')
+      use libadjoint_data_structures
+      use iso_c_binding
+      type(adj_adjointer), intent(inout) :: adjointer
+      type(adj_variable), intent(in) :: variable
+      integer(kind=c_int) :: ierr
+    end function adj_set_storage_memory_incref
+
     function adj_storage_set_compare_c(mem, compare, comparison_tolerance) result(ierr) bind(c, name='adj_storage_set_compare')
       use libadjoint_data_structures
       use iso_c_binding
@@ -739,6 +863,14 @@ module libadjoint
       integer(kind=c_int) :: ierr
     end function adj_storage_set_overwrite_c
 
+    function adj_storage_set_checkpoint_c(mem, checkpoint) result(ierr) bind(c, name='adj_storage_set_checkpoint')
+      use libadjoint_data_structures
+      use iso_c_binding
+      type(adj_storage_data), intent(inout) :: mem
+      integer(kind=c_int), intent(in), value :: checkpoint
+      integer(kind=c_int) :: ierr
+    end function adj_storage_set_checkpoint_c
+
     function adj_get_adjoint_equation_c(adjointer, equation, functional, lhs, rhs, variable) result(ierr) &
             & bind(c, name='adj_get_adjoint_equation')
       use libadjoint_data_structures
@@ -752,7 +884,19 @@ module libadjoint
       integer(kind=c_int) :: ierr
     end function adj_get_adjoint_equation_c
     
-    function adj_get_forward_equation(adjointer, equation, lhs, rhs, variable) result(ierr) &
+    function adj_get_adjoint_solution_c(adjointer, equation, functional, soln, variable) result(ierr) &
+            & bind(c, name='adj_get_adjoint_solution')
+      use libadjoint_data_structures
+      use iso_c_binding
+      type(adj_adjointer), intent(inout) :: adjointer
+      integer(kind=c_int), intent(in), value :: equation
+      character(kind=c_char), dimension(ADJ_NAME_LEN), intent(in) :: functional
+      type(adj_vector), intent(out) :: soln
+      type(adj_variable), intent(out) :: variable
+      integer(kind=c_int) :: ierr
+    end function adj_get_adjoint_solution_c
+
+    function adj_get_forward_equation(adjointer, equation, lhs, rhs, fwd_var) result(ierr) &
             & bind(c, name='adj_get_forward_equation')
       use libadjoint_data_structures
       use iso_c_binding
@@ -760,16 +904,27 @@ module libadjoint
       integer(kind=c_int), intent(in), value :: equation
       type(adj_matrix), intent(out) :: lhs
       type(adj_vector), intent(out) :: rhs
-      type(adj_variable), intent(out) :: variable
+      type(adj_variable), intent(out) :: fwd_var
       integer(kind=c_int) :: ierr
     end function adj_get_forward_equation
+
+    function adj_get_forward_solution(adjointer, equation, soln, variable) result(ierr) &
+            & bind(c, name='adj_get_forward_solution')
+      use libadjoint_data_structures
+      use iso_c_binding
+      type(adj_adjointer), intent(inout) :: adjointer
+      integer(kind=c_int), intent(in), value :: equation
+      type(adj_vector), intent(out) :: soln
+      type(adj_variable), intent(out) :: variable
+      integer(kind=c_int) :: ierr
+    end function adj_get_forward_solution
     
     function adj_adjointer_to_html_c(adjointer, filename, type) result(ierr) &
             & bind(c, name='adj_adjointer_to_html')
       use libadjoint_data_structures
       use iso_c_binding
       type(adj_adjointer), intent(in) :: adjointer
-      character(kind=c_char), dimension(ADJ_NAME_LEN), intent(in) :: filename
+      character(kind=c_char), dimension(*), intent(in) :: filename
       integer(kind=c_int), intent(in), value :: type
       integer(kind=c_int) :: ierr
     end function adj_adjointer_to_html_c
@@ -847,12 +1002,39 @@ module libadjoint
 
   contains
 
-  function adj_get_adjoint_equation(adjointer, equation, functional, lhs, rhs, variable) result(ierr)
+  function adj_get_adjoint_equation(adjointer, equation, functional, lhs, rhs, adj_var) result(ierr)
     type(adj_adjointer), intent(inout) :: adjointer
     integer(kind=c_int), intent(in), value :: equation
     character(len=*), intent(in) :: functional
     type(adj_matrix), intent(out) :: lhs
     type(adj_vector), intent(out) :: rhs
+    type(adj_variable), intent(out) :: adj_var
+    integer(kind=c_int) :: ierr
+    
+    character(kind=c_char), dimension(ADJ_NAME_LEN) :: functional_c
+    integer :: j
+
+    if (len_trim(functional) .ge. ADJ_NAME_LEN - 1) then
+      ! Can't set the error message from Fortran, I think?
+      ierr = ADJ_ERR_INVALID_INPUTS
+    end if
+
+    do j=1,len_trim(functional)
+      functional_c(j) = functional(j:j)
+    end do
+    do j=len_trim(functional)+1,ADJ_NAME_LEN
+      functional_c(j) = c_null_char
+    end do
+    functional_c(ADJ_NAME_LEN) = c_null_char
+
+    ierr = adj_get_adjoint_equation_c(adjointer, equation, functional_c, lhs, rhs, adj_var)
+  end function adj_get_adjoint_equation
+
+  function adj_get_adjoint_solution(adjointer, equation, functional, soln, variable) result(ierr)
+    type(adj_adjointer), intent(inout) :: adjointer
+    integer(kind=c_int), intent(in), value :: equation
+    character(len=*), intent(in) :: functional
+    type(adj_vector), intent(out) :: soln
     type(adj_variable), intent(out) :: variable
     integer(kind=c_int) :: ierr
     
@@ -867,8 +1049,8 @@ module libadjoint
     end do
     functional_c(ADJ_NAME_LEN) = c_null_char
 
-    ierr = adj_get_adjoint_equation_c(adjointer, equation, functional_c, lhs, rhs, variable)
-  end function adj_get_adjoint_equation
+    ierr = adj_get_adjoint_solution_c(adjointer, equation, functional_c, soln, variable)
+  end function adj_get_adjoint_solution
 
   function adj_create_variable(name, timestep, iteration, auxiliary, variable) result(ierr)
     character(len=*), intent(in) :: name
@@ -886,6 +1068,12 @@ module libadjoint
     else
       auxiliary_c = ADJ_FALSE
     end if
+
+    if (len_trim(name) .ge. ADJ_NAME_LEN - 1) then
+      ! Can't set the error message from Fortran, I think?
+      ierr = ADJ_ERR_INVALID_INPUTS
+    end if
+
     do j=1,len_trim(name)
       name_c(j) = name(j:j)
     end do
@@ -927,6 +1115,11 @@ module libadjoint
     integer :: j
     type(c_ptr) :: context_c
 
+    if (len_trim(name) .ge. ADJ_NAME_LEN - 1) then
+      ! Can't set the error message from Fortran, I think?
+      ierr = ADJ_ERR_INVALID_INPUTS
+    end if
+
     do j=1,len_trim(name)
       name_c(j) = name(j:j)
     end do
@@ -964,6 +1157,11 @@ module libadjoint
     type(c_ptr) :: nblock_ptr
     type(c_ptr) :: context_c
 
+    if (len_trim(name) .ge. ADJ_NAME_LEN - 1) then
+      ! Can't set the error message from Fortran, I think?
+      ierr = ADJ_ERR_INVALID_INPUTS
+    end if
+
     do j=1,len_trim(name)
       name_c(j) = name(j:j)
     end do
@@ -987,6 +1185,21 @@ module libadjoint
     ierr = adj_create_block_c(name_c, nblock_ptr, context_c, block)
   end function adj_create_block
 
+  function adj_register_equation(adjointer, equation, checkpoint_storage) result(ierr) 
+    type(adj_adjointer), intent(inout) :: adjointer
+    type(adj_equation), intent(in), value :: equation
+    integer(kind=c_int), intent(out), optional :: checkpoint_storage 
+    integer(kind=c_int) :: ierr
+
+    integer :: dummy
+
+    if (present(checkpoint_storage)) then
+      ierr = adj_register_equation_c(adjointer, equation, checkpoint_storage)
+    else
+      ierr = adj_register_equation_c(adjointer, equation, dummy)
+    end if
+  end function adj_register_equation
+
   function adj_register_operator_callback(adjointer, type, name, fnptr) result(ierr)
     type(adj_adjointer), intent(inout) :: adjointer
     integer(kind=c_int), intent(in) :: type
@@ -996,6 +1209,11 @@ module libadjoint
 
     character(kind=c_char), dimension(ADJ_NAME_LEN) :: name_c
     integer :: j
+
+    if (len_trim(name) .ge. ADJ_NAME_LEN - 1) then
+      ! Can't set the error message from Fortran, I think?
+      ierr = ADJ_ERR_INVALID_INPUTS
+    end if
 
     do j=1,len_trim(name)
       name_c(j) = name(j:j)
@@ -1038,6 +1256,11 @@ module libadjoint
     character(kind=c_char), dimension(ADJ_NAME_LEN) :: functional_c
     integer :: j
 
+    if (len_trim(functional) .ge. ADJ_NAME_LEN - 1) then
+      ! Can't set the error message from Fortran, I think?
+      ierr = ADJ_ERR_INVALID_INPUTS
+    end if
+
     do j=1,len_trim(functional)
       functional_c(j) = functional(j:j)
     end do
@@ -1058,6 +1281,11 @@ module libadjoint
 
     character(kind=c_char), dimension(ADJ_NAME_LEN) :: functional_c
     integer :: j
+
+    if (len_trim(functional) .ge. ADJ_NAME_LEN - 1) then
+      ! Can't set the error message from Fortran, I think?
+      ierr = ADJ_ERR_INVALID_INPUTS
+    end if
 
     do j=1,len_trim(functional)
       functional_c(j) = functional(j:j)
@@ -1081,6 +1309,11 @@ module libadjoint
     character(kind=c_char), dimension(ADJ_NAME_LEN) :: functional_c
     integer :: j
 
+    if (len_trim(functional) .ge. ADJ_NAME_LEN - 1) then
+      ! Can't set the error message from Fortran, I think?
+      ierr = ADJ_ERR_INVALID_INPUTS
+    end if
+
     do j=1,len_trim(functional)
       functional_c(j) = functional(j:j)
     end do
@@ -1100,6 +1333,11 @@ module libadjoint
 
     character(kind=c_char), dimension(ADJ_NAME_LEN) :: name_c
     integer :: j
+
+    if (len_trim(name) .ge. ADJ_NAME_LEN - 1) then
+      ! Can't set the error message from Fortran, I think?
+      ierr = ADJ_ERR_INVALID_INPUTS
+    end if
 
     do j=1,len_trim(name)
       name_c(j) = name(j:j)
@@ -1121,6 +1359,11 @@ module libadjoint
     character(kind=c_char), dimension(ADJ_NAME_LEN) :: name_c
     integer :: j
 
+    if (len_trim(name) .ge. ADJ_NAME_LEN - 1) then
+      ! Can't set the error message from Fortran, I think?
+      ierr = ADJ_ERR_INVALID_INPUTS
+    end if
+
     do j=1,len_trim(name)
       name_c(j) = name(j:j)
     end do
@@ -1138,18 +1381,19 @@ module libadjoint
     integer, intent(in) :: type
     integer :: ierr
     
-    character(kind=c_char), dimension(ADJ_NAME_LEN) :: filename_c
+    character(kind=c_char), dimension(:), allocatable :: filename_c
     integer :: j
+
+    allocate(filename_c(len_trim(filename)+1))
 
     do j=1,len_trim(filename)
       filename_c(j) = filename(j:j)
     end do
-    do j=len_trim(filename)+1,ADJ_NAME_LEN
-      filename_c(j) = c_null_char
-    end do
-    filename_c(ADJ_NAME_LEN) = c_null_char
+    filename_c(len_trim(filename)+1) = c_null_char
 
     ierr = adj_adjointer_to_html_c(adjointer, filename_c, type)
+    
+    deallocate(filename_c)
   end function adj_adjointer_to_html
   
   function adj_evaluate_functional(adjointer, timestep, functional, output) result(ierr) 
@@ -1161,6 +1405,11 @@ module libadjoint
     
     character(kind=c_char), dimension(ADJ_NAME_LEN) :: functional_c
     integer :: j
+
+    if (len_trim(functional) .ge. ADJ_NAME_LEN - 1) then
+      ! Can't set the error message from Fortran, I think?
+      ierr = ADJ_ERR_INVALID_INPUTS
+    end if
 
     do j=1,len_trim(functional)
       functional_c(j) = functional(j:j)
@@ -1267,6 +1516,43 @@ module libadjoint
     ierr = adj_variable_set_auxiliary_c(var, auxiliary_c)
   end function adj_variable_set_auxiliary
 
+  function adj_set_revolve_options(adjointer, steps, snaps_on_disk, snaps_in_ram, verbose) result(ierr)
+    type(adj_adjointer), intent(inout) :: adjointer
+    integer(kind=c_int), intent(in) :: steps
+    integer(kind=c_int), intent(in) :: snaps_on_disk
+    integer(kind=c_int), intent(in) :: snaps_in_ram
+    logical, intent(in), optional :: verbose
+    integer(kind=c_int) :: ierr
+    integer(kind=c_int) :: verbose_c
+
+    if (present(verbose)) then
+      if (verbose) then
+        verbose_c = ADJ_TRUE
+      end if
+    else
+      verbose_c = ADJ_FALSE
+    end if
+
+    ierr = adj_set_revolve_options_c(adjointer, steps, snaps_on_disk, snaps_in_ram, verbose_c)
+  end function adj_set_revolve_options
+
+  function adj_set_revolve_debug_options(adjointer, overwrite, comparison_tolerance) result(ierr)
+    type(adj_adjointer), intent(inout) :: adjointer
+    logical, intent(in) :: overwrite
+    adj_scalar_f, intent(in) :: comparison_tolerance
+
+    integer(kind=c_int) :: overwrite_c
+    integer(kind=c_int) :: ierr
+
+    if (overwrite) then
+      overwrite_c = ADJ_TRUE
+    else
+      overwrite_c = ADJ_FALSE
+    end if
+
+    ierr = adj_set_revolve_debug_options_c(adjointer, overwrite_c, comparison_tolerance)
+  end function adj_set_revolve_debug_options
+
   function adj_equation_set_rhs_dependencies(equation, rhsdeps, context) result(ierr)
     type(adj_equation), intent(inout) :: equation
     type(adj_variable), dimension(:), intent(in), optional :: rhsdeps
@@ -1322,6 +1608,22 @@ module libadjoint
 
     ierr = adj_storage_set_overwrite_c(data, overwrite_c)
   end function adj_storage_set_overwrite
+
+  function adj_storage_set_checkpoint(data, checkpoint) result(ierr)
+    type(adj_storage_data), intent(inout) :: data
+    logical, intent(in) :: checkpoint
+    integer(kind=c_int) :: ierr
+
+    integer(kind=c_int) :: checkpoint_c
+
+    if (checkpoint) then
+      checkpoint_c = ADJ_TRUE
+    else
+      checkpoint_c = ADJ_FALSE
+    end if
+
+    ierr = adj_storage_set_checkpoint_c(data, checkpoint_c)
+  end function adj_storage_set_checkpoint
 
   function adj_block_set_test_hermitian(block, test_hermitian, number_of_tests, tolerance) result(ierr)
     use libadjoint_data_structures
@@ -1413,6 +1715,21 @@ module libadjoint
   end function adj_variable_equal
 
 end module libadjoint
+
+
+module libadjoint_test_tools
+  use iso_c_binding
+  implicit none
+
+  interface
+    function adj_sizeof_adjointer() result(size) bind(c, name='adj_sizeof_adjointer')
+      use iso_c_binding
+      integer(kind=c_int) :: size
+    end function adj_sizeof_adjointer
+  end interface
+
+end module libadjoint_test_tools 
+
 
 module libadjoint_petsc_data_structures
 

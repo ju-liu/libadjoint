@@ -26,6 +26,179 @@ int adj_adjointer_check_consistency(adj_adjointer* adjointer)
   return ADJ_OK;
 }
 
+/* Loops over the checkpoint equations and checks that the required variable are recorded */
+int adj_adjointer_check_checkpoints(adj_adjointer* adjointer)
+{
+  int cp_num, cp_iter;
+  int* cp_eqns;
+  int eqn_num, i, j, ierr;
+  adj_equation eqn;
+
+  if (adjointer->options[ADJ_ACTIVITY] == ADJ_ACTIVITY_NOTHING) return ADJ_OK;
+
+  if (adjointer->revolve_data.verbose)
+    printf("======= Revolve: starting checkpoint check =======\n");
+
+  /* Query the checkpoint equations */
+  cp_num = 0;
+  /* First get the number of checkpoints */
+  for (eqn_num=0; eqn_num < adjointer->nequations; eqn_num++)
+  {
+    eqn = adjointer->equations[eqn_num];
+    if ((eqn.memory_checkpoint == ADJ_TRUE) ||
+      	(eqn.disk_checkpoint == ADJ_TRUE))
+      cp_num++;
+  }
+  cp_eqns = (int*) malloc(sizeof(int)*cp_num);
+  ADJ_CHKMALLOC(cp_eqns);
+  /* Then get the equation number of each checkpoint */
+  i=0;
+  for (eqn_num=0; eqn_num < adjointer->nequations; eqn_num++)
+  {
+    eqn = adjointer->equations[eqn_num];
+    if ((eqn.memory_checkpoint == ADJ_TRUE) ||
+      	(eqn.disk_checkpoint == ADJ_TRUE))
+    {
+      cp_eqns[i]=eqn_num;
+      i++;
+    }
+  }
+
+  /* Now loop over every checkpoint and ensure that all required variables are recorded */
+  for (cp_iter=0; cp_iter < cp_num; cp_iter++)
+  {
+    eqn = adjointer->equations[cp_eqns[cp_iter]];
+
+    if (adjointer->revolve_data.verbose)
+    {
+      if (eqn.memory_checkpoint == ADJ_TRUE)
+      	printf("Revolve: Equation %i is a memory checkpoint.\n", cp_eqns[cp_iter]);
+      if (eqn.disk_checkpoint == ADJ_TRUE)
+      	printf("Revolve: Equation %i is a disk checkpoint.\n", cp_eqns[cp_iter]);
+    }
+
+    /* Check that we have all the forward values we need to restart the simulation */
+    for (i=0; i < eqn.nblocks; i++)
+    {
+      adj_variable fwd_var;
+
+      /* Check that we have the nonlinear block dependencies */
+      if (eqn.blocks[i].has_nonlinear_block)
+      {
+      	adj_nonlinear_block nl_block;
+
+      	nl_block = eqn.blocks[i].nonlinear_block;
+      	for (j=0; j < nl_block.ndepends; j++)
+      	{
+      		fwd_var = nl_block.depends[j];
+
+      		if (eqn.memory_checkpoint == ADJ_TRUE)
+      			if ((adj_has_variable_value_memory(adjointer, fwd_var) != ADJ_OK) || (adj_is_variable_memory_checkpoint(adjointer, fwd_var) != ADJ_TRUE))
+      			{
+      				char buf[255];
+      				adj_variable_str(fwd_var, buf, 255);
+      				snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Need a memory checkpoint of variable %s, but don't have one.", buf);
+      				return ADJ_ERR_NEED_VALUE;
+      			}
+      		if (eqn.disk_checkpoint == ADJ_TRUE)
+      			if ((adj_has_variable_value_disk(adjointer, fwd_var) != ADJ_OK) || (adj_is_variable_disk_checkpoint(adjointer, fwd_var) != ADJ_TRUE))
+      			{
+      				char buf[255];
+      				adj_variable_str(fwd_var, buf, 255);
+      				snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Need a disk checkpoint of variable %s, but don't have one.", buf);
+      				return ADJ_ERR_NEED_VALUE;
+      			}
+      	}
+      }
+
+      /* Get the forward variable we want this to multiply */
+      fwd_var = eqn.targets[i];
+      if (adj_variable_equal(&eqn.variable, &fwd_var, 1)) continue; /* that term goes in the lhs */
+      /* and now check it has the checkpoint value */
+      if (eqn.memory_checkpoint == ADJ_TRUE)
+      	if ((adj_has_variable_value_memory(adjointer, fwd_var) != ADJ_OK) || (adj_is_variable_memory_checkpoint(adjointer, fwd_var) != ADJ_TRUE))
+      	{
+      		char buf[255];
+      		adj_variable_str(fwd_var, buf, 255);
+      		snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Need a memory checkpoint of variable %s, but don't have one.", buf);
+      		return ADJ_ERR_NEED_VALUE;
+      	}
+      if (eqn.disk_checkpoint == ADJ_TRUE)
+      	if ((adj_has_variable_value_disk(adjointer, fwd_var) != ADJ_OK) || (adj_is_variable_disk_checkpoint(adjointer, fwd_var) != ADJ_TRUE))
+      	{
+      		char buf[255];
+      		adj_variable_str(fwd_var, buf, 255);
+      		snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Need a disk checkpoint of variable %s, but don't have one.", buf);
+      		return ADJ_ERR_NEED_VALUE;
+      	}
+    }
+  }
+
+  if (cp_num>0)
+  {
+    adj_variable_data* data;
+
+    /* The first checkpoint equation must be zero, otherwise */
+    /* we couldn't replay the whole forward system */
+    if(cp_eqns[0] != 0)
+    {
+      snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Internal error: the first equation must be a checkpoint equation but it is not.");
+      return ADJ_ERR_REVOLVE_ERROR;
+    }
+
+    /* Check we have the required variables for the adjoint equations */
+    data = adjointer->vardata.firstnode;
+    /* Loop over every variable */
+    while (data != NULL)
+    {
+      /* We are only interested in forward variables */
+      if (data->equation < 0)
+      {
+      	data = data->next;
+      	continue;
+      }
+
+      /* Find out in which checkpoint slot the variable is computed */
+      for (cp_iter=0; cp_iter < cp_num-1; cp_iter++)
+      {
+      	if (data->equation < cp_eqns[cp_iter+1])
+      		break;
+      }
+
+      /* Check for dependencies of the functional right-hand-sides */
+      if (data->ndepending_timesteps > 0)
+      {
+      	int start_equation, max_timestep;
+      	max_timestep = adj_minval(data->depending_timesteps, data->ndepending_timesteps);
+      	ierr = adj_timestep_start_equation(adjointer, max_timestep, &start_equation);
+      	assert(ierr == ADJ_OK);
+
+      	if (cp_eqns[cp_iter] > start_equation)
+      	{
+      		adj_variable var = adjointer->equations[data->equation].variable;
+
+      		if (adj_has_variable_value(adjointer, var) != ADJ_OK)
+      		{
+      			char buf[255];
+      			adj_variable_str(var, buf, 255);
+      			snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Need a checkpoint of variable %s (functional dependency), but don't have one.", buf);
+      			return ADJ_ERR_NEED_VALUE;
+      		}
+      	}
+      }
+
+      data = data->next;
+    }
+  }
+
+  free(cp_eqns);
+
+  if (adjointer->revolve_data.verbose)
+    printf("Revolve: checkpoint check passed.\n");
+
+  return ADJ_OK;
+}
+
 int adj_test_block_action_transpose(adj_adjointer* adjointer, adj_block block, adj_vector model_input, adj_vector model_output, int N, adj_scalar tol)
 {
   int i;
@@ -102,7 +275,7 @@ int adj_test_nonlinear_derivative_action_transpose(adj_adjointer* adjointer, adj
 {
   int i;
   int ierr;
-  void (*nonlinear_derivative_action_func)(int nvar, adj_variable* variables, adj_vector* dependencies, adj_variable derivative, adj_vector contraction, int hermitian, adj_vector input, adj_scalar coefficient, void* context, adj_vector* output) = NULL;
+  void (*nonlinear_derivative_action_func)(int ndepends, adj_variable* variables, adj_vector* dependencies, adj_variable derivative, adj_vector contraction, int hermitian, adj_vector input, adj_scalar coefficient, void* context, adj_vector* output) = NULL;
   adj_vector x, y, Gx, GTy;
   adj_scalar yGx, GTyx;
 
@@ -183,8 +356,8 @@ int adj_test_nonlinear_derivative_action_consistency(adj_adjointer* adjointer, a
 
   int i, j;
   int ierr;
-  void (*nonlinear_derivative_action_func)(int nvar, adj_variable* variables, adj_vector* dependencies, adj_variable derivative, adj_vector contraction, int hermitian, adj_vector input, adj_scalar coefficient, void* context, adj_vector* output) = NULL;
-  void (*nonlinear_action_func)(int nvar, adj_variable* variables, adj_vector* dependencies, adj_vector input, void* context, adj_vector* output) = NULL;
+  void (*nonlinear_derivative_action_func)(int ndepends, adj_variable* variables, adj_vector* dependencies, adj_variable derivative, adj_vector contraction, int hermitian, adj_vector input, adj_scalar coefficient, void* context, adj_vector* output) = NULL;
+  void (*nonlinear_action_func)(int ndepends, adj_variable* variables, adj_vector* dependencies, adj_vector input, void* context, adj_vector* output) = NULL;
   adj_scalar perturbation; /* the magnitude of the perturbation */
   adj_scalar* unscaled_perturbation; /* the direction of the perturbation */
   adj_scalar* perturbations; /* an array, with perturbation in each entry */
@@ -350,7 +523,7 @@ int adj_test_nonlinear_derivative_action_consistency(adj_adjointer* adjointer, a
     /* fd_conv should be in [1.9, 2.1] */
     if (fabs((double) (grad_conv[i] - (adj_scalar) 2.0)) > 0.1)
     {
-      snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Expected the Taylor series remainder of operator %s to converge at second order, but got %f.", nonlinear_block_derivative.nonlinear_block.name, (double) grad_conv[i]);
+      snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Expected the Taylor series remainder of operator %s to converge at second order, but got %f (the error values are %e and %e).", nonlinear_block_derivative.nonlinear_block.name, (double) grad_conv[i], (double) (grad_errors[i]), (double) (grad_errors[i+1]));
       return_ierr = ADJ_WARN_COMPARISON_FAILED;
       break;
     }

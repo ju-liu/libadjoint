@@ -5,6 +5,7 @@
 #include <assert.h>
 #include "adj_constants.h"
 #include "uthash.h"
+#include "revolve_c.h"
 
 typedef struct
 {
@@ -66,32 +67,36 @@ typedef struct
   int nrhsdeps;
   adj_variable* rhsdeps;
   void* rhs_context;
+  int memory_checkpoint; /* Can we restart the computation from this equation using variables in memory? */
+  int disk_checkpoint; /* Can we restart the computation from this equation using variables on disk? */
 } adj_equation;
 
 typedef struct
 {
-  int storage_type;
-  int has_value;
-
-  /* Should we compare against something we already have? */
+	/* Should we compare against something we already have? */
   int compare;
   adj_scalar comparison_tolerance;
 
   /* Should we overwrite something that's already recorded? */
   int overwrite;
 
-  /* for ADJ_STORAGE_MEMORY */
   adj_vector value;
+  /* for ADJ_STORAGE_MEMORY */
+  int storage_memory_type; /* ADJ_STORAGE_MEMORY_COPY or ADJ_STORAGE_MEMORY_INCREF */
+  int storage_memory_has_value;
+  int storage_memory_is_checkpoint; /* checkpoints are not deleted by adj_forget_forward_equation */
 
   /* for ADJ_STORAGE_DISK */
-  char* filename;
+  int storage_disk_has_value;
+  int storage_disk_is_checkpoint; /* checkpoints are not deleted by adj_forget_forward_equation */
+  char storage_disk_filename[ADJ_NAME_LEN];
 
   /* POD, temporal interpolation, ... */
 } adj_storage_data;
 
 typedef struct adj_variable_data
 {
-  int equation; /* the equation that solves for this variable */
+  int equation; /* the equation that solves for this variable. If the data belongs to a adjoint variable, this will be set to -1 */
 
   int ntargeting_equations; /* any equations that target this variable */
   int* targeting_equations;
@@ -128,10 +133,14 @@ typedef struct
   void (*vec_get_norm)(adj_vector x, adj_scalar* norm);
   void (*vec_dot_product)(adj_vector x, adj_vector y, adj_scalar* val);
   void (*vec_set_random)(adj_vector* x);
+  void (*vec_to_file)(adj_vector x, char* filename);
+  void (*vec_from_file)(adj_vector* x, char *filename);
 
   void (*mat_duplicate)(adj_matrix matin, adj_matrix *matout);
   void (*mat_axpy)(adj_matrix *Y, adj_scalar alpha, adj_matrix X);
   void (*mat_destroy)(adj_matrix *mat);
+
+  void (*solve)(adj_variable var, adj_matrix mat, adj_vector rhs, adj_vector *soln);
 } adj_data_callbacks;
 
 typedef struct adj_op_callback
@@ -151,7 +160,7 @@ typedef struct adj_func_callback
 {
   char name[ADJ_NAME_LEN];
   /* we want this to be adj_adjointer* adjointer, but we haven't defined adj_adjointer yet */
-  void (*callback)(void* adjointer, int timestep, int nb_variables, adj_variable* variables, adj_vector* dependencies, char* name, adj_scalar* output);
+  void (*callback)(void* adjointer, int timestep, int ndepends, adj_variable* variables, adj_vector* dependencies, char* name, adj_scalar* output);
   struct adj_func_callback* next;
 } adj_func_callback;
 
@@ -159,7 +168,7 @@ typedef struct adj_func_deriv_callback
 {
   char name[ADJ_NAME_LEN];
   /* we want this to be adj_adjointer* adjointer, but we haven't defined adj_adjointer yet */
-  void (*callback)(void* adjointer, adj_variable variable, int nb_variables, adj_variable* variables, adj_vector* dependencies, char* name, adj_vector* output);
+  void (*callback)(void* adjointer, adj_variable variable, int ndepends, adj_variable* variables, adj_vector* dependencies, char* name, adj_vector* output);
   struct adj_func_deriv_callback* next;
 } adj_func_deriv_callback;
 
@@ -221,14 +230,32 @@ typedef struct
   adj_functional_data* functional_data_end;
 } adj_timestep_data;
 
+typedef struct
+{
+  CRevolve revolve; /* The C wrapper of the Revolve object */
+  int snaps; /* The total number of available checkpoint slots */
+  int snaps_in_ram; /* The number of available RAM checkpoint slots */
+  int steps; /* The total number of timesteps in the simulation */
+  CACTION current_action; /* The revolve action which is currently being executed */
+  int current_timestep; /* The timestep which is currently being executed in the model. */
+                        /* This should be thought of as "Libadjoint has all the data to solve */
+                        /* for the first forward variable with timestep current_timestep" */
+  int verbose; /* A flag that prints revolve specific information to the screen if set to ADJ_TRUE */
+  int overwrite; /* A flag indicating if a replay should be performed even if that variable is already recorded. */
+                 /* The new value is compared with the existing one in order to check if the revolve replay produces the same solution than the original forward system */
+  adj_scalar comparison_tolerance; /* The comparison tolerance in case that overwrite is ADJ_TRUE */
+} adj_revolve_data;
+
 typedef struct adj_adjointer
 {
+  adj_equation* equations; /* Array of equations we have registered */
   int nequations; /* Number of equations we have registered */
   int equations_sz; /* Number of equations we can store without mallocing -- not the same! */
-  adj_equation* equations; /* Array of equations we have registered */
 
   int ntimesteps; /* Number of timesteps we have seen */
   adj_timestep_data* timestep_data; /* Data for each timestep we have seen */
+  
+  adj_revolve_data revolve_data; /* A data struct for revolve related information */
 
   adj_variable_hash* varhash; /* The hash table for looking up information about variables */
   adj_variable_data_list vardata; /* We also store a linked list so we can walk all our variable data */
@@ -244,13 +271,14 @@ typedef struct adj_adjointer
   adj_op_callback_list block_assembly_list;
   adj_func_callback_list functional_list;
   adj_func_deriv_callback_list functional_derivative_list;
-  void (*forward_source_callback)(struct adj_adjointer* adjointer, adj_variable variable, int nb_variables, adj_variable* variables, adj_vector* dependencies, void* context, adj_vector* output, int* has_output);
+  void (*forward_source_callback)(struct adj_adjointer* adjointer, adj_variable variable, int ndepends, adj_variable* variables, adj_vector* dependencies, void* context, adj_vector* output, int* has_output);
 } adj_adjointer;
 
 int adj_create_variable(char* name, int timestep, int iteration, int auxiliary, adj_variable* var);
 int adj_variable_get_name(adj_variable var, char** name);
 int adj_variable_get_timestep(adj_variable var, int* timestep);
 int adj_variable_get_iteration(adj_variable var, int* iteration);
+int adj_variable_get_type(adj_variable var, int* type);
 int adj_variable_set_auxiliary(adj_variable* var, int auxiliary);
 int adj_create_nonlinear_block(char* name, int ndepends, adj_variable* depends, void* context, adj_nonlinear_block* nblock);
 int adj_destroy_nonlinear_block(adj_nonlinear_block* nblock);

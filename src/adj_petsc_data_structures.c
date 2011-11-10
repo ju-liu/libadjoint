@@ -21,11 +21,17 @@ int adj_set_petsc_data_callbacks(adj_adjointer* adjointer)
   adj_chkierr(ierr);
   ierr = adj_register_data_callback(adjointer, ADJ_VEC_DOT_PRODUCT_CB,(void (*)(void)) petsc_vec_dot_product_proc);
   adj_chkierr(ierr);
+  ierr = adj_register_data_callback(adjointer, ADJ_VEC_TO_FILE_CB,(void (*)(void)) petsc_vec_to_file_proc);
+  adj_chkierr(ierr);
+  ierr = adj_register_data_callback(adjointer, ADJ_VEC_FROM_FILE_CB,(void (*)(void)) petsc_vec_from_file_proc);
+  adj_chkierr(ierr);
   ierr = adj_register_data_callback(adjointer, ADJ_MAT_AXPY_CB,(void (*)(void)) petsc_mat_axpy_proc);
   adj_chkierr(ierr);
   ierr = adj_register_data_callback(adjointer, ADJ_MAT_DESTROY_CB,(void (*)(void)) petsc_mat_destroy_proc);
   adj_chkierr(ierr);
   ierr = adj_register_data_callback(adjointer, ADJ_MAT_DUPLICATE_CB,(void (*)(void)) petsc_mat_duplicate_proc);
+  adj_chkierr(ierr);
+  ierr = adj_register_data_callback(adjointer, ADJ_SOLVE_CB,(void (*)(void)) petsc_solve_proc);
   adj_chkierr(ierr);
 #else
   ierr = ADJ_ERR_INVALID_INPUTS;
@@ -94,6 +100,40 @@ void petsc_vec_dot_product_proc(adj_vector x, adj_vector y, adj_scalar* val)
 #endif
 }
 
+void petsc_vec_to_file_proc(adj_vector x, char* filename)
+{
+#ifdef HAVE_PETSC
+
+  if (access(filename, W_OK) == 0) 
+  {
+    printf("Warning: Overwriting data in file '%s'\n", filename);
+  }
+
+  PetscViewer viewer;
+  PetscViewerBinaryOpen(PETSC_COMM_WORLD,filename,FILE_MODE_WRITE,&viewer);
+  VecView(petsc_vec_from_adj_vector(x),viewer);
+  PetscViewerDestroy(viewer);
+#else
+    (void) x;
+    (void) filename;
+#endif
+}
+
+void petsc_vec_from_file_proc(adj_vector *x, char* filename)
+{
+#ifdef HAVE_PETSC
+  Vec *vec=(Vec*) malloc(sizeof(Vec));
+  PetscViewer viewer;
+  PetscViewerBinaryOpen(PETSC_COMM_WORLD,filename,FILE_MODE_READ,&viewer);
+  VecLoad(viewer,PETSC_NULL,vec);
+  PetscViewerDestroy(viewer);
+  *x = petsc_vec_to_adj_vector(vec);
+#else
+    (void) x;
+    (void) filename;
+#endif
+}
+
 void petsc_vec_set_random_proc(adj_vector* x)
 {
 #ifdef HAVE_PETSC
@@ -128,6 +168,44 @@ void petsc_mat_duplicate_proc(adj_matrix matin, adj_matrix *matout)
     (void) matin;
     (void) matout;
 #endif
+}
+
+void petsc_solve_proc(adj_variable var, adj_matrix mat, adj_vector rhs, adj_vector *soln) 
+{
+    /*************************************************/
+    /* Solve mat*soln=rhs using a direct LU solver   */
+    /* You might want to implement your own callback */
+    /* with different solver options.                */
+    /*************************************************/
+#ifdef HAVE_PETSC
+    KSP            ksp; /* linear solver context */ 
+    PC             pc;  /* preconditioner context */
+    PetscTruth assembled;
+   
+    MatAssembled(*(Mat*) &mat, &assembled);
+    if (!assembled)
+      MatAssemblyEnd(petsc_mat_from_adj_matrix(mat), MAT_FINAL_ASSEMBLY);
+
+    /* Create the output vector */
+    Vec *sol_vec=(Vec*) malloc(sizeof(Vec));
+    MatGetVecs(petsc_mat_from_adj_matrix(mat), sol_vec, NULL);
+
+    KSPCreate(PETSC_COMM_WORLD, &ksp);
+    KSPSetOperators(ksp, petsc_mat_from_adj_matrix(mat), petsc_mat_from_adj_matrix(mat), DIFFERENT_NONZERO_PATTERN);
+
+    KSPGetPC(ksp, &pc);
+    KSPSetType(ksp, KSPPREONLY);
+    PCSetType(pc, PCLU);
+    KSPSetTolerances(ksp, 1.e-7, PETSC_DEFAULT, PETSC_DEFAULT, PETSC_DEFAULT);
+    
+    KSPSolve(ksp,petsc_vec_from_adj_vector(rhs), *sol_vec);
+    *soln=petsc_vec_to_adj_vector(sol_vec);
+#else
+    (void) mat;
+    (void) rhs;
+    (void) soln;
+#endif
+    (void) var;
 }
 
 void petsc_mat_axpy_proc(adj_matrix *Y, adj_scalar alpha, adj_matrix X)

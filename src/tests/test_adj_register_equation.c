@@ -5,7 +5,7 @@
 
 void test_adj_register_equation(void)
 {
-  int ierr, cnt;
+  int ierr, cnt, cs;
   adj_adjointer adjointer;
   adj_create_adjointer(&adjointer);
   adj_variable vars[2];
@@ -22,13 +22,13 @@ void test_adj_register_equation(void)
 
   ierr=adj_create_equation(vars[0], 1, &blocks[0], &vars[0], &equation); 
   adj_test_assert(ierr==ADJ_OK, "Should work");
-  adj_register_equation(&adjointer, equation);
+  adj_register_equation(&adjointer, equation, &cs);
   adj_test_assert(ierr==ADJ_OK, "Should work");
 
   adj_equation_count(&adjointer, &cnt);
   adj_test_assert(cnt == 1, "equation count");
 
-  ierr=adj_register_equation(&adjointer, equation);
+  ierr=adj_register_equation(&adjointer, equation, &cs);
   adj_test_assert(ierr!= ADJ_OK, "Can't register again");
   ierr=adj_destroy_equation(&equation);
   adj_test_assert(ierr==ADJ_OK, "Should work");
@@ -38,7 +38,7 @@ void test_adj_register_equation(void)
 
   ierr=adj_create_equation(vars[1], 2, blocks, vars, &equation); 
   adj_test_assert(ierr== ADJ_OK, "Should work");
-  ierr=adj_register_equation(&adjointer, equation);
+  ierr=adj_register_equation(&adjointer, equation, &cs);
   adj_test_assert(ierr == ADJ_OK, "Register equation");
   ierr=adj_destroy_equation(&equation);
   adj_test_assert(ierr==ADJ_OK, "Should work");

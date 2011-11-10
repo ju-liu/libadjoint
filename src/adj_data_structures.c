@@ -54,6 +54,12 @@ int adj_variable_get_iteration(adj_variable var, int* iteration)
   return ADJ_OK;
 }
 
+int adj_variable_get_type(adj_variable var, int* type)
+{
+  *type = var.type;
+  return ADJ_OK;
+}
+
 int adj_create_nonlinear_block(char* name, int ndepends, adj_variable* depends, void* context, adj_nonlinear_block* nblock)
 {
   size_t slen;
@@ -128,7 +134,7 @@ int adj_create_block(char* name, adj_nonlinear_block* nblock, void* context, adj
   }
 
   block->context = context;
-  block->hermitian = 0;
+  block->hermitian = ADJ_FALSE;
   block->coefficient = (adj_scalar)1.0;
   block->test_hermitian = ADJ_FALSE;
   block->number_of_tests = 0;
@@ -329,6 +335,9 @@ int adj_create_equation(adj_variable var, int nblocks, adj_block* blocks, adj_va
   equation->nrhsdeps = 0;
   equation->rhsdeps = NULL;
   equation->rhs_context = NULL;
+
+  equation->memory_checkpoint = ADJ_FALSE;
+  equation->disk_checkpoint = ADJ_FALSE;
 
   return ADJ_OK;
 }
