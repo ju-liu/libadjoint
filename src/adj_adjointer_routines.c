@@ -375,12 +375,7 @@ int adj_register_equation(adj_adjointer* adjointer, adj_equation equation, int* 
       return adj_chkierr_auto(ierr);
     }
 
-    /* this is already guaranteed to be a unique entry -- we have never seen this equation before.
-       so we don't need adj_append_unique */
-    data_ptr->ntargeting_equations++;
-    data_ptr->targeting_equations = (int*) realloc(data_ptr->targeting_equations, data_ptr->ntargeting_equations * sizeof(int));
-    ADJ_CHKMALLOC(data_ptr->targeting_equations);
-    data_ptr->targeting_equations[data_ptr->ntargeting_equations - 1] = adjointer->nequations - 1;
+    ierr = adj_append_unique(&(data_ptr->targeting_equations), &(data_ptr->ntargeting_equations), adjointer->nequations - 1);
   }
 
   /* Next: nonlinear dependencies of the right hand side */
