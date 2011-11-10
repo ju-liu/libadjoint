@@ -60,7 +60,7 @@ endif
 CFLAGS := $(CFLAGS) $(DBGFLAGS) $(PICFLAG) $(PETSC_CPPFLAGS) -Iinclude/ $(COMPILER_CFLAGS)
 
 ###############################################################################
-# CPP compiler variables                                                        #
+# CXX compiler variables                                                        #
 ###############################################################################
 ifeq ($(origin CXX),default)
 	CXX := mpic++
@@ -74,7 +74,7 @@ ifneq (,$(findstring g++, $(CXX_VERSION)))
 endif
 ifneq (,$(findstring icpc, $(CXX_VERSION)))
 	# i++-specific settings here
-	COMPILER_CPPFLAGS := -Wall 
+	COMPILER_CXXFLAGS := -Wall 
 endif
 
 CXXFLAGS := $(CXXFLAGS) $(DBGFLAGS) $(PICFLAG) $(PETSC_CPPFLAGS) -Iinclude/ $(COMPILER_CXXFLAGS)
