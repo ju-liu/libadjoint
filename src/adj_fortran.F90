@@ -442,7 +442,7 @@ module libadjoint
       integer(kind=c_int), intent(in), value :: line
     end subroutine adj_chkierr_private_c
 
-    function adj_create_nonlinear_block_c(name, ndepends, depends, context, nblock) result(ierr) &
+    function adj_create_nonlinear_block_c(name, ndepends, depends, context, coefficient, nblock) result(ierr) &
       & bind(c, name='adj_create_nonlinear_block')
       use libadjoint_data_structures
       use iso_c_binding
@@ -450,6 +450,7 @@ module libadjoint
       integer(kind=c_int), intent(in), value :: ndepends
       type(adj_variable), intent(in), dimension(ndepends) :: depends
       type(c_ptr), intent(in), value :: context
+      adj_scalar_f, intent(in), value :: coefficient
       type(adj_nonlinear_block), intent(out) :: nblock
       integer(kind=c_int) :: ierr
     end function adj_create_nonlinear_block_c
@@ -470,7 +471,7 @@ module libadjoint
       integer(kind=c_int) :: ierr
     end function adj_nonlinear_block_set_coefficient
 
-    function adj_create_block_c(name, nblock, context, block) result(ierr) bind(c, name='adj_create_block')
+    function adj_create_block_c(name, nblock, context, coefficient, block) result(ierr) bind(c, name='adj_create_block')
       use libadjoint_data_structures
       use iso_c_binding
       character(kind=c_char), dimension(ADJ_NAME_LEN), intent(in) :: name
@@ -480,6 +481,7 @@ module libadjoint
       ! So ..
       type(c_ptr), intent(in), value :: nblock
       type(c_ptr), intent(in), value :: context
+      adj_scalar_f, intent(in), value :: coefficient
       type(adj_block), intent(inout) :: block
       integer(kind=c_int) :: ierr
     end function adj_create_block_c
@@ -1103,7 +1105,7 @@ module libadjoint
     ierr = ADJ_OK
   end function adj_variable_get_name
 
-  function adj_create_nonlinear_block(name, depends, coefficient, context, nblock) result(ierr)
+  function adj_create_nonlinear_block(name, depends, context, coefficient, nblock) result(ierr)
     character(len=*), intent(in) :: name
     type(adj_variable), intent(in), dimension(:) :: depends
     adj_scalar_f, intent(in), optional :: coefficient
@@ -1134,7 +1136,7 @@ module libadjoint
       context_c = c_null_ptr
     endif
 
-    ierr = adj_create_nonlinear_block_c(name_c, size(depends), depends, context_c, nblock)
+    ierr = adj_create_nonlinear_block_c(name_c, size(depends), depends, context_c, adj_scalar_f_cast(1.0), nblock)
     if (ierr /= ADJ_OK) return;
 
     if (present(coefficient)) then
@@ -1143,12 +1145,13 @@ module libadjoint
 
   end function adj_create_nonlinear_block
 
-  function adj_create_block(name, nblock, context, block) result(ierr)
+  function adj_create_block(name, nblock, context, coefficient, block) result(ierr)
     use libadjoint_data_structures
     use iso_c_binding
     character(len=*), intent(in) :: name
     type(adj_nonlinear_block), intent(in), optional, target :: nblock
     type(c_ptr), intent(in), optional :: context
+    adj_scalar_f, intent(in), optional :: coefficient
     type(adj_block), intent(inout) :: block
     integer :: ierr
 
@@ -1182,7 +1185,12 @@ module libadjoint
       context_c = c_null_ptr
     endif
 
-    ierr = adj_create_block_c(name_c, nblock_ptr, context_c, block)
+    ierr = adj_create_block_c(name_c, nblock_ptr, context_c, adj_scalar_f_cast(1.0), block)
+
+    if (present(coefficient)) then
+      ierr = adj_block_set_coefficient(block, coefficient)
+    endif
+
   end function adj_create_block
 
   function adj_register_equation(adjointer, equation, checkpoint_storage) result(ierr) 

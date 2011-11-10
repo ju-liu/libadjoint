@@ -48,7 +48,7 @@ void test_adj_test_nonlinear_derivative_action_transpose(void)
   adj_test_assert(ierr==ADJ_OK, "Should have worked");
   ierr = adj_create_variable("Velocity", 1, 0, 0, &var2);
   adj_test_assert(ierr==ADJ_OK, "Should have worked");
-  ierr = adj_create_nonlinear_block("NonlinearOperator", 1, &var1, NULL, &nblock);
+  ierr = adj_create_nonlinear_block("NonlinearOperator", 1, &var1, NULL, 1.0, &nblock);
   adj_test_assert(ierr==ADJ_OK, "Should have worked");
   ierr = adj_nonlinear_block_set_test_hermitian(&nblock, ADJ_TRUE, number_of_tests, tol); 
   adj_test_assert(ierr==ADJ_OK, "Should have worked");

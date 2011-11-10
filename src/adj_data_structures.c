@@ -60,7 +60,7 @@ int adj_variable_get_type(adj_variable var, int* type)
   return ADJ_OK;
 }
 
-int adj_create_nonlinear_block(char* name, int ndepends, adj_variable* depends, void* context, adj_nonlinear_block* nblock)
+int adj_create_nonlinear_block(char* name, int ndepends, adj_variable* depends, void* context, adj_scalar coefficient, adj_nonlinear_block* nblock)
 {
   size_t slen;
 
@@ -81,7 +81,7 @@ int adj_create_nonlinear_block(char* name, int ndepends, adj_variable* depends, 
   }
 
   strncpy(nblock->name, name, ADJ_NAME_LEN);
-  nblock->coefficient = (adj_scalar)1.0;
+  nblock->coefficient = coefficient;
   nblock->context = context;
   nblock->ndepends = ndepends;
   nblock->depends = malloc(ndepends * sizeof(adj_variable));
@@ -107,7 +107,7 @@ int adj_nonlinear_block_set_coefficient(adj_nonlinear_block* nblock, adj_scalar 
   return ADJ_OK;
 }
 
-int adj_create_block(char* name, adj_nonlinear_block* nblock, void* context, adj_block* block)
+int adj_create_block(char* name, adj_nonlinear_block* nblock, void* context, adj_scalar coefficient, adj_block* block)
 {
   size_t slen;
 
@@ -135,7 +135,7 @@ int adj_create_block(char* name, adj_nonlinear_block* nblock, void* context, adj
 
   block->context = context;
   block->hermitian = ADJ_FALSE;
-  block->coefficient = (adj_scalar)1.0;
+  block->coefficient = coefficient;
   block->test_hermitian = ADJ_FALSE;
   block->number_of_tests = 0;
   block->tolerance = (adj_scalar) 0.0;
