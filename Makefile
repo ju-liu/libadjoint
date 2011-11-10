@@ -214,7 +214,9 @@ test: lib/libadjoint.py
 install: lib/libadjoint.py
 lib/libadjoint.py: lib/libadjoint.so
 	@echo "  H2XML  include/libadjoint/libadjoint.h"
-	@$(H2XML) -q -I. include/libadjoint/libadjoint.h -o lib/libadjoint.xml
+	@cpp include/libadjoint/libadjoint.h > include/libadjoint/pylibadjoint.h
+	@$(H2XML) -q -I. include/libadjoint/pylibadjoint.h -o lib/libadjoint.xml
+	@rm -f include/libadjoint/pylibadjoint.h
 	@echo "  XML2PY lib/libadjoint.py"
 	@$(XML2PY) -r '^adj.*' -l lib/libadjoint.so lib/libadjoint.xml -o lib/libadjoint.py
 	@rm -f lib/libadjoint.xml
