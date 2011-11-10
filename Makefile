@@ -70,11 +70,11 @@ endif
 CXX_VERSION = $(shell $(CXX) --version 2>&1) $(shell $(CXX) -V 2>&1)
 ifneq (,$(findstring g++, $(CXX_VERSION)))
 	# g++-specific settings here
-	COMPILER_CXXFLAGS := -Wall -Wextra -Wunused-parameter -Wunused-result -Wunsafe-loop-optimizations -Wpointer-arith -ggdb3 -fstack-protector-all
+	COMPILER_CXXFLAGS := -Wunsafe-loop-optimizations -Wpointer-arith -ggdb3 -fstack-protector-all
 endif
 ifneq (,$(findstring icpc, $(CXX_VERSION)))
 	# i++-specific settings here
-	COMPILER_CXXFLAGS := -Wall 
+	COMPILER_CXXFLAGS := 
 endif
 
 CXXFLAGS := $(CXXFLAGS) $(DBGFLAGS) $(PICFLAG) $(PETSC_CPPFLAGS) -Iinclude/ $(COMPILER_CXXFLAGS)
@@ -127,7 +127,6 @@ LDFLAGS := -shared -Wl,-soname,libadjoint.so
 # Variables for the python bindings                                           #
 ###############################################################################
 H2XML = $(shell which h2xml 2>/dev/null)
-H2XML := 
 XML2PY = $(shell which xml2py 2>/dev/null)
 PYDIR = $(shell python -c  "import distutils.sysconfig; print distutils.sysconfig.get_python_lib().replace('/usr/', '$(DESTDIR)/$(prefix)/')")
 
