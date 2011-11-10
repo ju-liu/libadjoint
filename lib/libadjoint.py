@@ -75,7 +75,7 @@ class Block(object):
     else:
       c_nblock = nblock.nblock
 
-    clib.adj_create_block(name, c_nblock, c_context, self.block)
+    clib.adj_create_block(name, c_nblock, c_context, 1.0, self.block)
 
     if coefficient is not None:
       self.set_coefficient(coefficient)
@@ -123,7 +123,9 @@ class Adjointer(object):
     clib.adj_destroy_adjointer(self.adjointer)
 
   def register_equation(self, equation):
-    clib.adj_register_equation(self.adjointer, equation.equation)
+    cs = ctypes.c_int()
+    clib.adj_register_equation(self.adjointer, equation.equation, cs)
+    assert cs.value == 0
 
   def to_html(self, filename, viztype):
     try:
