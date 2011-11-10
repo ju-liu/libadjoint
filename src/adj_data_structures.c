@@ -434,6 +434,7 @@ int adj_create_equation(adj_variable var, int nblocks, adj_block* blocks, adj_va
   equation->variable = var;
   equation->nblocks = nblocks;
   equation->blocks = (adj_block*) malloc(nblocks * sizeof(adj_block));
+  ADJ_CHKMALLOC(equation->blocks);
   memcpy(equation->blocks, blocks, nblocks * sizeof(adj_block));
   for (i = 0; i < nblocks; i++)
   {
@@ -445,6 +446,7 @@ int adj_create_equation(adj_variable var, int nblocks, adj_block* blocks, adj_va
     }
   }
   equation->targets = (adj_variable*) malloc(nblocks * sizeof(adj_variable));
+  ADJ_CHKMALLOC(equation->targets);
   memcpy(equation->targets, targets, nblocks * sizeof(adj_variable));
 
   equation->nrhsdeps = 0;
@@ -467,6 +469,7 @@ int adj_equation_set_rhs_dependencies(adj_equation* equation, int nrhsdeps, adj_
 
   equation->nrhsdeps = nrhsdeps;
   equation->rhsdeps = (adj_variable*) malloc(nrhsdeps * sizeof(adj_variable));
+  ADJ_CHKMALLOC(equation->rhsdeps);
   memcpy(equation->rhsdeps, rhsdeps, nrhsdeps * sizeof(adj_variable));
   equation->rhs_context = context;
   return ADJ_OK;
