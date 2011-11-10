@@ -212,15 +212,14 @@ void test_checkpoint_revolve_online(void)
     adj_test_assert(ierr == ADJ_OK, "Should have worked");
 
     /* Compare the recorded forward variables with the expected results */
-    if ((timestep>=14) || (timestep<=5))
+    /*if ((timestep>=14) || (timestep<=5))
     {
-  		/*get_expected_values(timestep, &nb_expected_vars, expected_vars, memory_has_value, memory_is_checkpoint, disk_has_value, disk_is_checkpoint);
+  		get_expected_values(timestep, &nb_expected_vars, expected_vars, memory_has_value, memory_is_checkpoint, disk_has_value, disk_is_checkpoint);
   		ierr = test_checkpoints(&adjointer, nb_expected_vars, expected_vars, memory_has_value, memory_is_checkpoint, disk_has_value, disk_is_checkpoint);
   		if (ierr!=ADJ_OK)
   			printf("Error in timestep %i", timestep);
   		adj_test_assert(ierr == ADJ_OK, "Should have worked");
-  		*/
-    }
+    }*/
   }
 
 }
@@ -564,7 +563,8 @@ void get_expected_values(int timestep, int* nb_expected_vars, char expected_vars
 /* Check the checkpoint variables */
 int test_checkpoints(adj_adjointer *adjointer, int nb_expected_vars, char expected_vars[][ADJ_NAME_LEN], int* memory_has_value, int* memory_is_checkpoint, int* disk_has_value, int* disk_is_checkpoint)
 {
-  int ierr, i, nb_matched_variables, found_match;
+  int ierr, i, nb_matched_variables, found_match, match_counter;
+  int duplicates=0; /* Number of variables that are recorded on both disk and memory */
   adj_variable var;
   adj_variable_data* data_ptr;
   char var_name[ADJ_NAME_LEN];
@@ -599,26 +599,50 @@ int test_checkpoints(adj_adjointer *adjointer, int nb_expected_vars, char expect
     {
   		if (strcmp(expected_vars[i], var_name)==0)
   		{
-  			if ((memory_has_value[i]==1) && (data_ptr->storage.storage_memory_has_value==ADJ_TRUE))
+  			/* Check if we found a variable stored at two places */
+  			if ((memory_has_value[i] == 1) && (disk_has_value[i] == 1))
+  			  duplicates++;
+
+  			/* Check if the storage flags agree with our expectations */
+  			if (memory_has_value[i] == 1)
   			{
-  				if (((memory_is_checkpoint[i]==1) && (data_ptr->storage.storage_memory_is_checkpoint==ADJ_TRUE)) ||
-  						((memory_is_checkpoint[i]==0) && (data_ptr->storage.storage_memory_is_checkpoint==ADJ_FALSE)))
+  				if (data_ptr->storage.storage_memory_has_value == ADJ_TRUE)
   				{
-  					found_match=1;
+						if (((memory_is_checkpoint[i]==1) && (data_ptr->storage.storage_memory_is_checkpoint==ADJ_TRUE)) ||
+								((memory_is_checkpoint[i]==0) && (data_ptr->storage.storage_memory_is_checkpoint==ADJ_FALSE)))
+							found_match=1;
+						else
+						{
+	  					found_match=0;
+	  					break;
+						}
+					}
+  				else
+					{
+  					found_match=0;
   					break;
-  				}
+					}
   			}
 
-  			if ((disk_has_value[i]==1) && (data_ptr->storage.storage_disk_has_value==ADJ_TRUE))
+  			if (disk_has_value[i] == 1)
   			{
-  				if (((disk_is_checkpoint[i]==1) && (data_ptr->storage.storage_disk_is_checkpoint==ADJ_TRUE)) ||
-  						((disk_is_checkpoint[i]==0) && (data_ptr->storage.storage_disk_is_checkpoint==ADJ_FALSE)))
-  				{
-  					found_match=1;
+  				if (data_ptr->storage.storage_disk_has_value == ADJ_TRUE)
+  			  {
+						if (((disk_is_checkpoint[i]==1) && (data_ptr->storage.storage_disk_is_checkpoint==ADJ_TRUE)) ||
+								((disk_is_checkpoint[i]==0) && (data_ptr->storage.storage_disk_is_checkpoint==ADJ_FALSE)))
+							found_match=1;
+						else
+						{
+	  					found_match=0;
+	  					break;
+						}
+  			  }
+  				else
+					{
+  					found_match=0;
   					break;
-  				}
-  			}
-
+					}
+  		  }
   		}
     }
 
@@ -652,16 +676,16 @@ int test_checkpoints(adj_adjointer *adjointer, int nb_expected_vars, char expect
     if (data_ptr->storage.storage_memory_has_value)
     	nb_matched_variables++;
     if (data_ptr->storage.storage_disk_has_value)
-      		nb_matched_variables++;
+      nb_matched_variables++;
 
     data_ptr=data_ptr->next;
   }
 
-  /* We expect to the number of expected and recorded variables to be the same */
-  if (nb_expected_vars!=nb_matched_variables)
+  /* We expect the number of expected and recorded variables to be the same */
+  if (nb_expected_vars != nb_matched_variables-duplicates)
   {
-  	printf("I expected %i checkpoint variables, but found %i", nb_expected_vars, nb_matched_variables);
-  	adj_test_assert(nb_expected_vars==nb_matched_variables, "Should have worked");
+  	printf("Expected %i checkpoint variables, but found %i", nb_expected_vars, nb_matched_variables-duplicates);
+  	adj_test_assert(nb_expected_vars == nb_matched_variables, "Should have worked");
   	return ADJ_ERR_NEED_VALUE;
   }
 
