@@ -111,20 +111,20 @@ void test_adj_forget_forward_equation(void)
   /* Replay this annotation */
   for (timestep=0;timestep<steps; timestep++)
   {
-  	printf("Checkpoint strategy for timestep %i: %i\n", timestep, checkpoint_strategy[timestep]);
-  	ierr = adj_get_forward_solution(&adjointer, timestep, &value, &u[0]);
-  	adj_chkierr(ierr);
+    printf("Checkpoint strategy for timestep %i: %i\n", timestep, checkpoint_strategy[timestep]);
+    ierr = adj_get_forward_solution(&adjointer, timestep, &value, &u[0]);
+    adj_chkierr(ierr);
 
     if (checkpoint_strategy[timestep]==ADJ_CHECKPOINT_STORAGE_DISK)
     {
-  		ierr = adj_storage_disk(value, &storage);
-  		adj_test_assert(ierr == ADJ_OK, "Should have worked");
-  		/* A checkpoint needs the the old velocity only */
-  		ierr = adj_record_variable(&adjointer, u[0], storage);
-  		adj_test_assert(ierr == ADJ_OK, "Should have worked");
+    	ierr = adj_storage_disk(value, &storage);
+    	adj_test_assert(ierr == ADJ_OK, "Should have worked");
+    	/* A checkpoint needs the the old velocity only */
+    	ierr = adj_record_variable(&adjointer, u[0], storage);
+    	adj_test_assert(ierr == ADJ_OK, "Should have worked");
     }
- 		ierr = adj_storage_memory_copy(value, &storage);
- 		adj_test_assert(ierr == ADJ_OK, "Should have worked");
+   	ierr = adj_storage_memory_copy(value, &storage);
+   	adj_test_assert(ierr == ADJ_OK, "Should have worked");
     ierr = adj_record_variable(&adjointer, u[0], storage);
     adj_test_assert(ierr == ADJ_OK, "Should have worked");
 
@@ -145,10 +145,10 @@ void test_adj_forget_forward_equation(void)
   var_data=adjointer.vardata.firstnode;
   while(var_data!=NULL)
   {
- 		adj_test_assert(var_data->storage.storage_memory_has_value==var_data->storage.storage_memory_is_checkpoint, "Should have worked");
- 		adj_test_assert(var_data->storage.storage_disk_has_value==var_data->storage.storage_disk_is_checkpoint, "Should have worked");
+   	adj_test_assert(var_data->storage.storage_memory_has_value==var_data->storage.storage_memory_is_checkpoint, "Should have worked");
+   	adj_test_assert(var_data->storage.storage_disk_has_value==var_data->storage.storage_disk_is_checkpoint, "Should have worked");
 
- 		var_data=var_data->next;
+   	var_data=var_data->next;
   }
 
 }

@@ -98,11 +98,11 @@ void test_checkpoint_revolve_online(void)
 
   if (cs==ADJ_CHECKPOINT_STORAGE_DISK)
   {
-  	/* We do not need anything for the initial checkpoint */
+    /* We do not need anything for the initial checkpoint */
   }
 
   ierr = adj_storage_memory_copy(value, &storage);
-	adj_test_assert(ierr == ADJ_OK, "Should have worked");
+  adj_test_assert(ierr == ADJ_OK, "Should have worked");
   ierr = adj_record_variable(&adjointer, u[1], storage);
   adj_test_assert(ierr == ADJ_OK, "Should have worked");
 
@@ -129,43 +129,43 @@ void test_checkpoint_revolve_online(void)
 
     /* We need a checkpoint at the last timestep */
     if (timestep==steps-1)
-    	cs=ADJ_CHECKPOINT_STORAGE_MEMORY;
+      cs=ADJ_CHECKPOINT_STORAGE_MEMORY;
 
     if (cs==ADJ_CHECKPOINT_STORAGE_DISK)
     {
-  		ierr = adj_storage_disk(value, &storage);
-  		adj_test_assert(ierr == ADJ_OK, "Should have worked");
-  		ierr = adj_storage_set_checkpoint(&storage, ADJ_TRUE);
-  		adj_test_assert(ierr == ADJ_OK, "Should have worked");
-  		/* A checkpoint needs the the old velocity only */
-  		ierr = adj_record_variable(&adjointer, u[0], storage);
-  		adj_test_assert(ierr == ADJ_OK, "Should have worked");
+    	ierr = adj_storage_disk(value, &storage);
+    	adj_test_assert(ierr == ADJ_OK, "Should have worked");
+    	ierr = adj_storage_set_checkpoint(&storage, ADJ_TRUE);
+    	adj_test_assert(ierr == ADJ_OK, "Should have worked");
+    	/* A checkpoint needs the the old velocity only */
+    	ierr = adj_record_variable(&adjointer, u[0], storage);
+    	adj_test_assert(ierr == ADJ_OK, "Should have worked");
     }
     else if (cs==ADJ_CHECKPOINT_STORAGE_MEMORY)
     {
-			ierr = adj_storage_memory_copy(value, &storage);
-			adj_test_assert(ierr == ADJ_OK, "Should have worked");
-			ierr = adj_storage_set_checkpoint(&storage, ADJ_TRUE);
-			adj_test_assert(ierr == ADJ_OK, "Should have worked");
-			ierr = adj_record_variable(&adjointer, u[0], storage);
-			adj_test_assert(ierr == ADJ_OK, "Should have worked");
+  		ierr = adj_storage_memory_copy(value, &storage);
+  		adj_test_assert(ierr == ADJ_OK, "Should have worked");
+  		ierr = adj_storage_set_checkpoint(&storage, ADJ_TRUE);
+  		adj_test_assert(ierr == ADJ_OK, "Should have worked");
+  		ierr = adj_record_variable(&adjointer, u[0], storage);
+  		adj_test_assert(ierr == ADJ_OK, "Should have worked");
     }
 
     /* solve for u[1] .... */
 
     /* We need to tell revolve how to save results in memory while replaying */
-		ierr = adj_set_storage_memory_copy(&adjointer, &u[1]);
-		adj_test_assert(ierr == ADJ_OK, "Should have worked");
+  	ierr = adj_set_storage_memory_copy(&adjointer, &u[1]);
+  	adj_test_assert(ierr == ADJ_OK, "Should have worked");
   }
 
   /* We can record the solution of the last timestep, but we do not have to: revolve will do it for us */
   /*{
-		ierr = adj_storage_memory_copy(value, &storage);
-		adj_test_assert(ierr == ADJ_OK, "Should have worked");
-		ierr = adj_storage_set_checkpoint(&storage, ADJ_TRUE);
-		adj_test_assert(ierr == ADJ_OK, "Should have worked");
-		ierr = adj_record_variable(&adjointer, u[1], storage);
-		adj_test_assert(ierr == ADJ_OK, "Should have worked");
+  	ierr = adj_storage_memory_copy(value, &storage);
+  	adj_test_assert(ierr == ADJ_OK, "Should have worked");
+  	ierr = adj_storage_set_checkpoint(&storage, ADJ_TRUE);
+  	adj_test_assert(ierr == ADJ_OK, "Should have worked");
+  	ierr = adj_record_variable(&adjointer, u[1], storage);
+  	adj_test_assert(ierr == ADJ_OK, "Should have worked");
   }*/
 
   ierr = adj_equation_count(&adjointer, &nb_eqs);
@@ -214,12 +214,12 @@ void test_checkpoint_revolve_online(void)
     /* Compare the recorded forward variables with the expected results */
     if ((timestep>=14) || (timestep<=5))
     {
-			/*get_expected_values(timestep, &nb_expected_vars, expected_vars, memory_has_value, memory_is_checkpoint, disk_has_value, disk_is_checkpoint);
-			ierr = test_checkpoints(&adjointer, nb_expected_vars, expected_vars, memory_has_value, memory_is_checkpoint, disk_has_value, disk_is_checkpoint);
-			if (ierr!=ADJ_OK)
-				printf("Error in timestep %i", timestep);
-			adj_test_assert(ierr == ADJ_OK, "Should have worked");
-			*/
+  		/*get_expected_values(timestep, &nb_expected_vars, expected_vars, memory_has_value, memory_is_checkpoint, disk_has_value, disk_is_checkpoint);
+  		ierr = test_checkpoints(&adjointer, nb_expected_vars, expected_vars, memory_has_value, memory_is_checkpoint, disk_has_value, disk_is_checkpoint);
+  		if (ierr!=ADJ_OK)
+  			printf("Error in timestep %i", timestep);
+  		adj_test_assert(ierr == ADJ_OK, "Should have worked");
+  		*/
     }
   }
 
@@ -227,445 +227,445 @@ void test_checkpoint_revolve_online(void)
 
 void get_expected_values(int timestep, int* nb_expected_vars, char expected_vars[][ADJ_NAME_LEN], int* memory_has_value, int* memory_is_checkpoint, int* disk_has_value, int* disk_is_checkpoint)
 {
-	switch(timestep)
-	{
-	case 19:
-		*nb_expected_vars=4;
-		strncpy(expected_vars[0], "Velocity:9:0:Forward", ADJ_NAME_LEN);
-		strncpy(expected_vars[1], "Velocity:15:0:Forward", ADJ_NAME_LEN);
-		strncpy(expected_vars[2], "Velocity:18:0:Forward", ADJ_NAME_LEN);
-		strncpy(expected_vars[3], "Velocity:19:0:Forward", ADJ_NAME_LEN);
-		memory_has_value[0]=0;
-		memory_has_value[1]=0;
-		memory_has_value[2]=1;
-		memory_has_value[3]=1;
-		memory_is_checkpoint[0]=0;
-		memory_is_checkpoint[1]=0;
-		memory_is_checkpoint[2]=1;
-		memory_is_checkpoint[3]=1;
-		disk_has_value[0]=1;
-		disk_has_value[1]=1;
-		disk_has_value[2]=0;
-		disk_has_value[3]=0;
-		disk_is_checkpoint[0]=1;
-		disk_is_checkpoint[1]=1;
-		disk_is_checkpoint[2]=0;
-		disk_is_checkpoint[3]=0;
-		break;
-	case 18:
-		*nb_expected_vars=4;
-		strncpy(expected_vars[0], "Velocity:9:0:Forward", ADJ_NAME_LEN);
-		strncpy(expected_vars[1], "Velocity:15:0:Forward", ADJ_NAME_LEN);
-		strncpy(expected_vars[2], "Velocity:17:0:Forward", ADJ_NAME_LEN);
-		strncpy(expected_vars[3], "Velocity:18:0:Forward", ADJ_NAME_LEN);
-		memory_has_value[0]=0;
-		memory_has_value[1]=0;
-		memory_has_value[2]=1;
-		memory_has_value[3]=1;
-		memory_is_checkpoint[0]=0;
-		memory_is_checkpoint[1]=0;
-		memory_is_checkpoint[2]=1;
-		memory_is_checkpoint[3]=1;
-		disk_has_value[0]=1;
-		disk_has_value[1]=1;
-		disk_has_value[2]=0;
-		disk_has_value[3]=0;
-		disk_is_checkpoint[0]=1;
-		disk_is_checkpoint[1]=1;
-		disk_is_checkpoint[2]=0;
-		disk_is_checkpoint[3]=0;
-		break;
-	case 17:
-		*nb_expected_vars=4;
-		strncpy(expected_vars[0], "Velocity:9:0:Forward", ADJ_NAME_LEN);
-		strncpy(expected_vars[1], "Velocity:15:0:Forward", ADJ_NAME_LEN);
-		strncpy(expected_vars[2], "Velocity:16:0:Forward", ADJ_NAME_LEN);
-		strncpy(expected_vars[3], "Velocity:17:0:Forward", ADJ_NAME_LEN);
-		memory_has_value[0]=0;
-		memory_has_value[1]=0;
-		memory_has_value[2]=1;
-		memory_has_value[3]=1;
-		memory_is_checkpoint[0]=0;
-		memory_is_checkpoint[1]=0;
-		memory_is_checkpoint[2]=1;
-		memory_is_checkpoint[3]=1;
-		disk_has_value[0]=1;
-		disk_has_value[1]=1;
-		disk_has_value[2]=0;
-		disk_has_value[3]=0;
-		disk_is_checkpoint[0]=1;
-		disk_is_checkpoint[1]=1;
-		disk_is_checkpoint[2]=0;
-		disk_is_checkpoint[3]=0;
-		break;
-	case 16:
-		*nb_expected_vars=3;
-		strncpy(expected_vars[0], "Velocity:9:0:Forward", ADJ_NAME_LEN);
-		strncpy(expected_vars[1], "Velocity:15:0:Forward", ADJ_NAME_LEN);
-		strncpy(expected_vars[2], "Velocity:16:0:Forward", ADJ_NAME_LEN);
-		memory_has_value[0]=0;
-		memory_has_value[1]=0;
-		memory_has_value[2]=1;
-		memory_is_checkpoint[0]=0;
-		memory_is_checkpoint[1]=0;
-		memory_is_checkpoint[2]=1;
-		disk_has_value[0]=1;
-		disk_has_value[1]=1;
-		disk_has_value[2]=0;
-		disk_is_checkpoint[0]=1;
-		disk_is_checkpoint[1]=1;
-		disk_is_checkpoint[2]=0;
-		break;
-	case 15:
-		*nb_expected_vars=5;
-		strncpy(expected_vars[0], "Velocity:9:0:Forward", ADJ_NAME_LEN);
-		memory_has_value[0]=0;
-		memory_is_checkpoint[0]=0;
-		disk_has_value[0]=1;
-		disk_is_checkpoint[0]=1;
+  switch(timestep)
+  {
+  case 19:
+  	*nb_expected_vars=4;
+  	strncpy(expected_vars[0], "Velocity:9:0:Forward", ADJ_NAME_LEN);
+  	strncpy(expected_vars[1], "Velocity:15:0:Forward", ADJ_NAME_LEN);
+  	strncpy(expected_vars[2], "Velocity:18:0:Forward", ADJ_NAME_LEN);
+  	strncpy(expected_vars[3], "Velocity:19:0:Forward", ADJ_NAME_LEN);
+  	memory_has_value[0]=0;
+  	memory_has_value[1]=0;
+  	memory_has_value[2]=1;
+  	memory_has_value[3]=1;
+  	memory_is_checkpoint[0]=0;
+  	memory_is_checkpoint[1]=0;
+  	memory_is_checkpoint[2]=1;
+  	memory_is_checkpoint[3]=1;
+  	disk_has_value[0]=1;
+  	disk_has_value[1]=1;
+  	disk_has_value[2]=0;
+  	disk_has_value[3]=0;
+  	disk_is_checkpoint[0]=1;
+  	disk_is_checkpoint[1]=1;
+  	disk_is_checkpoint[2]=0;
+  	disk_is_checkpoint[3]=0;
+  	break;
+  case 18:
+  	*nb_expected_vars=4;
+  	strncpy(expected_vars[0], "Velocity:9:0:Forward", ADJ_NAME_LEN);
+  	strncpy(expected_vars[1], "Velocity:15:0:Forward", ADJ_NAME_LEN);
+  	strncpy(expected_vars[2], "Velocity:17:0:Forward", ADJ_NAME_LEN);
+  	strncpy(expected_vars[3], "Velocity:18:0:Forward", ADJ_NAME_LEN);
+  	memory_has_value[0]=0;
+  	memory_has_value[1]=0;
+  	memory_has_value[2]=1;
+  	memory_has_value[3]=1;
+  	memory_is_checkpoint[0]=0;
+  	memory_is_checkpoint[1]=0;
+  	memory_is_checkpoint[2]=1;
+  	memory_is_checkpoint[3]=1;
+  	disk_has_value[0]=1;
+  	disk_has_value[1]=1;
+  	disk_has_value[2]=0;
+  	disk_has_value[3]=0;
+  	disk_is_checkpoint[0]=1;
+  	disk_is_checkpoint[1]=1;
+  	disk_is_checkpoint[2]=0;
+  	disk_is_checkpoint[3]=0;
+  	break;
+  case 17:
+  	*nb_expected_vars=4;
+  	strncpy(expected_vars[0], "Velocity:9:0:Forward", ADJ_NAME_LEN);
+  	strncpy(expected_vars[1], "Velocity:15:0:Forward", ADJ_NAME_LEN);
+  	strncpy(expected_vars[2], "Velocity:16:0:Forward", ADJ_NAME_LEN);
+  	strncpy(expected_vars[3], "Velocity:17:0:Forward", ADJ_NAME_LEN);
+  	memory_has_value[0]=0;
+  	memory_has_value[1]=0;
+  	memory_has_value[2]=1;
+  	memory_has_value[3]=1;
+  	memory_is_checkpoint[0]=0;
+  	memory_is_checkpoint[1]=0;
+  	memory_is_checkpoint[2]=1;
+  	memory_is_checkpoint[3]=1;
+  	disk_has_value[0]=1;
+  	disk_has_value[1]=1;
+  	disk_has_value[2]=0;
+  	disk_has_value[3]=0;
+  	disk_is_checkpoint[0]=1;
+  	disk_is_checkpoint[1]=1;
+  	disk_is_checkpoint[2]=0;
+  	disk_is_checkpoint[3]=0;
+  	break;
+  case 16:
+  	*nb_expected_vars=3;
+  	strncpy(expected_vars[0], "Velocity:9:0:Forward", ADJ_NAME_LEN);
+  	strncpy(expected_vars[1], "Velocity:15:0:Forward", ADJ_NAME_LEN);
+  	strncpy(expected_vars[2], "Velocity:16:0:Forward", ADJ_NAME_LEN);
+  	memory_has_value[0]=0;
+  	memory_has_value[1]=0;
+  	memory_has_value[2]=1;
+  	memory_is_checkpoint[0]=0;
+  	memory_is_checkpoint[1]=0;
+  	memory_is_checkpoint[2]=1;
+  	disk_has_value[0]=1;
+  	disk_has_value[1]=1;
+  	disk_has_value[2]=0;
+  	disk_is_checkpoint[0]=1;
+  	disk_is_checkpoint[1]=1;
+  	disk_is_checkpoint[2]=0;
+  	break;
+  case 15:
+  	*nb_expected_vars=5;
+  	strncpy(expected_vars[0], "Velocity:9:0:Forward", ADJ_NAME_LEN);
+  	memory_has_value[0]=0;
+  	memory_is_checkpoint[0]=0;
+  	disk_has_value[0]=1;
+  	disk_is_checkpoint[0]=1;
 
-		strncpy(expected_vars[1], "Velocity:12:0:Forward", ADJ_NAME_LEN);
-		memory_has_value[1]=0;
-		memory_is_checkpoint[1]=0;
-		disk_has_value[1]=1;
-		disk_is_checkpoint[1]=1;
+  	strncpy(expected_vars[1], "Velocity:12:0:Forward", ADJ_NAME_LEN);
+  	memory_has_value[1]=0;
+  	memory_is_checkpoint[1]=0;
+  	disk_has_value[1]=1;
+  	disk_is_checkpoint[1]=1;
 
-		strncpy(expected_vars[2], "Velocity:12:0:Forward", ADJ_NAME_LEN);
-		memory_has_value[2]=1;
-		memory_is_checkpoint[2]=1;
-		disk_has_value[2]=0;
-		disk_is_checkpoint[2]=0;
+  	strncpy(expected_vars[2], "Velocity:12:0:Forward", ADJ_NAME_LEN);
+  	memory_has_value[2]=1;
+  	memory_is_checkpoint[2]=1;
+  	disk_has_value[2]=0;
+  	disk_is_checkpoint[2]=0;
 
-		strncpy(expected_vars[3], "Velocity:14:0:Forward", ADJ_NAME_LEN);
-		memory_has_value[3]=1;
-		memory_is_checkpoint[3]=1;
-		disk_has_value[3]=0;
-		disk_is_checkpoint[3]=0;
+  	strncpy(expected_vars[3], "Velocity:14:0:Forward", ADJ_NAME_LEN);
+  	memory_has_value[3]=1;
+  	memory_is_checkpoint[3]=1;
+  	disk_has_value[3]=0;
+  	disk_is_checkpoint[3]=0;
 
-		strncpy(expected_vars[4], "Velocity:15:0:Forward", ADJ_NAME_LEN);
-		memory_has_value[4]=0;
-		memory_is_checkpoint[4]=0;
-		disk_has_value[4]=1;
-		disk_is_checkpoint[4]=1;
-		break;
+  	strncpy(expected_vars[4], "Velocity:15:0:Forward", ADJ_NAME_LEN);
+  	memory_has_value[4]=0;
+  	memory_is_checkpoint[4]=0;
+  	disk_has_value[4]=1;
+  	disk_is_checkpoint[4]=1;
+  	break;
 
-	case 14:
-		*nb_expected_vars=5;
-		strncpy(expected_vars[0], "Velocity:9:0:Forward", ADJ_NAME_LEN);
-		memory_has_value[0]=0;
-		memory_is_checkpoint[0]=0;
-		disk_has_value[0]=1;
-		disk_is_checkpoint[0]=1;
+  case 14:
+  	*nb_expected_vars=5;
+  	strncpy(expected_vars[0], "Velocity:9:0:Forward", ADJ_NAME_LEN);
+  	memory_has_value[0]=0;
+  	memory_is_checkpoint[0]=0;
+  	disk_has_value[0]=1;
+  	disk_is_checkpoint[0]=1;
 
-		strncpy(expected_vars[1], "Velocity:12:0:Forward", ADJ_NAME_LEN);
-		memory_has_value[1]=0;
-		memory_is_checkpoint[1]=0;
-		disk_has_value[1]=1;
-		disk_is_checkpoint[1]=1;
+  	strncpy(expected_vars[1], "Velocity:12:0:Forward", ADJ_NAME_LEN);
+  	memory_has_value[1]=0;
+  	memory_is_checkpoint[1]=0;
+  	disk_has_value[1]=1;
+  	disk_is_checkpoint[1]=1;
 
-		strncpy(expected_vars[2], "Velocity:12:0:Forward", ADJ_NAME_LEN);
-		memory_has_value[2]=1;
-		memory_is_checkpoint[2]=1;
-		disk_has_value[2]=0;
-		disk_is_checkpoint[2]=0;
+  	strncpy(expected_vars[2], "Velocity:12:0:Forward", ADJ_NAME_LEN);
+  	memory_has_value[2]=1;
+  	memory_is_checkpoint[2]=1;
+  	disk_has_value[2]=0;
+  	disk_is_checkpoint[2]=0;
 
-		strncpy(expected_vars[3], "Velocity:13:0:Forward", ADJ_NAME_LEN);
-		memory_has_value[3]=1;
-		memory_is_checkpoint[3]=1;
-		disk_has_value[3]=0;
-		disk_is_checkpoint[3]=0;
+  	strncpy(expected_vars[3], "Velocity:13:0:Forward", ADJ_NAME_LEN);
+  	memory_has_value[3]=1;
+  	memory_is_checkpoint[3]=1;
+  	disk_has_value[3]=0;
+  	disk_is_checkpoint[3]=0;
 
-		strncpy(expected_vars[4], "Velocity:14:0:Forward", ADJ_NAME_LEN);
-		memory_has_value[4]=1;
-		memory_is_checkpoint[4]=1;
-		disk_has_value[4]=0;
-		disk_is_checkpoint[4]=0;
-		break;
+  	strncpy(expected_vars[4], "Velocity:14:0:Forward", ADJ_NAME_LEN);
+  	memory_has_value[4]=1;
+  	memory_is_checkpoint[4]=1;
+  	disk_has_value[4]=0;
+  	disk_is_checkpoint[4]=0;
+  	break;
 
-	case 5:
-		*nb_expected_vars=5;
-		strncpy(expected_vars[0], "Velocity:3:0:Forward", ADJ_NAME_LEN);
-		memory_has_value[0]=0;
-		memory_is_checkpoint[0]=0;
-		disk_has_value[0]=1;
-		disk_is_checkpoint[0]=1;
+  case 5:
+  	*nb_expected_vars=5;
+  	strncpy(expected_vars[0], "Velocity:3:0:Forward", ADJ_NAME_LEN);
+  	memory_has_value[0]=0;
+  	memory_is_checkpoint[0]=0;
+  	disk_has_value[0]=1;
+  	disk_is_checkpoint[0]=1;
 
-		strncpy(expected_vars[1], "Velocity:3:0:Forward", ADJ_NAME_LEN);
-		memory_has_value[1]=1;
-		memory_is_checkpoint[1]=1;
-		disk_has_value[1]=0;
-		disk_is_checkpoint[1]=0;
+  	strncpy(expected_vars[1], "Velocity:3:0:Forward", ADJ_NAME_LEN);
+  	memory_has_value[1]=1;
+  	memory_is_checkpoint[1]=1;
+  	disk_has_value[1]=0;
+  	disk_is_checkpoint[1]=0;
 
-		strncpy(expected_vars[2], "Velocity:4:0:Forward", ADJ_NAME_LEN);
-		memory_has_value[2]=1;
-		memory_is_checkpoint[2]=1;
-		disk_has_value[2]=0;
-		disk_is_checkpoint[2]=0;
+  	strncpy(expected_vars[2], "Velocity:4:0:Forward", ADJ_NAME_LEN);
+  	memory_has_value[2]=1;
+  	memory_is_checkpoint[2]=1;
+  	disk_has_value[2]=0;
+  	disk_is_checkpoint[2]=0;
 
-		strncpy(expected_vars[3], "Velocity:4:0:Forward", ADJ_NAME_LEN);
-		memory_has_value[3]=0;
-		memory_is_checkpoint[3]=0;
-		disk_has_value[3]=1;
-		disk_is_checkpoint[3]=1;
+  	strncpy(expected_vars[3], "Velocity:4:0:Forward", ADJ_NAME_LEN);
+  	memory_has_value[3]=0;
+  	memory_is_checkpoint[3]=0;
+  	disk_has_value[3]=1;
+  	disk_is_checkpoint[3]=1;
 
-		strncpy(expected_vars[4], "Velocity:5:0:Forward", ADJ_NAME_LEN);
-		memory_has_value[4]=1;
-		memory_is_checkpoint[4]=1;
-		disk_has_value[4]=0;
-		disk_is_checkpoint[4]=0;
-		break;
+  	strncpy(expected_vars[4], "Velocity:5:0:Forward", ADJ_NAME_LEN);
+  	memory_has_value[4]=1;
+  	memory_is_checkpoint[4]=1;
+  	disk_has_value[4]=0;
+  	disk_is_checkpoint[4]=0;
+  	break;
 
-	case 4:
-		*nb_expected_vars=4;
-		strncpy(expected_vars[0], "Velocity:3:0:Forward", ADJ_NAME_LEN);
-		memory_has_value[0]=0;
-		memory_is_checkpoint[0]=0;
-		disk_has_value[0]=1;
-		disk_is_checkpoint[0]=1;
+  case 4:
+  	*nb_expected_vars=4;
+  	strncpy(expected_vars[0], "Velocity:3:0:Forward", ADJ_NAME_LEN);
+  	memory_has_value[0]=0;
+  	memory_is_checkpoint[0]=0;
+  	disk_has_value[0]=1;
+  	disk_is_checkpoint[0]=1;
 
-		strncpy(expected_vars[1], "Velocity:3:0:Forward", ADJ_NAME_LEN);
-		memory_has_value[1]=1;
-		memory_is_checkpoint[1]=1;
-		disk_has_value[1]=0;
-		disk_is_checkpoint[1]=0;
+  	strncpy(expected_vars[1], "Velocity:3:0:Forward", ADJ_NAME_LEN);
+  	memory_has_value[1]=1;
+  	memory_is_checkpoint[1]=1;
+  	disk_has_value[1]=0;
+  	disk_is_checkpoint[1]=0;
 
-		strncpy(expected_vars[2], "Velocity:4:0:Forward", ADJ_NAME_LEN);
-		memory_has_value[2]=1;
-		memory_is_checkpoint[2]=1;
-		disk_has_value[2]=0;
-		disk_is_checkpoint[2]=0;
+  	strncpy(expected_vars[2], "Velocity:4:0:Forward", ADJ_NAME_LEN);
+  	memory_has_value[2]=1;
+  	memory_is_checkpoint[2]=1;
+  	disk_has_value[2]=0;
+  	disk_is_checkpoint[2]=0;
 
-		strncpy(expected_vars[3], "Velocity:4:0:Forward", ADJ_NAME_LEN);
-		memory_has_value[3]=0;
-		memory_is_checkpoint[3]=0;
-		disk_has_value[3]=1;
-		disk_is_checkpoint[3]=1;
+  	strncpy(expected_vars[3], "Velocity:4:0:Forward", ADJ_NAME_LEN);
+  	memory_has_value[3]=0;
+  	memory_is_checkpoint[3]=0;
+  	disk_has_value[3]=1;
+  	disk_is_checkpoint[3]=1;
 
-		break;
+  	break;
 
-	case 3:
-		*nb_expected_vars=7;
-		strncpy(expected_vars[0], "Velocity:0:0:Forward", ADJ_NAME_LEN);
-		memory_has_value[0]=0;
-		memory_is_checkpoint[0]=0;
-		disk_has_value[0]=1;
-		disk_is_checkpoint[0]=1;
+  case 3:
+  	*nb_expected_vars=7;
+  	strncpy(expected_vars[0], "Velocity:0:0:Forward", ADJ_NAME_LEN);
+  	memory_has_value[0]=0;
+  	memory_is_checkpoint[0]=0;
+  	disk_has_value[0]=1;
+  	disk_is_checkpoint[0]=1;
 
-		strncpy(expected_vars[1], "Velocity:0:0:Forward", ADJ_NAME_LEN);
-		memory_has_value[1]=1;
-		memory_is_checkpoint[1]=1;
-		disk_has_value[1]=0;
-		disk_is_checkpoint[1]=0;
+  	strncpy(expected_vars[1], "Velocity:0:0:Forward", ADJ_NAME_LEN);
+  	memory_has_value[1]=1;
+  	memory_is_checkpoint[1]=1;
+  	disk_has_value[1]=0;
+  	disk_is_checkpoint[1]=0;
 
-		strncpy(expected_vars[2], "Velocity:1:0:Forward", ADJ_NAME_LEN);
-		memory_has_value[2]=0;
-		memory_is_checkpoint[2]=0;
-		disk_has_value[2]=1;
-		disk_is_checkpoint[2]=1;
+  	strncpy(expected_vars[2], "Velocity:1:0:Forward", ADJ_NAME_LEN);
+  	memory_has_value[2]=0;
+  	memory_is_checkpoint[2]=0;
+  	disk_has_value[2]=1;
+  	disk_is_checkpoint[2]=1;
 
-		strncpy(expected_vars[3], "Velocity:1:0:Forward", ADJ_NAME_LEN);
-		memory_has_value[3]=1;
-		memory_is_checkpoint[3]=1;
-		disk_has_value[3]=0;
-		disk_is_checkpoint[3]=0;
+  	strncpy(expected_vars[3], "Velocity:1:0:Forward", ADJ_NAME_LEN);
+  	memory_has_value[3]=1;
+  	memory_is_checkpoint[3]=1;
+  	disk_has_value[3]=0;
+  	disk_is_checkpoint[3]=0;
 
-		strncpy(expected_vars[4], "Velocity:2:0:Forward", ADJ_NAME_LEN);
-		memory_has_value[4]=1;
-		memory_is_checkpoint[4]=1;
-		disk_has_value[4]=0;
-		disk_is_checkpoint[4]=0;
+  	strncpy(expected_vars[4], "Velocity:2:0:Forward", ADJ_NAME_LEN);
+  	memory_has_value[4]=1;
+  	memory_is_checkpoint[4]=1;
+  	disk_has_value[4]=0;
+  	disk_is_checkpoint[4]=0;
 
-		strncpy(expected_vars[5], "Velocity:3:0:Forward", ADJ_NAME_LEN);
-		memory_has_value[5]=0;
-		memory_is_checkpoint[5]=0;
-		disk_has_value[5]=1;
-		disk_is_checkpoint[5]=1;
+  	strncpy(expected_vars[5], "Velocity:3:0:Forward", ADJ_NAME_LEN);
+  	memory_has_value[5]=0;
+  	memory_is_checkpoint[5]=0;
+  	disk_has_value[5]=1;
+  	disk_is_checkpoint[5]=1;
 
-		strncpy(expected_vars[6], "Velocity:3:0:Forward", ADJ_NAME_LEN);
-		memory_has_value[6]=1;
-		memory_is_checkpoint[6]=1;
-		disk_has_value[6]=0;
-		disk_is_checkpoint[6]=0;
+  	strncpy(expected_vars[6], "Velocity:3:0:Forward", ADJ_NAME_LEN);
+  	memory_has_value[6]=1;
+  	memory_is_checkpoint[6]=1;
+  	disk_has_value[6]=0;
+  	disk_is_checkpoint[6]=0;
 
-		break;
+  	break;
 
-	case 2:
-		*nb_expected_vars=5;
-		strncpy(expected_vars[0], "Velocity:0:0:Forward", ADJ_NAME_LEN);
-		memory_has_value[0]=0;
-		memory_is_checkpoint[0]=0;
-		disk_has_value[0]=1;
-		disk_is_checkpoint[0]=1;
+  case 2:
+  	*nb_expected_vars=5;
+  	strncpy(expected_vars[0], "Velocity:0:0:Forward", ADJ_NAME_LEN);
+  	memory_has_value[0]=0;
+  	memory_is_checkpoint[0]=0;
+  	disk_has_value[0]=1;
+  	disk_is_checkpoint[0]=1;
 
-		strncpy(expected_vars[1], "Velocity:0:0:Forward", ADJ_NAME_LEN);
-		memory_has_value[1]=1;
-		memory_is_checkpoint[1]=1;
-		disk_has_value[1]=0;
-		disk_is_checkpoint[1]=0;
+  	strncpy(expected_vars[1], "Velocity:0:0:Forward", ADJ_NAME_LEN);
+  	memory_has_value[1]=1;
+  	memory_is_checkpoint[1]=1;
+  	disk_has_value[1]=0;
+  	disk_is_checkpoint[1]=0;
 
-		strncpy(expected_vars[2], "Velocity:1:0:Forward", ADJ_NAME_LEN);
-		memory_has_value[2]=0;
-		memory_is_checkpoint[2]=0;
-		disk_has_value[2]=1;
-		disk_is_checkpoint[2]=1;
+  	strncpy(expected_vars[2], "Velocity:1:0:Forward", ADJ_NAME_LEN);
+  	memory_has_value[2]=0;
+  	memory_is_checkpoint[2]=0;
+  	disk_has_value[2]=1;
+  	disk_is_checkpoint[2]=1;
 
-		strncpy(expected_vars[3], "Velocity:1:0:Forward", ADJ_NAME_LEN);
-		memory_has_value[3]=1;
-		memory_is_checkpoint[3]=1;
-		disk_has_value[3]=0;
-		disk_is_checkpoint[3]=0;
+  	strncpy(expected_vars[3], "Velocity:1:0:Forward", ADJ_NAME_LEN);
+  	memory_has_value[3]=1;
+  	memory_is_checkpoint[3]=1;
+  	disk_has_value[3]=0;
+  	disk_is_checkpoint[3]=0;
 
-		strncpy(expected_vars[4], "Velocity:2:0:Forward", ADJ_NAME_LEN);
-		memory_has_value[4]=1;
-		memory_is_checkpoint[4]=1;
-		disk_has_value[4]=0;
-		disk_is_checkpoint[4]=0;
+  	strncpy(expected_vars[4], "Velocity:2:0:Forward", ADJ_NAME_LEN);
+  	memory_has_value[4]=1;
+  	memory_is_checkpoint[4]=1;
+  	disk_has_value[4]=0;
+  	disk_is_checkpoint[4]=0;
 
-		break;
+  	break;
 
-	case 1:
-		*nb_expected_vars=4;
-		strncpy(expected_vars[0], "Velocity:0:0:Forward", ADJ_NAME_LEN);
-		memory_has_value[0]=0;
-		memory_is_checkpoint[0]=0;
-		disk_has_value[0]=1;
-		disk_is_checkpoint[0]=1;
+  case 1:
+  	*nb_expected_vars=4;
+  	strncpy(expected_vars[0], "Velocity:0:0:Forward", ADJ_NAME_LEN);
+  	memory_has_value[0]=0;
+  	memory_is_checkpoint[0]=0;
+  	disk_has_value[0]=1;
+  	disk_is_checkpoint[0]=1;
 
-		strncpy(expected_vars[1], "Velocity:0:0:Forward", ADJ_NAME_LEN);
-		memory_has_value[1]=1;
-		memory_is_checkpoint[1]=1;
-		disk_has_value[1]=0;
-		disk_is_checkpoint[1]=0;
+  	strncpy(expected_vars[1], "Velocity:0:0:Forward", ADJ_NAME_LEN);
+  	memory_has_value[1]=1;
+  	memory_is_checkpoint[1]=1;
+  	disk_has_value[1]=0;
+  	disk_is_checkpoint[1]=0;
 
-		strncpy(expected_vars[2], "Velocity:1:0:Forward", ADJ_NAME_LEN);
-		memory_has_value[2]=0;
-		memory_is_checkpoint[2]=0;
-		disk_has_value[2]=1;
-		disk_is_checkpoint[2]=1;
+  	strncpy(expected_vars[2], "Velocity:1:0:Forward", ADJ_NAME_LEN);
+  	memory_has_value[2]=0;
+  	memory_is_checkpoint[2]=0;
+  	disk_has_value[2]=1;
+  	disk_is_checkpoint[2]=1;
 
-		strncpy(expected_vars[3], "Velocity:1:0:Forward", ADJ_NAME_LEN);
-		memory_has_value[3]=1;
-		memory_is_checkpoint[3]=1;
-		disk_has_value[3]=0;
-		disk_is_checkpoint[3]=0;
+  	strncpy(expected_vars[3], "Velocity:1:0:Forward", ADJ_NAME_LEN);
+  	memory_has_value[3]=1;
+  	memory_is_checkpoint[3]=1;
+  	disk_has_value[3]=0;
+  	disk_is_checkpoint[3]=0;
 
-		break;
+  	break;
 
-	case 0:
-		*nb_expected_vars=0;
-		break;
+  case 0:
+  	*nb_expected_vars=0;
+  	break;
 
-	default:
-		printf("Unknown timestep in get_expected_values()");
-	  break;
-	}
+  default:
+  	printf("Unknown timestep in get_expected_values()");
+    break;
+  }
 }
 
 /* Check the checkpoint variables */
 int test_checkpoints(adj_adjointer *adjointer, int nb_expected_vars, char expected_vars[][ADJ_NAME_LEN], int* memory_has_value, int* memory_is_checkpoint, int* disk_has_value, int* disk_is_checkpoint)
 {
-	int ierr, i, nb_matched_variables, found_match;
-	adj_variable var;
+  int ierr, i, nb_matched_variables, found_match;
+  adj_variable var;
   adj_variable_data* data_ptr;
   char var_name[ADJ_NAME_LEN];
 
-	/* We check that all recorded variables occur in the expectation list.
-	 * For that, we loop over all recorded variables.
-	 * If the variable name matches with a variable name in the expectation list,
-	 * we check if the the storage and checkpoint type match.
-	 */
+  /* We check that all recorded variables occur in the expectation list.
+   * For that, we loop over all recorded variables.
+   * If the variable name matches with a variable name in the expectation list,
+   * we check if the the storage and checkpoint type match.
+   */
   data_ptr=adjointer->vardata.firstnode;
   while (data_ptr!=NULL)
   {
-  	if (data_ptr->equation<0) /* Ignore adjoint variables */
+    if (data_ptr->equation<0) /* Ignore adjoint variables */
+    {
+    	data_ptr=data_ptr->next;
+    	continue;
+    }
+    if ((data_ptr->storage.storage_memory_has_value!=ADJ_TRUE) &&
+    	  (data_ptr->storage.storage_disk_has_value!=ADJ_TRUE)) /* Ignore variables that are not recorded */
+    {
+    	data_ptr=data_ptr->next;
+    	continue;
+    }
+
+    var = adjointer->equations[data_ptr->equation].variable;
+    ierr = adj_variable_str(var, var_name, ADJ_NAME_LEN);
+    if (ierr != ADJ_OK) return ierr;
+
+    found_match=0;
+
+    for (i=0; i<nb_expected_vars; i++)
+    {
+  		if (strcmp(expected_vars[i], var_name)==0)
+  		{
+  			if ((memory_has_value[i]==1) && (data_ptr->storage.storage_memory_has_value==ADJ_TRUE))
+  			{
+  				if (((memory_is_checkpoint[i]==1) && (data_ptr->storage.storage_memory_is_checkpoint==ADJ_TRUE)) ||
+  						((memory_is_checkpoint[i]==0) && (data_ptr->storage.storage_memory_is_checkpoint==ADJ_FALSE)))
+  				{
+  					found_match=1;
+  					break;
+  				}
+  			}
+
+  			if ((disk_has_value[i]==1) && (data_ptr->storage.storage_disk_has_value==ADJ_TRUE))
+  			{
+  				if (((disk_is_checkpoint[i]==1) && (data_ptr->storage.storage_disk_is_checkpoint==ADJ_TRUE)) ||
+  						((disk_is_checkpoint[i]==0) && (data_ptr->storage.storage_disk_is_checkpoint==ADJ_FALSE)))
+  				{
+  					found_match=1;
+  					break;
+  				}
+  			}
+
+  		}
+    }
+
+    /* We expect to find all recorded variables in the expectation list */
+  	if (found_match==0)
   	{
-  		data_ptr=data_ptr->next;
-  		continue;
+  		printf("Found an unexpected recorded variable %s\n", var_name);
+  		adj_test_assert(found_match==1, "Should have worked");
+  		return ADJ_ERR_NEED_VALUE;
   	}
-  	if ((data_ptr->storage.storage_memory_has_value!=ADJ_TRUE) &&
-  		  (data_ptr->storage.storage_disk_has_value!=ADJ_TRUE)) /* Ignore variables that are not recorded */
-  	{
-  		data_ptr=data_ptr->next;
-  		continue;
-  	}
-
-  	var = adjointer->equations[data_ptr->equation].variable;
-  	ierr = adj_variable_str(var, var_name, ADJ_NAME_LEN);
-  	if (ierr != ADJ_OK) return ierr;
-
-  	found_match=0;
-
-  	for (i=0; i<nb_expected_vars; i++)
-  	{
-			if (strcmp(expected_vars[i], var_name)==0)
-			{
-				if ((memory_has_value[i]==1) && (data_ptr->storage.storage_memory_has_value==ADJ_TRUE))
-				{
-					if (((memory_is_checkpoint[i]==1) && (data_ptr->storage.storage_memory_is_checkpoint==ADJ_TRUE)) ||
-							((memory_is_checkpoint[i]==0) && (data_ptr->storage.storage_memory_is_checkpoint==ADJ_FALSE)))
-					{
-						found_match=1;
-						break;
-					}
-				}
-
-				if ((disk_has_value[i]==1) && (data_ptr->storage.storage_disk_has_value==ADJ_TRUE))
-				{
-					if (((disk_is_checkpoint[i]==1) && (data_ptr->storage.storage_disk_is_checkpoint==ADJ_TRUE)) ||
-							((disk_is_checkpoint[i]==0) && (data_ptr->storage.storage_disk_is_checkpoint==ADJ_FALSE)))
-					{
-						found_match=1;
-						break;
-					}
-				}
-
-			}
-  	}
-
-  	/* We expect to find all recorded variables in the expectation list */
-		if (found_match==0)
-		{
-			printf("Found an unexpected recorded variable %s\n", var_name);
-			adj_test_assert(found_match==1, "Should have worked");
-			return ADJ_ERR_NEED_VALUE;
-		}
-
-		data_ptr=data_ptr->next;
-  }
-
-	/* At this point we know that the recorded variables is a subset of
-	 * the expected variables. Next we show that the number of recorded and
-	 * expected variables equal, from which we now that both sets are
-	 * equivalent.
-	 */
-	data_ptr=adjointer->vardata.firstnode;
-  nb_matched_variables=0; /* Number of checkpoint variables in adjointer */
-
-  while (data_ptr!=NULL)
-  {
-  	if (data_ptr->equation<0) /* Ignore adjoint variables */
-  	{
-  		data_ptr=data_ptr->next;
-  		continue;
-  	}
-
-  	if (data_ptr->storage.storage_memory_has_value)
-  		nb_matched_variables++;
-  	if (data_ptr->storage.storage_disk_has_value)
-  	  		nb_matched_variables++;
 
   	data_ptr=data_ptr->next;
   }
 
-	/* We expect to the number of expected and recorded variables to be the same */
-	if (nb_expected_vars!=nb_matched_variables)
-	{
-		printf("I expected %i checkpoint variables, but found %i", nb_expected_vars, nb_matched_variables);
-		adj_test_assert(nb_expected_vars==nb_matched_variables, "Should have worked");
-		return ADJ_ERR_NEED_VALUE;
-	}
+  /* At this point we know that the recorded variables is a subset of
+   * the expected variables. Next we show that the number of recorded and
+   * expected variables equal, from which we now that both sets are
+   * equivalent.
+   */
+  data_ptr=adjointer->vardata.firstnode;
+  nb_matched_variables=0; /* Number of checkpoint variables in adjointer */
 
-	return ADJ_OK;
+  while (data_ptr!=NULL)
+  {
+    if (data_ptr->equation<0) /* Ignore adjoint variables */
+    {
+    	data_ptr=data_ptr->next;
+    	continue;
+    }
+
+    if (data_ptr->storage.storage_memory_has_value)
+    	nb_matched_variables++;
+    if (data_ptr->storage.storage_disk_has_value)
+      		nb_matched_variables++;
+
+    data_ptr=data_ptr->next;
+  }
+
+  /* We expect to the number of expected and recorded variables to be the same */
+  if (nb_expected_vars!=nb_matched_variables)
+  {
+  	printf("I expected %i checkpoint variables, but found %i", nb_expected_vars, nb_matched_variables);
+  	adj_test_assert(nb_expected_vars==nb_matched_variables, "Should have worked");
+  	return ADJ_ERR_NEED_VALUE;
+  }
+
+  return ADJ_OK;
 }
 
 

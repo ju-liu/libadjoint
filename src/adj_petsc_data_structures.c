@@ -103,13 +103,13 @@ void petsc_vec_dot_product_proc(adj_vector x, adj_vector y, adj_scalar* val)
 void petsc_vec_to_file_proc(adj_vector x, char* filename)
 {
 #ifdef HAVE_PETSC
-	FILE* istream;
+  FILE* istream;
 
-	if ((istream = fopen(filename, "r+")))
-	{
-		printf("Warning: Overwriting data in file '%s'\n", filename);
-		fclose(istream);
-	}
+  if ((istream = fopen(filename, "r+")))
+  {
+  	printf("Warning: Overwriting data in file '%s'\n", filename);
+  	fclose(istream);
+  }
 
   PetscViewer viewer;
   PetscViewerBinaryOpen(PETSC_COMM_WORLD,filename,FILE_MODE_WRITE,&viewer);
