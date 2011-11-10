@@ -110,18 +110,33 @@ int adj_get_adjoint_equation(adj_adjointer* adjointer, int equation, char* funct
   /* Find the block in fwd_eqn that targets fwd_var, and assemble that (hermitianed) */
   {
     adj_block block;
+    int blockcount = 0;
     for (i = 0; i < fwd_eqn.nblocks; i++)
     {
+
       if (adj_variable_equal(&(fwd_eqn.targets[i]), &fwd_var, 1))
       {
         /* this is the right block */
         block = fwd_eqn.blocks[i];
-        break;
+        block.hermitian = !block.hermitian;
+        blockcount++;
+        if (blockcount == 1) /* the first one we've found */
+        {
+          ierr = adj_evaluate_block_assembly(adjointer, block, lhs, rhs);
+          if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
+        }
+        else
+        {
+          adj_matrix lhs_tmp;
+          adj_vector rhs_tmp;
+          ierr = adj_evaluate_block_assembly(adjointer, block, &lhs_tmp, &rhs_tmp);
+          if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
+          adjointer->callbacks.vec_destroy(&rhs_tmp); /* we already have rhs from the first block assembly */
+          adjointer->callbacks.mat_axpy(lhs, (adj_scalar) 1.0, lhs_tmp); /* add lhs_tmp to lhs */
+          adjointer->callbacks.mat_destroy(&lhs_tmp);
+        }
       }
     }
-    block.hermitian = !block.hermitian;
-    ierr = adj_evaluate_block_assembly(adjointer, block, lhs, rhs);
-    if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
   }
 
   /* Great! Now let's assemble the RHS contributions of A*. */
@@ -588,17 +603,31 @@ int adj_get_forward_equation(adj_adjointer* adjointer, int equation, adj_matrix*
 
   {
     adj_block block;
+    int blockcount = 0;
     for (i = 0; i < fwd_eqn.nblocks; i++)
     {
       if (adj_variable_equal(&(fwd_eqn.targets[i]), fwd_var, 1))
       {
         /* this is the right block */
         block = fwd_eqn.blocks[i];
-        break;
+        blockcount++;
+        if (blockcount == 1) /* the first one we've found */
+        {
+          ierr = adj_evaluate_block_assembly(adjointer, block, lhs, rhs);
+          if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
+        }
+        else
+        {
+          adj_matrix lhs_tmp;
+          adj_vector rhs_tmp;
+          ierr = adj_evaluate_block_assembly(adjointer, block, &lhs_tmp, &rhs_tmp);
+          if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
+          adjointer->callbacks.vec_destroy(&rhs_tmp); /* we already have rhs from the first block assembly */
+          adjointer->callbacks.mat_axpy(lhs, (adj_scalar) 1.0, lhs_tmp); /* add lhs_tmp to lhs */
+          adjointer->callbacks.mat_destroy(&lhs_tmp);
+        }
       }
     }
-    ierr = adj_evaluate_block_assembly(adjointer, block, lhs, rhs);
-    if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
   }
 
   /* Great! Now let's assemble the RHS contributions of A. */

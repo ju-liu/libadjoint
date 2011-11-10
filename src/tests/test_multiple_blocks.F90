@@ -157,7 +157,7 @@ subroutine test_multiple_blocks
   ierr = adj_create_variable("Velocity", timestep=1, iteration=0, auxiliary=.false., variable=u1)
   call adj_test_assert(ierr == ADJ_OK, "Should have worked")
 
-  ierr = adj_create_equation(u0, (/I/), (/u0/), equation)
+  ierr = adj_create_equation(u0, (/I, I/), (/u0, u0/), equation)
   call adj_test_assert(ierr == ADJ_OK, "Should have worked")
   ierr = adj_register_equation(adjointer, equation)
   call adj_test_assert(ierr == ADJ_OK, "Should have worked")
@@ -239,7 +239,7 @@ subroutine test_multiple_blocks
   call adj_test_assert(ierr == ADJ_OK, "Should have worked")
 
   ! So now solve lhs . lambda0 = rhs
-  ! With this setup, lambda0 = -2 * lambda1.
+  ! With this setup, lambda0 = -1 * lambda1.
 
   call VecDuplicate(lambda1, lambda0, ierr)
   call KSPCreate(PETSC_COMM_SELF, ksp, ierr)
@@ -254,13 +254,12 @@ subroutine test_multiple_blocks
   call VecZeroEntries(sum, ierr)
   call VecAXPY(sum, one, lambda0, ierr)
   call VecAXPY(sum, one, lambda1, ierr)
-  call VecAXPY(sum, one, lambda1, ierr)
   call VecNorm(sum, NORM_2, norm, ierr)
 
   call VecDestroy(lambda0, ierr)
   call VecDestroy(lambda1, ierr)
   call VecDestroy(sum, ierr)
 
-  call adj_test_assert(norm == 0, "lambda1 should equal -2 * lambda0")
+  call adj_test_assert(norm == 0, "lambda1 should equal -1 * lambda0")
 end subroutine test_multiple_blocks
 #endif
