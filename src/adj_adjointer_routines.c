@@ -438,7 +438,7 @@ int adj_register_equation(adj_adjointer* adjointer, adj_equation equation, int* 
 
   /* And finally nonlinear dependencies of the left hand side */
 
-  for (i = 0; i< equation.nblocks; i++)
+  for (i = 0; i < equation.nblocks; i++)
   {
     if (equation.blocks[i].has_nonlinear_block)
     {
@@ -554,7 +554,7 @@ int adj_checkpoint_equation(adj_adjointer* adjointer, int eqn_number, int cs)
     eqn = adjointer->equations[eqn_number_iter];
 
     /* Checkpoint all dependency variables of this equation */
-    for (i=0; i<eqn.nblocks; i++)
+    for (i=0; i <eqn.nblocks; i++)
     {
       if (eqn.blocks[i].has_nonlinear_block == ADJ_TRUE)
       {
@@ -576,7 +576,7 @@ int adj_checkpoint_equation(adj_adjointer* adjointer, int eqn_number, int cs)
     }
 
     /* Next checkpoint all target variables on the rhs */
-    for (i=0; i<eqn.nblocks; i++)
+    for (i=0; i < eqn.nblocks; i++)
     {
       adj_variable_data* var_data;
       var=eqn.targets[i];
@@ -595,7 +595,7 @@ int adj_checkpoint_equation(adj_adjointer* adjointer, int eqn_number, int cs)
     }
 
     /* Checkpoint the rhs dependencies */
-    for (i=0; i<eqn.nrhsdeps; i++)
+    for (i=0; i < eqn.nrhsdeps; i++)
     {
       adj_variable_data* var_data;
       var=eqn.rhsdeps[i];
@@ -755,7 +755,7 @@ int adj_get_revolve_checkpoint_storage(adj_adjointer* adjointer, adj_equation eq
     /* Set the initial revolve state */
     adjointer->revolve_data.current_action = revolve(adjointer->revolve_data.revolve);
     adjointer->revolve_data.current_timestep = equation.variable.timestep;
-    if (equation.variable.timestep!=0) 
+    if (equation.variable.timestep != 0) 
     {
       snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "With revolve as checkpoint strategy the first equation has to solve for a variable at timestep 0.");
       return ADJ_ERR_INVALID_INPUTS;
@@ -874,13 +874,13 @@ int adj_initialise_revolve(adj_adjointer* adjointer)
   int cs, ierr;
 
   /* We need one memory checkpoint to checkpoint the last timestep before a FIRSTRUN or YOUTURN action. */
-  if (snaps_in_ram<0)
+  if (snaps_in_ram < 0)
   {
     snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Checkpointing needs at least one memory checkpoint plus one disk or memory checkpoint.  Make sure you call adj_set_revolve_options with snaps_in_ram greater or equal than 1.");
     return ADJ_ERR_INVALID_INPUTS;
   }
   /* We need at least one snapshot */
-  if (snaps<=0)
+  if (snaps <= 0)
   {
     snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Checkpointing needs at least one memory checkpoint plus one disk or memory checkpoint.  Make sure you call adj_set_revolve_options with snaps greater or equal than 2.");
     return ADJ_ERR_INVALID_INPUTS;
@@ -894,7 +894,7 @@ int adj_initialise_revolve(adj_adjointer* adjointer)
   /* Offline checkpointing */
   if (cs == ADJ_CHECKPOINT_REVOLVE_OFFLINE) 
   {
-    if ((steps>0) && (snaps>0))
+    if ((steps > 0) && (snaps > 0))
       adjointer->revolve_data.revolve = revolve_create_offline(steps, snaps);
     else
     {
@@ -906,7 +906,7 @@ int adj_initialise_revolve(adj_adjointer* adjointer)
   /* Offline checkpointing with different stores */
   else if (cs == ADJ_CHECKPOINT_REVOLVE_MULTISTAGE)
   { 
-    if ((steps>0) && (snaps>0) && (snaps_in_ram>=0) && (snaps>=snaps_in_ram))
+    if ((steps > 0) && (snaps > 0) && (snaps_in_ram >= 0) && (snaps >= snaps_in_ram))
       adjointer->revolve_data.revolve = revolve_create_multistage(steps, snaps, snaps_in_ram);
     else
     {
@@ -918,7 +918,7 @@ int adj_initialise_revolve(adj_adjointer* adjointer)
   /* Online checkpointing */
   else if (cs == ADJ_CHECKPOINT_REVOLVE_ONLINE) 
   {
-    if (snaps>0)
+    if (snaps > 0)
     {
       adjointer->revolve_data.revolve = revolve_create_online(snaps);
       adjointer->revolve_data.steps = -1;
@@ -1083,7 +1083,7 @@ int adj_record_variable_core_memory(adj_adjointer* adjointer, adj_variable_data*
     return ADJ_ERR_NEED_CALLBACK;
   }
 
-  if (storage.storage_memory_has_value!=ADJ_TRUE)
+  if (storage.storage_memory_has_value != ADJ_TRUE)
   {
     snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Can not record a variable whose storage object has no value.");
     return ADJ_ERR_NEED_VALUE;

@@ -42,7 +42,7 @@ int adj_adjointer_check_checkpoints(adj_adjointer* adjointer)
   /* Query the checkpoint equations */
   cp_num = 0;
   /* First get the number of checkpoints */
-  for (eqn_num=0; eqn_num<adjointer->nequations; eqn_num++)
+  for (eqn_num=0; eqn_num < adjointer->nequations; eqn_num++)
   {
     eqn = adjointer->equations[eqn_num];
     if ((eqn.memory_checkpoint == ADJ_TRUE) ||
@@ -53,7 +53,7 @@ int adj_adjointer_check_checkpoints(adj_adjointer* adjointer)
   ADJ_CHKMALLOC(cp_eqns);
   /* Then get the equation number of each checkpoint */
   i=0;
-  for (eqn_num=0; eqn_num<adjointer->nequations; eqn_num++)
+  for (eqn_num=0; eqn_num < adjointer->nequations; eqn_num++)
   {
     eqn = adjointer->equations[eqn_num];
     if ((eqn.memory_checkpoint == ADJ_TRUE) ||
@@ -65,7 +65,7 @@ int adj_adjointer_check_checkpoints(adj_adjointer* adjointer)
   }
 
   /* Now loop over every checkpoint and ensure that all required variables are recorded */
-  for (cp_iter=0; cp_iter<cp_num; cp_iter++)
+  for (cp_iter=0; cp_iter < cp_num; cp_iter++)
   {
     eqn = adjointer->equations[cp_eqns[cp_iter]];
 
@@ -78,7 +78,7 @@ int adj_adjointer_check_checkpoints(adj_adjointer* adjointer)
     }
 
     /* Check that we have all the forward values we need to restart the simulation */
-    for (i=0; i<eqn.nblocks; i++)
+    for (i=0; i < eqn.nblocks; i++)
     {
       adj_variable fwd_var;
 
@@ -88,7 +88,7 @@ int adj_adjointer_check_checkpoints(adj_adjointer* adjointer)
       	adj_nonlinear_block nl_block;
 
       	nl_block = eqn.blocks[i].nonlinear_block;
-      	for (j=0; j<nl_block.ndepends; j++)
+      	for (j=0; j < nl_block.ndepends; j++)
       	{
       		fwd_var = nl_block.depends[j];
 
@@ -152,16 +152,16 @@ int adj_adjointer_check_checkpoints(adj_adjointer* adjointer)
     while (data != NULL)
     {
       /* We are only interested in forward variables */
-      if (data->equation<0)
+      if (data->equation < 0)
       {
       	data = data->next;
       	continue;
       }
 
       /* Find out in which checkpoint slot the variable is computed */
-      for (cp_iter=0; cp_iter<cp_num-1; cp_iter++)
+      for (cp_iter=0; cp_iter < cp_num-1; cp_iter++)
       {
-      	if (data->equation<cp_eqns[cp_iter+1])
+      	if (data->equation < cp_eqns[cp_iter+1])
       		break;
       }
 

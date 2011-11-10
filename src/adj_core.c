@@ -334,7 +334,7 @@ int adj_get_adjoint_solution(adj_adjointer* adjointer, int equation, char* funct
 
   /* At this point, all the dependencies are available to assemble the adjoint equation */
   ierr = adj_get_adjoint_equation(adjointer, equation, functional, &lhs, &rhs, adj_var);
-  if (ierr!=ADJ_OK)
+  if (ierr != ADJ_OK)
     return ierr;
 
   /* Solve the linear system */
@@ -470,14 +470,14 @@ int adj_revolve_to_adjoint_equation(adj_adjointer* adjointer, int equation)
   }
 
   /* Check that the timesteps are in sync */
-  if (adjointer->revolve_data.current_timestep!=adjointer->equations[equation].variable.timestep)
+  if (adjointer->revolve_data.current_timestep != adjointer->equations[equation].variable.timestep)
   {
     strncpy(adj_error_msg, "You must loop over the adjoint equation chronologically backwards in time, but revolve thinks you do not.", ADJ_ERROR_MSG_BUF);
     return ADJ_ERR_INVALID_INPUTS;
   }
 
   /* If this function was called just before solving the last adjoint equation of the current timestep, then we ask revolve what to do next */
-  if (equation == 0 || adjointer->revolve_data.current_timestep!=adjointer->equations[equation-1].variable.timestep)
+  if (equation == 0 || adjointer->revolve_data.current_timestep != adjointer->equations[equation-1].variable.timestep)
   {
     adjointer->revolve_data.current_action = revolve(adjointer->revolve_data.revolve);
   }
@@ -536,7 +536,7 @@ int adj_get_forward_equation(adj_adjointer* adjointer, int equation, adj_matrix*
       adj_nonlinear_block nl_block;
 
       nl_block = fwd_eqn.blocks[i].nonlinear_block;
-      for (j=0; j<nl_block.ndepends; j++)
+      for (j=0; j < nl_block.ndepends; j++)
       {
         other_fwd_var = nl_block.depends[j];
         ierr = adj_has_variable_value(adjointer, other_fwd_var);
@@ -565,7 +565,7 @@ int adj_get_forward_equation(adj_adjointer* adjointer, int equation, adj_matrix*
   }
 
   /* Check the availability of the rhs dependencies */
-  for (i=0; i<fwd_eqn.nrhsdeps; i++)
+  for (i=0; i < fwd_eqn.nrhsdeps; i++)
   {
     adj_variable other_fwd_var;
 
@@ -684,7 +684,7 @@ int adj_replay_forward_equations(adj_adjointer* adjointer, int start_equation, i
   /* Get the timstep of the last equation in the replay. Its solution will be recorded to memory */
   stop_timestep = adjointer->equations[stop_equation].variable.timestep;
 
-  for (equation=start_equation; equation<=stop_equation; equation++)
+  for (equation=start_equation; equation <= stop_equation; equation++)
   {
     /* We might have the solution of this equation already,
      * in which case we do not have to solve for it.

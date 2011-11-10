@@ -484,7 +484,7 @@ void get_expected_values(int timestep, int* nb_expected_vars, char expected_vars
 /* Check the checkpoint variables */
 int test_checkpoints(adj_adjointer *adjointer, int nb_expected_vars, char expected_vars[][ADJ_NAME_LEN], int* memory_has_value, int* memory_is_checkpoint, int* disk_has_value, int* disk_is_checkpoint)
 {
-  int ierr, i, nb_matched_variables, found_match, match_counter;
+  int ierr, i, nb_matched_variables, found_match;
   int duplicates=0; /* Number of variables that are recorded on both disk and memory */
   adj_variable var;
   adj_variable_data* data_ptr;
