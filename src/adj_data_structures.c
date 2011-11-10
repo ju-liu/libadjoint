@@ -303,10 +303,10 @@ int adj_create_term(int nblocks, adj_block* blocks, adj_variable* targets, adj_t
 /* Adds termA and termB to termC */
 int adj_add_terms(adj_term termA, adj_term termB, adj_term* termC)
 {
-	int i;
+  int i;
 
-	termC->nblocks = termA.nblocks + termB.nblocks;
-	termC->blocks =  (adj_block*) malloc(termC->nblocks * sizeof(adj_block));
+  termC->nblocks = termA.nblocks + termB.nblocks;
+  termC->blocks =  (adj_block*) malloc(termC->nblocks * sizeof(adj_block));
   ADJ_CHKMALLOC(termC->blocks);
   memcpy(termC->blocks, termA.blocks, termA.nblocks * sizeof(adj_block));
   for (i = 0; i < termA.nblocks; i++)
@@ -363,16 +363,16 @@ int adj_destroy_term(adj_term* term)
 /* Adds additional non-diagonal blocks to an existing equation */
 int adj_add_term_to_equation(adj_term term, adj_equation* equation)
 {
-	adj_equation old_equation = *equation;
+  adj_equation old_equation = *equation;
 
-	equation->nblocks = old_equation.nblocks + term.nblocks;
+  equation->nblocks = old_equation.nblocks + term.nblocks;
 
-	equation->blocks =  (adj_block*) malloc(equation->nblocks * sizeof(adj_block));
+  equation->blocks =  (adj_block*) malloc(equation->nblocks * sizeof(adj_block));
   ADJ_CHKMALLOC(equation->blocks);
   memcpy(equation->blocks, old_equation.blocks, old_equation.nblocks * sizeof(adj_block));
   memcpy(equation->blocks + old_equation.nblocks, term.blocks, term.nblocks * sizeof(adj_block));
 
-	equation->targets = (adj_variable*) malloc(equation->nblocks * sizeof(adj_variable));
+  equation->targets = (adj_variable*) malloc(equation->nblocks * sizeof(adj_variable));
   ADJ_CHKMALLOC(equation->targets);
   memcpy(equation->targets, old_equation.targets, old_equation.nblocks * sizeof(adj_variable));
   memcpy(equation->targets + old_equation.nblocks, term.targets, term.nblocks * sizeof(adj_variable));

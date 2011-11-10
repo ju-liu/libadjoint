@@ -553,20 +553,20 @@ int adj_checkpoint_equation(adj_adjointer* adjointer, int eqn_number, int cs)
     {
       if (eqn.blocks[i].has_nonlinear_block == ADJ_TRUE)
       {
-      	adj_nonlinear_block nonlinear_block = eqn.blocks[i].nonlinear_block;
-      	for (j=0; j<nonlinear_block.ndepends; j++)
-      	{
-      	  adj_variable_data* var_data;
-      	  var = eqn.blocks[i].nonlinear_block.depends[j];
-      		ierr = adj_find_variable_data(&(adjointer->varhash), &var, &var_data);
-      		if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
+        adj_nonlinear_block nonlinear_block = eqn.blocks[i].nonlinear_block;
+        for (j=0; j<nonlinear_block.ndepends; j++)
+        {
+          adj_variable_data* var_data;
+          var = eqn.blocks[i].nonlinear_block.depends[j];
+          ierr = adj_find_variable_data(&(adjointer->varhash), &var, &var_data);
+          if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
 
-      		if (var_data->equation<eqn_number)
-      		{
-      			ierr = adj_checkpoint_variable(adjointer, var, cs);
-      			if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
-      		}
-      	}
+          if (var_data->equation<eqn_number)
+          {
+            ierr = adj_checkpoint_variable(adjointer, var, cs);
+            if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
+          }
+        }
       }
     }
 
@@ -577,15 +577,15 @@ int adj_checkpoint_equation(adj_adjointer* adjointer, int eqn_number, int cs)
       var=eqn.targets[i];
 
       if (adj_variable_equal(&var, &eqn.variable, 1)) /* This variable goes on the lhs */
-      	continue;
+        continue;
 
       ierr = adj_find_variable_data(&(adjointer->varhash), &var, &var_data);
       if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
 
       if (var_data->equation<eqn_number)
       {
-      	ierr = adj_checkpoint_variable(adjointer, var, cs);
-      	if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
+        ierr = adj_checkpoint_variable(adjointer, var, cs);
+        if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
       }
     }
 
@@ -599,8 +599,8 @@ int adj_checkpoint_equation(adj_adjointer* adjointer, int eqn_number, int cs)
 
       if (var_data->equation<eqn_number)
       {
-      	ierr = adj_checkpoint_variable(adjointer, var, cs);
-      	if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
+        ierr = adj_checkpoint_variable(adjointer, var, cs);
+        if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
       }
     }
 
@@ -618,25 +618,25 @@ int adj_checkpoint_equation(adj_adjointer* adjointer, int eqn_number, int cs)
 
       for (i = 0; i < var_data->ndepending_timesteps; i++)
       {
-      	int timestep = var_data->depending_timesteps[i];
-      	functional_data_ptr = adjointer->timestep_data[timestep].functional_data_start;
-      	while (functional_data_ptr != NULL)
-      	{
-      		int k;
-      		for (k = 0; k < functional_data_ptr->ndepends; k++)
-      		{
-      			var_dep=functional_data_ptr->dependencies[k];
-      			ierr = adj_find_variable_data(&(adjointer->varhash), &var, &var_data_dep);
-      			if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
+        int timestep = var_data->depending_timesteps[i];
+        functional_data_ptr = adjointer->timestep_data[timestep].functional_data_start;
+        while (functional_data_ptr != NULL)
+        {
+          int k;
+          for (k = 0; k < functional_data_ptr->ndepends; k++)
+          {
+            var_dep=functional_data_ptr->dependencies[k];
+            ierr = adj_find_variable_data(&(adjointer->varhash), &var, &var_data_dep);
+            if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
 
-      			if (var_data_dep->equation<eqn_number)
-      			{
-      				ierr = adj_checkpoint_variable(adjointer, var_dep, cs);
-      				if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
-      			}
-      		}
-      		functional_data_ptr = functional_data_ptr->next;
-      	}
+            if (var_data_dep->equation<eqn_number)
+            {
+              ierr = adj_checkpoint_variable(adjointer, var_dep, cs);
+              if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
+            }
+          }
+          functional_data_ptr = functional_data_ptr->next;
+        }
       }
 
     }
@@ -846,9 +846,9 @@ int adj_get_revolve_checkpoint_storage(adj_adjointer* adjointer, adj_equation eq
         /* At that point we should be solving for the last equation. */
         if ((adjointer->revolve_data.steps-1) != adjointer->revolve_data.current_timestep)
         {
-      		adj_variable_str(equation.variable, buf, ADJ_NAME_LEN);
-      		snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "You told revolve that the last timestep is %i, but you are about to register an equation for variable %s with timestep %i.", adjointer->revolve_data.steps-1, buf, adjointer->revolve_data.current_timestep);
-      		return adj_chkierr_auto(ADJ_ERR_REVOLVE_ERROR);
+          adj_variable_str(equation.variable, buf, ADJ_NAME_LEN);
+          snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "You told revolve that the last timestep is %i, but you are about to register an equation for variable %s with timestep %i.", adjointer->revolve_data.steps-1, buf, adjointer->revolve_data.current_timestep);
+          return adj_chkierr_auto(ADJ_ERR_REVOLVE_ERROR);
         }
         break;
 
