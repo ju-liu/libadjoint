@@ -235,7 +235,7 @@ int adj_register_equation(adj_adjointer* adjointer, adj_equation equation, int* 
       char buf[ADJ_NAME_LEN];
       adj_variable_str(equation.variable, buf, ADJ_NAME_LEN);
       snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "We have already registered an equation for variable %s.", buf);
-      return ADJ_ERR_INVALID_INPUTS;
+      return adj_chkierr_auto(ADJ_ERR_INVALID_INPUTS);
     }
   }
 
@@ -245,7 +245,7 @@ int adj_register_equation(adj_adjointer* adjointer, adj_equation equation, int* 
     if (equation.variable.timestep != 0) /* this isn't timestep 0 */
     {
       strncpy(adj_error_msg, "The first equation registered must have timestep 0.", ADJ_ERROR_MSG_BUF);
-      return ADJ_ERR_INVALID_INPUTS;
+      return adj_chkierr_auto(ADJ_ERR_INVALID_INPUTS);
     }
   }
   else /* we have registered an equation before */
@@ -258,7 +258,7 @@ int adj_register_equation(adj_adjointer* adjointer, adj_equation equation, int* 
       snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, \
           "Timestep numbers must either stay the same or increment by one. Valid values are %d or %d, but you have supplied %d.", \
           old_timestep, old_timestep+1, equation.variable.timestep);
-      return ADJ_ERR_INVALID_INPUTS;
+      return adj_chkierr_auto(ADJ_ERR_INVALID_INPUTS);
     }
   }
 
@@ -291,7 +291,7 @@ int adj_register_equation(adj_adjointer* adjointer, adj_equation equation, int* 
         char buf[ADJ_NAME_LEN];
         adj_variable_str(equation.targets[i], buf, ADJ_NAME_LEN);
         snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Have %s as a target in an equation, but that variable has not been solved for previously.", buf);
-        return ADJ_ERR_INVALID_INPUTS;
+        return adj_chkierr_auto(ADJ_ERR_INVALID_INPUTS);
       }
     }
   }
@@ -541,10 +541,10 @@ int adj_checkpoint_equation(adj_adjointer* adjointer, int eqn_number, int cs)
   adj_variable var;
 
   if (!(cs == ADJ_CHECKPOINT_STORAGE_MEMORY || cs == ADJ_CHECKPOINT_STORAGE_DISK))
-    return ADJ_ERR_INVALID_INPUTS;
+    return adj_chkierr_auto(ADJ_ERR_INVALID_INPUTS);
 
   if (eqn_number<0 || eqn_number>=adjointer->nequations)
-    return ADJ_ERR_INVALID_INPUTS;
+    return adj_chkierr_auto(ADJ_ERR_INVALID_INPUTS);
 
   /* We store variables that are required for equations >= eqn_number 
    * but are computed at an equation < eqn_number 
@@ -653,7 +653,7 @@ int adj_checkpoint_equation(adj_adjointer* adjointer, int eqn_number, int cs)
   else if (cs == ADJ_CHECKPOINT_STORAGE_DISK)
     adjointer->equations[eqn_number].disk_checkpoint = ADJ_TRUE;
   else
-    return ADJ_ERR_INVALID_INPUTS;
+    return adj_chkierr_auto(ADJ_ERR_INVALID_INPUTS);
 
   return ADJ_OK;
 }
@@ -673,7 +673,7 @@ int adj_checkpoint_variable(adj_adjointer* adjointer, adj_variable var, int cs)
     char buf[ADJ_NAME_LEN];
     adj_variable_str(var, buf, ADJ_NAME_LEN);
     snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Trying to to checkpoint variable %s, but it is not recorded.", buf);
-    return ADJ_ERR_NEED_VALUE;
+    return adj_chkierr_auto(ADJ_ERR_NEED_VALUE);
   }
 
   /* Create the filename in case we need to store/load from disk */
@@ -712,7 +712,7 @@ int adj_checkpoint_variable(adj_adjointer* adjointer, adj_variable var, int cs)
     if (adjointer->callbacks.vec_from_file == NULL)
     {
       strncpy(adj_error_msg, "Need the vec_from_file data callback, but it hasn't been supplied.", ADJ_ERROR_MSG_BUF);
-      return ADJ_ERR_NEED_CALLBACK;
+      return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
     }
     adjointer->callbacks.vec_from_file(&(var_data->storage.value), filename);
     var_data->storage.storage_memory_has_value=ADJ_TRUE;
@@ -744,7 +744,7 @@ int adj_get_revolve_checkpoint_storage(adj_adjointer* adjointer, adj_equation eq
     {
       adj_variable_str(equation.variable, buf, ADJ_NAME_LEN);
       snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "The adjointer and revolve are not consistent (in adj_register_equation of variable %s). This can happen when one tries to register an equation after solving the first adjoint equation.", buf);
-      return ADJ_ERR_REVOLVE_ERROR;
+      return adj_chkierr_auto(ADJ_ERR_REVOLVE_ERROR);
     }
   }
   else
@@ -758,7 +758,7 @@ int adj_get_revolve_checkpoint_storage(adj_adjointer* adjointer, adj_equation eq
     if (equation.variable.timestep != 0) 
     {
       snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "With revolve as checkpoint strategy the first equation has to solve for a variable at timestep 0.");
-      return ADJ_ERR_INVALID_INPUTS;
+      return adj_chkierr_auto(ADJ_ERR_INVALID_INPUTS);
     }
   }
 
@@ -768,7 +768,7 @@ int adj_get_revolve_checkpoint_storage(adj_adjointer* adjointer, adj_equation eq
   {
     adj_variable_str(equation.variable, buf, ADJ_NAME_LEN);
     snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "With revolve as checkpoint strategy the equations have to be registered chronologically, but equation for variable %s is out of order.", buf);
-    return ADJ_ERR_INVALID_INPUTS;
+    return adj_chkierr_auto(ADJ_ERR_INVALID_INPUTS);
   }
 
   /* Update revolve state */
@@ -786,7 +786,7 @@ int adj_get_revolve_checkpoint_storage(adj_adjointer* adjointer, adj_equation eq
       {
         adj_variable_str(equation.variable, buf, ADJ_NAME_LEN);
         snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "An internal error occured: The adjointer and revolve are out of sync (in adj_register_equation of variable %s).", buf);
-        return ADJ_ERR_REVOLVE_ERROR;
+        return adj_chkierr_auto(ADJ_ERR_REVOLVE_ERROR);
       }
 
       /* In the case that we reached the first equation of the end timestep associated with */
@@ -845,7 +845,7 @@ int adj_get_revolve_checkpoint_storage(adj_adjointer* adjointer, adj_equation eq
       case CACTION_ERROR:
         adj_variable_str(equation.variable, buf, ADJ_NAME_LEN);
         snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "An internal error occured: Irregular termination of revolve (in adj_register_equation of variable %s).", buf);
-        return ADJ_ERR_REVOLVE_ERROR;
+        return adj_chkierr_auto(ADJ_ERR_REVOLVE_ERROR);
 
       case CACTION_FIRSTRUN:
         /* At that point we should be solving for the last equation. */
@@ -853,14 +853,14 @@ int adj_get_revolve_checkpoint_storage(adj_adjointer* adjointer, adj_equation eq
         {
       		adj_variable_str(equation.variable, buf, ADJ_NAME_LEN);
       		snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "You told revolve that the last timestep is %i, but you are about to register an equation for variable %s with timestep %i.", adjointer->revolve_data.steps-1, buf, adjointer->revolve_data.current_timestep);
-      		return ADJ_ERR_REVOLVE_ERROR;
+      		return adj_chkierr_auto(ADJ_ERR_REVOLVE_ERROR);
         }
         break;
 
       default: /* This case includes CACTION_YOUTURN which is only expected when restoring from a checkpoint */
         adj_variable_str(equation.variable, buf, ADJ_NAME_LEN);
         snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "An internal error occured: The adjointer and revolve are out of sync (in adj_register_equation of variable %s).", buf);
-        return ADJ_ERR_REVOLVE_ERROR;
+        return adj_chkierr_auto(ADJ_ERR_REVOLVE_ERROR);
   }
 
   return ADJ_OK;
@@ -877,13 +877,13 @@ int adj_initialise_revolve(adj_adjointer* adjointer)
   if (snaps_in_ram < 0)
   {
     snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Checkpointing needs at least one memory checkpoint plus one disk or memory checkpoint.  Make sure you call adj_set_revolve_options with snaps_in_ram greater or equal than 1.");
-    return ADJ_ERR_INVALID_INPUTS;
+    return adj_chkierr_auto(ADJ_ERR_INVALID_INPUTS);
   }
   /* We need at least one snapshot */
   if (snaps <= 0)
   {
     snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Checkpointing needs at least one memory checkpoint plus one disk or memory checkpoint.  Make sure you call adj_set_revolve_options with snaps greater or equal than 2.");
-    return ADJ_ERR_INVALID_INPUTS;
+    return adj_chkierr_auto(ADJ_ERR_INVALID_INPUTS);
   }
 
 
@@ -899,7 +899,7 @@ int adj_initialise_revolve(adj_adjointer* adjointer)
     else
     {
       snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "You chose to use offline revolve as checkpointing strategy but have not configured it correctly. Make sure you call adj_set_revolve_options with positive 'steps' and 'snaps' arguments.");
-      return ADJ_ERR_INVALID_INPUTS;
+      return adj_chkierr_auto(ADJ_ERR_INVALID_INPUTS);
     }
   }
 
@@ -911,7 +911,7 @@ int adj_initialise_revolve(adj_adjointer* adjointer)
     else
     {
       snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "You chose to use multistage revolve as checkpointing strategy but have not configured it correctly. Make sure you call adj_set_revolve_options with positive 'steps', 'snaps' and 'snaps_in_ram' arguments.");
-      return ADJ_ERR_INVALID_INPUTS;
+      return adj_chkierr_auto(ADJ_ERR_INVALID_INPUTS);
     }
   }
 
@@ -926,13 +926,13 @@ int adj_initialise_revolve(adj_adjointer* adjointer)
     else
     {
       snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "You chose to use online revolve as checkpointing strategy but have not configured it correctly. Make sure you call adj_set_revolve_options with a positive 'snaps' argument.");
-      return ADJ_ERR_INVALID_INPUTS;
+      return adj_chkierr_auto(ADJ_ERR_INVALID_INPUTS);
     }
   }
   else
   {
     snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Unknown checkpointing strategy.");
-    return ADJ_ERR_INVALID_INPUTS;
+    return adj_chkierr_auto(ADJ_ERR_INVALID_INPUTS);
   }
 
   return ADJ_OK;
@@ -943,7 +943,7 @@ int adj_set_option(adj_adjointer* adjointer, int option, int choice)
   if (option < 0 || option >= ADJ_NO_OPTIONS)
   {
     strncpy(adj_error_msg, "Unknown option.", ADJ_ERROR_MSG_BUF);
-    return ADJ_ERR_INVALID_INPUTS;
+    return adj_chkierr_auto(ADJ_ERR_INVALID_INPUTS);
   }
 
   adjointer->options[option] = choice;
@@ -983,7 +983,7 @@ int adj_record_variable(adj_adjointer* adjointer, adj_variable var, adj_storage_
   if (!storage.storage_memory_has_value && !storage.storage_disk_has_value)
   {
     snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Trying to record a variable from a storage object with no value attached.");
-    return ADJ_ERR_INVALID_INPUTS;
+    return adj_chkierr_auto(ADJ_ERR_INVALID_INPUTS);
   }
 
   /* If we don't have a value recorded already, any compare or overwrite flags can be ignored */
@@ -1023,7 +1023,7 @@ int adj_record_variable(adj_adjointer* adjointer, adj_variable var, adj_storage_
       if (!storage.storage_memory_has_value) /* Comparing variables only works when recording to memory */ 
       {
         strncpy(adj_error_msg, "Overwriting of values and comparing with previously computed values currently only works when recording to memory.", ADJ_ERROR_MSG_BUF);
-        return ADJ_ERR_NOT_IMPLEMENTED;
+        return adj_chkierr_auto(ADJ_ERR_NOT_IMPLEMENTED);
       }
 
       ierr = adj_record_variable_compare(adjointer, data_ptr, var, storage);
@@ -1061,7 +1061,7 @@ int adj_record_variable(adj_adjointer* adjointer, adj_variable var, adj_storage_
         char buf[ADJ_NAME_LEN];
         adj_variable_str(var, buf, ADJ_NAME_LEN);
         snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Variable %s already has a value.", buf);
-        return ADJ_WARN_ALREADY_RECORDED;
+        return adj_chkierr_auto(ADJ_WARN_ALREADY_RECORDED);
       }
     }
   }
@@ -1075,24 +1075,24 @@ int adj_record_variable_core_memory(adj_adjointer* adjointer, adj_variable_data*
   if (adjointer->callbacks.vec_duplicate == NULL)
   {
     snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "You have asked to record a value, but no ADJ_VEC_DUPLICATE_CB callback has been provided.");
-    return ADJ_ERR_NEED_CALLBACK;
+    return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
   }
   if (adjointer->callbacks.vec_axpy == NULL)
   {
     snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "You have asked to record a value, but no ADJ_VEC_AXPY_CB callback has been provided.");
-    return ADJ_ERR_NEED_CALLBACK;
+    return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
   }
 
   if (storage.storage_memory_has_value != ADJ_TRUE)
   {
     snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Can not record a variable whose storage object has no value.");
-    return ADJ_ERR_NEED_VALUE;
+    return adj_chkierr_auto(ADJ_ERR_NEED_VALUE);
   }
 
   if (data_ptr->storage.storage_memory_has_value==ADJ_TRUE)
   {
     snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Trying to overwrite a variable value in adj_record_variable_core_memory which is not supported.");
-    return ADJ_ERR_INVALID_INPUTS;
+    return adj_chkierr_auto(ADJ_ERR_INVALID_INPUTS);
   }
 
   switch (storage.storage_memory_type)
@@ -1112,7 +1112,7 @@ int adj_record_variable_core_memory(adj_adjointer* adjointer, adj_variable_data*
       break;
     default:
       strncpy(adj_error_msg, "Memory storage types other than ADJ_STORAGE_MEMORY_COPY and ADJ_STORAGE_MEMORY_INCREF  are not implemented yet.", ADJ_ERROR_MSG_BUF);
-      return ADJ_ERR_NOT_IMPLEMENTED;
+      return adj_chkierr_auto(ADJ_ERR_NOT_IMPLEMENTED);
   }
 
   return ADJ_OK;
@@ -1124,19 +1124,19 @@ int adj_record_variable_core_disk(adj_adjointer* adjointer, adj_variable_data* d
   if (adjointer->callbacks.vec_to_file == NULL)
   {
     snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "You have asked to record a value to disk, but no ADJ_VEC_TO_FILE_CB callback has been provided.");
-    return ADJ_ERR_NEED_CALLBACK;
+    return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
   }
 
   if (storage.storage_disk_has_value != ADJ_TRUE)
   {
     snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Can not record a variable whose storage object has no value.");
-    return ADJ_ERR_NEED_VALUE;
+    return adj_chkierr_auto(ADJ_ERR_NEED_VALUE);
   }
 
   if (data_ptr->storage.storage_disk_has_value == ADJ_TRUE)
   {
     snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Trying to overwrite a variable value in adj_record_variable_core_disk which is not supported.");
-    return ADJ_ERR_NOT_IMPLEMENTED;
+    return adj_chkierr_auto(ADJ_ERR_NOT_IMPLEMENTED);
   }
 
   data_ptr->storage.storage_disk_has_value = storage.storage_disk_has_value;
@@ -1157,27 +1157,27 @@ int adj_record_variable_compare(adj_adjointer* adjointer, adj_variable_data* dat
     if (adjointer->callbacks.vec_get_norm == NULL)
     {
       snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "You have asked to compare a value against one already recorded, but no ADJ_VEC_GET_NORM_CB callback has been provided.");
-      return ADJ_ERR_NEED_CALLBACK;
+      return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
     }
     if (adjointer->callbacks.vec_duplicate == NULL)
     {
       snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "You have asked to compare a value against one already recorded, but no ADJ_VEC_DUPLICATE_CB callback has been provided.");
-      return ADJ_ERR_NEED_CALLBACK;
+      return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
     }
     if (adjointer->callbacks.vec_axpy == NULL)
     {
       snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "You have asked to compare a value against one already recorded, but no ADJ_VEC_AXPY_CB callback has been provided.");
-      return ADJ_ERR_NEED_CALLBACK;
+      return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
     }
     if (adjointer->callbacks.vec_destroy == NULL)
     {
       snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "You have asked to compare a value against one already recorded, but no ADJ_VEC_DESTROY_CB callback has been provided.");
-      return ADJ_ERR_NEED_CALLBACK;
+      return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
     }
     if (storage.storage_memory_type != ADJ_STORAGE_MEMORY_COPY && storage.storage_memory_type != ADJ_STORAGE_MEMORY_INCREF)
     {
       snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Sorry, comparison of values hasn't been generalised to storage types other than ADJ_STORAGE_MEMORY_COPY and ADJ_STORAGE_MEMORY_INCREF yet.");
-      return ADJ_ERR_NOT_IMPLEMENTED;
+      return adj_chkierr_auto(ADJ_ERR_NOT_IMPLEMENTED);
       /* For future developers: the reason is that storage.value (used a few lines below) might not exist */
     }
 
@@ -1192,7 +1192,7 @@ int adj_record_variable_compare(adj_adjointer* adjointer, adj_variable_data* dat
       char buf[ADJ_NAME_LEN];
       adj_variable_str(var, buf, ADJ_NAME_LEN);
       snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Comparing %s against previously recorded value: norm of the difference is %e (> tolerance of %e)", buf, norm, storage.comparison_tolerance);
-      return ADJ_WARN_COMPARISON_FAILED;
+      return adj_chkierr_auto(ADJ_WARN_COMPARISON_FAILED);
     }
     else
     {
@@ -1234,7 +1234,7 @@ int adj_register_operator_callback(adj_adjointer* adjointer, int type, char* nam
       break;
     default:
       strncpy(adj_error_msg, "Unknown callback type.", ADJ_ERROR_MSG_BUF);
-      return ADJ_ERR_INVALID_INPUTS;
+      return adj_chkierr_auto(ADJ_ERR_INVALID_INPUTS);
   }
   /* First, we look for an existing callback data structure that might already exist, to replace the function */
   cb_ptr = cb_list_ptr->firstnode;
@@ -1325,7 +1325,7 @@ int adj_register_data_callback(adj_adjointer* adjointer, int type, void (*fn)(vo
 
    default:
       snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Unknown data callback type %d.", type);
-      return ADJ_ERR_INVALID_INPUTS;
+      return adj_chkierr_auto(ADJ_ERR_INVALID_INPUTS);
   }
 
   return ADJ_OK;
@@ -1441,7 +1441,7 @@ int adj_forget_adjoint_equation(adj_adjointer* adjointer, int equation)
   if (equation >= adjointer->nequations)
   {
     strncpy(adj_error_msg, "No such equation.", ADJ_ERROR_MSG_BUF);
-    return ADJ_ERR_INVALID_INPUTS;
+    return adj_chkierr_auto(ADJ_ERR_INVALID_INPUTS);
   }
 
   data = adjointer->vardata.firstnode;
@@ -1526,7 +1526,7 @@ int adj_forget_forward_equation_until(adj_adjointer* adjointer, int equation, in
   if (equation >= adjointer->nequations)
   {
     strncpy(adj_error_msg, "No such equation.", ADJ_ERROR_MSG_BUF);
-    return ADJ_ERR_INVALID_INPUTS;
+    return adj_chkierr_auto(ADJ_ERR_INVALID_INPUTS);
   }
 
   data = adjointer->vardata.firstnode;
@@ -1634,7 +1634,7 @@ int adj_find_operator_callback(adj_adjointer* adjointer, int type, char* name, v
       break;
     default:
       strncpy(adj_error_msg, "Unknown callback type.", ADJ_ERROR_MSG_BUF);
-      return ADJ_ERR_INVALID_INPUTS;
+      return adj_chkierr_auto(ADJ_ERR_INVALID_INPUTS);
   }
 
   cb_ptr = cb_list_ptr->firstnode;
@@ -1649,7 +1649,7 @@ int adj_find_operator_callback(adj_adjointer* adjointer, int type, char* name, v
   }
 
   snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Could not find callback %s for operator %s.", adj_callback_types[type-1], name);
-  return ADJ_ERR_NEED_CALLBACK;
+  return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
 }
 
 int adj_find_functional_callback(adj_adjointer* adjointer, char* name, void (**fn)(adj_adjointer* adjointer, int timestep, int ndepends, adj_variable* variables, adj_vector* dependencies, char* name, adj_scalar* output))
@@ -1671,7 +1671,7 @@ int adj_find_functional_callback(adj_adjointer* adjointer, char* name, void (**f
   }
 
   snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Could not find functional callback %s.", name);
-  return ADJ_ERR_NEED_CALLBACK;
+  return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
 }
 
 int adj_find_functional_derivative_callback(adj_adjointer* adjointer, char* name, void (**fn)(adj_adjointer* adjointer, adj_variable derivative, int ndepends, adj_variable* variables, adj_vector* dependencies, char* name, adj_vector* output))
@@ -1693,7 +1693,7 @@ int adj_find_functional_derivative_callback(adj_adjointer* adjointer, char* name
   }
 
   snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Could not find functional derivative callback %s.", name);
-  return ADJ_ERR_NEED_CALLBACK;
+  return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
 }
 
 int adj_get_variable_value(adj_adjointer* adjointer, adj_variable var, adj_vector* value)
@@ -1726,7 +1726,7 @@ int adj_get_variable_value(adj_adjointer* adjointer, adj_variable var, adj_vecto
     if (adjointer->callbacks.vec_from_file == NULL)
     {
       snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "You have asked to get a value from disk, but no ADJ_VEC_FROM_FILE_CB callback has been provided.");
-      return ADJ_ERR_NEED_CALLBACK;
+      return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
     }
     adjointer->callbacks.vec_from_file(value, data_ptr->storage.storage_disk_filename);
   }
@@ -1738,7 +1738,7 @@ int adj_has_variable_value(adj_adjointer* adjointer, adj_variable var)
   if((adj_has_variable_value_memory(adjointer, var) == ADJ_OK) || (adj_has_variable_value_disk(adjointer, var) == ADJ_OK))
     return ADJ_OK;
   else
-    return ADJ_ERR_NEED_VALUE;
+    return adj_chkierr_auto(ADJ_ERR_NEED_VALUE);
 }
 
 int adj_has_variable_value_memory(adj_adjointer* adjointer, adj_variable var)
@@ -1756,7 +1756,7 @@ int adj_has_variable_value_memory(adj_adjointer* adjointer, adj_variable var)
   }
 
   if (!data_ptr->storage.storage_memory_has_value)
-    return ADJ_ERR_NEED_VALUE;
+    return adj_chkierr_auto(ADJ_ERR_NEED_VALUE);
 
   return ADJ_OK;
 }
@@ -1776,7 +1776,7 @@ int adj_has_variable_value_disk(adj_adjointer* adjointer, adj_variable var)
   }
 
   if (!data_ptr->storage.storage_disk_has_value)
-    return ADJ_ERR_NEED_VALUE;
+    return adj_chkierr_auto(ADJ_ERR_NEED_VALUE);
 
   return ADJ_OK;
 }
@@ -1856,7 +1856,7 @@ int adj_forget_variable_value_from_memory(adj_adjointer* adjointer, adj_variable
   if (adjointer->callbacks.vec_destroy == NULL)
   {
     strncpy(adj_error_msg, "Need vec_destroy data callback.", ADJ_ERROR_MSG_BUF);
-    return ADJ_ERR_NEED_CALLBACK;
+    return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
   }
 
   assert(data->storage.storage_memory_has_value);
@@ -1992,13 +1992,13 @@ int adj_storage_set_compare(adj_storage_data* data, int compare, adj_scalar comp
   if (compare != ADJ_TRUE && compare != ADJ_FALSE)
   {
     snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "compare must either be ADJ_TRUE or ADJ_FALSE.");
-    return ADJ_ERR_INVALID_INPUTS;
+    return adj_chkierr_auto(ADJ_ERR_INVALID_INPUTS);
   }
 
   if ((float) comparison_tolerance < 0.0)
   {
     snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "comparison_tolerance must be >= 0.0.");
-    return ADJ_ERR_INVALID_INPUTS;
+    return adj_chkierr_auto(ADJ_ERR_INVALID_INPUTS);
   }
 
   data->compare = compare;
@@ -2011,7 +2011,7 @@ int adj_storage_set_overwrite(adj_storage_data* data, int overwrite)
   if (overwrite != ADJ_TRUE && overwrite != ADJ_FALSE)
   {
     snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "overwrite must either be ADJ_TRUE or ADJ_FALSE.");
-    return ADJ_ERR_INVALID_INPUTS;
+    return adj_chkierr_auto(ADJ_ERR_INVALID_INPUTS);
   }
 
   data->overwrite = overwrite;
@@ -2024,7 +2024,7 @@ int adj_storage_set_checkpoint(adj_storage_data* data, int checkpoint)
   if (checkpoint != ADJ_TRUE && checkpoint != ADJ_FALSE)
   {
     snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "checkpoint must either be ADJ_TRUE or ADJ_FALSE.");
-    return ADJ_ERR_INVALID_INPUTS;
+    return adj_chkierr_auto(ADJ_ERR_INVALID_INPUTS);
   }
 
   data->storage_memory_is_checkpoint=checkpoint;
@@ -2050,7 +2050,7 @@ int adj_add_new_hash_entry(adj_adjointer* adjointer, adj_variable* var, adj_vari
     adj_variable_str(*var, buf, ADJ_NAME_LEN);
     adj_variable_str(auxvar, auxbuf, ADJ_NAME_LEN);
     snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Tried to add a hash entry for %s, but already have a hash entry for %s.", buf, auxbuf);
-    return ADJ_ERR_INVALID_INPUTS;
+    return adj_chkierr_auto(ADJ_ERR_INVALID_INPUTS);
   }
 
   *data = (adj_variable_data*) malloc(sizeof(adj_variable_data));
@@ -2115,7 +2115,7 @@ int adj_iteration_count(adj_adjointer* adjointer, adj_variable variable, int* co
     char buf[ADJ_NAME_LEN];
     adj_variable_str(variable, buf, ADJ_NAME_LEN);
     snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Error in adj_iteration_count: No iteration found for supplied variable %s.", buf);
-    return ADJ_ERR_INVALID_INPUTS;
+    return adj_chkierr_auto(ADJ_ERR_INVALID_INPUTS);
   }
   return ADJ_OK;
 }
@@ -2125,7 +2125,7 @@ int adj_timestep_start_equation(adj_adjointer* adjointer, int timestep, int* sta
   if (timestep < 0 || timestep >= adjointer->ntimesteps)
   {
     strncpy(adj_error_msg, "Invalid timestep supplied to adj_timestep_start.", ADJ_ERROR_MSG_BUF);
-    return ADJ_ERR_INVALID_INPUTS;
+    return adj_chkierr_auto(ADJ_ERR_INVALID_INPUTS);
   }
 
   *start = adjointer->timestep_data[timestep].start_equation;
@@ -2137,7 +2137,7 @@ int adj_timestep_end_equation(adj_adjointer* adjointer, int timestep, int* end)
   if (timestep < 0 || timestep >= adjointer->ntimesteps)
   {
     strncpy(adj_error_msg, "Invalid timestep supplied to adj_timestep_end.", ADJ_ERROR_MSG_BUF);
-    return ADJ_ERR_INVALID_INPUTS;
+    return adj_chkierr_auto(ADJ_ERR_INVALID_INPUTS);
   }
 
   if (timestep < adjointer->ntimesteps-1)
@@ -2158,13 +2158,13 @@ int adj_timestep_set_times(adj_adjointer* adjointer, int timestep, adj_scalar st
   if (timestep < 0)
   {
     strncpy(adj_error_msg, "Invalid timestep supplied to adj_timestep_set_times.", ADJ_ERROR_MSG_BUF);
-    return ADJ_ERR_INVALID_INPUTS;
+    return adj_chkierr_auto(ADJ_ERR_INVALID_INPUTS);
   }
 
   if (end <= start)
   {
     strncpy(adj_error_msg, "End time cannot be less than start time.", ADJ_ERROR_MSG_BUF);
-    return ADJ_ERR_INVALID_INPUTS;
+    return adj_chkierr_auto(ADJ_ERR_INVALID_INPUTS);
   }
 
   if (adjointer->ntimesteps <= timestep)
@@ -2184,7 +2184,7 @@ int adj_timestep_get_times(adj_adjointer* adjointer, int timestep, adj_scalar* s
   if (timestep < 0 || timestep >= adjointer->ntimesteps)
   {
     strncpy(adj_error_msg, "Invalid timestep supplied to adj_timestep_get_times.", ADJ_ERROR_MSG_BUF);
-    return ADJ_ERR_INVALID_INPUTS;
+    return adj_chkierr_auto(ADJ_ERR_INVALID_INPUTS);
   }
 
   *start = adjointer->timestep_data[timestep].start_time;
@@ -2205,7 +2205,7 @@ int adj_timestep_get_times(adj_adjointer* adjointer, int timestep, adj_scalar* s
   if (*start == ADJ_UNSET && *end == ADJ_UNSET)
   {
     snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "You have asked for the times for timestep %d, but they have not been set.", timestep);
-    return ADJ_ERR_INVALID_INPUTS;
+    return adj_chkierr_auto(ADJ_ERR_INVALID_INPUTS);
   }
   else
     return ADJ_OK;
@@ -2220,13 +2220,13 @@ int adj_timestep_set_functional_dependencies(adj_adjointer* adjointer, int times
   if (timestep < 0)
   {
     strncpy(adj_error_msg, "Invalid timestep supplied to adj_timestep_set_times.", ADJ_ERROR_MSG_BUF);
-    return ADJ_ERR_INVALID_INPUTS;
+    return adj_chkierr_auto(ADJ_ERR_INVALID_INPUTS);
   }
 
   if (ndepends < 0)
   {
     strncpy(adj_error_msg, "Must supply a nonnegative number of dependencies.", ADJ_ERROR_MSG_BUF);
-    return ADJ_ERR_INVALID_INPUTS;
+    return adj_chkierr_auto(ADJ_ERR_INVALID_INPUTS);
   }
 
   for (i = 0; i < ndepends; i++)
@@ -2234,7 +2234,7 @@ int adj_timestep_set_functional_dependencies(adj_adjointer* adjointer, int times
     if (dependencies[i].type != ADJ_FORWARD)
     {
       snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Functional dependencies must be forward variables.");
-      return ADJ_ERR_INVALID_INPUTS;
+      return adj_chkierr_auto(ADJ_ERR_INVALID_INPUTS);
     }
   }
 
@@ -2251,7 +2251,7 @@ int adj_timestep_set_functional_dependencies(adj_adjointer* adjointer, int times
     if (strncmp(functional_data_ptr->name, functional, ADJ_NAME_LEN) == 0)
     {
       snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "The dependencies for functional %s at timestep %d have been already set.", functional, timestep);
-      return ADJ_ERR_INVALID_INPUTS;
+      return adj_chkierr_auto(ADJ_ERR_INVALID_INPUTS);
     }
     functional_data_ptr = functional_data_ptr->next;
   }
@@ -2441,5 +2441,5 @@ int adj_variable_get_depending_timestep(adj_adjointer* adjointer, adj_variable v
     }
   }
 
-  return ADJ_ERR_INVALID_INPUTS;
+  return adj_chkierr_auto(ADJ_ERR_INVALID_INPUTS);
 }

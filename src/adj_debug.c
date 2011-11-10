@@ -98,7 +98,7 @@ int adj_adjointer_check_checkpoints(adj_adjointer* adjointer)
       				char buf[255];
       				adj_variable_str(fwd_var, buf, 255);
       				snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Need a memory checkpoint of variable %s, but don't have one.", buf);
-      				return ADJ_ERR_NEED_VALUE;
+      				return adj_chkierr_auto(ADJ_ERR_NEED_VALUE);
       			}
       		if (eqn.disk_checkpoint == ADJ_TRUE)
       			if ((adj_has_variable_value_disk(adjointer, fwd_var) != ADJ_OK) || (adj_is_variable_disk_checkpoint(adjointer, fwd_var) != ADJ_TRUE))
@@ -106,7 +106,7 @@ int adj_adjointer_check_checkpoints(adj_adjointer* adjointer)
       				char buf[255];
       				adj_variable_str(fwd_var, buf, 255);
       				snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Need a disk checkpoint of variable %s, but don't have one.", buf);
-      				return ADJ_ERR_NEED_VALUE;
+      				return adj_chkierr_auto(ADJ_ERR_NEED_VALUE);
       			}
       	}
       }
@@ -121,7 +121,7 @@ int adj_adjointer_check_checkpoints(adj_adjointer* adjointer)
       		char buf[255];
       		adj_variable_str(fwd_var, buf, 255);
       		snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Need a memory checkpoint of variable %s, but don't have one.", buf);
-      		return ADJ_ERR_NEED_VALUE;
+      		return adj_chkierr_auto(ADJ_ERR_NEED_VALUE);
       	}
       if (eqn.disk_checkpoint == ADJ_TRUE)
       	if ((adj_has_variable_value_disk(adjointer, fwd_var) != ADJ_OK) || (adj_is_variable_disk_checkpoint(adjointer, fwd_var) != ADJ_TRUE))
@@ -129,7 +129,7 @@ int adj_adjointer_check_checkpoints(adj_adjointer* adjointer)
       		char buf[255];
       		adj_variable_str(fwd_var, buf, 255);
       		snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Need a disk checkpoint of variable %s, but don't have one.", buf);
-      		return ADJ_ERR_NEED_VALUE;
+      		return adj_chkierr_auto(ADJ_ERR_NEED_VALUE);
       	}
     }
   }
@@ -143,7 +143,7 @@ int adj_adjointer_check_checkpoints(adj_adjointer* adjointer)
     if(cp_eqns[0] != 0)
     {
       snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Internal error: the first equation must be a checkpoint equation but it is not.");
-      return ADJ_ERR_REVOLVE_ERROR;
+      return adj_chkierr_auto(ADJ_ERR_REVOLVE_ERROR);
     }
 
     /* Check we have the required variables for the adjoint equations */
@@ -182,7 +182,7 @@ int adj_adjointer_check_checkpoints(adj_adjointer* adjointer)
       			char buf[255];
       			adj_variable_str(var, buf, 255);
       			snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Need a checkpoint of variable %s (functional dependency), but don't have one.", buf);
-      			return ADJ_ERR_NEED_VALUE;
+      			return adj_chkierr_auto(ADJ_ERR_NEED_VALUE);
       		}
       	}
       }
@@ -210,22 +210,22 @@ int adj_test_block_action_transpose(adj_adjointer* adjointer, adj_block block, a
   if (adjointer->callbacks.vec_set_random == NULL)
   {
     snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "In order to test the transpose of an operator, you need the ADJ_VEC_SET_RANDOM_CB callback.");
-    return ADJ_ERR_NEED_CALLBACK;
+    return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
   }
   if (adjointer->callbacks.vec_dot_product == NULL)
   {
     snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "In order to test the transpose of an operator, you need the ADJ_VEC_DOT_PRODUCT_CB callback.");
-    return ADJ_ERR_NEED_CALLBACK;
+    return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
   }
   if (adjointer->callbacks.vec_duplicate == NULL)
   {
     snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "In order to test the transpose of an operator, you need the ADJ_VEC_DUPLICATE_CB callback.");
-    return ADJ_ERR_NEED_CALLBACK;
+    return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
   }
   if (adjointer->callbacks.vec_destroy == NULL)
   {
     snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "In order to test the transpose of an operator, you need the ADJ_VEC_DESTROY_CB callback.");
-    return ADJ_ERR_NEED_CALLBACK;
+    return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
   }
 
   ierr = adj_find_operator_callback(adjointer, ADJ_BLOCK_ACTION_CB, block.name, (void (**)(void)) &block_action_func);
@@ -282,22 +282,22 @@ int adj_test_nonlinear_derivative_action_transpose(adj_adjointer* adjointer, adj
   if (adjointer->callbacks.vec_set_random == NULL)
   {
     snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "In order to test the transpose of an operator, you need the ADJ_VEC_SET_RANDOM_CB callback.");
-    return ADJ_ERR_NEED_CALLBACK;
+    return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
   }
   if (adjointer->callbacks.vec_dot_product == NULL)
   {
     snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "In order to test the transpose of an operator, you need the ADJ_VEC_DOT_PRODUCT_CB callback.");
-    return ADJ_ERR_NEED_CALLBACK;
+    return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
   }
   if (adjointer->callbacks.vec_duplicate == NULL)
   {
     snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "In order to test the transpose of an operator, you need the ADJ_VEC_DUPLICATE_CB callback.");
-    return ADJ_ERR_NEED_CALLBACK;
+    return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
   }
   if (adjointer->callbacks.vec_destroy == NULL)
   {
     snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "In order to test the transpose of an operator, you need the ADJ_VEC_DESTROY_CB callback.");
-    return ADJ_ERR_NEED_CALLBACK;
+    return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
   }
 
   ierr = adj_find_operator_callback(adjointer, ADJ_NBLOCK_DERIVATIVE_ACTION_CB, nonlinear_block_derivative.nonlinear_block.name, (void (**)(void)) &nonlinear_derivative_action_func);
@@ -381,32 +381,32 @@ int adj_test_nonlinear_derivative_action_consistency(adj_adjointer* adjointer, a
   if (adjointer->callbacks.vec_duplicate == NULL)
   {
     snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "In order to test the nonlinear derivative action consistency of an operator, you need the ADJ_VEC_DUPLICATE_CB callback.");
-    return ADJ_ERR_NEED_CALLBACK;
+    return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
   }
   if (adjointer->callbacks.vec_destroy == NULL)
   {
     snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "In order to test the nonlinear derivative action consistency of an operator, you need the ADJ_VEC_DESTROY_CB callback.");
-    return ADJ_ERR_NEED_CALLBACK;
+    return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
   }
   if (adjointer->callbacks.vec_axpy == NULL)
   {
     snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "In order to test the nonlinear derivative action consistency of an operator, you need the ADJ_VEC_AXPY_CB callback.");
-    return ADJ_ERR_NEED_CALLBACK;
+    return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
   }
   if (adjointer->callbacks.vec_set_values == NULL)
   {
     snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "In order to test the nonlinear derivative action consistency of an operator, you need the ADJ_VEC_SET_VALUES_CB callback.");
-    return ADJ_ERR_NEED_CALLBACK;
+    return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
   }
   if (adjointer->callbacks.vec_get_norm == NULL)
   {
     snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "In order to test the nonlinear derivative action consistency of an operator, you need the ADJ_VEC_GET_NORM_CB callback.");
-    return ADJ_ERR_NEED_CALLBACK;
+    return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
   }
   if (adjointer->callbacks.vec_get_size == NULL)
   {
     snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "In order to test the nonlinear derivative action consistency of an operator, you need the ADJ_VEC_GET_SIZE_CB callback.");
-    return ADJ_ERR_NEED_CALLBACK;
+    return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
   }
 
   ierr = adj_find_operator_callback(adjointer, ADJ_NBLOCK_ACTION_CB, nonlinear_block_derivative.nonlinear_block.name, (void (**)(void)) &nonlinear_action_func);
@@ -420,7 +420,7 @@ int adj_test_nonlinear_derivative_action_consistency(adj_adjointer* adjointer, a
   if (N < 2) 
   {
     snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "You need to compute at least two rounds to perform the derivative test.");
-    return ADJ_ERR_INVALID_INPUTS;
+    return adj_chkierr_auto(ADJ_ERR_INVALID_INPUTS);
   }
 
   ierr = adj_get_variable_value(adjointer, deriv_var, &original_dependency);

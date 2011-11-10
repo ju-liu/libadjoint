@@ -14,20 +14,20 @@ int adj_get_adjoint_equation(adj_adjointer* adjointer, int equation, char* funct
   if (adjointer->options[ADJ_ACTIVITY] == ADJ_ACTIVITY_NOTHING)
   {
     strncpy(adj_error_msg, "You have asked for an adjoint equation, but the adjointer has been deactivated.", ADJ_ERROR_MSG_BUF);
-    return ADJ_ERR_INVALID_INPUTS;
+    return adj_chkierr_auto(ADJ_ERR_INVALID_INPUTS);
   }
 
   if (equation < 0 || equation >= adjointer->nequations)
   {
     snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Invalid equation number %d.", equation);
-    return ADJ_ERR_INVALID_INPUTS;
+    return adj_chkierr_auto(ADJ_ERR_INVALID_INPUTS);
   }
 
   strncpy(adj_error_msg, "Need a data callback, but it hasn't been supplied.", ADJ_ERROR_MSG_BUF);
-  if (adjointer->callbacks.vec_destroy == NULL) return ADJ_ERR_NEED_CALLBACK;
-  if (adjointer->callbacks.vec_axpy == NULL)    return ADJ_ERR_NEED_CALLBACK;
-  if (adjointer->callbacks.mat_axpy == NULL)    return ADJ_ERR_NEED_CALLBACK;
-  if (adjointer->callbacks.mat_destroy == NULL) return ADJ_ERR_NEED_CALLBACK;
+  if (adjointer->callbacks.vec_destroy == NULL) return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
+  if (adjointer->callbacks.vec_axpy == NULL)    return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
+  if (adjointer->callbacks.mat_axpy == NULL)    return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
+  if (adjointer->callbacks.mat_destroy == NULL) return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
   strncpy(adj_error_msg, "", ADJ_ERROR_MSG_BUF);
 
   ierr = adj_find_functional_derivative_callback(adjointer, functional, &functional_derivative_func);
@@ -57,7 +57,7 @@ int adj_get_adjoint_equation(adj_adjointer* adjointer, int equation, char* funct
       char buf[255];
       adj_variable_str(other_adj_var, buf, 255);
       snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Need a value for variable %s, but don't have one.", buf);
-      return ADJ_ERR_NEED_VALUE;
+      return adj_chkierr_auto(ADJ_ERR_NEED_VALUE);
     }
   }
 
@@ -241,7 +241,7 @@ int adj_get_adjoint_equation(adj_adjointer* adjointer, int equation, char* funct
       {
         /* This G-block is on the diagonal, and so we must assemble it .. later */
         snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Sorry, we can't handle G-blocks on the diagonal (yet).");
-        return ADJ_ERR_NOT_IMPLEMENTED;
+        return adj_chkierr_auto(ADJ_ERR_NOT_IMPLEMENTED);
       }
       else
       {
@@ -276,7 +276,7 @@ int adj_get_adjoint_equation(adj_adjointer* adjointer, int equation, char* funct
     if (fwd_data->nrhs_equations != 0)
     {
       snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Sorry, we can't handle nonlinear right-hand-side terms (yet).");
-      return ADJ_ERR_NOT_IMPLEMENTED;
+      return adj_chkierr_auto(ADJ_ERR_NOT_IMPLEMENTED);
     }
   }
 
@@ -307,7 +307,7 @@ int adj_get_adjoint_solution(adj_adjointer* adjointer, int equation, char* funct
   if (adjointer->callbacks.solve == NULL)
   {   
     strncpy(adj_error_msg, "Need the solve data callback, but it hasn't been supplied.", ADJ_ERROR_MSG_BUF);
-    return ADJ_ERR_NEED_CALLBACK;
+    return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
   }
 
   /* If using revolve, we might have to restore from a checkpoint before the adjoint equation can be solved */
@@ -424,7 +424,7 @@ int adj_revolve_to_adjoint_equation(adj_adjointer* adjointer, int equation)
       	if (adjointer->revolve_data.current_timestep != adjointer->revolve_data.steps-1)
       	{
       		snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "You asked for an adjoint solution after solving %i forward timestep, but you told revolve that you are going to solve %i forward timesteps.", adjointer->revolve_data.current_timestep, adjointer->revolve_data.steps);
-      		return ADJ_ERR_INVALID_INPUTS;
+      		return adj_chkierr_auto(ADJ_ERR_INVALID_INPUTS);
       	}
 
         /* Replay the last equation (if not already recorded)
@@ -460,11 +460,11 @@ int adj_revolve_to_adjoint_equation(adj_adjointer* adjointer, int equation)
 
       case CACTION_ERROR:
         snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "An internal error occured: Irregular termination of revolve.");
-        return ADJ_ERR_REVOLVE_ERROR;
+        return adj_chkierr_auto(ADJ_ERR_REVOLVE_ERROR);
 
       default:
         snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "An internal error occured: The adjointer and revolve are out of sync.");
-        return ADJ_ERR_REVOLVE_ERROR;        
+        return adj_chkierr_auto(ADJ_ERR_REVOLVE_ERROR);        
     }
 
   }
@@ -473,7 +473,7 @@ int adj_revolve_to_adjoint_equation(adj_adjointer* adjointer, int equation)
   if (adjointer->revolve_data.current_timestep != adjointer->equations[equation].variable.timestep)
   {
     strncpy(adj_error_msg, "You must loop over the adjoint equation chronologically backwards in time, but revolve thinks you do not.", ADJ_ERROR_MSG_BUF);
-    return ADJ_ERR_INVALID_INPUTS;
+    return adj_chkierr_auto(ADJ_ERR_INVALID_INPUTS);
   }
 
   /* If this function was called just before solving the last adjoint equation of the current timestep, then we ask revolve what to do next */
@@ -497,26 +497,26 @@ int adj_get_forward_equation(adj_adjointer* adjointer, int equation, adj_matrix*
   if (adjointer->options[ADJ_ACTIVITY] == ADJ_ACTIVITY_NOTHING)
   {
     strncpy(adj_error_msg, "You have asked for an forward equation, but the adjointer has been deactivated.", ADJ_ERROR_MSG_BUF);
-    return ADJ_ERR_INVALID_INPUTS;
+    return adj_chkierr_auto(ADJ_ERR_INVALID_INPUTS);
   }
 
   if (equation < 0 || equation >= adjointer->nequations)
   {
     snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Invalid equation number %d.", equation);
-    return ADJ_ERR_INVALID_INPUTS;
+    return adj_chkierr_auto(ADJ_ERR_INVALID_INPUTS);
   }
 
   strncpy(adj_error_msg, "Need a data callback, but it hasn't been supplied.", ADJ_ERROR_MSG_BUF);
-  if (adjointer->callbacks.vec_destroy == NULL) return ADJ_ERR_NEED_CALLBACK;
-  if (adjointer->callbacks.vec_axpy == NULL)    return ADJ_ERR_NEED_CALLBACK;
-  if (adjointer->callbacks.mat_axpy == NULL)    return ADJ_ERR_NEED_CALLBACK;
-  if (adjointer->callbacks.mat_destroy == NULL) return ADJ_ERR_NEED_CALLBACK;
+  if (adjointer->callbacks.vec_destroy == NULL) return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
+  if (adjointer->callbacks.vec_axpy == NULL)    return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
+  if (adjointer->callbacks.mat_axpy == NULL)    return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
+  if (adjointer->callbacks.mat_destroy == NULL) return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
   strncpy(adj_error_msg, "", ADJ_ERROR_MSG_BUF);
 
   if (adjointer->forward_source_callback == NULL)
   {
     snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "You have asked for a forward equation, but without a source term, all fields will be zero.");
-    return ADJ_ERR_NEED_CALLBACK;
+    return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
   }
 
   fwd_eqn = adjointer->equations[equation];
@@ -545,7 +545,7 @@ int adj_get_forward_equation(adj_adjointer* adjointer, int equation, adj_matrix*
           char buf[255];
           adj_variable_str(other_fwd_var, buf, 255);
           snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Need a value for variable %s, but don't have one.", buf);
-          return ADJ_ERR_NEED_VALUE;
+          return adj_chkierr_auto(ADJ_ERR_NEED_VALUE);
         }
       }
     }
@@ -560,7 +560,7 @@ int adj_get_forward_equation(adj_adjointer* adjointer, int equation, adj_matrix*
       char buf[255];
       adj_variable_str(other_fwd_var, buf, 255);
       snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Need a value for variable %s, but don't have one.", buf);
-      return ADJ_ERR_NEED_VALUE;
+      return adj_chkierr_auto(ADJ_ERR_NEED_VALUE);
     }
   }
 
@@ -576,7 +576,7 @@ int adj_get_forward_equation(adj_adjointer* adjointer, int equation, adj_matrix*
       char buf[255];
       adj_variable_str(other_fwd_var, buf, 255);
       snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Need a value for variable %s, but don't have one.", buf);
-      return ADJ_ERR_NEED_VALUE;
+      return adj_chkierr_auto(ADJ_ERR_NEED_VALUE);
     }
   }
 
@@ -651,7 +651,7 @@ int adj_get_forward_solution(adj_adjointer* adjointer, int equation, adj_vector*
 
   /* Check for the required callbacks */ 
   strncpy(adj_error_msg, "Need the solve data callback, but it hasn't been supplied.", ADJ_ERROR_MSG_BUF);
-  if (adjointer->callbacks.solve == NULL) return ADJ_ERR_NEED_CALLBACK;
+  if (adjointer->callbacks.solve == NULL) return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
   strncpy(adj_error_msg, "", ADJ_ERROR_MSG_BUF);
 
   ierr = adj_get_forward_equation(adjointer, equation, &lhs, &rhs, fwd_var);

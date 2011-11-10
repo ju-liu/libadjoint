@@ -30,7 +30,7 @@ void adj_chkierr_private(int ierr, char* file, int line)
 int adj_chkierr_auto_private(int ierr, char* file, int line)
 {
   if (ierr != ADJ_OK && error_check == ADJ_TRUE) adj_chkierr_private(ierr, file, line);
-  return adj_chkierr_auto(ierr);
+  return ierr;
 }
 
 int adj_set_error_checking(int check)
@@ -38,7 +38,7 @@ int adj_set_error_checking(int check)
   if (check != ADJ_TRUE && check != ADJ_FALSE)
   {
     snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "check must be either ADJ_TRUE or ADJ_FALSE.");
-    return ADJ_ERR_INVALID_INPUTS;
+    return adj_chkierr_auto(ADJ_ERR_INVALID_INPUTS);
   }
 
   error_check = check;

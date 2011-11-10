@@ -89,9 +89,9 @@ int adj_evaluate_nonlinear_derivative_action(adj_adjointer* adjointer, int nderi
 
   /* As usual, check as much as we can at the start */
   strncpy(adj_error_msg, "Need a data callback, but it hasn't been supplied.", ADJ_ERROR_MSG_BUF);
-  if (adjointer->callbacks.vec_destroy == NULL)   return ADJ_ERR_NEED_CALLBACK;
-  if (adjointer->callbacks.vec_axpy == NULL)      return ADJ_ERR_NEED_CALLBACK;
-  if (adjointer->callbacks.vec_duplicate == NULL) return ADJ_ERR_NEED_CALLBACK;
+  if (adjointer->callbacks.vec_destroy == NULL)   return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
+  if (adjointer->callbacks.vec_axpy == NULL)      return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
+  if (adjointer->callbacks.vec_duplicate == NULL) return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
   strncpy(adj_error_msg, "", ADJ_ERROR_MSG_BUF);
   assert(nderivatives > 0);
 
@@ -133,7 +133,7 @@ int adj_evaluate_nonlinear_derivative_action(adj_adjointer* adjointer, int nderi
       return adj_chkierr_auto(ierr);
 /*
       snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Sorry, ISP is not implemented yet.");
-      return ADJ_ERR_NOT_IMPLEMENTED;
+      return adj_chkierr_auto(ADJ_ERR_NOT_IMPLEMENTED);
 
       void (*nonlinear_action_func)(int ndepends, adj_variable* variables, adj_vector* dependencies, adj_vector input, void* context, adj_vector* output) = NULL;
       ierr = adj_find_operator_callback(adjointer, ADJ_NBLOCK_ACTION_CB, derivatives[deriv].nonlinear_block.name, (void (**)(void)) &nonlinear_action_func);
@@ -197,12 +197,12 @@ int adj_evaluate_nonlinear_derivative_action_isp(adj_adjointer* adjointer, void 
   adj_scalar h;
 
   strncpy(adj_error_msg, "Need a data callback, but it hasn't been supplied.", ADJ_ERROR_MSG_BUF);
-  if (adjointer->callbacks.vec_destroy == NULL)   return ADJ_ERR_NEED_CALLBACK;
-  if (adjointer->callbacks.vec_axpy == NULL)      return ADJ_ERR_NEED_CALLBACK;
-  if (adjointer->callbacks.vec_duplicate == NULL) return ADJ_ERR_NEED_CALLBACK;
-  if (adjointer->callbacks.vec_set_values == NULL) return ADJ_ERR_NEED_CALLBACK;
-  if (adjointer->callbacks.vec_divide == NULL)    return ADJ_ERR_NEED_CALLBACK;
-  if (adjointer->callbacks.vec_get_size == NULL)    return ADJ_ERR_NEED_CALLBACK;
+  if (adjointer->callbacks.vec_destroy == NULL)   return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
+  if (adjointer->callbacks.vec_axpy == NULL)      return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
+  if (adjointer->callbacks.vec_duplicate == NULL) return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
+  if (adjointer->callbacks.vec_set_values == NULL) return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
+  if (adjointer->callbacks.vec_divide == NULL)    return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
+  if (adjointer->callbacks.vec_get_size == NULL)    return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
   strncpy(adj_error_msg, "", ADJ_ERROR_MSG_BUF);
 
   ierr = adj_has_variable_value(adjointer, derivative.variable);
@@ -240,7 +240,7 @@ int adj_evaluate_nonlinear_derivative_action_isp(adj_adjointer* adjointer, void 
   if (min_colours != 1)
   {
     snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "The colouring function for %s must return integers in the range 1 to n.", derivative.nonlinear_block.name);
-    return ADJ_ERR_INVALID_INPUTS;
+    return adj_chkierr_auto(ADJ_ERR_INVALID_INPUTS);
   }
 
   /* Step 3. We'll also duplicate perturbation_vector, as we'll need it in a little bit. */
@@ -321,10 +321,10 @@ int adj_evaluate_nonlinear_action(adj_adjointer* adjointer, void (*nonlinear_act
   adj_vector perturbed_dependency;
 
   strncpy(adj_error_msg, "Need a data callback, but it hasn't been supplied.", ADJ_ERROR_MSG_BUF);
-  if (adjointer->callbacks.vec_destroy == NULL)   return ADJ_ERR_NEED_CALLBACK;
-  if (adjointer->callbacks.vec_axpy == NULL)      return ADJ_ERR_NEED_CALLBACK;
-  if (adjointer->callbacks.vec_duplicate == NULL) return ADJ_ERR_NEED_CALLBACK;
-  if (adjointer->callbacks.vec_set_values == NULL) return ADJ_ERR_NEED_CALLBACK;
+  if (adjointer->callbacks.vec_destroy == NULL)   return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
+  if (adjointer->callbacks.vec_axpy == NULL)      return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
+  if (adjointer->callbacks.vec_duplicate == NULL) return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
+  if (adjointer->callbacks.vec_set_values == NULL) return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
   strncpy(adj_error_msg, "", ADJ_ERROR_MSG_BUF);
 
   /* If you want to compute at a perturbed state, you need to give me both perturbed_var
@@ -352,7 +352,7 @@ int adj_evaluate_nonlinear_action(adj_adjointer* adjointer, void (*nonlinear_act
         {
           snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Dependencies %d and %d of nonlinear block %s are equal, which is invalid.", perturbed_idx, i, nonlinear_block.name);
           free(dependencies);
-          return ADJ_ERR_INVALID_INPUTS;
+          return adj_chkierr_auto(ADJ_ERR_INVALID_INPUTS);
         }
 
         adjointer->callbacks.vec_duplicate(dependencies[i], &perturbed_dependency);
@@ -395,7 +395,7 @@ int adj_evaluate_functional(adj_adjointer* adjointer, int timestep, char* functi
   if (adjointer->ntimesteps <= timestep) 
   {
     snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "No data is associated with this timestep %d.", timestep);
-    return ADJ_ERR_INVALID_INPUTS;
+    return adj_chkierr_auto(ADJ_ERR_INVALID_INPUTS);
   }
   
   functional_data_ptr = adjointer->timestep_data[timestep].functional_data_start;
@@ -420,7 +420,7 @@ int adj_evaluate_functional(adj_adjointer* adjointer, int timestep, char* functi
   if (dependencies == NULL) 
   {
     snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Warning: Evaluating functional %s at timestep %d without having any dependencies registered for it.\n", functional, timestep);
-    return ADJ_WARN_UNINITIALISED_VALUE;
+    return adj_chkierr_auto(ADJ_WARN_UNINITIALISED_VALUE);
   }
   
   /* We have the right callback, so let's call it already */ 
@@ -464,7 +464,7 @@ int adj_evaluate_functional_derivative(adj_adjointer* adjointer, adj_variable va
   if (adjointer->ntimesteps <= variable.timestep) 
   {
     snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "No data is associated with this timestep %d.", variable.timestep);
-    return ADJ_ERR_INVALID_INPUTS;
+    return adj_chkierr_auto(ADJ_ERR_INVALID_INPUTS);
   }
 
   ierr = adj_find_variable_data((&adjointer->varhash), &variable, &data_ptr);

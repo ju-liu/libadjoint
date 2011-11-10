@@ -118,7 +118,7 @@ int adj_html_find_column_index(adj_adjointer* adjointer, adj_variable* variable,
     }
   }
   strncpy(adj_error_msg, "Variable not found.", ADJ_ERROR_MSG_BUF);
-  return ADJ_ERR_INVALID_INPUTS;
+  return adj_chkierr_auto(ADJ_ERR_INVALID_INPUTS);
 }
 
 void adj_html_print_statistics(FILE* fp, adj_adjointer* adjointer)
@@ -653,7 +653,7 @@ int adj_html_adjoint_system(adj_adjointer* adjointer, char* filename)
   if (fp==NULL)
   {
     strncpy(adj_error_msg, "File could not be opened.", ADJ_ERROR_MSG_BUF);
-    return ADJ_ERR_INVALID_INPUTS;
+    return adj_chkierr_auto(ADJ_ERR_INVALID_INPUTS);
   }
 
   adj_html_header(fp);
@@ -712,7 +712,7 @@ int adj_html_forward_system(adj_adjointer* adjointer, char* filename)
   if (fp==NULL)
   {
     strncpy(adj_error_msg, "File could not be opened.", ADJ_ERROR_MSG_BUF);
-    return ADJ_ERR_INVALID_INPUTS;
+    return adj_chkierr_auto(ADJ_ERR_INVALID_INPUTS);
   }
 
   adj_html_header(fp);
@@ -770,6 +770,6 @@ int adj_adjointer_to_html(adj_adjointer* adjointer, char* filename, int type)
   else
   {
     snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "The type parameter must either be ADJ_FORWARD or ADJ_ADJOINT.");
-    return ADJ_ERR_INVALID_INPUTS;
+    return adj_chkierr_auto(ADJ_ERR_INVALID_INPUTS);
   }
 }
