@@ -40,6 +40,12 @@ module libadjoint_data_structures
     adj_scalar_f :: tolerance
   end type adj_block
 
+  type, bind(c) :: adj_term
+    integer(kind=c_int) :: nblocks
+    type(c_ptr) :: blocks
+    type(c_ptr) :: targets
+  end type adj_term
+
   type, bind(c) :: adj_equation
     type(adj_variable) :: variable
     integer(kind=c_int) :: nblocks
@@ -569,6 +575,40 @@ module libadjoint
       type(adj_equation), intent(inout) :: equation
       integer(kind=c_int) :: ierr
     end function adj_destroy_equation
+
+    function adj_create_term_c(nblocks, blocks, targets, term) result(ierr) bind(c, name='adj_create_term')
+      use libadjoint_data_structures
+      use iso_c_binding
+      integer(kind=c_int), intent(in), value :: nblocks
+      type(adj_block), dimension(nblocks), intent(in) :: blocks
+      type(adj_variable), dimension(nblocks), intent(in) :: targets
+      type(adj_term), intent(inout) :: term
+      integer(kind=c_int) :: ierr
+    end function adj_create_term_c
+
+    function adj_add_terms(termA, termB, termC) result(ierr) bind(c, name='adj_add_terms')
+      use libadjoint_data_structures
+      use iso_c_binding
+      type(adj_term), intent(in), value :: termA
+      type(adj_term), intent(in), value :: termB
+      type(adj_term), intent(out) :: termC
+      integer(kind=c_int) :: ierr
+    end function adj_add_terms
+
+    function adj_add_term_to_equation(term, equation) result(ierr) bind(c, name='adj_add_term_to_equation')
+      use libadjoint_data_structures
+      use iso_c_binding
+      type(adj_term), intent(in), value :: term
+      type(adj_equation), intent(inout) :: equation
+      integer(kind=c_int) :: ierr
+    end function adj_add_term_to_equation
+
+    function adj_destroy_term(term) result(ierr) bind(c, name='adj_destroy_term')
+      use libadjoint_data_structures
+      use iso_c_binding
+      type(adj_term), intent(inout) :: term
+      integer(kind=c_int) :: ierr
+    end function adj_destroy_term
 
     function adj_create_adjointer(adjointer) result(ierr) bind(c, name='adj_create_adjointer')
       use libadjoint_data_structures
@@ -1279,6 +1319,23 @@ module libadjoint
 
     ierr = adj_create_equation_c(variable, size(blocks), blocks, targets, equation)
   end function adj_create_equation
+
+  function adj_create_term(blocks, targets, term) result(ierr)
+    use libadjoint_data_structures
+    use iso_c_binding
+    type(adj_block), dimension(:), intent(in) :: blocks
+    type(adj_variable), dimension(:), intent(in) :: targets
+    type(adj_term), intent(inout) :: term
+    integer :: ierr
+
+    if (size(blocks) /= size(targets)) then
+      ! Can't set the error message from Fortran, I think?
+      ierr = ADJ_ERR_INVALID_INPUTS
+      return
+    end if
+
+    ierr = adj_create_term_c(size(blocks), blocks, targets, term)
+  end function adj_create_term
 
   function adj_timestep_set_functional_dependencies(adjointer, timestep, functional, dependencies) result(ierr)
     use libadjoint_data_structures
