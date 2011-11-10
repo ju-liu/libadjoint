@@ -268,6 +268,121 @@ int adj_variable_str(adj_variable var, char* name, size_t namelen)
   return ADJ_OK;
 }
 
+int adj_create_term(int nblocks, adj_block* blocks, adj_variable* targets, adj_term* term)
+{
+  int i;
+
+  /* Check we have a sane nblocks */
+  if (nblocks < 1)
+  {
+    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "You need at least one block in a term.");
+    return ADJ_ERR_INVALID_INPUTS;
+  }
+
+  /* OK. We've done all the sanity checking we can. Let's build the adj_term. */
+  term->nblocks = nblocks;
+  term->blocks = (adj_block*) malloc(nblocks * sizeof(adj_block));
+  ADJ_CHKMALLOC(term->blocks);
+  memcpy(term->blocks, blocks, nblocks * sizeof(adj_block));
+  for (i = 0; i < nblocks; i++)
+  {
+    if (blocks[i].has_nonlinear_block)
+    {
+      int ierr;
+      ierr = adj_copy_nonlinear_block(blocks[i].nonlinear_block, &term->blocks[i].nonlinear_block);
+      if (ierr != ADJ_OK) return ierr;
+    }
+  }
+  term->targets = (adj_variable*) malloc(nblocks * sizeof(adj_variable));
+  ADJ_CHKMALLOC(term->targets);
+  memcpy(term->targets, targets, nblocks * sizeof(adj_variable));
+
+  return ADJ_OK;
+}
+
+/* Adds termA and termB to termC */
+int adj_add_terms(adj_term termA, adj_term termB, adj_term* termC)
+{
+	int i;
+
+	termC->nblocks = termA.nblocks + termB.nblocks;
+	termC->blocks =  (adj_block*) malloc(termC->nblocks * sizeof(adj_block));
+  ADJ_CHKMALLOC(termC->blocks);
+  memcpy(termC->blocks, termA.blocks, termA.nblocks * sizeof(adj_block));
+  for (i = 0; i < termA.nblocks; i++)
+  {
+    if (termA.blocks[i].has_nonlinear_block)
+    {
+      int ierr;
+      ierr = adj_copy_nonlinear_block(termA.blocks[i].nonlinear_block, &termC->blocks[i].nonlinear_block);
+      if (ierr != ADJ_OK) return ierr;
+    }
+  }
+  memcpy(termC->blocks + termA.nblocks, termB.blocks, termB.nblocks * sizeof(adj_block));
+  for (i = 0; i < termB.nblocks; i++)
+  {
+    if (termB.blocks[i].has_nonlinear_block)
+    {
+      int ierr;
+      ierr = adj_copy_nonlinear_block(termB.blocks[i].nonlinear_block, &termC->blocks[i + termA.nblocks].nonlinear_block);
+      if (ierr != ADJ_OK) return ierr;
+    }
+  }
+
+  termC->targets = (adj_variable*) malloc(termC->nblocks * sizeof(adj_variable));
+  ADJ_CHKMALLOC(termC->targets);
+  memcpy(termC->targets, termA.targets, termA.nblocks * sizeof(adj_variable));
+  memcpy(termC->targets + termA.nblocks, termB.targets, termB.nblocks * sizeof(adj_variable));
+
+  return ADJ_OK;
+}
+
+int adj_destroy_term(adj_term* term)
+{
+  int i;
+  int ierr;
+
+  for (i = 0; i < term->nblocks; i++)
+  {
+    if (term->blocks[i].has_nonlinear_block)
+    {
+      ierr = adj_destroy_nonlinear_block(&term->blocks[i].nonlinear_block);
+      if (ierr != ADJ_OK) return ierr;
+    }
+  }
+
+  if (term->blocks) free(term->blocks); 
+  term->blocks = NULL;
+  if (term->targets) free(term->targets); 
+  term->targets = NULL;
+  term->nblocks = 0;
+
+  return ADJ_OK;
+}
+
+/* Adds additional non-diagonal blocks to an existing equation */
+int adj_add_term_to_equation(adj_term term, adj_equation* equation)
+{
+	adj_equation old_equation = *equation;
+
+	equation->nblocks = old_equation.nblocks + term.nblocks;
+
+	equation->blocks =  (adj_block*) malloc(equation->nblocks * sizeof(adj_block));
+  ADJ_CHKMALLOC(equation->blocks);
+  memcpy(equation->blocks, old_equation.blocks, old_equation.nblocks * sizeof(adj_block));
+  memcpy(equation->blocks + old_equation.nblocks, term.blocks, term.nblocks * sizeof(adj_block));
+
+	equation->targets = (adj_variable*) malloc(equation->nblocks * sizeof(adj_variable));
+  ADJ_CHKMALLOC(equation->targets);
+  memcpy(equation->targets, old_equation.targets, old_equation.nblocks * sizeof(adj_variable));
+  memcpy(equation->targets + old_equation.nblocks, term.targets, term.nblocks * sizeof(adj_variable));
+
+  free(old_equation.blocks);
+  free(old_equation.targets);
+
+  return ADJ_OK;
+}
+
 int adj_create_equation(adj_variable var, int nblocks, adj_block* blocks, adj_variable* targets, adj_equation* equation)
 {
   int targets_variable;
