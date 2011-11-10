@@ -1,4 +1,7 @@
 #include "libadjoint/adj_error_handling.h"
+#include "libadjoint/adj_constants.h"
+
+static int error_check = ADJ_FALSE;
 
 void adj_chkierr_private(int ierr, char* file, int line)
 {
@@ -23,3 +26,22 @@ void adj_chkierr_private(int ierr, char* file, int line)
     fprintf(stderr, "Warning: %s\n", strlen(adj_error_msg) == 0 ? "(no error message)" : adj_error_msg);
   }
 }
+
+int adj_chkierr_auto_private(int ierr, char* file, int line)
+{
+  if (ierr != ADJ_OK && error_check == ADJ_TRUE) adj_chkierr_private(ierr, file, line);
+  return ierr;
+}
+
+int adj_set_error_checking(int check)
+{
+  if (check != ADJ_TRUE && check != ADJ_FALSE)
+  {
+    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "check must be either ADJ_TRUE or ADJ_FALSE.");
+    return adj_chkierr_auto(ADJ_ERR_INVALID_INPUTS);
+  }
+
+  error_check = check;
+  return ADJ_OK;
+}
+

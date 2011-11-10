@@ -38,7 +38,7 @@ int adj_set_petsc_data_callbacks(adj_adjointer* adjointer)
   snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Sorry, libadjoint was compiled without PETSc support.");
 #endif
 
-  return ierr;
+  return adj_chkierr_auto(ierr);
 }
 
 void petsc_vec_duplicate_proc(adj_vector x, adj_vector *newx)

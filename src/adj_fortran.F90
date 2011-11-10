@@ -442,7 +442,7 @@ module libadjoint
       integer(kind=c_int), intent(in), value :: line
     end subroutine adj_chkierr_private_c
 
-    function adj_create_nonlinear_block_c(name, ndepends, depends, context, nblock) result(ierr) &
+    function adj_create_nonlinear_block_c(name, ndepends, depends, context, coefficient, nblock) result(ierr) &
       & bind(c, name='adj_create_nonlinear_block')
       use libadjoint_data_structures
       use iso_c_binding
@@ -450,6 +450,7 @@ module libadjoint
       integer(kind=c_int), intent(in), value :: ndepends
       type(adj_variable), intent(in), dimension(ndepends) :: depends
       type(c_ptr), intent(in), value :: context
+      adj_scalar_f, intent(in), value :: coefficient
       type(adj_nonlinear_block), intent(out) :: nblock
       integer(kind=c_int) :: ierr
     end function adj_create_nonlinear_block_c
@@ -470,7 +471,7 @@ module libadjoint
       integer(kind=c_int) :: ierr
     end function adj_nonlinear_block_set_coefficient
 
-    function adj_create_block_c(name, nblock, context, block) result(ierr) bind(c, name='adj_create_block')
+    function adj_create_block_c(name, nblock, context, coefficient, block) result(ierr) bind(c, name='adj_create_block')
       use libadjoint_data_structures
       use iso_c_binding
       character(kind=c_char), dimension(ADJ_NAME_LEN), intent(in) :: name
@@ -480,6 +481,7 @@ module libadjoint
       ! So ..
       type(c_ptr), intent(in), value :: nblock
       type(c_ptr), intent(in), value :: context
+      adj_scalar_f, intent(in), value :: coefficient
       type(adj_block), intent(inout) :: block
       integer(kind=c_int) :: ierr
     end function adj_create_block_c
@@ -736,6 +738,13 @@ module libadjoint
       integer(kind=c_int), intent(out) :: end
       integer(kind=c_int) :: ierr
     end function adj_timestep_end_equation
+
+    function adj_set_error_checking_c(check) result(ierr) bind(c, name='adj_set_error_checking')
+      use libadjoint_data_structures
+      use iso_c_binding
+      integer(kind=c_int), intent(in), value :: check
+      integer(kind=c_int) :: ierr
+    end function adj_set_error_checking_c
 
     function adj_adjointer_check_consistency(adjointer) result(ierr) bind(c, name='adj_adjointer_check_consistency')
       use libadjoint_data_structures
@@ -1054,16 +1063,17 @@ module libadjoint
 
   function adj_create_variable(name, timestep, iteration, auxiliary, variable) result(ierr)
     character(len=*), intent(in) :: name
-    integer, intent(in) :: timestep, iteration
-    logical, intent(in) :: auxiliary
+    integer, intent(in) :: timestep
+    integer, intent(in), optional :: iteration
+    logical, intent(in), optional :: auxiliary
     type(adj_variable), intent(out) :: variable
     integer :: ierr
 
     character(kind=c_char), dimension(ADJ_NAME_LEN) :: name_c
     integer :: j
-    integer :: auxiliary_c
+    integer :: auxiliary_c, iteration_c
 
-    if (auxiliary) then
+    if (present_and_true(auxiliary)) then
       auxiliary_c = ADJ_TRUE
     else
       auxiliary_c = ADJ_FALSE
@@ -1082,7 +1092,27 @@ module libadjoint
     end do
     name_c(ADJ_NAME_LEN) = c_null_char
 
-    ierr = adj_create_variable_c(name_c, timestep, iteration, auxiliary_c, variable)
+    if (present(iteration)) then
+      iteration_c = iteration
+    else
+      iteration_c = 0
+    end if
+
+    ierr = adj_create_variable_c(name_c, timestep, iteration_c, auxiliary_c, variable)
+
+    contains
+
+    function present_and_true(bool) result(out)
+      logical, intent(in), optional :: bool
+      logical :: out
+
+      out = .false.
+      if (present(bool)) then
+        if (bool) then
+          out = .true.
+        end if
+      end if
+    end function present_and_true
   end function adj_create_variable
 
   function adj_variable_get_name(variable, name) result(ierr)
@@ -1103,7 +1133,7 @@ module libadjoint
     ierr = ADJ_OK
   end function adj_variable_get_name
 
-  function adj_create_nonlinear_block(name, depends, coefficient, context, nblock) result(ierr)
+  function adj_create_nonlinear_block(name, depends, context, coefficient, nblock) result(ierr)
     character(len=*), intent(in) :: name
     type(adj_variable), intent(in), dimension(:) :: depends
     adj_scalar_f, intent(in), optional :: coefficient
@@ -1134,7 +1164,7 @@ module libadjoint
       context_c = c_null_ptr
     endif
 
-    ierr = adj_create_nonlinear_block_c(name_c, size(depends), depends, context_c, nblock)
+    ierr = adj_create_nonlinear_block_c(name_c, size(depends), depends, context_c, adj_scalar_f_cast(1.0), nblock)
     if (ierr /= ADJ_OK) return;
 
     if (present(coefficient)) then
@@ -1143,12 +1173,13 @@ module libadjoint
 
   end function adj_create_nonlinear_block
 
-  function adj_create_block(name, nblock, context, block) result(ierr)
+  function adj_create_block(name, nblock, context, coefficient, block) result(ierr)
     use libadjoint_data_structures
     use iso_c_binding
     character(len=*), intent(in) :: name
     type(adj_nonlinear_block), intent(in), optional, target :: nblock
     type(c_ptr), intent(in), optional :: context
+    adj_scalar_f, intent(in), optional :: coefficient
     type(adj_block), intent(inout) :: block
     integer :: ierr
 
@@ -1182,7 +1213,12 @@ module libadjoint
       context_c = c_null_ptr
     endif
 
-    ierr = adj_create_block_c(name_c, nblock_ptr, context_c, block)
+    ierr = adj_create_block_c(name_c, nblock_ptr, context_c, adj_scalar_f_cast(1.0), block)
+
+    if (present(coefficient)) then
+      ierr = adj_block_set_coefficient(block, coefficient)
+    endif
+
   end function adj_create_block
 
   function adj_register_equation(adjointer, equation, checkpoint_storage) result(ierr) 
@@ -1713,6 +1749,21 @@ module libadjoint
     eq = adj_variable_equal_c(var1tmp, var2tmp, 1)
     adj_variable_equal = (eq == 1)
   end function adj_variable_equal
+
+  function adj_set_error_checking(check) result(ierr)
+    logical, intent(in) :: check
+    integer(kind=c_int) :: ierr
+
+    integer(kind=c_int) :: c_check
+
+    if (check) then
+      c_check = ADJ_TRUE
+    else
+      c_check = ADJ_FALSE
+    end if
+
+    ierr = adj_set_error_checking_c(c_check)
+  end function adj_set_error_checking
 
 end module libadjoint
 

@@ -23,7 +23,7 @@ void test_adj_dependencies(void)
   adj_create_variable("Velocity", 1, 0, ADJ_NORMAL_VARIABLE, &u[1]);
   adj_create_variable("Velocity", 1, 1, ADJ_NORMAL_VARIABLE, &u[2]);
 
-  adj_create_block("IdentityOperator", NULL, NULL, &I);
+  adj_create_block("IdentityOperator", NULL, NULL, 1.0, &I);
   ierr = adj_create_equation(u[0], 1, &I, &u[0], &eqn);
   adj_test_assert(ierr == 0, "Should have worked");
   ierr = adj_register_equation(&adjointer, eqn, &cs);
@@ -31,10 +31,10 @@ void test_adj_dependencies(void)
   ierr = adj_destroy_equation(&eqn);
   adj_test_assert(ierr == 0, "Should have worked");
 
-  adj_create_nonlinear_block("AdvectionOperator", 1, &u[0], NULL, &V);
+  adj_create_nonlinear_block("AdvectionOperator", 1, &u[0], NULL, 1.0, &V);
   adj_nonlinear_block_set_coefficient(&V, 0.5);
-  adj_create_block("TimesteppingOperator", &V, NULL, &B[0]);
-  adj_create_block("BurgersOperator", &V, NULL, &B[1]);
+  adj_create_block("TimesteppingOperator", &V, NULL, 1.0, &B[0]);
+  adj_create_block("BurgersOperator", &V, NULL, 1.0, &B[1]);
   ierr = adj_create_equation(u[1], 2, B, u, &eqn);
   adj_test_assert(ierr == 0, "Should have worked");
   ierr = adj_register_equation(&adjointer, eqn, &cs);
@@ -45,10 +45,10 @@ void test_adj_dependencies(void)
   adj_destroy_block(&B[0]);
   adj_destroy_block(&B[1]);
 
-  adj_create_nonlinear_block("AdvectionOperator", 2, u, NULL, &V);
+  adj_create_nonlinear_block("AdvectionOperator", 2, u, NULL, 1.0, &V);
   adj_nonlinear_block_set_coefficient(&V, 0.5);
-  adj_create_block("TimesteppingOperator", &V, NULL, &B[0]);
-  adj_create_block("BurgersOperator", &V, NULL, &B[1]);
+  adj_create_block("TimesteppingOperator", &V, NULL, 1.0, &B[0]);
+  adj_create_block("BurgersOperator", &V, NULL, 1.0, &B[1]);
   u_tmp[0] = u[0];
   u_tmp[1] = u[2];
   ierr = adj_create_equation(u[2], 2, B, u_tmp, &eqn);

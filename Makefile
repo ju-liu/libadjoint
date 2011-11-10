@@ -179,8 +179,8 @@ clean:
 	@echo "  RM lib/*.a"
 	@rm -f lib/*.so
 	@echo "  RM lib/*.so"
-	@rm -f lib/*.py
-	@echo "  RM lib/*.py"
+	@rm -f lib/clibadjoint.py
+	@echo "  RM lib/clibadjoint.py"
 	@rm -f tags
 	@rm -f include/libadjoint/adj_constants_f.h include/libadjoint/adj_error_handling_f.h
 
@@ -209,18 +209,18 @@ tags: $(FSRC) $(CSRC)
 endif
 
 ifneq (,$(H2XML))
-all: lib/libadjoint.py
-test: lib/libadjoint.py
-install: lib/libadjoint.py
-lib/libadjoint.py: lib/libadjoint.so
+all: lib/clibadjoint.py
+test: lib/clibadjoint.py
+install: lib/clibadjoint.py
+lib/clibadjoint.py: lib/libadjoint.so
 	@echo "  H2XML  include/libadjoint/libadjoint.h"
 	@cpp include/libadjoint/libadjoint.h > include/libadjoint/pylibadjoint.h
 	@$(H2XML) -q -I. include/libadjoint/pylibadjoint.h -o lib/libadjoint.xml
 	@rm -f include/libadjoint/pylibadjoint.h
-	@echo "  XML2PY lib/libadjoint.py"
-	@$(XML2PY) -r '^adj.*' -l lib/libadjoint.so lib/libadjoint.xml -o lib/libadjoint.py
+	@echo "  XML2PY lib/clibadjoint.py"
+	@$(XML2PY) -r '^adj.*' -l lib/libadjoint.so lib/libadjoint.xml -o lib/clibadjoint.py
 	@rm -f lib/libadjoint.xml
-	@chmod a-x lib/libadjoint.py
+	@chmod a-x lib/clibadjoint.py
 endif
 
 install: lib/libadjoint.a lib/libadjoint.so
@@ -231,8 +231,8 @@ install: lib/libadjoint.a lib/libadjoint.so
 ifneq (,$(H2XML))
 	@echo "  INSTALL $(PYDIR)"
 	@install -d $(PYDIR)
-	@install -m 644 lib/libadjoint.py $(PYDIR)
-	@sed -i "s@CDLL('lib/libadjoint.so')@CDLL('/$(prefix)/lib/libadjoint.so')@" $(PYDIR)/libadjoint.py
+	@install -m 644 lib/*.py $(PYDIR)
+	@sed -i "s@CDLL('lib/libadjoint.so')@CDLL('/$(prefix)/lib/libadjoint.so')@" $(PYDIR)/clibadjoint.py
 endif
 	@echo "  INSTALL $(DESTDIR)/$(prefix)/include/libadjoint"
 	@install -d $(DESTDIR)/$(prefix)/include/libadjoint
