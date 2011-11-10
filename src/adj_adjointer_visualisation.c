@@ -392,7 +392,7 @@ int adj_html_eqn(FILE* fp, adj_adjointer* adjointer, adj_equation adj_eqn, int d
   {
     ierr = adj_html_find_column_index(adjointer, &adj_eqn.targets[i], &col);
     if (ierr != ADJ_OK)
-      return ierr;
+      return adj_chkierr_auto(ierr);
 
     strncpy(row[col], adj_eqn.blocks[i].name, 5);
     row[col][5]='\0';
@@ -504,7 +504,7 @@ int adj_html_adjoint_eqn(FILE* fp, adj_adjointer* adjointer, adj_equation fwd_eq
       	/* find the column in which this blocks belongs */
       	ierr = adj_html_find_column_index(adjointer, &other_fwd_eqn.variable, &col);
       	if (ierr != ADJ_OK)
-      		return ierr;
+      		return adj_chkierr_auto(ierr);
 
       	other_adj_var = other_fwd_eqn.targets[j];
       	other_adj_var.type = ADJ_ADJOINT;
@@ -589,7 +589,7 @@ int adj_html_adjoint_eqn(FILE* fp, adj_adjointer* adjointer, adj_equation fwd_eq
                 {
                    ierr = adj_html_find_column_index(adjointer, &depending_eqn.variable, &col);
                   if (ierr != ADJ_OK)
-                    return ierr;
+                    return adj_chkierr_auto(ierr);
 
           				strncat(desc[col], "\n\n+\n\n", ADJ_NAME_LEN);
           				strncat(desc[col], "Derivative of ", ADJ_NAME_LEN);
@@ -686,7 +686,7 @@ int adj_html_adjoint_system(adj_adjointer* adjointer, char* filename)
     if (ierr != ADJ_OK)
     {
       fclose(fp);
-      return ierr;
+      return adj_chkierr_auto(ierr);
     }
     fprintf(fp, "</tr>\n");
     timestep = adj_eqn.variable.timestep;
@@ -746,7 +746,7 @@ int adj_html_forward_system(adj_adjointer* adjointer, char* filename)
     if (ierr != ADJ_OK)
     {
       fclose(fp);
-      return ierr;
+      return adj_chkierr_auto(ierr);
     }
     fprintf(fp, "</tr>\n");
     timestep = adj_eqn.variable.timestep;

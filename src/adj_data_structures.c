@@ -326,7 +326,7 @@ int adj_create_equation(adj_variable var, int nblocks, adj_block* blocks, adj_va
     {
       int ierr;
       ierr = adj_copy_nonlinear_block(blocks[i].nonlinear_block, &equation->blocks[i].nonlinear_block);
-      if (ierr != ADJ_OK) return ierr;
+      if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
     }
   }
   equation->targets = (adj_variable*) malloc(nblocks * sizeof(adj_variable));
@@ -367,7 +367,7 @@ int adj_destroy_equation(adj_equation* equation)
     if (equation->blocks[i].has_nonlinear_block)
     {
       ierr = adj_destroy_nonlinear_block(&equation->blocks[i].nonlinear_block);
-      if (ierr != ADJ_OK) return ierr;
+      if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
     }
   }
 

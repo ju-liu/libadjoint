@@ -85,7 +85,7 @@ int adj_destroy_adjointer(adj_adjointer* adjointer)
   for (i = 0; i < adjointer->nequations; i++)
   {
     ierr = adj_destroy_equation(&(adjointer->equations[i]));
-    if (ierr != ADJ_OK) return ierr;
+    if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
   }
   if (adjointer->equations != NULL) free(adjointer->equations);
 
@@ -107,7 +107,7 @@ int adj_destroy_adjointer(adj_adjointer* adjointer)
   while (data_ptr != NULL)
   {
     ierr = adj_destroy_variable_data(adjointer, data_ptr);
-    if (ierr != ADJ_OK) return ierr;
+    if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
     data_ptr_tmp = data_ptr;
     data_ptr = data_ptr->next;
     free(data_ptr_tmp);
@@ -283,7 +283,7 @@ int adj_register_equation(adj_adjointer* adjointer, adj_equation equation, int* 
         char buf[ADJ_NAME_LEN];
         adj_variable_str(equation.targets[i], buf, ADJ_NAME_LEN);
         snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Have %s as a target in an equation, but have never seen that variable before.", buf);
-        return ierr;
+        return adj_chkierr_auto(ierr);
       }
 
       if (hash_ptr->equation < 0)
@@ -304,7 +304,7 @@ int adj_register_equation(adj_adjointer* adjointer, adj_equation equation, int* 
   if (ierr == ADJ_ERR_HASH_FAILED)
   {
     ierr = adj_add_new_hash_entry(adjointer, &(equation.variable), &data_ptr);
-    if (ierr != ADJ_OK) return ierr;
+    if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
   }
   data_ptr->equation = adjointer->nequations;
   /* OK. Next create an entry for the adj_equation in the adjointer. */
@@ -324,7 +324,7 @@ int adj_register_equation(adj_adjointer* adjointer, adj_equation equation, int* 
   if (adjointer->ntimesteps < equation.variable.timestep + 1) /* adjointer->ntimesteps should be at least equation.variable.timestep + 1 */
   {
     ierr = adj_extend_timestep_data(adjointer, equation.variable.timestep + 1); /* extend the array as necessary */
-    if (ierr != ADJ_OK) return ierr;
+    if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
   }
   if (adjointer->timestep_data[equation.variable.timestep].start_equation == -1) /* -1 is the sentinel value for unset */
   {
@@ -346,7 +346,7 @@ int adj_register_equation(adj_adjointer* adjointer, adj_equation equation, int* 
     {
       int ierr;
       ierr = adj_copy_nonlinear_block(equation.blocks[i].nonlinear_block, &adjointer->equations[adjointer->nequations - 1].blocks[i].nonlinear_block);
-      if (ierr != ADJ_OK) return ierr;
+      if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
     }
   }
 
@@ -372,7 +372,7 @@ int adj_register_equation(adj_adjointer* adjointer, adj_equation equation, int* 
       char buf[ADJ_NAME_LEN];
       adj_variable_str(equation.targets[i], buf, ADJ_NAME_LEN);
       snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "The equation to be registered has a block is targeting %s, but I do not have an equation for that variable yet.", buf);
-      return ierr;
+      return adj_chkierr_auto(ierr);
     }
 
     /* this is already guaranteed to be a unique entry -- we have never seen this equation before.
@@ -392,18 +392,18 @@ int adj_register_equation(adj_adjointer* adjointer, adj_equation equation, int* 
       /* It's ok if it's auxiliary -- it legitimately can be the first time we've seen it */
       adj_variable_data* new_data;
       ierr = adj_add_new_hash_entry(adjointer, &(equation.rhsdeps[i]), &new_data);
-      if (ierr != ADJ_OK) return ierr;
+      if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
       new_data->equation = -1; /* it doesn't have an equation */
       data_ptr = new_data;
     }
     else
     {
-      return ierr;
+      return adj_chkierr_auto(ierr);
     }
 
     /* Now data_ptr points to the data we're storing */
     ierr = adj_append_unique(&(data_ptr->rhs_equations), &(data_ptr->nrhs_equations), adjointer->nequations - 1);
-    if (ierr != ADJ_OK) return ierr;
+    if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
   }
 
   /* Now we need to record what we need for which adjoint equation from the rhs dependencies */
@@ -422,7 +422,7 @@ int adj_register_equation(adj_adjointer* adjointer, adj_equation equation, int* 
     }
 
     ierr = adj_find_variable_data(&(adjointer->varhash), &(equation.rhsdeps[i]), &data_ptr);
-    if (ierr != ADJ_OK) return ierr;
+    if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
 
     eqn_no = data_ptr->equation;
     assert(eqn_no >= 0);
@@ -430,9 +430,9 @@ int adj_register_equation(adj_adjointer* adjointer, adj_equation equation, int* 
     for (j = 0; j < equation.nrhsdeps; j++)
     {
       ierr = adj_find_variable_data(&(adjointer->varhash), &(equation.rhsdeps[j]), &data_ptr);
-      if (ierr != ADJ_OK) return ierr;
+      if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
       ierr = adj_append_unique(&(data_ptr->adjoint_equations), &(data_ptr->nadjoint_equations), eqn_no); /* dependency j is necessary for equation i */
-      if (ierr != ADJ_OK) return ierr;
+      if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
     }
   }
 
@@ -451,16 +451,16 @@ int adj_register_equation(adj_adjointer* adjointer, adj_equation equation, int* 
           /* It's ok if it's auxiliary -- it legitimately can be the first time we've seen it */
           adj_variable_data* new_data;
           ierr = adj_add_new_hash_entry(adjointer, &(equation.blocks[i].nonlinear_block.depends[j]), &new_data);
-          if (ierr != ADJ_OK) return ierr;
+          if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
           new_data->equation = -1; /* it doesn't have an equation */
           data_ptr = new_data;
         }
         else if (ierr == ADJ_ERR_HASH_FAILED)
         {
-          return ierr;
+          return adj_chkierr_auto(ierr);
         }
         ierr = adj_append_unique(&(data_ptr->depending_equations), &(data_ptr->ndepending_equations), adjointer->nequations - 1);
-        if (ierr != ADJ_OK) return ierr;
+        if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
       }
     }
   }
@@ -474,7 +474,7 @@ int adj_register_equation(adj_adjointer* adjointer, adj_equation equation, int* 
     {
       adj_variable_data* block_target_data; /* fetch the hash entry associated with the target of this block */
       ierr = adj_find_variable_data(&(adjointer->varhash), &(equation.targets[i]), &block_target_data);
-      if (ierr != ADJ_OK) return ierr;
+      if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
 
       for (j = 0; j < equation.blocks[i].nonlinear_block.ndepends; j++)
       {
@@ -483,15 +483,15 @@ int adj_register_equation(adj_adjointer* adjointer, adj_equation equation, int* 
 
         /* j_data ALWAYS refers to the data associated with the j'th dependency, throughout this whole loop */
         ierr = adj_find_variable_data(&(adjointer->varhash), &(equation.blocks[i].nonlinear_block.depends[j]), &j_data);
-        if (ierr != ADJ_OK) return ierr;
+        if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
 
         /* One set of dependencies: the (adjoint equation of) (the target of this block) (needs) (this dependency) */
         ierr = adj_append_unique(&(j_data->adjoint_equations), &(j_data->nadjoint_equations), block_target_data->equation);
-        if (ierr != ADJ_OK) return ierr;
+        if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
 
         /* Another set of dependencies: the (adjoint equation of) (the j'th dependency) (needs) (the target of this block) */
         ierr = adj_append_unique(&(block_target_data->adjoint_equations), &(block_target_data->nadjoint_equations), j_data->equation);
-        if (ierr != ADJ_OK) return ierr;
+        if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
 
         /* Now we loop over all the dependencies again and fill in the cross-dependencies */
         for (k = 0; k < equation.blocks[i].nonlinear_block.ndepends; k++)
@@ -500,11 +500,11 @@ int adj_register_equation(adj_adjointer* adjointer, adj_equation equation, int* 
 
           /* k_data ALWAYS refers to the data associated with the k'th dependency, throughout this whole loop */
           ierr = adj_find_variable_data(&(adjointer->varhash), &(equation.blocks[i].nonlinear_block.depends[k]), &k_data);
-          if (ierr != ADJ_OK) return ierr;
+          if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
 
           /* Another set of dependencies: the (adjoint equation of) (the j'th dependency) (needs) (the k'th dependency) */
           ierr = adj_append_unique(&(k_data->adjoint_equations), &(k_data->nadjoint_equations), j_data->equation);
-          if (ierr != ADJ_OK) return ierr;
+          if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
         }
       }
     }
@@ -512,14 +512,14 @@ int adj_register_equation(adj_adjointer* adjointer, adj_equation equation, int* 
 
   /* Set the checkpoint flag */
   ierr = adj_get_checkpoint_strategy(adjointer, &checkpoint_strategy);
-  if (ierr != ADJ_OK) return ierr;
+  if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
 
   if ((checkpoint_strategy == ADJ_CHECKPOINT_REVOLVE_OFFLINE) || 
       (checkpoint_strategy == ADJ_CHECKPOINT_REVOLVE_MULTISTAGE) || 
       (checkpoint_strategy == ADJ_CHECKPOINT_REVOLVE_ONLINE))
   {
     ierr = adj_get_revolve_checkpoint_storage(adjointer, equation, checkpoint_storage);
-    if (ierr != ADJ_OK) return ierr;
+    if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
 
     if (*checkpoint_storage == ADJ_CHECKPOINT_STORAGE_MEMORY)
       adjointer->equations[adjointer->nequations - 1].memory_checkpoint = ADJ_TRUE;
@@ -564,12 +564,12 @@ int adj_checkpoint_equation(adj_adjointer* adjointer, int eqn_number, int cs)
       	  adj_variable_data* var_data;
       	  var = eqn.blocks[i].nonlinear_block.depends[j];
       		ierr = adj_find_variable_data(&(adjointer->varhash), &var, &var_data);
-      		if (ierr != ADJ_OK) return ierr;
+      		if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
 
       		if (var_data->equation<eqn_number)
       		{
       			ierr = adj_checkpoint_variable(adjointer, var, cs);
-      			if (ierr != ADJ_OK) return ierr;
+      			if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
       		}
       	}
       }
@@ -585,12 +585,12 @@ int adj_checkpoint_equation(adj_adjointer* adjointer, int eqn_number, int cs)
       	continue;
 
       ierr = adj_find_variable_data(&(adjointer->varhash), &var, &var_data);
-      if (ierr != ADJ_OK) return ierr;
+      if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
 
       if (var_data->equation<eqn_number)
       {
       	ierr = adj_checkpoint_variable(adjointer, var, cs);
-      	if (ierr != ADJ_OK) return ierr;
+      	if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
       }
     }
 
@@ -600,12 +600,12 @@ int adj_checkpoint_equation(adj_adjointer* adjointer, int eqn_number, int cs)
       adj_variable_data* var_data;
       var=eqn.rhsdeps[i];
       ierr = adj_find_variable_data(&(adjointer->varhash), &var, &var_data);
-      if (ierr != ADJ_OK) return ierr;
+      if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
 
       if (var_data->equation<eqn_number)
       {
       	ierr = adj_checkpoint_variable(adjointer, var, cs);
-      	if (ierr != ADJ_OK) return ierr;
+      	if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
       }
     }
 
@@ -619,7 +619,7 @@ int adj_checkpoint_equation(adj_adjointer* adjointer, int eqn_number, int cs)
       var = adjointer->equations[eqn_number_iter].variable;
 
       ierr = adj_find_variable_data(&(adjointer->varhash), &var, &var_data);
-      if (ierr != ADJ_OK) return ierr;
+      if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
 
       for (i = 0; i < var_data->ndepending_timesteps; i++)
       {
@@ -632,12 +632,12 @@ int adj_checkpoint_equation(adj_adjointer* adjointer, int eqn_number, int cs)
       		{
       			var_dep=functional_data_ptr->dependencies[k];
       			ierr = adj_find_variable_data(&(adjointer->varhash), &var, &var_data_dep);
-      			if (ierr != ADJ_OK) return ierr;
+      			if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
 
       			if (var_data_dep->equation<eqn_number)
       			{
       				ierr = adj_checkpoint_variable(adjointer, var_dep, cs);
-      				if (ierr != ADJ_OK) return ierr;
+      				if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
       			}
       		}
       		functional_data_ptr = functional_data_ptr->next;
@@ -666,7 +666,7 @@ int adj_checkpoint_variable(adj_adjointer* adjointer, adj_variable var, int cs)
   adj_storage_data storage;
 
   ierr = adj_find_variable_data(&(adjointer->varhash), &var, &var_data);
-  if (ierr != ADJ_OK) return ierr;
+  if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
 
   if (!var_data->storage.storage_memory_has_value && !var_data->storage.storage_disk_has_value)
   {
@@ -697,11 +697,11 @@ int adj_checkpoint_variable(adj_adjointer* adjointer, adj_variable var, int cs)
   else if (cs == ADJ_CHECKPOINT_STORAGE_DISK && (var_data->storage.storage_disk_has_value != ADJ_TRUE))
   {
     ierr = adj_storage_disk(var_data->storage.value, &storage);
-    if (ierr != ADJ_OK) return ierr;
+    if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
     ierr = adj_storage_set_checkpoint(&storage, ADJ_TRUE);
-    if (ierr != ADJ_OK) return ierr;
+    if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
     ierr = adj_record_variable(adjointer, var, storage);
-    if (ierr != ADJ_OK) return ierr;
+    if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
 
     var_data->storage.storage_disk_is_checkpoint = ADJ_TRUE;
   }
@@ -732,7 +732,7 @@ int adj_get_revolve_checkpoint_storage(adj_adjointer* adjointer, adj_equation eq
   *checkpoint_storage = ADJ_CHECKPOINT_STORAGE_NONE;
 
   ierr = adj_get_checkpoint_strategy(adjointer, &cs);
-  if (ierr != ADJ_OK) return ierr;
+  if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
 
   /* Perform some revolve consistency checks or initialise revolve if not done before */
   if (adjointer->revolve_data.revolve.ptr != NULL)
@@ -750,7 +750,7 @@ int adj_get_revolve_checkpoint_storage(adj_adjointer* adjointer, adj_equation eq
   else
   {
     ierr = adj_initialise_revolve(adjointer);
-    if (ierr != ADJ_OK) return ierr;
+    if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
 
     /* Set the initial revolve state */
     adjointer->revolve_data.current_action = revolve(adjointer->revolve_data.revolve);
@@ -888,7 +888,7 @@ int adj_initialise_revolve(adj_adjointer* adjointer)
 
 
   ierr = adj_get_checkpoint_strategy(adjointer, &cs);
-  if (ierr != ADJ_OK) return ierr;
+  if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
 
   printf("Revolve: Checkpoint statistics:\n");
   /* Offline checkpointing */
@@ -965,14 +965,14 @@ int adj_record_variable(adj_adjointer* adjointer, adj_variable var, adj_storage_
   if (adjointer->options[ADJ_ACTIVITY] == ADJ_ACTIVITY_NOTHING) return ADJ_OK;
 
   ierr = adj_find_variable_data(&(adjointer->varhash), &var, &data_ptr);
-  if (ierr != ADJ_OK && ierr != ADJ_ERR_HASH_FAILED) return ierr;
+  if (ierr != ADJ_OK && ierr != ADJ_ERR_HASH_FAILED) return adj_chkierr_auto(ierr);
 
   if (ierr == ADJ_ERR_HASH_FAILED)
   {
     /* it's alright that this is the first time we've ever seen it */
     adj_variable_data* new_data;
     ierr = adj_add_new_hash_entry(adjointer, &var, &new_data);
-    if (ierr != ADJ_OK) return ierr;
+    if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
     new_data->equation = -1; /* it doesn't have an equation */
     data_ptr = new_data;
   }
@@ -1033,7 +1033,7 @@ int adj_record_variable(adj_adjointer* adjointer, adj_variable var, adj_storage_
         int record_ierr;
 
         ierr = adj_forget_variable_value(adjointer, data_ptr);
-        if (ierr != ADJ_OK) return ierr;
+        if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
 
         record_ierr = adj_record_variable_core_memory(adjointer, data_ptr, storage); /* Overwrite the result anyway */
         /* If no error happened from the recording, return the warning that the comparison failed;
@@ -1045,7 +1045,7 @@ int adj_record_variable(adj_adjointer* adjointer, adj_variable var, adj_storage_
       }
       else /* We don't have the overwrite flag */
       {
-        return ierr; /* Return the output of the comparison straight away */
+        return adj_chkierr_auto(ierr); /* Return the output of the comparison straight away */
       }
     }
     else /* We don't have the compare flag */
@@ -1053,7 +1053,7 @@ int adj_record_variable(adj_adjointer* adjointer, adj_variable var, adj_storage_
       if (storage.overwrite)
       {
         ierr = adj_forget_variable_value(adjointer, data_ptr);
-        if (ierr != ADJ_OK) return ierr;
+        if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
         return adj_record_variable_core_memory(adjointer, data_ptr, storage);
       }
       else /* We don't have the overwrite flag */
@@ -1481,12 +1481,12 @@ int adj_forget_adjoint_equation(adj_adjointer* adjointer, int equation)
         if (data->storage.storage_disk_has_value && !data->storage.storage_disk_is_checkpoint)
         {
           ierr = adj_forget_variable_value_from_disk(adjointer, data);
-          if (ierr != ADJ_OK) return ierr;
+          if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
         }
         if (data->storage.storage_memory_has_value && !data->storage.storage_memory_is_checkpoint)
         {
           ierr = adj_forget_variable_value_from_memory(adjointer, data);
-          if (ierr != ADJ_OK) return ierr;
+          if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
         }
       }
     }
@@ -1505,7 +1505,7 @@ int adj_forget_forward_equation(adj_adjointer* adjointer, int equation)
 {
   int last_equation, ierr;
   ierr = adj_equation_count(adjointer, &last_equation);
-  if (ierr != ADJ_OK) return ierr;
+  if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
 
   return adj_forget_forward_equation_until(adjointer, equation, last_equation-1);
 }
@@ -1589,12 +1589,12 @@ int adj_forget_forward_equation_until(adj_adjointer* adjointer, int equation, in
         if (data->storage.storage_disk_has_value && !data->storage.storage_disk_is_checkpoint)
         {
           ierr = adj_forget_variable_value_from_disk(adjointer, data);
-          if (ierr != ADJ_OK) return ierr;
+          if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
         }
         if (data->storage.storage_memory_has_value && !data->storage.storage_memory_is_checkpoint)
         {
           ierr = adj_forget_variable_value_from_memory(adjointer, data);
-          if (ierr != ADJ_OK) return ierr;
+          if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
         }
       }
     }
@@ -1702,7 +1702,7 @@ int adj_get_variable_value(adj_adjointer* adjointer, adj_variable var, adj_vecto
   adj_variable_data* data_ptr;
 
   ierr = adj_find_variable_data(&(adjointer->varhash), &var, &data_ptr);
-  if (ierr != ADJ_OK) return ierr;
+  if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
 
   if (!data_ptr->storage.storage_memory_has_value && !data_ptr->storage.storage_disk_has_value)
   {
@@ -1711,7 +1711,7 @@ int adj_get_variable_value(adj_adjointer* adjointer, adj_variable var, adj_vecto
 
     ierr = ADJ_ERR_NEED_VALUE;
     snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Need a value for %s, but don't have one recorded.", buf);
-    return ierr;
+    return adj_chkierr_auto(ierr);
   }
 
   /* Memory storage */
@@ -1752,7 +1752,7 @@ int adj_has_variable_value_memory(adj_adjointer* adjointer, adj_variable var)
     char buf[ADJ_NAME_LEN];
     adj_variable_str(var, buf, ADJ_NAME_LEN);
     snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Need a value for %s, but have never seen it.", buf);
-    return ierr;
+    return adj_chkierr_auto(ierr);
   }
 
   if (!data_ptr->storage.storage_memory_has_value)
@@ -1772,7 +1772,7 @@ int adj_has_variable_value_disk(adj_adjointer* adjointer, adj_variable var)
     char buf[ADJ_NAME_LEN];
     adj_variable_str(var, buf, ADJ_NAME_LEN);
     snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Need a value for %s, but have never seen it.", buf);
-    return ierr;
+    return adj_chkierr_auto(ierr);
   }
 
   if (!data_ptr->storage.storage_disk_has_value)
@@ -1792,7 +1792,7 @@ int adj_is_variable_disk_checkpoint(adj_adjointer* adjointer, adj_variable var)
     char buf[ADJ_NAME_LEN];
     adj_variable_str(var, buf, ADJ_NAME_LEN);
     snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Need a value for %s, but have never seen it.", buf);
-    return ierr;
+    return adj_chkierr_auto(ierr);
   }
 
   return data_ptr->storage.storage_disk_is_checkpoint;
@@ -1809,7 +1809,7 @@ int adj_is_variable_memory_checkpoint(adj_adjointer* adjointer, adj_variable var
     char buf[ADJ_NAME_LEN];
     adj_variable_str(var, buf, ADJ_NAME_LEN);
     snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Need a value for %s, but have never seen it.", buf);
-    return ierr;
+    return adj_chkierr_auto(ierr);
   }
 
   return data_ptr->storage.storage_memory_is_checkpoint;
@@ -1822,12 +1822,12 @@ int adj_forget_variable_value(adj_adjointer* adjointer, adj_variable_data* data)
   if (data->storage.storage_disk_has_value)
   {
     ierr = adj_forget_variable_value_from_disk(adjointer, data);
-    if (ierr != ADJ_OK) return ierr;
+    if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
   }
   if (data->storage.storage_memory_has_value)
   {
     ierr = adj_forget_variable_value_from_memory(adjointer, data);
-    if (ierr != ADJ_OK) return ierr;
+    if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
   }
   return ADJ_OK;
 }
@@ -1843,7 +1843,7 @@ int adj_forget_variable_value_from_disk(adj_adjointer* adjointer, adj_variable_d
 
     ierr = ADJ_ERR_INVALID_INPUTS;
     snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Can not access variable %s in file '%s'.", buf, data->storage.storage_disk_filename);
-    return ierr;
+    return adj_chkierr_auto(ierr);
   }
 
   data->storage.storage_disk_has_value = ADJ_FALSE;
@@ -1963,7 +1963,7 @@ int adj_set_storage_memory_copy(adj_adjointer* adjointer, adj_variable* var)
   if (ierr == ADJ_ERR_HASH_FAILED)
   {
     ierr = adj_add_new_hash_entry(adjointer, var, &data_ptr);
-    if (ierr != ADJ_OK) return ierr;
+    if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
   }
 
   data_ptr->storage.storage_memory_type = ADJ_STORAGE_MEMORY_COPY;
@@ -1980,7 +1980,7 @@ int adj_set_storage_memory_incref(adj_adjointer* adjointer, adj_variable* var)
   if (ierr == ADJ_ERR_HASH_FAILED)
   {
     ierr = adj_add_new_hash_entry(adjointer, var, &data_ptr);
-    if (ierr != ADJ_OK) return ierr;
+    if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
   }
 
   data_ptr->storage.storage_memory_type = ADJ_STORAGE_MEMORY_INCREF;
@@ -2074,7 +2074,7 @@ int adj_add_new_hash_entry(adj_adjointer* adjointer, adj_variable* var, adj_vari
 
   /* add to the hash table */
   ierr = adj_add_variable_data(&(adjointer->varhash), var, *data);
-  if (ierr != ADJ_OK) return ierr;
+  if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
 
   /* and add to the data list */
   if (adjointer->vardata.firstnode == NULL)
@@ -2170,7 +2170,7 @@ int adj_timestep_set_times(adj_adjointer* adjointer, int timestep, adj_scalar st
   if (adjointer->ntimesteps <= timestep)
   {
     ierr = adj_extend_timestep_data(adjointer, timestep + 1);
-    if (ierr != ADJ_OK) return ierr;
+    if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
   }
 
   adjointer->timestep_data[timestep].start_time = start;
@@ -2241,7 +2241,7 @@ int adj_timestep_set_functional_dependencies(adj_adjointer* adjointer, int times
   if (adjointer->ntimesteps <= timestep)
   {
     ierr = adj_extend_timestep_data(adjointer, timestep + 1);
-    if (ierr != ADJ_OK) return ierr;
+    if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
   }
 
   /* Make sure that the dependencies for this timestep have not been set before */
@@ -2282,12 +2282,12 @@ int adj_timestep_set_functional_dependencies(adj_adjointer* adjointer, int times
     if (ierr == ADJ_ERR_HASH_FAILED)
     {
       ierr = adj_add_new_hash_entry(adjointer, &(dependencies[i]), &data_ptr);
-      if (ierr != ADJ_OK) return ierr;
+      if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
     }
 
     /* Record that this variable is necessary for the functional evaluation at this point in time */
     ierr = adj_append_unique(&(data_ptr->depending_timesteps), &(data_ptr->ndepending_timesteps), timestep);
-    if (ierr != ADJ_OK) return ierr;
+    if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
   }
   /* We are done */
   return ADJ_OK;
@@ -2359,7 +2359,7 @@ int adj_variable_get_ndepending_timesteps(adj_adjointer* adjointer, adj_variable
   int k;
 
   ierr = adj_find_variable_data(&(adjointer->varhash), &variable, &data_ptr);
-  if (ierr != ADJ_OK) return ierr;
+  if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
 
   *ntimesteps = 0;
   for (k = 0; k < data_ptr->ndepending_timesteps; k++)
@@ -2402,7 +2402,7 @@ int adj_variable_get_depending_timestep(adj_adjointer* adjointer, adj_variable v
   int ntimesteps;
 
   ierr = adj_find_variable_data(&(adjointer->varhash), &variable, &data_ptr);
-  if (ierr != ADJ_OK) return ierr;
+  if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
 
   ntimesteps = 0;
   for (k = 0; k < data_ptr->ndepending_timesteps; k++)
