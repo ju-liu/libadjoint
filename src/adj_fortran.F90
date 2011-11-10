@@ -597,13 +597,13 @@ module libadjoint
       integer(kind=c_int) :: ierr
     end function adj_set_checkpoint_strategy
 
-    function adj_set_revolve_options_c(adjointer, steps, snaps, snaps_in_ram, verbose) result(ierr) &
+    function adj_set_revolve_options_c(adjointer, steps, snaps_on_disk, snaps_in_ram, verbose) result(ierr) &
                                      & bind(c, name='adj_set_revolve_options')
       use libadjoint_data_structures
       use iso_c_binding
       type(adj_adjointer), intent(inout) :: adjointer
       integer(kind=c_int), intent(in), value :: steps 
-      integer(kind=c_int), intent(in), value :: snaps 
+      integer(kind=c_int), intent(in), value :: snaps_on_disk
       integer(kind=c_int), intent(in), value :: snaps_in_ram
       integer(kind=c_int), intent(in), value :: verbose
       integer(kind=c_int) :: ierr
@@ -1516,10 +1516,10 @@ module libadjoint
     ierr = adj_variable_set_auxiliary_c(var, auxiliary_c)
   end function adj_variable_set_auxiliary
 
-  function adj_set_revolve_options(adjointer, steps, snaps, snaps_in_ram, verbose) result(ierr)
+  function adj_set_revolve_options(adjointer, steps, snaps_on_disk, snaps_in_ram, verbose) result(ierr)
     type(adj_adjointer), intent(inout) :: adjointer
     integer(kind=c_int), intent(in) :: steps
-    integer(kind=c_int), intent(in) :: snaps
+    integer(kind=c_int), intent(in) :: snaps_on_disk
     integer(kind=c_int), intent(in) :: snaps_in_ram
     logical, intent(in), optional :: verbose
     integer(kind=c_int) :: ierr
@@ -1533,7 +1533,7 @@ module libadjoint
       verbose_c = ADJ_FALSE
     end if
 
-    ierr = adj_set_revolve_options_c(adjointer, steps, snaps, snaps_in_ram, verbose_c)
+    ierr = adj_set_revolve_options_c(adjointer, steps, snaps_on_disk, snaps_in_ram, verbose_c)
   end function adj_set_revolve_options
 
   function adj_set_revolve_debug_options(adjointer, overwrite, comparison_tolerance) result(ierr)

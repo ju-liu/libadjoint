@@ -41,15 +41,15 @@ The options for the argument \texttt{strategy} are:
 \begin{boxwithtitle}{Function interface for \texttt{adj_set_revolve_options}}
 \begin{minipage}{\columnwidth}
 \begin{ccode}
-int adj_set_revolve_options(adj_adjointer* adjointer, int steps, int snaps, 
+int adj_set_revolve_options(adj_adjointer* adjointer, int steps, int snaps_on_disk, 
                             int snaps_in_ram, int verbose);
 \end{ccode}
 \begin{fortrancode}
-function adj_set_revolve_options(adjointer, steps, snaps, snaps_in_ram, verbose) 
+function adj_set_revolve_options(adjointer, steps, snaps_on_disk, snaps_in_ram, verbose) 
          result(ierr) 
   type(adj_adjointer), intent(inout) :: adjointer
   integer(kind=c_int), intent(in) :: steps 
-  integer(kind=c_int), intent(in) :: snaps 
+  integer(kind=c_int), intent(in) :: snaps_on_disk
   integer(kind=c_int), intent(in) :: snaps_in_ram 
   logical, intent(in) :: verbose 
   integer(kind=c_int) :: ierr
@@ -60,15 +60,15 @@ end function adj_set_revolve_options
 
 This function sets the checkpointing options for revolve based checkpointing schemes: \texttt{ADJ_CHECKPOINT_REVOLVE_OFFLINE}, \texttt{ADJ_CHECKPOINT_REVOLVE_MULTISTAGE} and \texttt{ADJ_CHECKPOINT_REVOLVE_ONLINE}. 
 \texttt{steps} is the total number of timesteps of the simulation (if known).
-\texttt{snaps} specifies the overall number of checkpoint slots that \libadjoint may use.
+\texttt{snaps_on_disk} specifies the number of disk checkpoint slots that \libadjoint may use.
 \texttt{snaps_in_ram} denotes the number checkpoints that may be stored in memory. 
-Hence the number of checkpoint stored on disk is $\texttt{snaps}-\texttt{snaps_in_ram}$
+Hence the total number of checkpoint stored used is $\texttt{snaps_on_disk}+\texttt{snaps_in_ram}$
 
 Depending on the chosen checkpointing strategy, the function arguments must fulfill these properties:
 \begin{itemize}
-\item \texttt{ADJ_CHECKPOINT_REVOLVE_OFFLINE}: $\texttt{steps}>1$ and $\texttt{snaps}>1$.
-\item \texttt{ADJ_CHECKPOINT_REVOLVE_MULTISTAGE}: $\texttt{steps}>1$, $\texttt{snaps}>1$, $\texttt{snaps\_in\_ram}\ge0$ and $\texttt{snaps\_in\_ram}\le \texttt{snaps}$.
-\item \texttt{ADJ_CHECKPOINT_REVOLVE_ONLINE}: $\texttt{snaps}>1$.
+\item \texttt{ADJ_CHECKPOINT_REVOLVE_OFFLINE}: $\texttt{steps}>1$, $\texttt{snaps_in_ram}>0$ and at least two checkpoints.
+\item \texttt{ADJ_CHECKPOINT_REVOLVE_MULTISTAGE}: $\texttt{steps}>1$, $\texttt{snaps_in_ram}>0$ and $\texttt{snaps\_on\_disk} \ge 0$.
+\item \texttt{ADJ_CHECKPOINT_REVOLVE_ONLINE}: $\texttt{snaps_in_ram}>0$ and at least two checkpoints.
 \end{itemize}
 
 If the flag \texttt{verbose} is set, \libadjoint will print revolve specific output to the screen. 

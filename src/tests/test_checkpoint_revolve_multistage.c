@@ -24,7 +24,7 @@ void get_expected_values(int timestep, int* nb_expected_vars, char expected_vars
 void test_checkpoint_revolve_multistage(void)
 {
   int steps = 20;
-  int snaps = 6;
+  int snaps_on_disk = 3;
   int snaps_in_ram = 3;
   int timestep, nb_eqs;
   int cs;
@@ -58,7 +58,7 @@ void test_checkpoint_revolve_multistage(void)
   ierr = adj_set_checkpoint_strategy(&adjointer, ADJ_CHECKPOINT_REVOLVE_MULTISTAGE);
   adj_test_assert(ierr == ADJ_OK, "Should have worked");
 
-  ierr = adj_set_revolve_options(&adjointer, steps, snaps, snaps_in_ram, ADJ_TRUE);
+  ierr = adj_set_revolve_options(&adjointer, steps, snaps_on_disk, snaps_in_ram, ADJ_TRUE);
   adj_test_assert(ierr == ADJ_OK, "Should have worked");
 
   /* Register callbacks */

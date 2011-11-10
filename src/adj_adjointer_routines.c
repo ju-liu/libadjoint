@@ -197,10 +197,10 @@ int adj_get_checkpoint_strategy(adj_adjointer* adjointer, int* strategy)
   return ADJ_OK;
 }
 
-int adj_set_revolve_options(adj_adjointer* adjointer, int steps, int snaps, int snaps_in_ram, int verbose)
+int adj_set_revolve_options(adj_adjointer* adjointer, int steps, int snaps_on_disk, int snaps_in_ram, int verbose)
 {
   adjointer->revolve_data.steps=steps;  
-  adjointer->revolve_data.snaps=snaps;  
+  adjointer->revolve_data.snaps=snaps_on_disk+snaps_in_ram;
   adjointer->revolve_data.snaps_in_ram=snaps_in_ram;  
   adjointer->revolve_data.verbose=verbose;
   return ADJ_OK;
