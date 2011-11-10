@@ -106,7 +106,7 @@ void petsc_vec_to_file_proc(adj_vector x, char* filename)
 
   if (access(filename, W_OK) == 0) 
   {
-  	printf("Warning: Overwriting data in file '%s'\n", filename);
+    printf("Warning: Overwriting data in file '%s'\n", filename);
   }
 
   PetscViewer viewer;

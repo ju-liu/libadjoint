@@ -553,98 +553,98 @@ int adj_checkpoint_equation(adj_adjointer* adjointer, int eqn_number, int cs)
   {
     eqn = adjointer->equations[eqn_number_iter];
 
-  	/* Checkpoint all dependency variables of this equation */
-  	for (i=0; i<eqn.nblocks; i++)
-  	{
-  		if (eqn.blocks[i].has_nonlinear_block == ADJ_TRUE)
-  		{
-  			adj_nonlinear_block nonlinear_block = eqn.blocks[i].nonlinear_block;
-  			for (j=0; j<nonlinear_block.ndepends; j++)
-  			{
-  			  adj_variable_data* var_data;
-  			  var = eqn.blocks[i].nonlinear_block.depends[j];
-  				ierr = adj_find_variable_data(&(adjointer->varhash), &var, &var_data);
-  				if (ierr != ADJ_OK) return ierr;
+    /* Checkpoint all dependency variables of this equation */
+    for (i=0; i<eqn.nblocks; i++)
+    {
+      if (eqn.blocks[i].has_nonlinear_block == ADJ_TRUE)
+      {
+      	adj_nonlinear_block nonlinear_block = eqn.blocks[i].nonlinear_block;
+      	for (j=0; j<nonlinear_block.ndepends; j++)
+      	{
+      	  adj_variable_data* var_data;
+      	  var = eqn.blocks[i].nonlinear_block.depends[j];
+      		ierr = adj_find_variable_data(&(adjointer->varhash), &var, &var_data);
+      		if (ierr != ADJ_OK) return ierr;
 
-  				if (var_data->equation<eqn_number)
-  				{
-  					ierr = adj_checkpoint_variable(adjointer, var, cs);
-  					if (ierr != ADJ_OK) return ierr;
-  				}
-  			}
-  		}
-  	}
+      		if (var_data->equation<eqn_number)
+      		{
+      			ierr = adj_checkpoint_variable(adjointer, var, cs);
+      			if (ierr != ADJ_OK) return ierr;
+      		}
+      	}
+      }
+    }
 
-  	/* Next checkpoint all target variables on the rhs */
-  	for (i=0; i<eqn.nblocks; i++)
-  	{
-  	  adj_variable_data* var_data;
-  		var=eqn.targets[i];
+    /* Next checkpoint all target variables on the rhs */
+    for (i=0; i<eqn.nblocks; i++)
+    {
+      adj_variable_data* var_data;
+      var=eqn.targets[i];
 
-  		if (adj_variable_equal(&var, &eqn.variable, 1)) /* This variable goes on the lhs */
-  			continue;
+      if (adj_variable_equal(&var, &eqn.variable, 1)) /* This variable goes on the lhs */
+      	continue;
 
-  		ierr = adj_find_variable_data(&(adjointer->varhash), &var, &var_data);
-  		if (ierr != ADJ_OK) return ierr;
+      ierr = adj_find_variable_data(&(adjointer->varhash), &var, &var_data);
+      if (ierr != ADJ_OK) return ierr;
 
-  		if (var_data->equation<eqn_number)
-  		{
-  			ierr = adj_checkpoint_variable(adjointer, var, cs);
-  			if (ierr != ADJ_OK) return ierr;
-  		}
-  	}
+      if (var_data->equation<eqn_number)
+      {
+      	ierr = adj_checkpoint_variable(adjointer, var, cs);
+      	if (ierr != ADJ_OK) return ierr;
+      }
+    }
 
-  	/* Checkpoint the rhs dependencies */
-  	for (i=0; i<eqn.nrhsdeps; i++)
-  	{
-  	  adj_variable_data* var_data;
-  		var=eqn.rhsdeps[i];
-  		ierr = adj_find_variable_data(&(adjointer->varhash), &var, &var_data);
-  		if (ierr != ADJ_OK) return ierr;
+    /* Checkpoint the rhs dependencies */
+    for (i=0; i<eqn.nrhsdeps; i++)
+    {
+      adj_variable_data* var_data;
+      var=eqn.rhsdeps[i];
+      ierr = adj_find_variable_data(&(adjointer->varhash), &var, &var_data);
+      if (ierr != ADJ_OK) return ierr;
 
-  		if (var_data->equation<eqn_number)
-  		{
-  			ierr = adj_checkpoint_variable(adjointer, var, cs);
-  			if (ierr != ADJ_OK) return ierr;
-  		}
-  	}
+      if (var_data->equation<eqn_number)
+      {
+      	ierr = adj_checkpoint_variable(adjointer, var, cs);
+      	if (ierr != ADJ_OK) return ierr;
+      }
+    }
 
-  	/* Checkpoint the functional derivative dependencies for the adjoint rhs. */
+    /* Checkpoint the functional derivative dependencies for the adjoint rhs. */
     /* For that we loop over all timesteps that need 'variable' for the functional evaluation */
     /* and checkpoint its dependency variables */
-  	{
-  		adj_variable var_dep;
-  		adj_variable_data* var_data, *var_data_dep;
-  		adj_functional_data* functional_data_ptr = NULL;
-  		var = adjointer->equations[eqn_number_iter].variable;
+    {
+      adj_variable var_dep;
+      adj_variable_data* var_data, *var_data_dep;
+      adj_functional_data* functional_data_ptr = NULL;
+      var = adjointer->equations[eqn_number_iter].variable;
 
-  		ierr = adj_find_variable_data(&(adjointer->varhash), &var, &var_data);
-  		if (ierr != ADJ_OK) return ierr;
+      ierr = adj_find_variable_data(&(adjointer->varhash), &var, &var_data);
+      if (ierr != ADJ_OK) return ierr;
 
-  		for (i = 0; i < var_data->ndepending_timesteps; i++)
-  		{
-  			int timestep = var_data->depending_timesteps[i];
-  			functional_data_ptr = adjointer->timestep_data[timestep].functional_data_start;
-  			while (functional_data_ptr != NULL)
-  			{
-  				int k;
-  				for (k = 0; k < functional_data_ptr->ndepends; k++)
-  				{
-  					var_dep=functional_data_ptr->dependencies[k];
-  					ierr = adj_find_variable_data(&(adjointer->varhash), &var, &var_data_dep);
-  					if (ierr != ADJ_OK) return ierr;
+      for (i = 0; i < var_data->ndepending_timesteps; i++)
+      {
+      	int timestep = var_data->depending_timesteps[i];
+      	functional_data_ptr = adjointer->timestep_data[timestep].functional_data_start;
+      	while (functional_data_ptr != NULL)
+      	{
+      		int k;
+      		for (k = 0; k < functional_data_ptr->ndepends; k++)
+      		{
+      			var_dep=functional_data_ptr->dependencies[k];
+      			ierr = adj_find_variable_data(&(adjointer->varhash), &var, &var_data_dep);
+      			if (ierr != ADJ_OK) return ierr;
 
-  					if (var_data_dep->equation<eqn_number)
-  					{
-  						ierr = adj_checkpoint_variable(adjointer, var_dep, cs);
-  						if (ierr != ADJ_OK) return ierr;
-  					}
-  				}
-  				functional_data_ptr = functional_data_ptr->next;
-  			}
-  		}
+      			if (var_data_dep->equation<eqn_number)
+      			{
+      				ierr = adj_checkpoint_variable(adjointer, var_dep, cs);
+      				if (ierr != ADJ_OK) return ierr;
+      			}
+      		}
+      		functional_data_ptr = functional_data_ptr->next;
+      	}
+      }
 
-  	}
+    }
   }
 
   /* If everything worked fine until here, we can set the checkpoint flag */
@@ -684,40 +684,40 @@ int adj_checkpoint_variable(adj_adjointer* adjointer, adj_variable var, int cs)
   /* Case 1: variable is on disk and we want to checkpoint it in disk */
   if ((cs == ADJ_CHECKPOINT_STORAGE_DISK) && (var_data->storage.storage_disk_has_value == ADJ_TRUE))
   {
-  	var_data->storage.storage_disk_is_checkpoint = ADJ_TRUE;
-  	return ADJ_OK;
+    var_data->storage.storage_disk_is_checkpoint = ADJ_TRUE;
+    return ADJ_OK;
   }
   /* Case 2: variable is in memory and we want to checkpoint it in memory */
   else if ((cs == ADJ_CHECKPOINT_STORAGE_MEMORY) && (var_data->storage.storage_memory_has_value == ADJ_TRUE))
   {
-  	var_data->storage.storage_memory_is_checkpoint = ADJ_TRUE;
-  	return ADJ_OK;
+    var_data->storage.storage_memory_is_checkpoint = ADJ_TRUE;
+    return ADJ_OK;
   }
   /* Case 3: variable is in memory and we want to checkpoint it on disk */
   else if (cs == ADJ_CHECKPOINT_STORAGE_DISK && (var_data->storage.storage_disk_has_value != ADJ_TRUE))
   {
-  	ierr = adj_storage_disk(var_data->storage.value, &storage);
-  	if (ierr != ADJ_OK) return ierr;
-  	ierr = adj_storage_set_checkpoint(&storage, ADJ_TRUE);
-  	if (ierr != ADJ_OK) return ierr;
-  	ierr = adj_record_variable(adjointer, var, storage);
-  	if (ierr != ADJ_OK) return ierr;
+    ierr = adj_storage_disk(var_data->storage.value, &storage);
+    if (ierr != ADJ_OK) return ierr;
+    ierr = adj_storage_set_checkpoint(&storage, ADJ_TRUE);
+    if (ierr != ADJ_OK) return ierr;
+    ierr = adj_record_variable(adjointer, var, storage);
+    if (ierr != ADJ_OK) return ierr;
 
-  	var_data->storage.storage_disk_is_checkpoint = ADJ_TRUE;
+    var_data->storage.storage_disk_is_checkpoint = ADJ_TRUE;
   }
   /* Case 4: variable is on disk and we want to checkpoint it in memory */
   else if  (cs == ADJ_CHECKPOINT_STORAGE_MEMORY && (var_data->storage.storage_memory_has_value != ADJ_TRUE))
   {
     /* Check for the required callbacks */
     if (adjointer->callbacks.vec_from_file == NULL)
-  	{
-  		strncpy(adj_error_msg, "Need the vec_from_file data callback, but it hasn't been supplied.", ADJ_ERROR_MSG_BUF);
-  		return ADJ_ERR_NEED_CALLBACK;
-  	}
-  	adjointer->callbacks.vec_from_file(&(var_data->storage.value), filename);
-  	var_data->storage.storage_memory_has_value=ADJ_TRUE;
+    {
+      strncpy(adj_error_msg, "Need the vec_from_file data callback, but it hasn't been supplied.", ADJ_ERROR_MSG_BUF);
+      return ADJ_ERR_NEED_CALLBACK;
+    }
+    adjointer->callbacks.vec_from_file(&(var_data->storage.value), filename);
+    var_data->storage.storage_memory_has_value=ADJ_TRUE;
 
-  	var_data->storage.storage_memory_is_checkpoint = ADJ_TRUE;
+    var_data->storage.storage_memory_is_checkpoint = ADJ_TRUE;
   }
 
   return ADJ_OK;
@@ -740,7 +740,7 @@ int adj_get_revolve_checkpoint_storage(adj_adjointer* adjointer, adj_equation eq
     /* This function is only called during the forward run when registering an equation.
      * At that point revolve should always be in either CACTION_FIRSTRUN or CACTION_ADVANCE mode */
     if ((adjointer->revolve_data.current_action != CACTION_ADVANCE) &&
-      	(adjointer->revolve_data.current_action != CACTION_FIRSTRUN))
+        (adjointer->revolve_data.current_action != CACTION_FIRSTRUN))
     {
       adj_variable_str(equation.variable, buf, ADJ_NAME_LEN);
       snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "The adjointer and revolve are not consistent (in adj_register_equation of variable %s). This can happen when one tries to register an equation after solving the first adjoint equation.", buf);
@@ -764,7 +764,7 @@ int adj_get_revolve_checkpoint_storage(adj_adjointer* adjointer, adj_equation eq
 
   /* Check that the equations are registered chronologically */
   if ((adjointer->revolve_data.current_timestep != equation.variable.timestep) &&
-    	(adjointer->revolve_data.current_timestep+1 != equation.variable.timestep))
+      (adjointer->revolve_data.current_timestep+1 != equation.variable.timestep))
   {
     adj_variable_str(equation.variable, buf, ADJ_NAME_LEN);
     snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "With revolve as checkpoint strategy the equations have to be registered chronologically, but equation for variable %s is out of order.", buf);
@@ -796,7 +796,7 @@ int adj_get_revolve_checkpoint_storage(adj_adjointer* adjointer, adj_equation eq
         adjointer->revolve_data.current_action = revolve(adjointer->revolve_data.revolve);
         if (adjointer->revolve_data.verbose == ADJ_TRUE)
           if (adjointer->revolve_data.current_action == CACTION_FIRSTRUN)
-          	printf("Revolve: Solve last timestep %i.\n", adjointer->revolve_data.current_timestep);
+            printf("Revolve: Solve last timestep %i.\n", adjointer->revolve_data.current_timestep);
       }
 
       /* If the next action is FIRST_RUN, we solve the first equation of the very last timestep. */
@@ -828,7 +828,7 @@ int adj_get_revolve_checkpoint_storage(adj_adjointer* adjointer, adj_equation eq
           if (*checkpoint_storage == ADJ_CHECKPOINT_STORAGE_MEMORY)
             printf("Revolve: Checkpoint timestep %i in memory.\n", adjointer->revolve_data.current_timestep);
           else
-          	printf("Revolve: Checkpoint timestep %i on disk.\n", adjointer->revolve_data.current_timestep);
+            printf("Revolve: Checkpoint timestep %i on disk.\n", adjointer->revolve_data.current_timestep);
         }
 
         /* Check what revolve wants to do next */
@@ -836,9 +836,9 @@ int adj_get_revolve_checkpoint_storage(adj_adjointer* adjointer, adj_equation eq
         if (adjointer->revolve_data.verbose == ADJ_TRUE)
         {
           if (adjointer->revolve_data.current_action == CACTION_ADVANCE)
-          	printf("Revolve: Advance from timestep %i to timestep %i.\n", revolve_getoldcapo(adjointer->revolve_data.revolve), revolve_getcapo(adjointer->revolve_data.revolve));
+            printf("Revolve: Advance from timestep %i to timestep %i.\n", revolve_getoldcapo(adjointer->revolve_data.revolve), revolve_getcapo(adjointer->revolve_data.revolve));
           else if (adjointer->revolve_data.current_action == CACTION_FIRSTRUN)
-          	printf("Revolve: Solving for the last timestep %i.\n", adjointer->revolve_data.current_timestep);
+            printf("Revolve: Solving for the last timestep %i.\n", adjointer->revolve_data.current_timestep);
         }
         break;
 
@@ -851,9 +851,9 @@ int adj_get_revolve_checkpoint_storage(adj_adjointer* adjointer, adj_equation eq
         /* At that point we should be solving for the last equation. */
         if ((adjointer->revolve_data.steps-1) != adjointer->revolve_data.current_timestep)
         {
-  				adj_variable_str(equation.variable, buf, ADJ_NAME_LEN);
-  				snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "You told revolve that the last timestep is %i, but you are about to register an equation for variable %s with timestep %i.", adjointer->revolve_data.steps-1, buf, adjointer->revolve_data.current_timestep);
-  				return ADJ_ERR_REVOLVE_ERROR;
+      		adj_variable_str(equation.variable, buf, ADJ_NAME_LEN);
+      		snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "You told revolve that the last timestep is %i, but you are about to register an equation for variable %s with timestep %i.", adjointer->revolve_data.steps-1, buf, adjointer->revolve_data.current_timestep);
+      		return ADJ_ERR_REVOLVE_ERROR;
         }
         break;
 
@@ -982,8 +982,8 @@ int adj_record_variable(adj_adjointer* adjointer, adj_variable var, adj_storage_
   /* The input storage type must have a value attached. */
   if (!storage.storage_memory_has_value && !storage.storage_disk_has_value)
   {
-  	snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Trying to record a variable from a storage object with no value attached.");
-  	return ADJ_ERR_INVALID_INPUTS;
+    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Trying to record a variable from a storage object with no value attached.");
+    return ADJ_ERR_INVALID_INPUTS;
   }
 
   /* If we don't have a value recorded already, any compare or overwrite flags can be ignored */
@@ -1091,8 +1091,8 @@ int adj_record_variable_core_memory(adj_adjointer* adjointer, adj_variable_data*
 
   if (data_ptr->storage.storage_memory_has_value==ADJ_TRUE)
   {
-  	snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Trying to overwrite a variable value in adj_record_variable_core_memory which is not supported.");
-  	return ADJ_ERR_INVALID_INPUTS;
+    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Trying to overwrite a variable value in adj_record_variable_core_memory which is not supported.");
+    return ADJ_ERR_INVALID_INPUTS;
   }
 
   switch (storage.storage_memory_type)
@@ -1135,8 +1135,8 @@ int adj_record_variable_core_disk(adj_adjointer* adjointer, adj_variable_data* d
 
   if (data_ptr->storage.storage_disk_has_value == ADJ_TRUE)
   {
-  	snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Trying to overwrite a variable value in adj_record_variable_core_disk which is not supported.");
-  	return ADJ_ERR_NOT_IMPLEMENTED;
+    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Trying to overwrite a variable value in adj_record_variable_core_disk which is not supported.");
+    return ADJ_ERR_NOT_IMPLEMENTED;
   }
 
   data_ptr->storage.storage_disk_has_value = storage.storage_disk_has_value;
@@ -1480,13 +1480,13 @@ int adj_forget_adjoint_equation(adj_adjointer* adjointer, int equation)
         /* Forget only non-checkpoint variables */
         if (data->storage.storage_disk_has_value && !data->storage.storage_disk_is_checkpoint)
         {
-        	ierr = adj_forget_variable_value_from_disk(adjointer, data);
-        	if (ierr != ADJ_OK) return ierr;
+          ierr = adj_forget_variable_value_from_disk(adjointer, data);
+          if (ierr != ADJ_OK) return ierr;
         }
         if (data->storage.storage_memory_has_value && !data->storage.storage_memory_is_checkpoint)
         {
-        	ierr = adj_forget_variable_value_from_memory(adjointer, data);
-        	if (ierr != ADJ_OK) return ierr;
+          ierr = adj_forget_variable_value_from_memory(adjointer, data);
+          if (ierr != ADJ_OK) return ierr;
         }
       }
     }
@@ -1536,15 +1536,15 @@ int adj_forget_forward_equation_until(adj_adjointer* adjointer, int equation, in
     /* Only forget forward variables */
     if (data->equation<0) /* Adjoint variables have no equation. */
     {
-    	data = data->next;
-    	continue;
+      data = data->next;
+      continue;
     }
 
     /* Only forget forward variables that are computed at equations <= equation */
     if (data->equation>equation)
     {
-    	data = data->next;
-    	continue;
+      data = data->next;
+      continue;
     }
 
     if (data->storage.storage_memory_has_value || data->storage.storage_disk_has_value)
@@ -1588,13 +1588,13 @@ int adj_forget_forward_equation_until(adj_adjointer* adjointer, int equation, in
         /* Forget only non-checkpoint variables */
         if (data->storage.storage_disk_has_value && !data->storage.storage_disk_is_checkpoint)
         {
-        	ierr = adj_forget_variable_value_from_disk(adjointer, data);
-        	if (ierr != ADJ_OK) return ierr;
+          ierr = adj_forget_variable_value_from_disk(adjointer, data);
+          if (ierr != ADJ_OK) return ierr;
         }
         if (data->storage.storage_memory_has_value && !data->storage.storage_memory_is_checkpoint)
         {
-        	ierr = adj_forget_variable_value_from_memory(adjointer, data);
-        	if (ierr != ADJ_OK) return ierr;
+          ierr = adj_forget_variable_value_from_memory(adjointer, data);
+          if (ierr != ADJ_OK) return ierr;
         }
       }
     }
