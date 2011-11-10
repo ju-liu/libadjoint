@@ -1,7 +1,7 @@
 #include "libadjoint/adj_fortran.h"
 ! Yes, writing this file really was as boring as you would imagine
 
-! In particular because the oder of the variables in types has to conform with the definition in C (!).
+! In particular because the order of the variables in types has to conform with the definition in C (!).
 module libadjoint_data_structures
   use iso_c_binding
   implicit none

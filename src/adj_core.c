@@ -316,15 +316,15 @@ int adj_get_adjoint_solution(adj_adjointer* adjointer, int equation, char* funct
 
   /* Online revolve needs to be told the total number of timesteps
    * before solving the first adjoint equation */
-  if (cs==ADJ_CHECKPOINT_REVOLVE_ONLINE)
-    if (equation==adjointer->nequations-1)
+  if (cs == ADJ_CHECKPOINT_REVOLVE_ONLINE && equation == adjointer->nequations-1)
     {
     	adjointer->revolve_data.steps = adjointer->nequations;
     	revolve_turn(adjointer->revolve_data.revolve, adjointer->revolve_data.steps);
     }
 
-  if ((cs==ADJ_CHECKPOINT_REVOLVE_OFFLINE) || (cs==ADJ_CHECKPOINT_REVOLVE_MULTISTAGE) || (cs==ADJ_CHECKPOINT_REVOLVE_ONLINE))
+  if ((cs == ADJ_CHECKPOINT_REVOLVE_OFFLINE) || (cs == ADJ_CHECKPOINT_REVOLVE_MULTISTAGE) || (cs == ADJ_CHECKPOINT_REVOLVE_ONLINE))
   {
+    /* Recompute any variables that is required for solving this adjoint equation */
     ierr = adj_revolve_to_adjoint_equation(adjointer, equation);
     if (ierr != ADJ_OK) return ierr;
   }
@@ -343,7 +343,7 @@ int adj_get_adjoint_solution(adj_adjointer* adjointer, int equation, char* funct
   adjointer->callbacks.mat_destroy(&lhs);
 
   /* We can now safely un-checkoint this equation and its associated forward variable */
-  if ((cs==ADJ_CHECKPOINT_REVOLVE_OFFLINE) || (cs==ADJ_CHECKPOINT_REVOLVE_MULTISTAGE) || (cs==ADJ_CHECKPOINT_REVOLVE_ONLINE))
+  if ((cs == ADJ_CHECKPOINT_REVOLVE_OFFLINE) || (cs == ADJ_CHECKPOINT_REVOLVE_MULTISTAGE) || (cs == ADJ_CHECKPOINT_REVOLVE_ONLINE))
   {
     adj_variable_data* data_ptr;
 
@@ -351,8 +351,8 @@ int adj_get_adjoint_solution(adj_adjointer* adjointer, int equation, char* funct
     if (ierr != ADJ_OK) return ierr;
 
     if (adjointer->revolve_data.verbose)
-      if ((adjointer->equations[equation].disk_checkpoint==ADJ_TRUE) ||
-      	  (adjointer->equations[equation].memory_checkpoint==ADJ_TRUE))
+      if ((adjointer->equations[equation].disk_checkpoint == ADJ_TRUE) ||
+      	  (adjointer->equations[equation].memory_checkpoint == ADJ_TRUE))
         printf("Revolve: Delete checkpoint equation %i.\n", equation);
 
     adjointer->equations[equation].disk_checkpoint=ADJ_FALSE;
@@ -395,9 +395,9 @@ int adj_revolve_to_adjoint_equation(adj_adjointer* adjointer, int equation)
 
         adjointer->revolve_data.current_timestep = capo;
         adjointer->revolve_data.current_action = revolve(adjointer->revolve_data.revolve);
-        assert((adjointer->revolve_data.current_action==CACTION_TAKESHOT) ||
-          	   (adjointer->revolve_data.current_action==CACTION_YOUTURN) ||
-          	   (adjointer->revolve_data.current_action==CACTION_FIRSTRUN));
+        assert((adjointer->revolve_data.current_action == CACTION_TAKESHOT) ||
+          	   (adjointer->revolve_data.current_action == CACTION_YOUTURN) ||
+          	   (adjointer->revolve_data.current_action == CACTION_FIRSTRUN));
 
         break;
 
@@ -410,7 +410,7 @@ int adj_revolve_to_adjoint_equation(adj_adjointer* adjointer, int equation)
           printf("Revolve: Create checkpoint of equation %i (first equation of timestep %i).\n", start_eqn, adjointer->revolve_data.current_timestep);
 
         /* in a multistage setting, we have to ask revolve where to store the checkpoint */
-        if ((cs==ADJ_CHECKPOINT_REVOLVE_MULTISTAGE) && (revolve_getwhere(adjointer->revolve_data.revolve)==1))
+        if ((cs == ADJ_CHECKPOINT_REVOLVE_MULTISTAGE) && (revolve_getwhere(adjointer->revolve_data.revolve) == 1))
           ierr = adj_checkpoint_equation(adjointer, start_eqn, ADJ_CHECKPOINT_STORAGE_MEMORY);
          else
           ierr = adj_checkpoint_equation(adjointer, start_eqn, ADJ_CHECKPOINT_STORAGE_DISK);
@@ -440,7 +440,7 @@ int adj_revolve_to_adjoint_equation(adj_adjointer* adjointer, int equation)
 
         /* When replaying the timestep of the current adjoint equation, the replay records all variables of that timestep. */
         /* For that reason, we need to execute the replay only if we are about to solve the last equation of a timestep */
-        if (equation==end_eqn)
+        if (equation == end_eqn)
         {
   				if (adjointer->revolve_data.verbose)
   					printf("====== Revolve: Replay from equation %i (first equation of timestep %i) to equation %i (last equation of timestep %i). ======\n", start_eqn, adjointer->revolve_data.current_timestep, end_eqn, adjointer->revolve_data.current_timestep);
@@ -477,7 +477,7 @@ int adj_revolve_to_adjoint_equation(adj_adjointer* adjointer, int equation)
   }
 
   /* If this function was called just before solving the last adjoint equation of the current timestep, then we ask revolve what to do next */
-  if (equation==0 || adjointer->revolve_data.current_timestep!=adjointer->equations[equation-1].variable.timestep)
+  if (equation == 0 || adjointer->revolve_data.current_timestep!=adjointer->equations[equation-1].variable.timestep)
   {
   	adjointer->revolve_data.current_action = revolve(adjointer->revolve_data.revolve);
   }

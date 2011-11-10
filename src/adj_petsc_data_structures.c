@@ -103,12 +103,10 @@ void petsc_vec_dot_product_proc(adj_vector x, adj_vector y, adj_scalar* val)
 void petsc_vec_to_file_proc(adj_vector x, char* filename)
 {
 #ifdef HAVE_PETSC
-  FILE* istream;
 
-  if ((istream = fopen(filename, "r+")))
+  if (access(filename, W_OK) == 0) 
   {
   	printf("Warning: Overwriting data in file '%s'\n", filename);
-  	fclose(istream);
   }
 
   PetscViewer viewer;
@@ -175,7 +173,7 @@ void petsc_mat_duplicate_proc(adj_matrix matin, adj_matrix *matout)
 void petsc_solve_proc(adj_variable var, adj_matrix mat, adj_vector rhs, adj_vector *soln) 
 {
     /*************************************************/
-    /*  Solve mat*soln=rhs using a direct LU solver  */
+    /* Solve mat*soln=rhs using a direct LU solver   */
     /* You might want to implement your own callback */
     /* with different solver options.                */
     /*************************************************/
