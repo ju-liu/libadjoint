@@ -195,7 +195,7 @@ block. It will either be \texttt{ADJ_TRUE} or \texttt{ADJ_FALSE}.
 \item[\texttt{coefficient}] A coefficient by which the routine must scale the output.
 \item[\texttt{context}] This is a pointer to arbitrary model data, supplied at the time that the block was created during the annotation.
 \item[\texttt{output}] This is an \refapi{adj_matrix} which is to contain the matrix assembled at these dependencies.
-\item[\texttt{rhs}] This is a model \refapi{adj_vector} which lies in the output space of the operator to be assembled. 
+\item[\texttt{rhs}] This is a model \refapi{adj_vector} which lies in the output space of the operator to be assembled. All entries of this vector must be zero.
 \end{description}
 \end{boxwithtitle}
 
