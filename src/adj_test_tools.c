@@ -8,3 +8,8 @@ void adj_test_assert(int passed, char *testdesc)
   else
     printf("  pass\n");
 }
+
+int adj_sizeof_adjointer()
+{
+  return sizeof(adj_adjointer);
+}

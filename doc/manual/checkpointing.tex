@@ -1,0 +1,141 @@
+\chapter{Checkpointing}\label{chap:checkpointing}
+
+\begin{synopsis}
+\end{synopsis}
+\minitoc
+\vspace{\fill}
+\newpage
+
+\section{Introduction}
+\libadjoint is distributed with Revolve, a library for optimal checkpointing for adjoint calculations. 
+\section{Initialisation}
+
+
+\defapis{adj_set_checkpoint_strategy}
+\begin{boxwithtitle}{Function interface for \texttt{adj_set_checkpoint_strategy}}
+\begin{minipage}{\columnwidth}
+\begin{ccode}
+  int adj_set_checkpoint_strategy(adj_adjointer* adjointer, int strategy);
+\end{ccode}
+\begin{fortrancode}
+function adj_set_checkpoint_strategy(adjointer, strategy) result(ierr) 
+  type(adj_adjointer), intent(inout) :: adjointer
+  integer(kind=c_int), intent(in), value :: strategy
+  integer(kind=c_int) :: ierr
+end function adj_set_checkpoint_strategy
+\end{fortrancode}
+\end{minipage}
+\end{boxwithtitle}
+
+This function defines the checkpointing strategy to be used. 
+The options for the argument \texttt{strategy} are:
+\begin{itemize}
+\item \texttt{ADJ_CHECKPOINT_NONE}: No checkpointing. The default.
+\item \texttt{ADJ_CHECKPOINT_REVOLVE_OFFLINE}: Uses Revolve in offline checkpointing mode.
+\item \texttt{ADJ_CHECKPOINT_REVOLVE_MULTISTAGE}: Uses Revolve in multistage checkpointing mode.
+\item \texttt{ADJ_CHECKPOINT_REVOLVE_ONLINE}: Uses Revolve in online checkpointing mode.
+\end{itemize}
+
+
+\defapis{adj_set_revolve_options}
+\begin{boxwithtitle}{Function interface for \texttt{adj_set_revolve_options}}
+\begin{minipage}{\columnwidth}
+\begin{ccode}
+int adj_set_revolve_options(adj_adjointer* adjointer, int steps, int snaps_on_disk, 
+                            int snaps_in_ram, int verbose);
+\end{ccode}
+\begin{fortrancode}
+function adj_set_revolve_options(adjointer, steps, snaps_on_disk, snaps_in_ram, verbose) 
+         result(ierr) 
+  type(adj_adjointer), intent(inout) :: adjointer
+  integer(kind=c_int), intent(in) :: steps 
+  integer(kind=c_int), intent(in) :: snaps_on_disk
+  integer(kind=c_int), intent(in) :: snaps_in_ram 
+  logical, intent(in) :: verbose 
+  integer(kind=c_int) :: ierr
+end function adj_set_revolve_options
+\end{fortrancode}
+\end{minipage}
+\end{boxwithtitle}
+
+This function sets the checkpointing options for revolve based checkpointing schemes: \texttt{ADJ_CHECKPOINT_REVOLVE_OFFLINE}, \texttt{ADJ_CHECKPOINT_REVOLVE_MULTISTAGE} and \texttt{ADJ_CHECKPOINT_REVOLVE_ONLINE}. 
+\texttt{steps} is the total number of timesteps of the simulation (if known).
+\texttt{snaps_on_disk} specifies the number of disk checkpoint slots that \libadjoint may use.
+\texttt{snaps_in_ram} denotes the number checkpoints that may be stored in memory. 
+Hence the total number of checkpoint stored used is $\texttt{snaps_on_disk}+\texttt{snaps_in_ram}$
+
+Depending on the chosen checkpointing strategy, the function arguments must fulfill these properties:
+\begin{itemize}
+\item \texttt{ADJ_CHECKPOINT_REVOLVE_OFFLINE}: $\texttt{steps}>1$, $\texttt{snaps_in_ram}>0$ and at least two checkpoints.
+\item \texttt{ADJ_CHECKPOINT_REVOLVE_MULTISTAGE}: $\texttt{steps}>1$, $\texttt{snaps_in_ram}>0$ and $\texttt{snaps\_on\_disk} \ge 0$.
+\item \texttt{ADJ_CHECKPOINT_REVOLVE_ONLINE}: $\texttt{snaps_in_ram}>0$ and at least two checkpoints.
+\end{itemize}
+
+If the flag \texttt{verbose} is set, \libadjoint will print revolve specific output to the screen. 
+
+\defapis{adj_set_revolve_debug_options}
+\begin{boxwithtitle}{Function interface for \texttt{adj_set_revolve_debug_options}}
+\begin{minipage}{\columnwidth}
+\begin{ccode}
+int adj_set_revolve_debug_options(adj_adjointer* adjointer, int overwrite, 
+                                  adj_scalar comparison_tolerance);
+\end{ccode}
+\begin{fortrancode}
+function adj_set_revolve_debug_options(adjointer, overwrite, comparison_tolerance) 
+                                      result(ierr)
+  type(adj_adjointer), intent(inout) :: adjointer
+  logical, intent(in) :: overwrite
+  adj_scalar_f, intent(in) :: comparison_tolerance
+end function adj_set_revolve_debug_options
+\end{fortrancode}
+\end{minipage}
+\end{boxwithtitle}
+
+This function sets the debugging options for checkpointing. Its parameters are: 
+\begin{itemize}
+\item \texttt{overwrite}: This flag influences the behaviour of the internal replays of the checkpointing scheme. If \texttt{ADJ_TRUE}, then forward equations during a replay are solved even if a solution is already recorded. The computed value is then compared with the existing one, and prints a warning in case a specified tolerance is exceeded.
+\item \texttt{comparison_tolerance}: This parameter is only used when \texttt{overwrite=ADJ_TRUE}. It specifies the tolerance for comparing recomputed with previously computed values.
+\end{itemize}
+The \texttt{overwrite} feature is used to ensures that the forward solutions and the checkpoint replay solutions are consistent.
+
+By default, i.e. if \refapi{adj_set_revolve_debug_options} is never called, \texttt{overwrite} is set to \texttt{ADJ_FALSE}.
+
+\defapis{adj_check_checkpoints}
+\begin{boxwithtitle}{Function interface for \texttt{adj_adjointer_check_checkpoints}}
+\begin{minipage}{\columnwidth}
+\begin{ccode}
+int adj_adjointer_check_checkpoints(adj_adjointer* adjointer);
+\end{ccode}
+\begin{fortrancode}
+function adj_adjointer_check_checkpoints(adjointer) result(ierr) 
+  type(adj_adjointer), intent(in) :: adjointer
+  integer(kind=c_int) :: ierr
+end function adj_adjointer_check_checkpoints
+\end{fortrancode}
+\end{minipage}
+\end{boxwithtitle}
+
+This function checks that the validity of all checkpoints, i.e. that the required variables for restarting the simulation at the checkpoint equation are correctly recorded.
+It should be called just before starting the adjoint main loop.
+If the return value is \texttt{ADJ_OK}, then the required information is available for revolve to solve the adjoint system.
+
+
+\defapis{adj_storage_set_checkpoint}
+\begin{boxwithtitle}{Function interface for \texttt{adj_storage_set_checkpoint}}
+\begin{minipage}{\columnwidth}
+\begin{ccode}
+int adj_storage_set_checkpoint(adj_storage_data* data, int checkpoint)
+\end{ccode}
+\begin{fortrancode}
+function adj_storage_set_checkpoint(data, checkpoint) result(ierr)
+  type(adj_storage_data), intent(inout) :: data
+  logical, intent(in) :: checkpoint
+  integer(kind=c_int) :: ierr
+end function adj_storage_set_checkpoint
+\end{fortrancode}
+\end{minipage}
+\end{boxwithtitle}
+
+This function marks a variable to be a checkpoint variable. This should be used for all variables that are required to restart from a checkpoint.
+
+

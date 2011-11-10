@@ -7,6 +7,9 @@ FOBJ = $(patsubst src/%.F90,obj/%.o,$(FSRC))
 CSRC = $(wildcard src/*.c)
 COBJ = $(patsubst src/%.c,obj/%.o,$(CSRC))
 
+CXXSRC = $(wildcard src/*.cpp)
+CXXOBJ = $(patsubst src/%.cpp,obj/%.o,$(CXXSRC))
+
 ###############################################################################
 # Variables for unit tests                                                    #
 ###############################################################################
@@ -55,6 +58,26 @@ ifneq (,$(findstring icc, $(CC_VERSION)))
 endif
 
 CFLAGS := $(CFLAGS) $(DBGFLAGS) $(PICFLAG) $(PETSC_CPPFLAGS) -Iinclude/ $(COMPILER_CFLAGS)
+
+###############################################################################
+# CXX compiler variables                                                        #
+###############################################################################
+ifeq ($(origin CXX),default)
+	CXX := mpic++
+endif
+
+# Compiler-specific stuff Vere
+CXX_VERSION = $(shell $(CXX) --version 2>&1) $(shell $(CXX) -V 2>&1)
+ifneq (,$(findstring g++, $(CXX_VERSION)))
+	# g++-specific settings here
+	COMPILER_CXXFLAGS := -Wunsafe-loop-optimizations -Wpointer-arith -ggdb3 -fstack-protector-all
+endif
+ifneq (,$(findstring icpc, $(CXX_VERSION)))
+	# i++-specific settings here
+	COMPILER_CXXFLAGS := 
+endif
+
+CXXFLAGS := $(CXXFLAGS) $(DBGFLAGS) $(PICFLAG) $(PETSC_CPPFLAGS) -Iinclude/ $(COMPILER_CXXFLAGS)
 
 ###############################################################################
 # F90 compiler variables                                                      #
@@ -110,7 +133,7 @@ PYDIR = $(shell python -c  "import distutils.sysconfig; print distutils.sysconfi
 ###############################################################################
 # The targets                                                                 #
 ###############################################################################
-all: lib/libadjoint.a lib/libadjoint.so
+all: lib/libadjoint.a lib/libadjoint.so 
 
 bin/tests/%: src/tests/%.c src/tests/test_main.c lib/libadjoint.a
 	@echo "  CC $@"
@@ -129,13 +152,17 @@ obj/%.o: src/%.c
 	@echo "  CC $<"
 	@$(CC) $(CFLAGS) -c -o $@ $<
 
-lib/libadjoint.a: $(COBJ) $(FOBJ)
-	@echo "  AR $@"
-	@$(AR) $(ARFLAGS) $@ $(FOBJ) $(COBJ)
+obj/%.o: src/%.cpp
+	@echo "  C++ $<"
+	@$(CXX) $(CXXFLAGS) -c -o $@ $<
 
-lib/libadjoint.so: $(COBJ) $(FOBJ)
+lib/libadjoint.a: $(COBJ) $(FOBJ) $(CXXOBJ)
+	@echo "  AR $@"
+	@$(AR) $(ARFLAGS) $@ $(FOBJ) $(COBJ) $(CXXOBJ)
+
+lib/libadjoint.so: $(COBJ) $(FOBJ) $(CXXOBJ) 
 	@echo "  LD $@"
-	@$(LD) $(LDFLAGS) -o $@ $(FOBJ) $(COBJ) $(PETSC_LDFLAGS) $(LIBS)
+	@$(LD) $(LDFLAGS) -o $@ $(FOBJ) $(COBJ) $(CXXOBJ) $(PETSC_LDFLAGS) $(LIBS)
 
 clean:
 	@rm -f obj/*.o
@@ -168,9 +195,9 @@ doc/design/design.pdf: doc/design/design.tex doc/design/literature.bib
 	@(cd doc/design && pdflatex -interaction batchmode -shell-escape $(notdir $<) && pdflatex -interaction batchmode -shell-escape $(notdir $<) && bibtex design && pdflatex -interaction batchmode -shell-escape $(notdir $<) && pdflatex -interaction batchmode -shell-escape $(notdir $<)) > /dev/null || \
 		echo "    pdflatex failed. Maybe you need to install python-pygments?"
 
-doc/manual/manual.pdf: doc/manual/manual.tex doc/manual/literature.bib
+doc/manual/manual.pdf: doc/manual/*.tex doc/manual/literature.bib
 	@echo "  PDF $@"
-	@(cd doc/manual && pdflatex -interaction batchmode -shell-escape $(notdir $<) && pdflatex -interaction batchmode -shell-escape $(notdir $<) && bibtex manual && pdflatex -interaction batchmode -shell-escape $(notdir $<) && pdflatex -interaction batchmode -shell-escape $(notdir $<)) > /dev/null || \
+	@(cd doc/manual && make > /dev/null 2>&1) || \
 		echo "    pdflatex failed. Maybe you need to install python-pygments?"
 
 ifneq (,$(CTAGS))
@@ -185,9 +212,11 @@ ifneq (,$(H2XML))
 all: lib/clibadjoint.py
 test: lib/clibadjoint.py
 install: lib/clibadjoint.py
-lib/clibadjoint.py: lib/libadjoint.so include/libadjoint/libadjoint.h
+lib/clibadjoint.py: lib/libadjoint.so
 	@echo "  H2XML  include/libadjoint/libadjoint.h"
-	@$(H2XML) -q -I. include/libadjoint/libadjoint.h -o lib/libadjoint.xml
+	@cpp include/libadjoint/libadjoint.h > include/libadjoint/pylibadjoint.h
+	@$(H2XML) -q -I. include/libadjoint/pylibadjoint.h -o lib/libadjoint.xml
+	@rm -f include/libadjoint/pylibadjoint.h
 	@echo "  XML2PY lib/clibadjoint.py"
 	@$(XML2PY) -r '^adj.*' -l lib/libadjoint.so lib/libadjoint.xml -o lib/clibadjoint.py
 	@rm -f lib/libadjoint.xml
@@ -203,7 +232,7 @@ ifneq (,$(H2XML))
 	@echo "  INSTALL $(PYDIR)"
 	@install -d $(PYDIR)
 	@install -m 644 lib/*.py $(PYDIR)
-	@sed -i "s@CDLL('lib/libadjoint.so')@CDLL('$(DESTDIR)/$(prefix)/lib/libadjoint.so')@" $(PYDIR)/clibadjoint.py
+	@sed -i "s@CDLL('lib/libadjoint.so')@CDLL('/$(prefix)/lib/libadjoint.so')@" $(PYDIR)/clibadjoint.py
 endif
 	@echo "  INSTALL $(DESTDIR)/$(prefix)/include/libadjoint"
 	@install -d $(DESTDIR)/$(prefix)/include/libadjoint

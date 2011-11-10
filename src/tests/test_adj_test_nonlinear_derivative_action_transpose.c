@@ -13,7 +13,7 @@ void test_adj_test_nonlinear_derivative_action_transpose(void)
 #include "libadjoint/adj_petsc_data_structures.h"
 #include "libadjoint/adj_petsc.h"
 
-void nonlinear_derivative_action_callback(int nvar, adj_variable* variables, adj_vector* dependencies, adj_variable derivative, adj_vector contraction, int hermitian, adj_vector input, adj_scalar coefficient, void* context, adj_vector* output);
+void nonlinear_derivative_action_callback(int ndepends, adj_variable* variables, adj_vector* dependencies, adj_variable derivative, adj_vector contraction, int hermitian, adj_vector input, adj_scalar coefficient, void* context, adj_vector* output);
 
 void test_adj_test_nonlinear_derivative_action_transpose(void)
 {
@@ -48,7 +48,7 @@ void test_adj_test_nonlinear_derivative_action_transpose(void)
   adj_test_assert(ierr==ADJ_OK, "Should have worked");
   ierr = adj_create_variable("Velocity", 1, 0, 0, &var2);
   adj_test_assert(ierr==ADJ_OK, "Should have worked");
-  ierr = adj_create_nonlinear_block("NonlinearOperator", 1, &var1, NULL, 1.0, &nblock);
+  ierr = adj_create_nonlinear_block("NonlinearOperator", 1, &var1, NULL, &nblock);
   adj_test_assert(ierr==ADJ_OK, "Should have worked");
   ierr = adj_nonlinear_block_set_test_hermitian(&nblock, ADJ_TRUE, number_of_tests, tol); 
   adj_test_assert(ierr==ADJ_OK, "Should have worked");
@@ -59,11 +59,11 @@ void test_adj_test_nonlinear_derivative_action_transpose(void)
   adj_chkierr(ierr);
 }
 
-void nonlinear_derivative_action_callback(int nvar, adj_variable* variables, adj_vector* dependencies, adj_variable derivative, adj_vector contraction, int hermitian, adj_vector input, adj_scalar coefficient, void* context, adj_vector* output)
+void nonlinear_derivative_action_callback(int ndepends, adj_variable* variables, adj_vector* dependencies, adj_variable derivative, adj_vector contraction, int hermitian, adj_vector input, adj_scalar coefficient, void* context, adj_vector* output)
 {
   (void) hermitian;
   (void) context;
-  (void) nvar;
+  (void) ndepends;
   (void) variables;
   (void) dependencies;
   (void) derivative;

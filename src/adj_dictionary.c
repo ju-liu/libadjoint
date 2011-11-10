@@ -36,7 +36,7 @@ int adj_dict_find(adj_dictionary* dict, char* key, char** value)
   if (check == NULL)
   {
     snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Could not find key %s.", key);
-    return adj_chkierr_auto(ADJ_ERR_DICT_FAILED);
+    return ADJ_ERR_DICT_FAILED;
   }
 
   *value = check->value;

@@ -5,7 +5,7 @@
 
 void test_adj_register_equation_reallocate(void)
 {
-  int cnt, i;
+  int cnt, i, cs;
   adj_adjointer adjointer;
   adj_variable var;
   adj_block block;
@@ -13,12 +13,12 @@ void test_adj_register_equation_reallocate(void)
 
   adj_create_adjointer(&adjointer);
 
-  adj_create_block("IdentityOperator", NULL, NULL, 1.0, &block);
+  adj_create_block("IdentityOperator", NULL, NULL, &block);
   for (i = 0; i < 2*ADJ_PREALLOC_SIZE + 1; i++)
   {
     adj_create_variable("Velocity", i, 0, ADJ_NORMAL_VARIABLE, &var);
     adj_create_equation(var, 1, &block, &var, &equation); 
-    adj_register_equation(&adjointer, equation);
+    adj_register_equation(&adjointer, equation, &cs);
     adj_destroy_equation(&equation);
   }
 

@@ -9,7 +9,6 @@
 
 #define adj_scalar double
 #define adj_scalar_f real(kind=c_double)
-#define adj_scalar_f_cast(X) real((X), kind=c_double)
 #define ADJ_SCALAR_EPS 1.0e-15
 
 #define ADJ_TRUE 1
@@ -25,16 +24,27 @@
 #define ADJ_AUXILIARY_VARIABLE 1
 
 /* options for the adjointer */
-#define ADJ_NO_OPTIONS 2
+#define ADJ_NO_OPTIONS 3
 #define ADJ_ACTIVITY 0
 #define ADJ_ISP_ORDER 1
+#define ADJ_CHECKPOINT_STRATEGY 2
 
 /* whichever value is zero defines the default */
 #define ADJ_ACTIVITY_ADJOINT 0
 #define ADJ_ACTIVITY_NOTHING 1
 
+#define ADJ_CHECKPOINT_NONE 0
+#define ADJ_CHECKPOINT_REVOLVE_OFFLINE 1
+#define ADJ_CHECKPOINT_REVOLVE_MULTISTAGE 2
+#define ADJ_CHECKPOINT_REVOLVE_ONLINE 3
+
 #define ADJ_ISP_SECONDORDER 0
 #define ADJ_ISP_FIRSTORDER 1
+
+/* storage strategies for checkpointing */
+#define ADJ_CHECKPOINT_STORAGE_NONE 0
+#define ADJ_CHECKPOINT_STORAGE_MEMORY 1
+#define ADJ_CHECKPOINT_STORAGE_DISK 2
 
 /* storage strategies */
 #define ADJ_STORAGE_MEMORY_COPY 0
@@ -58,10 +68,14 @@
 #define ADJ_VEC_GET_NORM_CB 16
 #define ADJ_VEC_DOT_PRODUCT_CB 17
 #define ADJ_VEC_SET_RANDOM_CB 18
+#define ADJ_VEC_TO_FILE_CB 19
+#define ADJ_VEC_FROM_FILE_CB 20
 
-#define ADJ_MAT_DUPLICATE_CB 20
-#define ADJ_MAT_AXPY_CB 21
-#define ADJ_MAT_DESTROY_CB 22
+#define ADJ_MAT_DUPLICATE_CB 30
+#define ADJ_MAT_AXPY_CB 31
+#define ADJ_MAT_DESTROY_CB 32
+
+#define ADJ_SOLVE_CB 40
 
 /* prealloc constant */
 #define ADJ_PREALLOC_SIZE 255
