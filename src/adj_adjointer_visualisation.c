@@ -446,7 +446,10 @@ int adj_html_eqn(FILE* fp, adj_adjointer* adjointer, adj_equation adj_eqn, int d
 
   /* Write the rhs information on as last column */
   for (i=0; i < adj_eqn.nrhsdeps; i++)
-    fprintf(fp, "<td class=\"rhs\">%s</div></td>\n", adj_eqn.rhsdeps->name);
+  {
+    adj_variable_str(adj_eqn.rhsdeps[i], buf, ADJ_NAME_LEN);
+    fprintf(fp, "<td class=\"rhs\">%s</div></td>\n", buf);
+  }
 
   /* Tidy up */
   for (i = 0; i < adjointer->nequations; ++i)
