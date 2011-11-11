@@ -128,6 +128,14 @@ class Adjointer(object):
   def __del__(self):
     clib.adj_destroy_adjointer(self.adjointer)
 
+  def __getattr__(self, name):
+    if name == "equation_count":
+      equation_count = ctypes.c_int()
+      clib.adj_equation_count(self.adjointer, equation_count)
+      return equation_count.value
+    else:
+      raise AttributeError
+
   def register_equation(self, equation):
     cs = ctypes.c_int()
     clib.adj_register_equation(self.adjointer, equation.equation, cs)
