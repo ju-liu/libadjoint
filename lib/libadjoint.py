@@ -64,14 +64,20 @@ class NonlinearBlock(object):
     clib.adj_nonlinear_block_set_coefficient(self.nblock, c)
 
 class Block(object):
-  def __init__(self, name, nblock=None, context=None, coefficient=None, hermitian=False):
+  def __init__(self, name, nblock=None, context=None, coefficient=None, hermitian=False, dependencies=None):
     self.block = clib.adj_block()
     c_context = None
     if context is not None:
       c_context = byref(context)
 
+    if nblock is not None and dependencies is not None:
+      raise LibadjointErrorInvalidInput, "Cannot have both nblock and dependencies"
+
     if nblock is None:
-      c_nblock = None
+      if dependencies is not None and len(dependencies) > 0:
+        c_nblock = NonlinearBlock(name, dependencies, context=context).nblock
+      else:
+        c_nblock = None
     else:
       c_nblock = nblock.nblock
 
