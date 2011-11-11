@@ -363,22 +363,45 @@ int adj_destroy_term(adj_term* term)
 /* Adds additional non-diagonal blocks to an existing equation */
 int adj_add_term_to_equation(adj_term term, adj_equation* equation)
 {
+	int i, ierr;
   adj_equation old_equation = *equation;
 
   equation->nblocks = old_equation.nblocks + term.nblocks;
 
   equation->blocks =  (adj_block*) malloc(equation->nblocks * sizeof(adj_block));
   ADJ_CHKMALLOC(equation->blocks);
-  memcpy(equation->blocks, old_equation.blocks, old_equation.nblocks * sizeof(adj_block));
-  memcpy(equation->blocks + old_equation.nblocks, term.blocks, term.nblocks * sizeof(adj_block));
 
+  /* Copy blocks from the old equation to equation */
+  memcpy(equation->blocks, old_equation.blocks, old_equation.nblocks * sizeof(adj_block));
+  for (i = 0; i < old_equation.nblocks; i++)
+  {
+    if (old_equation.blocks[i].has_nonlinear_block)
+    {
+      int ierr;
+      ierr = adj_copy_nonlinear_block(old_equation.blocks[i].nonlinear_block, &equation->blocks[i].nonlinear_block);
+      if (ierr != ADJ_OK) return ierr;
+    }
+  }
+  /* Copy blocks from the term to equation */
+  memcpy(equation->blocks + old_equation.nblocks, term.blocks, term.nblocks * sizeof(adj_block));
+  for (i = 0; i < term.nblocks; i++)
+  {
+    if (term.blocks[i].has_nonlinear_block)
+    {
+      int ierr;
+      ierr = adj_copy_nonlinear_block(term.blocks[i].nonlinear_block, &equation->blocks[i + old_equation.nblocks].nonlinear_block);
+      if (ierr != ADJ_OK) return ierr;
+    }
+  }
+
+  /* Copy targets from the old equation and the term to equation */
   equation->targets = (adj_variable*) malloc(equation->nblocks * sizeof(adj_variable));
   ADJ_CHKMALLOC(equation->targets);
   memcpy(equation->targets, old_equation.targets, old_equation.nblocks * sizeof(adj_variable));
   memcpy(equation->targets + old_equation.nblocks, term.targets, term.nblocks * sizeof(adj_variable));
 
-  free(old_equation.blocks);
-  free(old_equation.targets);
+  ierr = adj_destroy_equation(&old_equation);
+  if (ierr != ADJ_OK) return ierr;
 
   return ADJ_OK;
 }
