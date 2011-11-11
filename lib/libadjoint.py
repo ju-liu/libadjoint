@@ -8,6 +8,13 @@ def handle_error(ierr):
     errstr  = clib.adj_get_error_string(ierr)
     raise exception, errstr
 
+def list_to_carray(vars, klass):
+  listtype = klass * len(vars)
+  listt = listtype()
+  for i in range(len(vars)):
+    listt[i] = vars[i].c_object
+  return listt
+
 # Let's make handle_error the restype for all of our libadjoint functions
 for member in dir(clib):
   # Looping over all of the objects this module offers us ...
@@ -22,6 +29,7 @@ class Variable(object):
     self.var = clib.adj_variable()
     self.name = name
     clib.adj_create_variable(name, timestep, iteration, auxiliary, self.var)
+    self.c_object = self.var
 
   def __str__(self):
     buf = ctypes.create_string_buffer(255)
@@ -46,13 +54,9 @@ class NonlinearBlock(object):
     c_context = None
     if context is not None:
       c_context = byref(context)
+    self.c_object = self.nblock
 
-    deplisttype = clib.adj_variable * len(dependencies)
-    deplist = deplisttype()
-    for i in range(len(dependencies)):
-      deplist[i] = dependencies[i].var
-
-    clib.adj_create_nonlinear_block(name, len(dependencies), deplist, c_context, 1.0, self.nblock)
+    clib.adj_create_nonlinear_block(name, len(dependencies), list_to_carray(dependencies, clib.adj_variable), c_context, 1.0, self.nblock)
 
     if coefficient is not None:
       self.set_coefficient(coefficient)
@@ -66,6 +70,7 @@ class NonlinearBlock(object):
 class Block(object):
   def __init__(self, name, nblock=None, context=None, coefficient=None, hermitian=False, dependencies=None):
     self.block = clib.adj_block()
+    self.c_object = self.block
     c_context = None
     if context is not None:
       c_context = byref(context)
@@ -99,22 +104,16 @@ class Block(object):
     clib.adj_block_set_hermitian(self.block, hermitian)
 
 class Equation(object):
-  def __init__(self, var, blocks, targets):
+  def __init__(self, var, blocks, targets, rhs_deps=None, rhs_context=None):
     self.equation = clib.adj_equation()
+    self.c_object = self.equation
 
     assert len(blocks) == len(targets)
 
-    blocklisttype = clib.adj_block * len(blocks)
-    blocklist = blocklisttype()
-    for i in range(len(blocks)):
-      blocklist[i] = blocks[i].block
+    clib.adj_create_equation(var.var, len(blocks), list_to_carray(blocks, clib.adj_block), list_to_carray(targets, clib.adj_variable), self.equation)
 
-    targetlisttype = clib.adj_variable * len(targets)
-    targetlist = targetlisttype()
-    for i in range(len(targets)):
-      targetlist[i] = targets[i].var
-
-    clib.adj_create_equation(var.var, len(blocks), blocklist, targetlist, self.equation)
+    if rhs_deps is not None and len(rhs_deps) > 0:
+      clib.adj_equation_set_rhs_dependencies(self.equation, len(rhs_deps), list_to_carray(rhs_deps, clib.adj_variable), rhs_context)
 
   def __del__(self):
     clib.adj_destroy_equation(self.equation)
@@ -124,6 +123,7 @@ class Adjointer(object):
   def __init__(self):
     self.adjointer = clib.adj_adjointer()
     clib.adj_create_adjointer(self.adjointer)
+    self.c_object = self.adjointer
 
   def __del__(self):
     clib.adj_destroy_adjointer(self.adjointer)
