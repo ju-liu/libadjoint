@@ -444,6 +444,9 @@ int adj_html_eqn(FILE* fp, adj_adjointer* adjointer, adj_equation adj_eqn, int d
   /* Write it to file */
   adj_html_write_row(fp, row, desc, adjointer->nequations, diag_index, class);
 
+  /* Write the rhs information on as last column */
+  for (i=0; i < adj_eqn.nrhsdeps; i++)
+    fprintf(fp, "<td class=\"rhs\">%s</div></td>\n", adj_eqn.rhsdeps->name);
 
   /* Tidy up */
   for (i = 0; i < adjointer->nequations; ++i)
