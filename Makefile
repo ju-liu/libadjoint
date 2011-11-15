@@ -181,6 +181,8 @@ clean:
 	@echo "  RM lib/*.so"
 	@rm -f lib/clibadjoint.py
 	@echo "  RM lib/clibadjoint.py"
+	@rm -f lib/clibadjoint_constants.py
+	@echo "  RM lib/clibadjoint_constants.py"
 	@rm -f tags
 	@rm -f include/libadjoint/adj_constants_f.h include/libadjoint/adj_error_handling_f.h
 
@@ -209,7 +211,7 @@ tags: $(FSRC) $(CSRC)
 endif
 
 ifneq (,$(H2XML))
-all: lib/clibadjoint.py
+all: lib/clibadjoint.py lib/clibadjoint_constants.py
 test: lib/clibadjoint.py
 install: lib/clibadjoint.py
 lib/clibadjoint.py: lib/libadjoint.so
@@ -221,6 +223,9 @@ lib/clibadjoint.py: lib/libadjoint.so
 	@$(XML2PY) -r '^adj.*' -l lib/libadjoint.so lib/libadjoint.xml -o lib/clibadjoint.py
 	@rm -f lib/libadjoint.xml
 	@chmod a-x lib/clibadjoint.py
+lib/clibadjoint_constants.py:
+	@echo "  PYTHON tools/create_python_constants.py"
+	@python ./tools/create_python_constants.py
 endif
 
 install: lib/libadjoint.a lib/libadjoint.so
