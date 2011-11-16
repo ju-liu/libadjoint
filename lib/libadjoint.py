@@ -1,4 +1,5 @@
 import clibadjoint as clib
+import clibadjoint_constants
 import ctypes
 import libadjoint_exceptions
 
@@ -151,6 +152,23 @@ class Adjointer(object):
       raise exceptions.LibadjointErrorNotImplemented, "HTML output for TLM is not implemented"
 
     clib.adj_adjointer_to_html(self.adjointer, filename, typecode)
+
+  def register_data_callback(self, type_name, func):
+    try:
+      index = zip(*clib.adj_data_callbacks._fields_)[0].index(type_name)
+    except ValueError:
+      raise libadjoint_exceptions.LibadjointErrorInvalidInputs, 'Wrong data callback type name in register_data_callback. Valid names are: "%s".' % '", "'.join(str(i) for i in zip(*clib.adj_data_callbacks._fields_)[0])
+      return
+
+    cfunctiontype = zip(*clib.adj_data_callbacks._fields_)[1][index]
+    type_id = int(clibadjoint_constants.adj_constants['ADJ_'+type_name.upper()+'_CB'])
+
+    try:
+      cfunc = cfunctiontype(func)
+      clib.adj_register_data_callback(self.adjointer, c_int(type_id), cfunc)
+    except ctypes.ArgumentError:
+      raise libadjoint_exceptions.LibadjointErrorInvalidInputs, 'Wrong function interface in register_data_callback for "%s".' % type_name 
+      return
 
 
 class Vector(object):
