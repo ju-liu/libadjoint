@@ -6,7 +6,7 @@ import libadjoint_exceptions
 def handle_error(ierr):
   if ierr != 0:
     exception = libadjoint_exceptions.get_exception(ierr)
-    errstr  = clib.adj_get_error_string(ierr)
+    errstr  = clib.adj_error_msg.value
     raise exception, errstr
 
 def list_to_carray(vars, klass):
@@ -119,12 +119,58 @@ class Equation(object):
   def __del__(self):
     clib.adj_destroy_equation(self.equation)
 
+class Storage(object):
+  '''Wrapper class for Vectors that contains additional information about how and where libadjoint 
+  stores the vector values. This should never be used directly, instead use MemoryStorage or DiskStorage.'''
+
+  storage_data = clib.adj_storage_data
+
+  def set_compare(self, tol):
+    if tol>0.0:
+      adj_storage_set_compare(c_ptr(self.storage_data), c_int(1), c_double(tol))
+    else:
+      adj_storage_set_compare(c_ptr(self.storage_data), c_int(0), c_double(tol))
+
+  def set_overwrite(self, flag=True):
+    if flag:
+      adj_storage_set_overwrite(c_ptr(self.storage_data), c_int(1))
+    else:
+      adj_storage_set_overwrite(c_ptr(self.storage_data), c_int(0))
+
+  def set_checkpoint(self, flag=True):
+    if flag:
+      adj_storage_set_checkpoint(c_ptr(self.storage_data), c_int(1))
+    else:
+      adj_storage_set_checkpoint(c_ptr(self.storage_data), c_int(0))
+
+class MemoryStorage(Storage):
+  '''Wrapper class for Vectors that contains additional information for storing the vector values in memory.'''
+  def __init__(self, vec):
+    self.adj_storage_data.value = c_ptr(vec)
+    adj_storage_memory_incref(vec, c_ptr(self.storage_data))
+    incref(vec)
+
+  def __del__(self):
+    vec = deref(self.adj_storage_data.value)
+    decref(vec)
+
+class DiskStorage(Storage):
+  '''Wrapper class for Vectors that contains additional information for storing the vector values in memory.'''
+  def __init__(self, vec):
+    self.adj_storage_data.value = c_ptr(vec)
+    adj_storage_disk_incref(vec, c_ptr(self.storage_data))
+    incref(vec)
+
+  def __del__(self):
+    vec = deref(self.adj_storage_data.value)
+    decref(vec)
 
 class Adjointer(object):
   def __init__(self):
     self.adjointer = clib.adj_adjointer()
     clib.adj_create_adjointer(self.adjointer)
     self.c_object = self.adjointer
+    self.__register_data_callbacks__()
 
   def __del__(self):
     clib.adj_destroy_adjointer(self.adjointer)
@@ -142,6 +188,14 @@ class Adjointer(object):
     clib.adj_register_equation(self.adjointer, equation.equation, cs)
     assert cs.value == 0
 
+  def record_variable(self, var, storage):
+    '''record_variable(self, var, storage)
+
+    This method records the provided variable according to the settings in storage.'''
+
+    adj_var = c_ptr(var.ptr)
+    adj_record_variable(self.adjointer, adj_var, storage.storage_data)
+
   def to_html(self, filename, viztype):
     try:
       typecode = {"forward": 1, "adjoint": 2, "tlm": 3}[viztype]
@@ -153,22 +207,25 @@ class Adjointer(object):
 
     clib.adj_adjointer_to_html(self.adjointer, filename, typecode)
 
-  def register_data_callback(self, type_name, func):
-    try:
-      index = zip(*clib.adj_data_callbacks._fields_)[0].index(type_name)
-    except ValueError:
-      raise libadjoint_exceptions.LibadjointErrorInvalidInputs, 'Wrong data callback type name in register_data_callback. Valid names are: "%s".' % '", "'.join(str(i) for i in zip(*clib.adj_data_callbacks._fields_)[0])
-      return
+  def __register_data_callbacks__(self):
+    self.__register_data_callback__('ADJ_VEC_DUPLICATE_CB', self.__vec_duplicate_callback__)
 
-    cfunctiontype = zip(*clib.adj_data_callbacks._fields_)[1][index]
-    type_id = int(clibadjoint_constants.adj_constants['ADJ_'+type_name.upper()+'_CB'])
+  def __register_data_callback__(self, type_name, func):
+    type_id = int(clibadjoint_constants.adj_constants[type_name])
 
     try:
-      cfunc = cfunctiontype(func)
-      clib.adj_register_data_callback(self.adjointer, c_int(type_id), cfunc)
+      cfunc = ctypes.CFUNCTYPE(None)
+      clib.adj_register_data_callback(self.adjointer, ctypes.c_int(type_id), cfunc(func))
     except ctypes.ArgumentError:
       raise libadjoint_exceptions.LibadjointErrorInvalidInputs, 'Wrong function interface in register_data_callback for "%s".' % type_name 
-      return
+
+  def __vec_duplicate_callback__(self, adj_vec, adj_vec_ptr):
+    vec = c_derefr(adj_vec.ptr)
+    new_vec = vec.duplicate()
+
+    # Increase the reference counter of the new object to protect it from deallocation at the end of the callback
+    incref(new_vec)
+    adj_vec_ptr.ptr = c_ptr(new_vec)
 
 
 class Vector(object):
