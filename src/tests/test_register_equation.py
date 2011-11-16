@@ -5,5 +5,5 @@ def my_vec_duplicate(a, b):
   print "Vec duplicate"
 
 adjointer = libadjoint.Adjointer()
-adjointer.register_data_callback('vec_duplicate', my_vec_duplicate)
+adjointer.register_data_callback('ADJ_VEC_DUPLICATE_CB', my_vec_duplicate)
 
