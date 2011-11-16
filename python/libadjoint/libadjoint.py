@@ -125,6 +125,7 @@ class Adjointer(object):
     self.adjointer = clib.adj_adjointer()
     clib.adj_create_adjointer(self.adjointer)
     self.c_object = self.adjointer
+    self.__register_data_callbacks__()
 
   def __del__(self):
     clib.adj_destroy_adjointer(self.adjointer)
@@ -153,7 +154,10 @@ class Adjointer(object):
 
     clib.adj_adjointer_to_html(self.adjointer, filename, typecode)
 
-  def register_data_callback(self, type_name, func):
+  def __register_data_callbacks__(self):
+    self.__register_data_callback__('ADJ_VEC_DUPLICATE_CB', self.__vec_duplicate_callback__)
+
+  def __register_data_callback__(self, type_name, func):
     type_id = int(clibadjoint_constants.adj_constants[type_name])
 
     try:
@@ -161,7 +165,14 @@ class Adjointer(object):
       clib.adj_register_data_callback(self.adjointer, ctypes.c_int(type_id), cfunc(func))
     except ctypes.ArgumentError:
       raise libadjoint_exceptions.LibadjointErrorInvalidInputs, 'Wrong function interface in register_data_callback for "%s".' % type_name 
-      return
+
+  def __vec_duplicate_callback__(self, adj_vec, adj_vec_ptr):
+    vec = c_derefr(adj_vec.ptr)
+    new_vec = vec.duplicate()
+
+    # Increase the reference counter of the new object to protect it from deallocation at the end of the callback
+    incref(new_vec)
+    adj_vec_ptr.ptr = c_ptr(new_vec)
 
 
 class Vector(object):
