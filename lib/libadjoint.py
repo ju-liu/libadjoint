@@ -160,6 +160,37 @@ class Vector(object):
     pass
   
   def duplicate(self):
+    '''duplicate(self)
+
+    This method must return a newly allocated duplicate of its
+    parent. The value of every entry of the duplicate must be zero.'''
     raise LibadjointErrorNeedCallback(
-      'Class '+self.__class__.__name__+' has no copy() callback')
+      'Class '+self.__class__.__name__+' has no copy() method')
   
+  def axpy(self, alpha, x):
+    '''axpy(self, alpha, x)
+    
+    This method must update the Vector with self=self+alpha*x where
+    alpha is a scalar and x is a Vector'''
+    
+    raise LibadjointErrorNeedCallback(
+      'Class '+self.__class__.__name__+' has no axpy(alpha,x) method')
+  
+  def destroy(self):
+    '''destroy(self)
+
+    This method must cause the Vector to be deallocated.'''
+
+    raise LibadjointErrorNeedCallback(
+      'Class '+self.__class__.__name__+' has no destroy() method')
+  
+  def set_values(self, scalars):
+    '''set_values(self, scalars)
+
+    This method must set the value of Vector to that given by the array
+    of scalars.'''
+
+    raise LibadjointErrorNeedCallback(
+      'Class '+self.__class__.__name__+' has no set_values(scalars) method')
+
+#  def get_size(
