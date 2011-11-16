@@ -152,3 +152,14 @@ class Adjointer(object):
 
     clib.adj_adjointer_to_html(self.adjointer, filename, typecode)
 
+
+class Vector(object):
+  '''Base class for adjoint vector objects. User applications should
+  subclass this and provide their own data'''
+  def __init__(self):
+    pass
+  
+  def duplicate(self):
+    raise LibadjointErrorNeedCallback(
+      'Class '+self.__class__.__name__+' has no copy() callback')
+  
