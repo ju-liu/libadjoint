@@ -14,6 +14,6 @@ f.close()
 
 code = 'adj_constants = %s' % repr(constants)
 
-fc = open('lib/clibadjoint_constants.py', 'w')
+fc = open('python/libadjoint/clibadjoint_constants.py', 'w')
 fc.write(code)
 fc.close()
