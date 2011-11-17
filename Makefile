@@ -183,6 +183,8 @@ clean:
 	@echo "  RM python/clibadjoint.py"
 	@rm -f python/clibadjoint_constants.py
 	@echo "  RM pbython/clibadjoint_constants.py"
+	@rm -rf python/build
+	@echo "  RM -rf python/build"
 	@rm -f tags
 	@rm -f include/libadjoint/adj_constants_f.h include/libadjoint/adj_error_handling_f.h
 

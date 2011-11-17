@@ -1,6 +1,7 @@
-import libadjoint.clibadjoint_constants as constants
+import clibadjoint_constants as constants
 import ctypes
-import libadjoint.exceptions as exceptions
+import exceptions as exceptions
+import clibadjoint as clib
 
 def handle_error(ierr):
   if ierr != 0:
