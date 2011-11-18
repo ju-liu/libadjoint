@@ -2,6 +2,7 @@ import clibadjoint_constants as constants
 import ctypes
 import exceptions as exceptions
 import clibadjoint as clib
+import python_utils
 
 def handle_error(ierr):
   if ierr != 0:
@@ -123,47 +124,47 @@ class Storage(object):
   '''Wrapper class for Vectors that contains additional information about how and where libadjoint 
   stores the vector values. This should never be used directly, instead use MemoryStorage or DiskStorage.'''
 
-  storage_data = clib.adj_storage_data
-
   def set_compare(self, tol):
-    if tol>0.0:
-      adj_storage_set_compare(c_ptr(self.storage_data), c_int(1), c_double(tol))
+    if tol > 0.0:
+      clib.adj_storage_set_compare(self.storage_data, 1, tol)
     else:
-      adj_storage_set_compare(c_ptr(self.storage_data), c_int(0), c_double(tol))
+      clib.adj_storage_set_compare(self.storage_data, 0, tol)
 
   def set_overwrite(self, flag=True):
     if flag:
-      adj_storage_set_overwrite(c_ptr(self.storage_data), c_int(1))
+      clib.adj_storage_set_overwrite(self.storage_data, 1)
     else:
-      adj_storage_set_overwrite(c_ptr(self.storage_data), c_int(0))
+      clib.adj_storage_set_overwrite(self.storage_data, 0)
 
   def set_checkpoint(self, flag=True):
     if flag:
-      adj_storage_set_checkpoint(c_ptr(self.storage_data), c_int(1))
+      clib.adj_storage_set_checkpoint(self.storage_data, 1)
     else:
-      adj_storage_set_checkpoint(c_ptr(self.storage_data), c_int(0))
+      clib.adj_storage_set_checkpoint(self.storage_data, 0)
 
 class MemoryStorage(Storage):
   '''Wrapper class for Vectors that contains additional information for storing the vector values in memory.'''
   def __init__(self, vec):
-    self.adj_storage_data.value = c_ptr(vec)
-    adj_storage_memory_incref(vec, c_ptr(self.storage_data))
-    incref(vec)
+    self.storage_data = clib.adj_storage_data()
+    self.c_object = self.storage_data
+    clib.adj_storage_memory_incref(vec, self.storage_data)
+    python_utils.incref(vec)
 
   def __del__(self):
-    vec = deref(self.adj_storage_data.value)
-    decref(vec)
+    vec = python_utils.deref(self.storage_data.value)
+    python_utils.decref(vec)
 
 class DiskStorage(Storage):
   '''Wrapper class for Vectors that contains additional information for storing the vector values in memory.'''
   def __init__(self, vec):
-    self.adj_storage_data.value = c_ptr(vec)
-    adj_storage_disk_incref(vec, c_ptr(self.storage_data))
-    incref(vec)
+    self.storage_data = clib.adj_storage_data()
+    self.c_object = self.storage_data
+    clib.adj_storage_disk_incref(vec, self.storage_data)
+    python_utils.incref(vec)
 
   def __del__(self):
-    vec = deref(self.adj_storage_data.value)
-    decref(vec)
+    vec = python_utils.deref(self.storage_data.value)
+    python_utils.decref(vec)
 
 class Adjointer(object):
   def __init__(self):
@@ -193,8 +194,7 @@ class Adjointer(object):
 
     This method records the provided variable according to the settings in storage.'''
 
-    adj_var = c_ptr(var.ptr)
-    adj_record_variable(self.adjointer, adj_var, storage.storage_data)
+    clib.adj_record_variable(self.adjointer, var.var, storage.storage_data)
 
   def to_html(self, filename, viztype):
     try:
@@ -220,12 +220,12 @@ class Adjointer(object):
       raise libadjoint_exceptions.LibadjointErrorInvalidInputs, 'Wrong function interface in register_data_callback for "%s".' % type_name 
 
   def __vec_duplicate_callback__(self, adj_vec, adj_vec_ptr):
-    vec = c_derefr(adj_vec.ptr)
+    vec = python_utils.deref(adj_vec.ptr)
     new_vec = vec.duplicate()
 
     # Increase the reference counter of the new object to protect it from deallocation at the end of the callback
-    incref(new_vec)
-    adj_vec_ptr.ptr = c_ptr(new_vec)
+    python_utils.incref(new_vec)
+    adj_vec_ptr.ptr = python_utils.c_ptr(new_vec)
 
 
 class Vector(object):
@@ -268,4 +268,3 @@ class Vector(object):
     raise LibadjointErrorNeedCallback(
       'Class '+self.__class__.__name__+' has no set_values(scalars) method')
 
-#  def get_size(
