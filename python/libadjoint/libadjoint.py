@@ -207,6 +207,12 @@ class Adjointer(object):
 
     clib.adj_adjointer_to_html(self.adjointer, filename, typecode)
 
+  def get_adjoint_equation(self, equation, functional):
+    lhs = clib.adj_matrix()
+    rhs = clib.adj_vector()
+    adj_var = clib.adj_vector()
+    clib.adj_get_adjoint_equation(self.adjointer, equation, functional, lhs, rhs, adj_var)
+
   def __register_data_callbacks__(self):
     self.__register_data_callback__('ADJ_VEC_DUPLICATE_CB', self.__vec_duplicate_callback__)
 
@@ -226,7 +232,6 @@ class Adjointer(object):
     # Increase the reference counter of the new object to protect it from deallocation at the end of the callback
     python_utils.incref(new_vec)
     adj_vec_ptr.ptr = python_utils.c_ptr(new_vec)
-
 
 class Vector(object):
   '''Base class for adjoint vector objects. User applications should
