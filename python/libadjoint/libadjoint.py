@@ -1,12 +1,12 @@
 import clibadjoint_constants as constants
 import ctypes
-import exceptions as exceptions
+import exceptions
 import clibadjoint as clib
 import python_utils
 
 def handle_error(ierr):
   if ierr != 0:
-    exception = libadjoint_exceptions.get_exception(ierr)
+    exception = exceptions.get_exception(ierr)
     errstr  = clib.adj_error_msg.value
     raise exception, errstr
 
@@ -210,7 +210,7 @@ class Adjointer(object):
   def get_adjoint_equation(self, equation, functional):
     lhs = clib.adj_matrix()
     rhs = clib.adj_vector()
-    adj_var = clib.adj_vector()
+    adj_var = clib.adj_variable()
     clib.adj_get_adjoint_equation(self.adjointer, equation, functional, lhs, rhs, adj_var)
 
   def __register_data_callbacks__(self):
@@ -223,7 +223,7 @@ class Adjointer(object):
       cfunc = ctypes.CFUNCTYPE(None)
       clib.adj_register_data_callback(self.adjointer, ctypes.c_int(type_id), cfunc(func))
     except ctypes.ArgumentError:
-      raise libadjoint_exceptions.LibadjointErrorInvalidInputs, 'Wrong function interface in register_data_callback for "%s".' % type_name 
+      raise exceptions.LibadjointErrorInvalidInputs, 'Wrong function interface in register_data_callback for "%s".' % type_name 
 
   def __vec_duplicate_callback__(self, adj_vec, adj_vec_ptr):
     vec = python_utils.deref(adj_vec.ptr)
