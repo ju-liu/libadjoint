@@ -235,7 +235,7 @@ class Adjointer(object):
 
 class Vector(object):
   '''Base class for adjoint vector objects. User applications should
-  subclass this and provide their own data'''
+  subclass this and provide their own data and methods.'''
   def __init__(self):
     pass
   
