@@ -128,7 +128,6 @@ LDFLAGS := -shared -Wl,-soname,libadjoint.so
 ###############################################################################
 H2XML = $(shell which h2xml 2>/dev/null)
 XML2PY = $(shell which xml2py 2>/dev/null)
-PYDIR = $(shell python -c  "import distutils.sysconfig; print distutils.sysconfig.get_python_lib().replace('/usr/', '$(DESTDIR)/$(prefix)/')")
 
 ###############################################################################
 # The targets                                                                 #
@@ -230,19 +229,24 @@ python/libadjoint/clibadjoint_constants.py:
 	@python ./tools/create_python_constants.py
 endif
 
-install: lib/libadjoint.a lib/libadjoint.so
+install: lib/libadjoint.a lib/libadjoint.so $(addprefix install_python_, $(shell pyversions -vr))
 	@echo "  INSTALL $(DESTDIR)/$(prefix)/lib"
 	@install -d $(DESTDIR)/$(prefix)/lib
 	@install lib/libadjoint.a $(DESTDIR)/$(prefix)/lib
 	@install lib/libadjoint.so $(DESTDIR)/$(prefix)/lib
-ifneq (,$(H2XML))
-	@echo "  INSTALL $(PYDIR)"
-	@cd python; python setup.py install --prefix=$(DESTDIR)/usr $(LIBADJOINT_PYTHON_INSTALL_ARGS)
-	@sed -i "s@CDLL('lib/libadjoint.so')@CDLL('/usr/lib/libadjoint.so')@" $(PYDIR)/libadjoint/clibadjoint.py
-endif
 	@echo "  INSTALL $(DESTDIR)/$(prefix)/include/libadjoint"
 	@install -d $(DESTDIR)/$(prefix)/include/libadjoint
 	@install include/libadjoint/* $(DESTDIR)/$(prefix)/include/libadjoint
+
+
+install_python_%:
+ifneq (,$(H2XML))
+	$(eval PYDIR=$(shell python$* -c  "import distutils.sysconfig; print distutils.sysconfig.get_python_lib().replace('/usr/','$(DESTDIR)/$(prefix)/')")) 
+	@echo "  INSTALL $(PYDIR)"
+	@cd python; python$* setup.py install --prefix=$(DESTDIR)/usr $(LIBADJOINT_PYTHON_INSTALL_ARGS)
+	@sed -i "s@CDLL('lib/libadjoint.so')@CDLL('/usr/lib/libadjoint.so')@" $(PYDIR)/libadjoint/clibadjoint.py
+endif
+
 
 include/libadjoint/adj_fortran.h: include/libadjoint/adj_constants_f.h include/libadjoint/adj_error_handling_f.h
 # replace C comments with F90 comments
