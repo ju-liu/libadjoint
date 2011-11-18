@@ -257,12 +257,17 @@ class Vector(object):
       'Class '+self.__class__.__name__+' has no axpy(alpha,x) method')
   
   def destroy(self):
+# DO WE EVER NEED THIS IN PYTHON. IS __del__() ENOUGH?
     '''destroy(self)
 
-    This method must cause the Vector to be deallocated.'''
+    This method must cause the Vector to be deallocated.
 
-    raise LibadjointErrorNeedCallback(
-      'Class '+self.__class__.__name__+' has no destroy() method')
+    Note that pure python objects won't need this as they are cleaned up
+    automatically when the Vector is destroyed. This method is mostly here
+    in case your vector is actually a wrapper for some non-Python data type
+    which needs a destructor.'''
+
+    pass
   
   def set_values(self, scalars):
     '''set_values(self, scalars)

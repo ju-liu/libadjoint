@@ -1,6 +1,7 @@
 import libadjoint
 import numpy
 
+
 class Vector(libadjoint.Vector):
     def __init__(self, vec):
         '''Vector(vec)
@@ -12,5 +13,11 @@ class Vector(libadjoint.Vector):
         
         return Vector(numpy.zeros(self.vec.size))
 
+    def axpy(self, alpha, x):
+        
+        self.vec += alpha*x.vec
     
     
+
+    
+
