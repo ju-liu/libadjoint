@@ -121,7 +121,7 @@ AR = ar
 ARFLAGS = cr
 
 LD := $(FC)
-LDFLAGS := -shared -Wl,-soname,libadjoint.so 
+LDFLAGS := -shared -Wl,-soname,libadjoint.so
 
 ###############################################################################
 # Variables for the python bindings                                           #
@@ -213,9 +213,11 @@ tags: $(FSRC) $(CSRC)
 endif
 
 ifneq (,$(H2XML))
-all: python/libadjoint/clibadjoint.py python/libadjoint/clibadjoint_constants.py
-test: python/libadjoint/clibadjoint.py
-install: python/libadjoint/clibadjoint.py
+python: python/libadjoint/clibadjoint.py python/libadjoint/clibadjoint_constants.py
+all: python
+test: python
+install: python
+
 python/libadjoint/clibadjoint.py: lib/libadjoint.so
 	@echo "  H2XML  include/libadjoint/libadjoint.h"
 	@cpp include/libadjoint/libadjoint.h > include/libadjoint/pylibadjoint.h
