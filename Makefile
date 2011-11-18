@@ -239,7 +239,11 @@ install: lib/libadjoint.a lib/libadjoint.so
 	@install lib/libadjoint.so $(DESTDIR)/$(prefix)/lib
 ifneq (,$(H2XML))
 	@echo "  INSTALL $(PYDIR)"
+ifeq ($(LIBADJOINT_BUILDING_DEBIAN),yes)
+	@cd python; for PYTHON in $(shell pyversions -r); do echo $$PYTHON; $$PYTHON setup.py install --prefix=$(DESTDIR)/$(prefix) $(LIBADJOINT_PYTHON_INSTALL_ARGS); done
+else
 	@cd python; python setup.py install --prefix=$(DESTDIR)/$(prefix) $(LIBADJOINT_PYTHON_INSTALL_ARGS)
+endif
 	@find $(DESTDIR)/$(prefix) -name clibadjoint.py | xargs sed -i "s@CDLL('lib/libadjoint.so')@CDLL('/usr/lib/libadjoint.so')@"
 endif
 	@echo "  INSTALL $(DESTDIR)/$(prefix)/include/libadjoint"
