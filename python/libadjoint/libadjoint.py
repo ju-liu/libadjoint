@@ -147,25 +147,22 @@ class MemoryStorage(Storage):
   def __init__(self, vec):
     self.storage_data = clib.adj_storage_data()
     self.c_object = self.storage_data
-    clib.adj_storage_memory_incref(vec, self.storage_data)
-    python_utils.incref(vec)
+    clib.adj_storage_memory_incref(vec.as_adj_vector(), self.storage_data)
 
-  def __del__(self):
-    vec = python_utils.deref(self.storage_data.value)
-    python_utils.decref(vec)
+    # Ensure that the storage object always holds a reference to the vec
+    self.vec=vec
+
 
 class DiskStorage(Storage):
   '''Wrapper class for Vectors that contains additional information for storing the vector values in memory.'''
   def __init__(self, vec):
     self.storage_data = clib.adj_storage_data()
     self.c_object = self.storage_data
-    clib.adj_storage_disk_incref(vec, self.storage_data)
-    python_utils.incref(vec)
+    clib.adj_storage_disk_incref(vec.as_adj_vector(), self.storage_data)
 
-  def __del__(self):
-    vec = python_utils.deref(self.storage_data.value)
-    python_utils.decref(vec)
-
+    # Ensure that the storage object always holds a reference to the vec
+    self.vec=vec
+    
 class Adjointer(object):
   def __init__(self):
     self.adjointer = clib.adj_adjointer()
@@ -195,6 +192,9 @@ class Adjointer(object):
     This method records the provided variable according to the settings in storage.'''
 
     clib.adj_record_variable(self.adjointer, var.var, storage.storage_data)
+    
+    python_utils.incref(storage.vec)
+
 
   def to_html(self, filename, viztype):
     try:
@@ -231,7 +231,7 @@ class Adjointer(object):
 
     # Increase the reference counter of the new object to protect it from deallocation at the end of the callback
     python_utils.incref(new_vec)
-    adj_vec_ptr.ptr = python_utils.c_ptr(new_vec)
+    adj_vec_ptr.ptr.value = python_utils.c_ptr(new_vec)
 
 class Vector(object):
   '''Base class for adjoint vector objects. User applications should
@@ -255,20 +255,7 @@ class Vector(object):
     
     raise LibadjointErrorNeedCallback(
       'Class '+self.__class__.__name__+' has no axpy(alpha,x) method')
-  
-  def destroy(self):
-# DO WE EVER NEED THIS IN PYTHON. IS __del__() ENOUGH?
-    '''destroy(self)
-
-    This method must cause the Vector to be deallocated.
-
-    Note that pure python objects won't need this as they are cleaned up
-    automatically when the Vector is destroyed. This method is mostly here
-    in case your vector is actually a wrapper for some non-Python data type
-    which needs a destructor.'''
-
-    pass
-  
+    
   def set_values(self, scalars):
     '''set_values(self, scalars)
 
@@ -278,3 +265,19 @@ class Vector(object):
     raise LibadjointErrorNeedCallback(
       'Class '+self.__class__.__name__+' has no set_values(scalars) method')
 
+
+  def as_adj_vector(self):
+    '''as_adj_vector(self)
+
+    Returns an adj_vector with this Vector as its data payload.'''
+
+    adj_vec=clib.adj_vector()
+    
+    adj_vec.ptr.value=python_utils.c_ptr(self)
+
+def vector(adj_vector):
+  '''vector(adj_vector)
+  
+  Return the Vector object contained in adj_vector'''
+  
+  return python_utils.deref(adj_vector.ptr)
