@@ -226,12 +226,12 @@ class Adjointer(object):
       raise exceptions.LibadjointErrorInvalidInputs, 'Wrong function interface in register_data_callback for "%s".' % type_name 
 
   def __vec_duplicate_callback__(self, adj_vec, adj_vec_ptr):
-    vec = python_utils.deref(adj_vec.ptr)
+    vec = vector(adj_vec)
     new_vec = vec.duplicate()
 
     # Increase the reference counter of the new object to protect it from deallocation at the end of the callback
     python_utils.incref(new_vec)
-    adj_vec_ptr.ptr.value = python_utils.c_ptr(new_vec)
+    adj_vec_ptr.ptr = python_utils.c_ptr(new_vec)
 
 class Vector(object):
   '''Base class for adjoint vector objects. User applications should
@@ -271,9 +271,9 @@ class Vector(object):
 
     Returns an adj_vector with this Vector as its data payload.'''
 
-    adj_vec=clib.adj_vector()
+    adj_vec=clib.adj_vector(ptr=python_utils.c_ptr(self))
     
-    adj_vec.ptr.value=python_utils.c_ptr(self)
+    return adj_vec
 
 def vector(adj_vector):
   '''vector(adj_vector)
