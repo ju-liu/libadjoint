@@ -13,6 +13,10 @@ export PETSC_ARCH=linux-gnu-c-opt
 export prefix=/usr
 export DEB_BUILD_OPTIONS=nostrip
 
+export PYTHONPATH=
+export LIBADJOINT_PYTHON_INSTALL_ARGS=--install-layout=deb
+export LIBADJOINT_BUILDING_DEBIAN=yes
+
 ifeq ($(shell lsb_release -c | awk '{print $$NF}'),maverick)
 export FC=gfortran-4.5
 endif
