@@ -223,6 +223,9 @@ class Adjointer(object):
     self.__register_data_callback__('ADJ_VEC_DUPLICATE_CB', self.__vec_duplicate_callback__)
     self.__register_data_callback__('ADJ_VEC_DESTROY_CB', self.__vec_destroy_callback__)
     self.__register_data_callback__('ADJ_VEC_AXPY_CB', self.__vec_destroy_callback__)
+    self.__register_data_callback__('ADJ_MAT_DUPLICATE_CB', self.__mat_duplicate_callback__)
+    self.__register_data_callback__('ADJ_MAT_DESTROY_CB', self.__mat_destroy_callback__)
+    self.__register_data_callback__('ADJ_MAT_AXPY_CB', self.__mat_destroy_callback__)
 
   def __register_data_callback__(self, type_name, func):
     type_id = int(constants.adj_constants[type_name])
@@ -256,6 +259,29 @@ class Adjointer(object):
     x = vector(adj_vec)
     y.axpy(alpha, x)
 
+  @staticmethod
+  def __mat_duplicate_callback__(adj_mat, adj_mat_ptr):
+    mat = matrix(adj_mat)
+    new_mat = mat.duplicate()
+
+    # Increase the reference counter of the new object to protect it from deallocation at the end of the callback
+    python_utils.incref(new_mat)
+    adj_mat_ptr.ptr = python_utils.c_ptr(new_mat)
+
+  @staticmethod
+  def __mat_destroy_callback__(adj_mat_ptr):
+    mat = matrix(adj_mat_ptr.ptr)
+    mat.destroy()
+
+    # And do the corresponding decref of the object, so that the Python GC can pick it up
+    python_utils.decref(mat)
+
+  @staticmethod
+  def __mat_axpy_callback__(adj_mat_ptr, alpha, adj_mat):
+    y = matrix(adj_mat_ptr.ptr)
+    x = matrix(adj_mat)
+    y.axpy(alpha, x)
+
 class LinAlg(object):
   '''Base class for adjoint vector or matrix objects. In libadjoint,
   the operations performed on these are quite similar, so the common ones
@@ -264,6 +290,12 @@ class LinAlg(object):
 
   def __init__(self):
     raise LibadjointErrorNotImplemented("Shouldn't ever instantiate a LinAlg object directly")
+
+  def destroy(self):
+    '''destroy(self)
+
+    Any special tasks to clean up the object. If this is a normal Python object, there is no need to override this method.'''
+    pass
 
   def duplicate(self):
     '''duplicate(self)
