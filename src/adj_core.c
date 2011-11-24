@@ -23,12 +23,26 @@ int adj_get_adjoint_equation(adj_adjointer* adjointer, int equation, char* funct
     return adj_chkierr_auto(ADJ_ERR_INVALID_INPUTS);
   }
 
-  strncpy(adj_error_msg, "Need a data callback, but it hasn't been supplied.", ADJ_ERROR_MSG_BUF);
-  if (adjointer->callbacks.vec_destroy == NULL) return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
-  if (adjointer->callbacks.vec_axpy == NULL)    return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
-  if (adjointer->callbacks.mat_axpy == NULL)    return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
-  if (adjointer->callbacks.mat_destroy == NULL) return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
-  strncpy(adj_error_msg, "", ADJ_ERROR_MSG_BUF);
+  if (adjointer->callbacks.vec_destroy == NULL)
+  {
+    strncpy(adj_error_msg, "Need the ADJ_VEC_DESTROY_CB callback, but it hasn't been supplied.", ADJ_ERROR_MSG_BUF);
+    return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
+  }
+  if (adjointer->callbacks.vec_axpy == NULL)
+  {
+    strncpy(adj_error_msg, "Need the ADJ_VEC_AXPY_CB callback, but it hasn't been supplied.", ADJ_ERROR_MSG_BUF);
+    return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
+  }
+  if (adjointer->callbacks.mat_axpy == NULL)
+  {
+    strncpy(adj_error_msg, "Need the ADJ_MAT_AXPY_CB callback, but it hasn't been supplied.", ADJ_ERROR_MSG_BUF);
+    return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
+  }
+  if (adjointer->callbacks.mat_destroy == NULL)
+  {
+    strncpy(adj_error_msg, "Need the ADJ_MAT_DESTROY_CB callback, but it hasn't been supplied.", ADJ_ERROR_MSG_BUF);
+    return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
+  }
 
   ierr = adj_find_functional_derivative_callback(adjointer, functional, &functional_derivative_func);
   if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
@@ -521,12 +535,26 @@ int adj_get_forward_equation(adj_adjointer* adjointer, int equation, adj_matrix*
     return adj_chkierr_auto(ADJ_ERR_INVALID_INPUTS);
   }
 
-  strncpy(adj_error_msg, "Need a data callback, but it hasn't been supplied.", ADJ_ERROR_MSG_BUF);
-  if (adjointer->callbacks.vec_destroy == NULL) return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
-  if (adjointer->callbacks.vec_axpy == NULL)    return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
-  if (adjointer->callbacks.mat_axpy == NULL)    return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
-  if (adjointer->callbacks.mat_destroy == NULL) return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
-  strncpy(adj_error_msg, "", ADJ_ERROR_MSG_BUF);
+  if (adjointer->callbacks.vec_destroy == NULL)
+  {
+    strncpy(adj_error_msg, "Need the ADJ_VEC_DESTROY_CB callback, but it hasn't been supplied.", ADJ_ERROR_MSG_BUF);
+    return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
+  }
+  if (adjointer->callbacks.vec_axpy == NULL)
+  {
+    strncpy(adj_error_msg, "Need the ADJ_VEC_AXPY_CB callback, but it hasn't been supplied.", ADJ_ERROR_MSG_BUF);
+    return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
+  }
+  if (adjointer->callbacks.mat_axpy == NULL)
+  {
+    strncpy(adj_error_msg, "Need the ADJ_MAT_AXPY_CB callback, but it hasn't been supplied.", ADJ_ERROR_MSG_BUF);
+    return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
+  }
+  if (adjointer->callbacks.mat_destroy == NULL)
+  {
+    strncpy(adj_error_msg, "Need the ADJ_MAT_DESTROY_CB callback, but it hasn't been supplied.", ADJ_ERROR_MSG_BUF);
+    return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
+  }
 
   if (adjointer->forward_source_callback == NULL)
   {
