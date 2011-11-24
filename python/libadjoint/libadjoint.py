@@ -150,7 +150,7 @@ class MemoryStorage(Storage):
     clib.adj_storage_memory_incref(vec.as_adj_vector(), self.storage_data)
 
     # Ensure that the storage object always holds a reference to the vec
-    self.vec=vec
+    self.vec = vec
 
 
 class DiskStorage(Storage):
@@ -161,7 +161,7 @@ class DiskStorage(Storage):
     clib.adj_storage_disk_incref(vec.as_adj_vector(), self.storage_data)
 
     # Ensure that the storage object always holds a reference to the vec
-    self.vec=vec
+    self.vec = vec
     
 class Adjointer(object):
   def __init__(self):
