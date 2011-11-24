@@ -231,7 +231,8 @@ class Adjointer(object):
     except ctypes.ArgumentError:
       raise exceptions.LibadjointErrorInvalidInputs, 'Wrong function interface in register_data_callback for "%s".' % type_name 
 
-  def __vec_duplicate_callback__(self, adj_vec, adj_vec_ptr):
+  @staticmethod
+  def __vec_duplicate_callback__(adj_vec, adj_vec_ptr):
     vec = vector(adj_vec)
     new_vec = vec.duplicate()
 
