@@ -162,7 +162,7 @@ class DiskStorage(Storage):
 
     # Ensure that the storage object always holds a reference to the vec
     self.vec = vec
-    
+
 class Adjointer(object):
   def __init__(self):
     self.adjointer = clib.adj_adjointer()
@@ -192,7 +192,7 @@ class Adjointer(object):
     This method records the provided variable according to the settings in storage.'''
 
     clib.adj_record_variable(self.adjointer, var.var, storage.storage_data)
-    
+
     python_utils.incref(storage.vec)
 
 
@@ -221,6 +221,8 @@ class Adjointer(object):
 
   def __register_data_callbacks__(self):
     self.__register_data_callback__('ADJ_VEC_DUPLICATE_CB', self.__vec_duplicate_callback__)
+    self.__register_data_callback__('ADJ_VEC_DESTROY_CB', self.__vec_destroy_callback__)
+    self.__register_data_callback__('ADJ_VEC_AXPY_CB', self.__vec_destroy_callback__)
 
   def __register_data_callback__(self, type_name, func):
     type_id = int(constants.adj_constants[type_name])
@@ -240,12 +242,26 @@ class Adjointer(object):
     python_utils.incref(new_vec)
     adj_vec_ptr.ptr = python_utils.c_ptr(new_vec)
 
+  @staticmethod
+  def __vec_destroy_callback__(adj_vec_ptr):
+    vec = vector(adj_vec_ptr.ptr)
+    vec.destroy()
+
+    # And do the corresponding decref of the object, so that the Python GC can pick it up
+    python_utils.decref(vec)
+
+  @staticmethod
+  def __vec_axpy_callback__(adj_vec_ptr, alpha, adj_vec):
+    y = vector(adj_vec_ptr.ptr)
+    x = vector(adj_vec)
+    y.axpy(alpha, x)
+
 class Vector(object):
   '''Base class for adjoint vector objects. User applications should
   subclass this and provide their own data and methods.'''
   def __init__(self):
     pass
-  
+
   def duplicate(self):
     '''duplicate(self)
 
@@ -253,16 +269,16 @@ class Vector(object):
     parent. The value of every entry of the duplicate must be zero.'''
     raise LibadjointErrorNeedCallback(
       'Class '+self.__class__.__name__+' has no copy() method')
-  
+
   def axpy(self, alpha, x):
     '''axpy(self, alpha, x)
-    
+
     This method must update the Vector with self=self+alpha*x where
     alpha is a scalar and x is a Vector'''
-    
+
     raise LibadjointErrorNeedCallback(
       'Class '+self.__class__.__name__+' has no axpy(alpha,x) method')
-    
+
   def set_values(self, scalars):
     '''set_values(self, scalars)
 
@@ -272,19 +288,18 @@ class Vector(object):
     raise LibadjointErrorNeedCallback(
       'Class '+self.__class__.__name__+' has no set_values(scalars) method')
 
-
   def as_adj_vector(self):
     '''as_adj_vector(self)
 
     Returns an adj_vector with this Vector as its data payload.'''
 
     adj_vec=clib.adj_vector(ptr=python_utils.c_ptr(self))
-    
+
     return adj_vec
 
 def vector(adj_vector):
   '''vector(adj_vector)
-  
+
   Return the Vector object contained in adj_vector'''
-  
+
   return python_utils.deref(adj_vector.ptr)
