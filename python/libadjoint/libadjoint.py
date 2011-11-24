@@ -207,6 +207,12 @@ class Adjointer(object):
 
     clib.adj_adjointer_to_html(self.adjointer, filename, typecode)
 
+  def get_forward_equation(self, equation):
+    lhs = clib.adj_matrix()
+    rhs = clib.adj_vector()
+    fwd_var = clib.adj_variable()
+    clib.adj_get_forward_equation(self.adjointer, equation, lhs, rhs, fwd_var)
+
   def get_adjoint_equation(self, equation, functional):
     lhs = clib.adj_matrix()
     rhs = clib.adj_vector()
