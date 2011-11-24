@@ -256,11 +256,14 @@ class Adjointer(object):
     x = vector(adj_vec)
     y.axpy(alpha, x)
 
-class Vector(object):
-  '''Base class for adjoint vector objects. User applications should
-  subclass this and provide their own data and methods.'''
+class LinAlg(object):
+  '''Base class for adjoint vector or matrix objects. In libadjoint,
+  the operations performed on these are quite similar, so the common ones
+  are factored out here. User applications should subclass Vector and Matrix
+  instead of this directly.'''
+
   def __init__(self):
-    pass
+    raise LibadjointErrorNotImplemented("Shouldn't ever instantiate a LinAlg object directly")
 
   def duplicate(self):
     '''duplicate(self)
@@ -279,6 +282,9 @@ class Vector(object):
     raise LibadjointErrorNeedCallback(
       'Class '+self.__class__.__name__+' has no axpy(alpha,x) method')
 
+class Vector(LinAlg):
+  '''Base class for adjoint vector objects. User applications should
+  subclass this and provide their own data and methods.'''
   def set_values(self, scalars):
     '''set_values(self, scalars)
 
@@ -293,13 +299,30 @@ class Vector(object):
 
     Returns an adj_vector with this Vector as its data payload.'''
 
-    adj_vec=clib.adj_vector(ptr=python_utils.c_ptr(self))
-
+    adj_vec = clib.adj_vector(ptr=python_utils.c_ptr(self))
     return adj_vec
+
+class Matrix(LinAlg):
+  '''Base class for adjoint matrix objects.'''
+
+  def as_adj_matrix(self):
+    '''as_adj_matrix(self)
+
+    Returns an adj_matrix with this Matrix as its data payload.'''
+
+    adj_mat = clib.adj_matrix(ptr=python_utils.c_ptr(self))
+    return adj_mat
 
 def vector(adj_vector):
   '''vector(adj_vector)
 
-  Return the Vector object contained in adj_vector'''
+  Return the Python Vector object contained in a C adj_vector'''
 
   return python_utils.deref(adj_vector.ptr)
+
+def matrix(adj_matrix):
+  '''matrix(adj_matrix)
+
+  Return the Python Matrix object contained in a C adj_matrix'''
+
+  return python_utils.deref(adj_matrix.ptr)
