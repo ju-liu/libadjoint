@@ -317,6 +317,7 @@ class LinAlg(object):
 class Vector(LinAlg):
   '''Base class for adjoint vector objects. User applications should
   subclass this and provide their own data and methods.'''
+
   def set_values(self, scalars):
     '''set_values(self, scalars)
 
@@ -325,6 +326,36 @@ class Vector(LinAlg):
 
     raise LibadjointErrorNeedCallback(
       'Class '+self.__class__.__name__+' has no set_values(scalars) method')
+
+  def size(self):
+    '''size(self)
+
+    This method must return the number of degrees of freedom in this Vector.'''
+    
+    raise LibadjointErrorNeedCallback(
+      'Class '+self.__class__.__name__+' has no size() method')    
+
+  def norm(self):
+    '''norm(self)
+
+    This method must return a norm for this vector. It does not matter which
+    norm is chosen, so long as it satisfies the usual axioms for a norm.'''
+
+    raise LibadjointErrorNeedCallback(
+      'Class '+self.__class__.__name__+' has no norm() method')    
+
+  def set_random(self):
+    '''This method must set the entries of a given vector x to pseudo-random values.'''
+
+    raise LibadjointErrorNeedCallback(
+      'Class '+self.__class__.__name__+' has no set_random() method')        
+
+  def dot_product(self, b):
+    '''This method must return the result of dot(self, b).'''
+
+    raise LibadjointErrorNeedCallback(
+      'Class '+self.__class__.__name__+' has no dot_product() method')        
+
 
   def as_adj_vector(self):
     '''as_adj_vector(self)
