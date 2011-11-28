@@ -495,8 +495,7 @@ This callback only used for checking the gradient correctness, see \autoref{sec:
                               adj_vector* output, int* has_output));
 \end{ccode}
 \begin{fortrancode}
-  function adj_equation_set_rhs_callback(equation, fn) 
-                                                     result(ierr) 
+  function adj_equation_set_rhs_callback(equation, fn) result(ierr) 
     type(adj_equation), intent(inout) :: equation
     type(c_funptr), intent(in), value :: fn
     integer(kind=c_int) :: ierr
