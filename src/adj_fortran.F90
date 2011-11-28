@@ -54,6 +54,7 @@ module libadjoint_data_structures
     integer(kind=c_int) :: nrhsdeps
     type(c_ptr) :: rhsdeps
     type(c_ptr) :: rhs_context
+    type(c_funptr) :: rhs_callback
     integer(kind=c_int) :: memory_checkpoint
     integer(kind=c_int) :: disk_checkpoint
   end type adj_equation
@@ -140,7 +141,6 @@ module libadjoint_data_structures
     type(adj_op_callback_list) :: block_assembly_list
     type(adj_func_callback_list) :: functional_list
     type(adj_func_deriv_callback_list) :: functional_derivative_list
-    type(c_funptr) :: forward_source_callback
   end type adj_adjointer
 
   type, bind(c) :: adj_vector
@@ -727,14 +727,14 @@ module libadjoint
       integer(kind=c_int) :: ierr
     end function adj_register_functional_derivative_callback_c
 
-    function adj_register_forward_source_callback(adjointer, fnptr) &
-                                                      & result(ierr) bind(c, name='adj_register_forward_source_callback')
+    function adj_equation_set_rhs_callback(equation, fnptr) &
+                                                      & result(ierr) bind(c, name='adj_equation_set_rhs_callback')
       use libadjoint_data_structures
       use iso_c_binding
-      type(adj_adjointer), intent(inout) :: adjointer
+      type(adj_equation), intent(inout) :: equation
       type(c_funptr), intent(in), value :: fnptr
       integer(kind=c_int) :: ierr
-    end function adj_register_forward_source_callback
+    end function adj_equation_set_rhs_callback
 
     function adj_forget_adjoint_equation(adjointer, equation) result(ierr) bind(c, name='adj_forget_adjoint_equation')
       use libadjoint_data_structures
