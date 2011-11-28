@@ -62,7 +62,7 @@ class NonlinearBlock(object):
     self.nblock = clib.adj_nonlinear_block()
     c_context = None
     if context is not None:
-      c_context = byref(context)
+      c_context = ctypes.byref(context)
     self.c_object = self.nblock
 
     clib.adj_create_nonlinear_block(name, len(dependencies), list_to_carray(dependencies, clib.adj_variable), c_context, 1.0, self.nblock)
@@ -82,7 +82,7 @@ class Block(object):
     self.c_object = self.block
     c_context = None
     if context is not None:
-      c_context = byref(context)
+      c_context = ctypes.byref(context)
 
     if nblock is not None and dependencies is not None:
       raise LibadjointErrorInvalidInput, "Cannot have both nblock and dependencies"
