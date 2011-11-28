@@ -126,7 +126,6 @@ class Equation(object):
 
     if rhs_cb is not None:
       self.rhs_fn = self.__cfunc_from_rhs__(rhs_cb)
-      python_utils.incref(self.rhs_fn)
       clib.adj_equation_set_rhs_callback(self.equation, self.rhs_fn)
 
   def __del__(self):
@@ -149,7 +148,7 @@ class Equation(object):
 
       # Now cast the outputs back to C
       has_output_c.value = (output is None)
-      output_c.ptr = python_utils.c_ptr(output)
+      output_c[0].ptr = python_utils.c_ptr(output)
       python_utils.incref(output)
 
     rhs_func_type = ctypes.CFUNCTYPE(None, ctypes.POINTER(clib.adj_adjointer), clib.adj_variable, ctypes.c_int, ctypes.POINTER(clib.adj_variable), ctypes.POINTER(clib.adj_vector), ctypes.POINTER(None),
@@ -212,15 +211,12 @@ class Adjointer(object):
       self.adjointer = adjointer
       self.c_object = self.adjointer
 
-    self.objects_to_decref = []
+    self.functions_registered = []
 
     self.block_assembly_type = ctypes.CFUNCTYPE(None, ctypes.c_int, ctypes.POINTER(clib.adj_variable), ctypes.POINTER(clib.adj_vector), ctypes.c_int, ctypes.c_double, ctypes.POINTER(None),
                                                 ctypes.POINTER(clib.adj_matrix), ctypes.POINTER(clib.adj_vector))
 
   def __del__(self):
-    for obj in self.objects_to_decref:
-      python_utils.decref(obj)
-
     clib.adj_destroy_adjointer(self.adjointer)
 
   def __getattr__(self, name):
@@ -237,7 +233,7 @@ class Adjointer(object):
     assert cs.value == 0
 
     if hasattr(equation, 'rhs_fn'):
-      self.objects_to_decref.append(equation.rhs_fn)
+      self.functions_registered.append(equation.rhs_fn)
 
   def record_variable(self, var, storage):
     '''record_variable(self, var, storage)
@@ -324,8 +320,7 @@ class Adjointer(object):
   def register_block_assembly_callback(self, name, bassembly_cb):
     clib.adj_register_operator_callback.argtypes = [ctypes.POINTER(clib.adj_adjointer), ctypes.c_int, ctypes.c_char_p, self.block_assembly_type]
     fn = self.__cfunc_from_block_assembly__(bassembly_cb)
-    python_utils.incref(fn)
-    self.objects_to_decref.append(fn)
+    self.functions_registered.append(fn)
     clib.adj_register_operator_callback(self.adjointer, int(constants.adj_constants['ADJ_BLOCK_ASSEMBLY_CB']), name, fn)
     clib.adj_register_operator_callback.argtypes = [ctypes.POINTER(clib.adj_adjointer), ctypes.c_int, ctypes.c_char_p, ctypes.CFUNCTYPE(None)]
 
