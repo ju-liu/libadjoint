@@ -150,7 +150,10 @@ class Equation(object):
       output_c.ptr = python_utils.c_ptr(output)
       python_utils.incref(output)
 
-    return cfunc
+    rhs_func_type = ctypes.CFUNCTYPE(None, ctypes.POINTER(clib.adj_adjointer), clib.adj_variable, ctypes.c_int, ctypes.POINTER(clib.adj_variable), ctypes.POINTER(clib.adj_vector), ctypes.POINTER(None),
+                                     ctypes.POINTER(clib.adj_vector), ctypes.POINTER(ctypes.c_int))
+
+    return rhs_func_type(cfunc)
 
 
 class Storage(object):
