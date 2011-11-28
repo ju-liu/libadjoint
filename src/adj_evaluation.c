@@ -74,12 +74,6 @@ int adj_evaluate_block_assembly(adj_adjointer* adjointer, adj_block block, adj_m
 
   block_assembly_func(ndepends, variables, dependencies, block.hermitian, block.coefficient, block.context, output, rhs);
 
-  if (output->ptr == NULL || rhs->ptr == NULL)
-  {
-    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Error: block assembly callback for operator %s has returned a NULL matrix or right-hand side.", block.name);
-    return adj_chkierr_auto(ADJ_ERR_INVALID_INPUTS);
-  }
-
   if (block.has_nonlinear_block)
     free(dependencies);
 
