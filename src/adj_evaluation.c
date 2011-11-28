@@ -74,6 +74,9 @@ int adj_evaluate_block_assembly(adj_adjointer* adjointer, adj_block block, adj_m
 
   block_assembly_func(ndepends, variables, dependencies, block.hermitian, block.coefficient, block.context, output, rhs);
 
+  assert(output->ptr != NULL);
+  assert(rhs->ptr != NULL);
+
   if (block.has_nonlinear_block)
     free(dependencies);
 

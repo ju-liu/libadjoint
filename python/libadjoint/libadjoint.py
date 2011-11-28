@@ -257,6 +257,7 @@ class Adjointer(object):
     rhs = clib.adj_vector()
     fwd_var = clib.adj_variable()
     clib.adj_get_forward_equation(self.adjointer, equation, lhs, rhs, fwd_var)
+    return (python_utils.c_deref(lhs.ptr), python_utils.c_deref(rhs.ptr))
 
   def get_adjoint_equation(self, equation, functional):
     lhs = clib.adj_matrix()
@@ -298,9 +299,12 @@ class Adjointer(object):
       (matrix, rhs) = bassembly_cb(variables, dependencies, hermitian, coefficient, context)
 
       # Now cast the outputs back to C
-      output_c.ptr = python_utils.c_ptr(matrix)
+      assert matrix is not None
+      output_c[0].ptr = python_utils.c_ptr(matrix)
       python_utils.incref(matrix)
-      rhs_c.ptr = python_utils.c_ptr(rhs)
+
+      assert rhs is not None
+      rhs_c[0].ptr = python_utils.c_ptr(rhs)
       python_utils.incref(rhs)
 
     return self.block_assembly_type(cfunc)
