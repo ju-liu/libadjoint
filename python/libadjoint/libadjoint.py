@@ -130,9 +130,9 @@ class Equation(object):
   def __del__(self):
     clib.adj_destroy_equation(self.equation)
 
-  def __cfunc_from_rhs__(self, rhs_cb)
-  '''Given a rhs function defined using the Pythonic interface, we want to translate that into a function that
-  can be called from C. This routine does exactly that.'''
+  def __cfunc_from_rhs__(self, rhs_cb):
+    '''Given a rhs function defined using the Pythonic interface, we want to translate that into a function that
+    can be called from C. This routine does exactly that.'''
 
     def cfunc(adjointer_c, variable_c, ndepends_c, dependencies_c, values_c, context_c, output_c, has_output_c):
       # build the Python objects from the C objects
@@ -149,6 +149,7 @@ class Equation(object):
       has_output_c.value = (output is None)
       output_c.ptr = python_utils.c_ptr(output)
       python_utils.incref(output)
+
     return cfunc
 
 
