@@ -125,9 +125,9 @@ class Equation(object):
       clib.adj_equation_set_rhs_dependencies(self.equation, len(rhs_deps), list_to_carray(rhs_deps, clib.adj_variable), rhs_context)
 
     if rhs_cb is not None:
-      fn = self.__cfunc_from_rhs__(rhs_cb)
-      python_utils.incref(fn)
-      clib.adj_equation_set_rhs_callback(self.equation, fn)
+      self.rhs_fn = self.__cfunc_from_rhs__(rhs_cb)
+      python_utils.incref(self.rhs_fn)
+      clib.adj_equation_set_rhs_callback(self.equation, self.rhs_fn)
 
   def __del__(self):
     clib.adj_destroy_equation(self.equation)
@@ -212,10 +212,15 @@ class Adjointer(object):
       self.adjointer = adjointer
       self.c_object = self.adjointer
 
+    self.objects_to_decref = []
+
     self.block_assembly_type = ctypes.CFUNCTYPE(None, ctypes.c_int, ctypes.POINTER(clib.adj_variable), ctypes.POINTER(clib.adj_vector), ctypes.c_int, ctypes.c_double, ctypes.POINTER(None),
                                                 ctypes.POINTER(clib.adj_matrix), ctypes.POINTER(clib.adj_vector))
 
   def __del__(self):
+    for obj in self.objects_to_decref:
+      python_utils.decref(obj)
+
     clib.adj_destroy_adjointer(self.adjointer)
 
   def __getattr__(self, name):
@@ -231,6 +236,9 @@ class Adjointer(object):
     clib.adj_register_equation(self.adjointer, equation.equation, cs)
     assert cs.value == 0
 
+    if hasattr(equation, 'rhs_fn'):
+      self.objects_to_decref.append(equation.rhs_fn)
+
   def record_variable(self, var, storage):
     '''record_variable(self, var, storage)
 
@@ -239,7 +247,6 @@ class Adjointer(object):
     clib.adj_record_variable(self.adjointer, var.var, storage.storage_data)
 
     python_utils.incref(storage.vec)
-
 
   def to_html(self, filename, viztype):
     try:
@@ -257,7 +264,12 @@ class Adjointer(object):
     rhs = clib.adj_vector()
     fwd_var = clib.adj_variable()
     clib.adj_get_forward_equation(self.adjointer, equation, lhs, rhs, fwd_var)
-    return (python_utils.c_deref(lhs.ptr), python_utils.c_deref(rhs.ptr))
+    lhs_py = python_utils.c_deref(lhs.ptr)
+    #python_utils.decref(lhs_py)
+    rhs_py = python_utils.c_deref(rhs.ptr)
+    #python_utils.decref(rhs_py)
+
+    return (lhs_py, rhs_py)
 
   def get_adjoint_equation(self, equation, functional):
     lhs = clib.adj_matrix()
@@ -313,6 +325,7 @@ class Adjointer(object):
     clib.adj_register_operator_callback.argtypes = [ctypes.POINTER(clib.adj_adjointer), ctypes.c_int, ctypes.c_char_p, self.block_assembly_type]
     fn = self.__cfunc_from_block_assembly__(bassembly_cb)
     python_utils.incref(fn)
+    self.objects_to_decref.append(fn)
     clib.adj_register_operator_callback(self.adjointer, int(constants.adj_constants['ADJ_BLOCK_ASSEMBLY_CB']), name, fn)
     clib.adj_register_operator_callback.argtypes = [ctypes.POINTER(clib.adj_adjointer), ctypes.c_int, ctypes.c_char_p, ctypes.CFUNCTYPE(None)]
 
