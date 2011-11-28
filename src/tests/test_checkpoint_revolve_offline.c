@@ -64,8 +64,6 @@ void test_checkpoint_revolve_offline(void)
   /* Register callbacks */
   ierr = adj_set_petsc_data_callbacks(&adjointer);
   adj_test_assert(ierr == ADJ_OK, "Should have worked");
-  ierr = adj_register_forward_source_callback(&adjointer, source); 
-  adj_test_assert(ierr == ADJ_OK, "Should have worked");
   ierr = adj_register_functional_derivative_callback(&adjointer, "Drag", drag_derivative); 
   adj_test_assert(ierr == ADJ_OK, "Should have worked");
   ierr =  adj_register_operator_callback(&adjointer, ADJ_BLOCK_ASSEMBLY_CB, "BurgersOperator", (void (*)(void)) burgers_operator_assembly);
@@ -88,6 +86,8 @@ void test_checkpoint_revolve_offline(void)
   adj_create_variable("Velocity", timestep, 0, ADJ_NORMAL_VARIABLE, &u[1]);
   adj_create_block("IdentityOperator", NULL, NULL, 1.0, &I);
   ierr = adj_create_equation(u[1], 1, &I, &u[1], &eqn);
+  adj_test_assert(ierr == ADJ_OK, "Should have worked");
+  ierr = adj_equation_set_rhs_callback(&eqn, source); 
   adj_test_assert(ierr == ADJ_OK, "Should have worked");
   ierr = adj_register_equation(&adjointer, eqn, &cs);
   adj_test_assert(ierr == ADJ_OK, "Should have worked");
@@ -117,6 +117,8 @@ void test_checkpoint_revolve_offline(void)
     adj_create_block("TimesteppingOperator", &V, NULL, 1.0, &B[0]);
     adj_create_block("BurgersOperator", &V, NULL, 1.0, &B[1]);
     ierr = adj_create_equation(u[1], 2, B, u, &eqn);
+    adj_test_assert(ierr == ADJ_OK, "Should have worked");
+    ierr = adj_equation_set_rhs_callback(&eqn, source); 
     adj_test_assert(ierr == ADJ_OK, "Should have worked");
     ierr = adj_register_equation(&adjointer, eqn, &cs);
     adj_test_assert(ierr == ADJ_OK, "Should have worked");

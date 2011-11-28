@@ -411,6 +411,8 @@ int adj_create_equation(adj_variable var, int nblocks, adj_block* blocks, adj_va
   int targets_variable;
   int i;
 
+  equation->rhs_callback = NULL;
+
   /* First, let's check the variable isn't auxiliary.
      Auxiliary means we don't solve an equation for it ... */
   if (var.auxiliary)
@@ -579,3 +581,10 @@ int adj_copy_nonlinear_block(adj_nonlinear_block src, adj_nonlinear_block* dest)
 
   return ADJ_OK;
 }
+
+int adj_equation_set_rhs_callback(adj_equation* equation, void (*fn)(adj_adjointer* adjointer, adj_variable variable, int ndepends, adj_variable* variables, adj_vector* dependencies, void* context, adj_vector* output, int* has_output))
+{
+  equation->rhs_callback = (void (*) (void* adjointer, adj_variable variable, int ndepends, adj_variable* variables, adj_vector* dependencies, void* context, adj_vector* output, int* has_output)) fn;
+  return ADJ_OK;
+}
+

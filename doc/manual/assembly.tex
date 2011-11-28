@@ -410,7 +410,7 @@ Therefore, the adjoint main loop template given in \autoref{sec:typical_adjoint_
 
 This function assembles the forward equation with index \texttt{equation}.
 
-For this to work, the source term callback has to be registered, see \refapi{adj_register_forward_source_callback}. 
+If the forward equation has a right-hand side term, it must be registered with \refapi{adj_equation_set_rhs_callback}. 
 The result is a linear system with operator \texttt{lhs} and right hand side \texttt{rhs}. 
 Furthermore, the variable that this forward equation targets is provided as \texttt{fwd_var}.
 The solution of the linear system must be recorded with \refapi{adj_record_variable}.

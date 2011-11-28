@@ -51,7 +51,7 @@ int adj_evaluate_block_assembly(adj_adjointer* adjointer, adj_block block, adj_m
   int ndepends = 0;
   adj_variable* variables = NULL;
 
-  ierr = adj_find_operator_callback(adjointer, ADJ_BLOCK_ASSEMBLY_CB, block. name, (void (**)(void)) &block_assembly_func);
+  ierr = adj_find_operator_callback(adjointer, ADJ_BLOCK_ASSEMBLY_CB, block.name, (void (**)(void)) &block_assembly_func);
   if (ierr != ADJ_OK)
     return adj_chkierr_auto(ierr);
 
@@ -73,6 +73,12 @@ int adj_evaluate_block_assembly(adj_adjointer* adjointer, adj_block block, adj_m
   }
 
   block_assembly_func(ndepends, variables, dependencies, block.hermitian, block.coefficient, block.context, output, rhs);
+
+  if (output->ptr == NULL || rhs->ptr == NULL)
+  {
+    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Error: block assembly callback for operator %s has returned a NULL matrix or right-hand side.", block.name);
+    return adj_chkierr_auto(ADJ_ERR_INVALID_INPUTS);
+  }
 
   if (block.has_nonlinear_block)
     free(dependencies);
@@ -559,7 +565,7 @@ int adj_evaluate_functional_derivative(adj_adjointer* adjointer, adj_variable va
 
 int adj_evaluate_forward_source(adj_adjointer* adjointer, int equation, adj_vector* output, int* has_output)
 {
-  assert(adjointer->forward_source_callback != NULL);
+  assert(adjointer->equations[equation].rhs_callback != NULL);
   adj_variable* variables;
   adj_vector* dependencies;
   int nrhsdeps;
@@ -577,7 +583,7 @@ int adj_evaluate_forward_source(adj_adjointer* adjointer, int equation, adj_vect
     if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
   }
 
-  adjointer->forward_source_callback(adjointer, adjointer->equations[equation].variable, nrhsdeps, variables, dependencies, adjointer->equations[equation].rhs_context, output, has_output);
+  adjointer->equations[equation].rhs_callback((void*) adjointer, adjointer->equations[equation].variable, nrhsdeps, variables, dependencies, adjointer->equations[equation].rhs_context, output, has_output);
 
   free(dependencies);
   return ADJ_OK;
