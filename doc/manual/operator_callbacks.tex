@@ -484,23 +484,23 @@ When necessary:
 This callback only used for checking the gradient correctness, see \autoref{sec:derivative_test}.
 
 \section{Source-term callbacks}
-\defapis{adj_register_forward_source_callback}
-\begin{boxwithtitle}{\texttt{adj_register_forward_source_callback}}
+\defapis{adj_equation_set_rhs_callback}
+\begin{boxwithtitle}{\texttt{adj_equation_set_rhs_callback}}
 \begin{minipage}{\columnwidth}
 \begin{ccode}
-  int adj_register_forward_source_callback(adj_adjointer* adjointer, 
+  int adj_equation_set_rhs_callback(adj_equation* equation, 
                    void (*fn)(adj_adjointer* adjointer, adj_variable variable, 
                               int ndepends, adj_variable* variables, 
                               adj_vector* dependencies, void* context, 
                               adj_vector* output, int* has_output));
 \end{ccode}
 \begin{fortrancode}
-  function adj_register_forward_source_callback(adjointer, fn) 
+  function adj_equation_set_rhs_callback(equation, fn) 
                                                      result(ierr) 
-    type(adj_adjointer), intent(inout) :: adjointer
+    type(adj_equation), intent(inout) :: equation
     type(c_funptr), intent(in), value :: fn
     integer(kind=c_int) :: ierr
-  end function adj_register_forward_source_callback
+  end function adj_equation_set_rhs_callback
 \end{fortrancode}
 \end{minipage}
 \end{boxwithtitle}
@@ -511,16 +511,16 @@ requested, the function will return an \refapi{ADJ_ERR_NEED_CALLBACK} error.
 The supplied function callback computes the source vector when solving for \texttt{variable} in the forward model.
 Its interface has to conform to:
 
-\begin{boxwithtitle}{Function interface for \texttt{adj_register_forward_source_callback}}
+\begin{boxwithtitle}{Function interface for \texttt{adj_equation_set_rhs_callback}}
 \begin{minipage}{\columnwidth}
 \begin{ccode}
-  void forward_source(adj_adjointer* adjointer, adj_variable variable, 
+  void rhs_callback(adj_adjointer* adjointer, adj_variable variable, 
                       int ndepends, adj_variable* variables, 
                       adj_vector* dependencies, void* context, 
                       adj_vector* output, int* has_output);
 \end{ccode}
 \begin{fortrancode}
-  subroutine forward_source(adjointer, variable, ndepends, dependencies, 
+  subroutine rhs_callback(adjointer, variable, ndepends, dependencies, 
                             values, context, output, has_output)  bind(c)
     type(adj_adjointer), intent(in) :: adjointer
     type(adj_variable), intent(in), value :: variable
@@ -530,13 +530,13 @@ Its interface has to conform to:
     type(c_ptr), intent(in), value :: context
     type(adj_vector), intent(out) :: output
     integer(kind=c_int), intent(out) :: has_output
-  end subroutine forward_source
+  end subroutine rhs_callback
 \end{fortrancode}
 \end{minipage}
 \end{boxwithtitle}
 
 
-\begin{boxwithtitle}{Detailed argument list (\texttt{forward_source})}
+\begin{boxwithtitle}{Detailed argument list (\texttt{rhs_callback})}
 \begin{description}
 \item[\texttt{adjointer}] The associated \refapi{adj_adjointer}.
 \item[\texttt{ndepends}] The number of variables that this nonlinear block depends on.

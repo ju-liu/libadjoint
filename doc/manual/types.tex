@@ -391,7 +391,7 @@ Sets the dependency variables and the context for the right hand side evaluation
 The array \texttt{rhsdeps} is an array of length \texttt{nrhsdeps} containing the dependency variables.
 The void pointer \texttt{context} allows the developer to pass arbitrary data to the forward source callbacks. 
 
-This information will passed to the source term callback function, if a source term is defined (see \refapi{adj_register_forward_source_callback}).
+This information will passed to the source term callback function, if a source term is defined (see \refapi{adj_equation_set_rhs_callback}).
 If the right hand side is not needed or the source term has no dependencies, this function can be ignored.
 
 
