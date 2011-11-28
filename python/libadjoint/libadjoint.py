@@ -27,11 +27,18 @@ for member in dir(clib):
         obj.restype = handle_error
 
 class Variable(object):
-  def __init__(self, name, timestep, iteration=0, auxiliary=False):
-    self.var = clib.adj_variable()
-    self.name = name
-    clib.adj_create_variable(name, timestep, iteration, auxiliary, self.var)
-    self.c_object = self.var
+  def __init__(self, name="", timestep=-1, iteration=0, auxiliary=False, var=None):
+    if var is None:
+      self.var = clib.adj_variable()
+      assert name != ""
+      assert timestep >= 0
+      self.name = name
+      clib.adj_create_variable(name, timestep, iteration, auxiliary, self.var)
+      self.c_object = self.var
+    else:
+      self.var = var
+      self.c_object = self.var
+      self.name = var.name
 
   def __str__(self):
     buf = ctypes.create_string_buffer(255)
@@ -106,7 +113,7 @@ class Block(object):
     clib.adj_block_set_hermitian(self.block, hermitian)
 
 class Equation(object):
-  def __init__(self, var, blocks, targets, rhs_deps=None, rhs_context=None):
+  def __init__(self, var, blocks, targets, rhs_deps=None, rhs_context=None, rhs_cb=None):
     self.equation = clib.adj_equation()
     self.c_object = self.equation
 
@@ -117,8 +124,33 @@ class Equation(object):
     if rhs_deps is not None and len(rhs_deps) > 0:
       clib.adj_equation_set_rhs_dependencies(self.equation, len(rhs_deps), list_to_carray(rhs_deps, clib.adj_variable), rhs_context)
 
+    if rhs_cb is not None:
+      clib.adj_equation_set_rhs_callback(self.equation, self.__cfunc_from_rhs__(rhs_cb))
+
   def __del__(self):
     clib.adj_destroy_equation(self.equation)
+
+  def __cfunc_from_rhs__(self, rhs_cb)
+  '''Given a rhs function defined using the Pythonic interface, we want to translate that into a function that
+  can be called from C. This routine does exactly that.'''
+
+    def cfunc(adjointer_c, variable_c, ndepends_c, dependencies_c, values_c, context_c, output_c, has_output_c):
+      # build the Python objects from the C objects
+      adjointer = Adjointer(adjointer_c)
+      variable  = Variable(var=variable_c)
+      dependencies = [Variable(var=dependencies_c[i]) for i in range(ndepends_c.value)]
+      values = [vector(values_c[i]) for i in range(ndepends_c.value)]
+      context = python_utils.deref(context_c)
+
+      # Now call the callback we've been given
+      output = rhs_cb(adjointer, variable, dependencies, values, context)
+
+      # Now cast the outputs back to C
+      has_output_c.value = (output is None)
+      output_c.ptr = python_utils.c_ptr(output)
+      python_utils.incref(output)
+    return cfunc
+
 
 class Storage(object):
   '''Wrapper class for Vectors that contains additional information about how and where libadjoint 
@@ -164,11 +196,15 @@ class DiskStorage(Storage):
     self.vec = vec
 
 class Adjointer(object):
-  def __init__(self):
-    self.adjointer = clib.adj_adjointer()
-    clib.adj_create_adjointer(self.adjointer)
-    self.c_object = self.adjointer
-    self.__register_data_callbacks__()
+  def __init__(self, adjointer=None):
+    if adjointer is None:
+      self.adjointer = clib.adj_adjointer()
+      clib.adj_create_adjointer(self.adjointer)
+      self.c_object = self.adjointer
+      self.__register_data_callbacks__()
+    else:
+      self.adjointer = adjointer
+      self.c_object = self.adjointer
 
   def __del__(self):
     clib.adj_destroy_adjointer(self.adjointer)
@@ -331,7 +367,7 @@ class Vector(LinAlg):
     '''size(self)
 
     This method must return the number of degrees of freedom in this Vector.'''
-    
+
     raise LibadjointErrorNeedCallback(
       'Class '+self.__class__.__name__+' has no size() method')    
 
