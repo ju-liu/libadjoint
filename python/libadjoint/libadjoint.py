@@ -125,7 +125,9 @@ class Equation(object):
       clib.adj_equation_set_rhs_dependencies(self.equation, len(rhs_deps), list_to_carray(rhs_deps, clib.adj_variable), rhs_context)
 
     if rhs_cb is not None:
-      clib.adj_equation_set_rhs_callback(self.equation, self.__cfunc_from_rhs__(rhs_cb))
+      fn = self.__cfunc_from_rhs__(rhs_cb)
+      python_utils.incref(fn)
+      clib.adj_equation_set_rhs_callback(self.equation, fn)
 
   def __del__(self):
     clib.adj_destroy_equation(self.equation)
@@ -138,9 +140,9 @@ class Equation(object):
       # build the Python objects from the C objects
       adjointer = Adjointer(adjointer_c)
       variable  = Variable(var=variable_c)
-      dependencies = [Variable(var=dependencies_c[i]) for i in range(ndepends_c.value)]
-      values = [vector(values_c[i]) for i in range(ndepends_c.value)]
-      context = python_utils.deref(context_c)
+      dependencies = [Variable(var=dependencies_c[i]) for i in range(ndepends_c)]
+      values = [vector(values_c[i]) for i in range(ndepends_c)]
+      context = context_c
 
       # Now call the callback we've been given
       output = rhs_cb(adjointer, variable, dependencies, values, context)
@@ -210,6 +212,9 @@ class Adjointer(object):
       self.adjointer = adjointer
       self.c_object = self.adjointer
 
+    self.block_assembly_type = ctypes.CFUNCTYPE(None, ctypes.c_int, ctypes.POINTER(clib.adj_variable), ctypes.POINTER(clib.adj_vector), ctypes.c_int, ctypes.c_double, ctypes.POINTER(None),
+                                                ctypes.POINTER(clib.adj_matrix), ctypes.POINTER(clib.adj_vector))
+
   def __del__(self):
     clib.adj_destroy_adjointer(self.adjointer)
 
@@ -275,6 +280,37 @@ class Adjointer(object):
       clib.adj_register_data_callback(self.adjointer, ctypes.c_int(type_id), cfunc(func))
     except ctypes.ArgumentError:
       raise exceptions.LibadjointErrorInvalidInputs, 'Wrong function interface in register_data_callback for "%s".' % type_name 
+
+  def __cfunc_from_block_assembly__(self, bassembly_cb):
+    '''Given a block assembly function defined using the Pythonic interface, we want to translate that into a function
+    that can be called from C. This routine does exactly that.'''
+
+    def cfunc(ndepends_c, variables_c, dependencies_c, hermitian_c, coefficient_c, context_c, output_c, rhs_c):
+      print "We've gotten into cfunc in block assembly"
+      # build the Python objects from the C objects
+      variables = [Variable(var=variables_c[i]) for i in range(ndepends_c)]
+      dependencies = [vector(dependencies_c[i]) for i in range(ndepends_c)]
+      hermitian = (hermitian_c == 1)
+      coefficient = coefficient_c
+      context = context_c
+
+      # Now call the callback we've been given
+      (matrix, rhs) = bassembly_cb(variables, dependencies, hermitian, coefficient, context)
+
+      # Now cast the outputs back to C
+      output_c.ptr = python_utils.c_ptr(matrix)
+      python_utils.incref(matrix)
+      rhs_c.ptr = python_utils.c_ptr(rhs)
+      python_utils.incref(rhs)
+
+    return self.block_assembly_type(cfunc)
+
+  def register_block_assembly_callback(self, name, bassembly_cb):
+    clib.adj_register_operator_callback.argtypes = [ctypes.POINTER(clib.adj_adjointer), ctypes.c_int, ctypes.c_char_p, self.block_assembly_type]
+    fn = self.__cfunc_from_block_assembly__(bassembly_cb)
+    python_utils.incref(fn)
+    clib.adj_register_operator_callback(self.adjointer, int(constants.adj_constants['ADJ_BLOCK_ASSEMBLY_CB']), name, fn)
+    clib.adj_register_operator_callback.argtypes = [ctypes.POINTER(clib.adj_adjointer), ctypes.c_int, ctypes.c_char_p, ctypes.CFUNCTYPE(None)]
 
   @staticmethod
   def __vec_duplicate_callback__(adj_vec, adj_vec_ptr):
@@ -421,11 +457,11 @@ def vector(adj_vector):
 
   Return the Python Vector object contained in a C adj_vector'''
 
-  return python_utils.deref(adj_vector.ptr)
+  return python_utils.c_deref(adj_vector.ptr)
 
 def matrix(adj_matrix):
   '''matrix(adj_matrix)
 
   Return the Python Matrix object contained in a C adj_matrix'''
 
-  return python_utils.deref(adj_matrix.ptr)
+  return python_utils.c_deref(adj_matrix.ptr)
