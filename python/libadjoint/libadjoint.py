@@ -205,9 +205,11 @@ class Adjointer(object):
     if adjointer is None:
       self.adjointer = clib.adj_adjointer()
       clib.adj_create_adjointer(self.adjointer)
+      self.adjointer_created = True
       self.c_object = self.adjointer
       self.__register_data_callbacks__()
     else:
+      self.adjointer_created = False
       self.adjointer = adjointer
       self.c_object = self.adjointer
 
@@ -217,7 +219,8 @@ class Adjointer(object):
                                                 ctypes.POINTER(clib.adj_matrix), ctypes.POINTER(clib.adj_vector))
 
   def __del__(self):
-    clib.adj_destroy_adjointer(self.adjointer)
+    if self.adjointer_created:
+      clib.adj_destroy_adjointer(self.adjointer)
 
   def __getattr__(self, name):
     if name == "equation_count":
