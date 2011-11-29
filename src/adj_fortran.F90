@@ -386,7 +386,7 @@ module libadjoint
       type(adj_vector), intent(out) :: output
     end subroutine adj_functional_derivative_proc
 
-    subroutine adj_forward_source_proc(adjointer, variable, ndepends, dependencies, values, output, has_output) bind(c)
+    subroutine adj_forward_source_proc(adjointer, variable, ndepends, dependencies, values, context, output, has_output) bind(c)
       use iso_c_binding
       use libadjoint_data_structures
       type(adj_adjointer), intent(in) :: adjointer
@@ -394,6 +394,7 @@ module libadjoint
       integer(kind=c_int), intent(in), value :: ndepends
       type(adj_variable), dimension(ndepends), intent(in) :: dependencies
       type(adj_vector), dimension(ndepends), intent(in) :: values
+      type(c_ptr), intent(in) :: context
       type(adj_vector), intent(out) :: output
       integer(kind=c_int), intent(out) :: has_output
     end subroutine adj_forward_source_proc
