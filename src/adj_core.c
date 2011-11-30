@@ -692,13 +692,16 @@ int adj_get_forward_equation(adj_adjointer* adjointer, int equation, adj_matrix*
   }
 
   /* And any forward source terms */
-  ierr = adj_evaluate_forward_source(adjointer, equation, &rhs_tmp, &has_output);
-  if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
-
-  if (has_output)
+  if (adjointer->equations[equation].rhs_callback != NULL) 
   {
-    adjointer->callbacks.vec_axpy(rhs, (adj_scalar)1.0, rhs_tmp);
-    adjointer->callbacks.vec_destroy(&rhs_tmp);
+    ierr = adj_evaluate_forward_source(adjointer, equation, &rhs_tmp, &has_output);
+    if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
+
+    if (has_output)
+    {
+      adjointer->callbacks.vec_axpy(rhs, (adj_scalar)1.0, rhs_tmp);
+      adjointer->callbacks.vec_destroy(&rhs_tmp);
+    }
   }
 
   return ADJ_OK;
