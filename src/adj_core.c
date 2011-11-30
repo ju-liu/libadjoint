@@ -557,18 +557,15 @@ int adj_get_forward_equation(adj_adjointer* adjointer, int equation, adj_matrix*
   }
 
   fwd_eqn = adjointer->equations[equation];
-  if (fwd_eqn.rhs_callback == NULL && fwd_eqn.nblocks == 1)
+  *fwd_var = fwd_eqn.variable;
+  if (fwd_eqn.rhs_callback == NULL)
   {
-    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "You have asked for a forward equation, but without a source term or off-diagonal blocks, this field will be zero.");
-    return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
-  }
-  if (fwd_eqn.rhs_callback == NULL && fwd_eqn.nrhsdeps != 0)
-  {
-    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "You have asked for a forward equation, and the right-hand side has dependencies, but no rhs callback has been provided.");
+    char buf[255];
+    adj_variable_str(*fwd_var, buf, 255);
+    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "You have asked for the forward equation for %s, but no right-hand side term has been supplied for this equation.", buf);
     return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
   }
 
-  *fwd_var = fwd_eqn.variable;
 
   ierr = adj_find_variable_data(&(adjointer->varhash), fwd_var, &fwd_data);
   assert(ierr == ADJ_OK);
