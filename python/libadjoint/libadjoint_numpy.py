@@ -34,8 +34,10 @@ class Matrix(libadjoint.Matrix):
     class to wrap the numpy matrix mat in a libadjoint matrix.'''
     self.mat = mat
 
-  def duplicate(self):
-    return Matrix(numpy.zeros(self.mat.shape))
+  def solve(self, b, x):
+
+    x.vec=numpy.linalg.solve(A.mat, b.vec)
+  
 
   def axpy(self, alpha, x):
     self.mat += alpha*x.mat
@@ -48,4 +50,20 @@ def _test_():
 
   var=libadjoint.Variable('foo', 0)
 
-  A.record_variable(var, libadjoint.MemoryStorage(v))
+  b=libadjoint.Block("Identity")
+
+  def id_assemble(variables, dependencies, hermitian, coefficient, context):
+    return (Matrix(coefficient*numpy.eye(10)), Vector(coefficient*numpy.zeros(10)))
+  
+  b.assemble=id_assemble
+
+  def rhs_cb(adjointer, variable, dependencies, values, context):
+    return v
+
+  e=libadjoint.Equation(var, [b], [var], rhs_cb=rhs_cb)
+
+  A.register_equation(e)
+ 
+  # This currently causes a segfault.
+  #A.record_variable(var, libadjoint.MemoryStorage(v))
+  

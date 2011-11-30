@@ -80,6 +80,8 @@ class Block(object):
   def __init__(self, name, nblock=None, context=None, coefficient=None, hermitian=False, dependencies=None):
     self.block = clib.adj_block()
     self.c_object = self.block
+    self.name = name
+
     c_context = None
     if context is not None:
       c_context = ctypes.byref(context)
@@ -112,10 +114,32 @@ class Block(object):
   def set_hermitian(self, hermitian):
     clib.adj_block_set_hermitian(self.block, hermitian)
 
+  @staticmethod
+  def assemble(variables, dependencies, hermitian, coefficient, context):
+    '''def assemble(variables, dependencies, hermitian, coefficient, context)
+
+    This method must assemble the block and return a tuple (matrix, rhs) where matrix.
+
+      variables is a list of Variable objects giving the variables on which the block depends.
+    
+      dependencies is a list of Vector objects giving the values of those dependencies.
+
+      hermitian is a boolean value indicating whether the hermitian of the operator is to be constructed.
+      
+      coefficient is a coefficient by which the routine must scale the output.
+
+      context is the python object passed to the Block on construction.
+    '''
+
+    # The registration code will notice unimplemented methods and fail to register them.
+    pass
+
+
 class Equation(object):
   def __init__(self, var, blocks, targets, rhs_deps=None, rhs_context=None, rhs_cb=None):
     self.equation = clib.adj_equation()
     self.c_object = self.equation
+    self.blocks=blocks
 
     assert len(blocks) == len(targets)
 
@@ -238,6 +262,11 @@ class Adjointer(object):
     if hasattr(equation, 'rhs_fn'):
       self.functions_registered.append(equation.rhs_fn)
 
+    for block in equation.blocks:
+      if not(block.assemble is Block.assemble):
+        # There is an assemble method to register.
+        self.__register_block_assembly_callback__(block.name, block.assemble)
+
   def record_variable(self, var, storage):
     '''record_variable(self, var, storage)
 
@@ -283,6 +312,7 @@ class Adjointer(object):
     self.__register_data_callback__('ADJ_MAT_DUPLICATE_CB', self.__mat_duplicate_callback__)
     self.__register_data_callback__('ADJ_MAT_DESTROY_CB', self.__mat_destroy_callback__)
     self.__register_data_callback__('ADJ_MAT_AXPY_CB', self.__mat_destroy_callback__)
+    self.__register_data_callback__('ADJ_SOLVE_CB', self.__mat_solve_callback__)
 
   def __register_data_callback__(self, type_name, func):
     type_id = int(constants.adj_constants[type_name])
@@ -320,7 +350,7 @@ class Adjointer(object):
 
     return self.block_assembly_type(cfunc)
 
-  def register_block_assembly_callback(self, name, bassembly_cb):
+  def __register_block_assembly_callback__(self, name, bassembly_cb):
     clib.adj_register_operator_callback.argtypes = [ctypes.POINTER(clib.adj_adjointer), ctypes.c_int, ctypes.c_char_p, self.block_assembly_type]
     fn = self.__cfunc_from_block_assembly__(bassembly_cb)
     self.functions_registered.append(fn)
@@ -339,9 +369,8 @@ class Adjointer(object):
   @staticmethod
   def __vec_destroy_callback__(adj_vec_ptr):
     vec = vector(adj_vec_ptr.ptr)
-    vec.destroy()
 
-    # And do the corresponding decref of the object, so that the Python GC can pick it up
+    # Do the corresponding decref of the object, so that the Python GC can pick it up
     python_utils.decref(vec)
 
   @staticmethod
@@ -362,9 +391,8 @@ class Adjointer(object):
   @staticmethod
   def __mat_destroy_callback__(adj_mat_ptr):
     mat = matrix(adj_mat_ptr.ptr)
-    mat.destroy()
 
-    # And do the corresponding decref of the object, so that the Python GC can pick it up
+    # Do the corresponding decref of the object, so that the Python GC can pick it up
     python_utils.decref(mat)
 
   @staticmethod
@@ -372,6 +400,14 @@ class Adjointer(object):
     y = matrix(adj_mat_ptr.ptr)
     x = matrix(adj_mat)
     y.axpy(alpha, x)
+
+  @staticmethod
+  def __mat_solve_callback__(adj_var, adj_mat, adj_rhs, adj_soln_ptr):
+    A = matrix(adj_mat_ptr.ptr)
+    b = vector(adj_rhs)
+    x = vector(adj_rhs.ptr)
+
+    A.solve(b, x)
 
 class LinAlg(object):
   '''Base class for adjoint vector or matrix objects. In libadjoint,
@@ -381,20 +417,6 @@ class LinAlg(object):
 
   def __init__(self):
     raise LibadjointErrorNotImplemented("Shouldn't ever instantiate a LinAlg object directly")
-
-  def destroy(self):
-    '''destroy(self)
-
-    Any special tasks to clean up the object. If this is a normal Python object, there is no need to override this method.'''
-    pass
-
-  def duplicate(self):
-    '''duplicate(self)
-
-    This method must return a newly allocated duplicate of its
-    parent. The value of every entry of the duplicate must be zero.'''
-    raise LibadjointErrorNeedCallback(
-      'Class '+self.__class__.__name__+' has no copy() method')
 
   def axpy(self, alpha, x):
     '''axpy(self, alpha, x)
@@ -408,6 +430,14 @@ class LinAlg(object):
 class Vector(LinAlg):
   '''Base class for adjoint vector objects. User applications should
   subclass this and provide their own data and methods.'''
+
+  def duplicate(self):
+    '''duplicate(self)
+
+    This method must return a newly allocated duplicate of its
+    parent. The value of every entry of the duplicate must be zero.'''
+    raise LibadjointErrorNeedCallback(
+      'Class '+self.__class__.__name__+' has no copy() method')
 
   def set_values(self, scalars):
     '''set_values(self, scalars)
@@ -459,6 +489,15 @@ class Vector(LinAlg):
 class Matrix(LinAlg):
   '''Base class for adjoint matrix objects.'''
 
+  def solve(self, b, x):
+    '''solve(self, b, x)
+
+    This method must solve the system self*x = b and place the answer in x.'''
+
+    raise LibadjointErrorNeedCallback(
+      'Class '+self.__class__.__name__+' has no solve() method')        
+
+
   def as_adj_matrix(self):
     '''as_adj_matrix(self)
 
@@ -480,3 +519,21 @@ def matrix(adj_matrix):
   Return the Python Matrix object contained in a C adj_matrix'''
 
   return python_utils.c_deref(adj_matrix.ptr)
+
+# class Time(object):
+#   def __init__(self, time=0.0, timestep=0, iteration=0):
+    
+#     '''Time at the start of each timestep.'''
+#     self.times=[time]
+    
+#     self.timestep=timestep
+#     self.iteration=iteration
+
+#   def new_timestep(time=None, timestep=None, iteration=None):
+#     '''Update time object for a new timestep.'''
+
+# class TimeStep(object):
+#     def __init__(self, time, time_offset, iteration_offset):
+      
+#       if not isinstance(time, Time):
+#         raise TypeError("time must be an instance of class Time")
