@@ -4,6 +4,8 @@ import exceptions
 import clibadjoint as clib
 import python_utils
 
+adj_scalar = ctypes.c_double
+
 def handle_error(ierr):
   if ierr != 0:
     exception = exceptions.get_exception(ierr)
@@ -242,9 +244,15 @@ class Adjointer(object):
 
 
   def set_function_apis(self):
-    self.block_assembly_type = ctypes.CFUNCTYPE(None, ctypes.c_int, ctypes.POINTER(clib.adj_variable), ctypes.POINTER(clib.adj_vector), ctypes.c_int, ctypes.c_double, ctypes.POINTER(None),
+    self.block_assembly_type = ctypes.CFUNCTYPE(None, ctypes.c_int, ctypes.POINTER(clib.adj_variable), ctypes.POINTER(clib.adj_vector), ctypes.c_int, adj_scalar, ctypes.POINTER(None),
                                                 ctypes.POINTER(clib.adj_matrix), ctypes.POINTER(clib.adj_vector))
+    self.vec_duplicate_type = ctypes.CFUNCTYPE(None, clib.adj_vector, ctypes.POINTER(clib.adj_vector))
     self.vec_destroy_type = ctypes.CFUNCTYPE(None, ctypes.POINTER(clib.adj_vector))
+    self.vec_axpy_type = ctypes.CFUNCTYPE(None, ctypes.POINTER(clib.adj_vector), adj_scalar, clib.adj_vector)
+    self.mat_duplicate_type = ctypes.CFUNCTYPE(None, clib.adj_matrix, ctypes.POINTER(clib.adj_matrix))
+    self.mat_destroy_type = ctypes.CFUNCTYPE(None, ctypes.POINTER(clib.adj_matrix))
+    self.mat_axpy_type = ctypes.CFUNCTYPE(None, ctypes.POINTER(clib.adj_matrix), adj_scalar, clib.adj_matrix)
+    self.solve_type = ctypes.CFUNCTYPE(None, clib.adj_variable, clib.adj_matrix, clib.adj_vector, ctypes.POINTER(clib.adj_vector))
 
   def __del__(self):
     if self.adjointer_created:
@@ -321,7 +329,13 @@ class Adjointer(object):
   def __register_data_callback__(self, type_name, func):
     type_id = int(constants.adj_constants[type_name])
 
-    type_to_api = {"ADJ_VEC_DESTROY_CB": self.vec_destroy_type}
+    type_to_api = {"ADJ_VEC_DESTROY_CB": self.vec_destroy_type,
+                   "ADJ_VEC_DUPLICATE_CB": self.vec_duplicate_type,
+                   "ADJ_VEC_AXPY_CB": self.vec_axpy_type,
+                   "ADJ_MAT_DUPLICATE_CB": self.mat_duplicate_type,
+                   "ADJ_MAT_DESTROY_CB": self.mat_destroy_type,
+                   "ADJ_MAT_AXPY_CB": self.mat_axpy_type,
+                   "ADJ_SOLVE_CB": self.solve_type}
     if type_name in type_to_api:
       clib.adj_register_data_callback.argtypes = [ctypes.POINTER(clib.adj_adjointer), ctypes.c_int, type_to_api[type_name]]
       data_function = type_to_api[type_name](func)
@@ -330,13 +344,7 @@ class Adjointer(object):
 
       clib.adj_register_data_callback.argtypes = [ctypes.POINTER(clib.adj_adjointer), ctypes.c_int, ctypes.CFUNCTYPE(None)]
     else:
-      try:
-        cfunc = ctypes.CFUNCTYPE(None)
-        data_function = cfunc(func)
-        self.functions_registered.append(data_function)
-        clib.adj_register_data_callback(self.adjointer, ctypes.c_int(type_id), data_function)
-      except ctypes.ArgumentError:
-        raise exceptions.LibadjointErrorInvalidInputs, 'Wrong function interface in register_data_callback for "%s".' % type_name 
+      raise LibadjointErrorNotImplemented("Unknown API for data callback " + type_name)
 
   def __cfunc_from_block_assembly__(self, bassembly_cb):
     '''Given a block assembly function defined using the Pythonic interface, we want to translate that into a function
