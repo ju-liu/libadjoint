@@ -128,6 +128,34 @@ void adj_html_print_statistics(FILE* fp, adj_adjointer* adjointer)
   fprintf(fp, "<p>Number of registered equations: %i</p>", adjointer->nequations);
 }
 
+void adj_html_print_auxiliary_variables(FILE* fp, adj_adjointer* adjointer)
+{
+	adj_variable_hash* varhash;
+	char adj_name[ADJ_NAME_LEN];
+	int ierr;
+
+	fprintf(fp, "<h1>Auxiliary variables</h1>");
+
+	for (varhash = adjointer->varhash; varhash != NULL; varhash = varhash->hh.next)
+	{
+
+		if (varhash->variable.auxiliary == ADJ_TRUE)
+    {
+      ierr = adj_has_variable_value(adjointer, varhash->variable);
+      /* Green color -> Variable is recorded, red otherwise */
+      if (ierr != ADJ_OK)
+        fprintf(fp, "<span class=\"redfont\">");
+      else
+        fprintf(fp, "<span class=\"greenfont\">");
+
+			adj_variable_str(varhash->variable, adj_name, ADJ_NAME_LEN);
+			fprintf(fp, "%s</span> ", adj_name);
+    }
+
+	}
+
+}
+
 void adj_html_print_callback_information(FILE* fp, adj_adjointer* adjointer)
 {
   adj_op_callback* cb_ptr;
@@ -700,6 +728,7 @@ int adj_html_adjoint_system(adj_adjointer* adjointer, char* filename)
   }
   adj_html_table_end(fp);
 
+  adj_html_print_auxiliary_variables(fp, adjointer);
   adj_html_print_callback_information(fp, adjointer);
 
   adj_html_footer(fp);
@@ -760,6 +789,7 @@ int adj_html_forward_system(adj_adjointer* adjointer, char* filename)
   }
   adj_html_table_end(fp);
 
+  adj_html_print_auxiliary_variables(fp, adjointer);
   adj_html_print_callback_information(fp, adjointer);
 
   adj_html_footer(fp);
