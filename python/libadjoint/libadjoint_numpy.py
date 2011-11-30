@@ -65,5 +65,5 @@ def _test_():
   A.register_equation(e)
  
   # This currently causes a segfault.
-  #A.record_variable(var, libadjoint.MemoryStorage(v))
+  A.record_variable(var, libadjoint.MemoryStorage(v))
   
