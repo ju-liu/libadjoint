@@ -394,7 +394,7 @@ module libadjoint
       integer(kind=c_int), intent(in), value :: ndepends
       type(adj_variable), dimension(ndepends), intent(in) :: dependencies
       type(adj_vector), dimension(ndepends), intent(in) :: values
-      type(c_ptr), intent(in) :: context
+      type(c_ptr), intent(in), value :: context
       type(adj_vector), intent(out) :: output
       integer(kind=c_int), intent(out) :: has_output
     end subroutine adj_forward_source_proc
