@@ -382,15 +382,15 @@ class Adjointer(object):
     adj_vec_ptr.ptr = python_utils.c_ptr(new_vec)
 
   @staticmethod
-  def __vec_destroy_callback__(adj_vec):
-    vec = vector(adj_vec[0])
+  def __vec_destroy_callback__(adj_vec_ptr):
+    vec = vector(adj_vec_ptr[0])
 
     # Do the corresponding decref of the object, so that the Python GC can pick it up
     python_utils.decref(vec)
 
   @staticmethod
   def __vec_axpy_callback__(adj_vec_ptr, alpha, adj_vec):
-    y = vector(adj_vec_ptr.ptr)
+    y = vector(adj_vec_ptr[0])
     x = vector(adj_vec)
     y.axpy(alpha, x)
 
@@ -418,9 +418,9 @@ class Adjointer(object):
 
   @staticmethod
   def __mat_solve_callback__(adj_var, adj_mat, adj_rhs, adj_soln_ptr):
-    A = matrix(adj_mat_ptr.ptr)
+    A = matrix(adj_mat)
     b = vector(adj_rhs)
-    x = vector(adj_rhs.ptr)
+    x = vector(adj_soln_ptr[0])
 
     A.solve(b, x)
 
