@@ -137,6 +137,33 @@ class Block(object):
     pass
 
 
+  @staticmethod
+  def action(variables, dependencies, hermitian, coefficient, input, context):
+    '''def action(variables, dependencies, hermitian, coefficient, input, context)
+
+    If hermitian is False, this method must return:
+                    coefficient * dot(block, input)
+    If hermitian is True, this method must return:
+                    coefficient * dot(block*, input)
+
+      variables is a list of Variable objects giving the variables on which the block depends.
+    
+      dependencies is a list of Vector objects giving the values of those dependencies.
+
+      hermitian is a boolean value indicating whether the hermitian of the operator is to be constructed.
+      
+      coefficient is a coefficient by which the routine must scale the output.
+
+      input is a Vector which is is to be the subject of the action.
+
+      context is the python object passed to the Block on construction.
+    '''
+    
+    # The registration code will notice unimplemented methods and fail to register them.
+    pass
+    
+    
+
 class Equation(object):
   def __init__(self, var, blocks, targets, rhs_deps=None, rhs_context=None, rhs_cb=None):
     self.equation = clib.adj_equation()
@@ -246,6 +273,8 @@ class Adjointer(object):
   def set_function_apis(self):
     self.block_assembly_type = ctypes.CFUNCTYPE(None, ctypes.c_int, ctypes.POINTER(clib.adj_variable), ctypes.POINTER(clib.adj_vector), ctypes.c_int, adj_scalar, ctypes.POINTER(None),
                                                 ctypes.POINTER(clib.adj_matrix), ctypes.POINTER(clib.adj_vector))
+    self.block_action_type = ctypes.CFUNCTYPE(None, ctypes.c_int, ctypes.POINTER(clib.adj_variable), ctypes.POINTER(clib.adj_vector), ctypes.c_int, adj_scalar, clib.adj_vector, 
+                                              ctypes.POINTER(None),ctypes.POINTER(clib.adj_vector))
     self.vec_duplicate_type = ctypes.CFUNCTYPE(None, clib.adj_vector, ctypes.POINTER(clib.adj_vector))
     self.vec_destroy_type = ctypes.CFUNCTYPE(None, ctypes.POINTER(clib.adj_vector))
     self.vec_axpy_type = ctypes.CFUNCTYPE(None, ctypes.POINTER(clib.adj_vector), adj_scalar, clib.adj_vector)
@@ -264,7 +293,7 @@ class Adjointer(object):
       clib.adj_equation_count(self.adjointer, equation_count)
       return equation_count.value
     else:
-      raise AttributeError
+      raise AttributeError(name)
 
   def register_equation(self, equation):
     cs = ctypes.c_int()
@@ -277,7 +306,7 @@ class Adjointer(object):
     for block in equation.blocks:
       if not(block.assemble is Block.assemble):
         # There is an assemble method to register.
-        self.__register_block_assembly_callback__(block.name, block.assemble)
+        self.__register_operator_callback__(block.name, "ADJ_BLOCK_ASSEMBLY_CB", block.assemble)
 
   def record_variable(self, var, storage):
     '''record_variable(self, var, storage)
@@ -311,6 +340,15 @@ class Adjointer(object):
 
     return (lhs_py, rhs_py)
 
+  def get_forward_solution(self, equation):
+    output = clib.adj_vector()
+    fwd_var = clib.adj_variable()
+    clib.adj_get_forward_solution(self.adjointer, equation, output, fwd_var)
+    output_py = python_utils.c_deref(output.ptr)
+    #python_utils.decref(output_py)
+
+    return (Variable(var=fwd_var), output_py)
+
   def get_adjoint_equation(self, equation, functional):
     lhs = clib.adj_matrix()
     rhs = clib.adj_vector()
@@ -320,10 +358,10 @@ class Adjointer(object):
   def __register_data_callbacks__(self):
     self.__register_data_callback__('ADJ_VEC_DUPLICATE_CB', self.__vec_duplicate_callback__)
     self.__register_data_callback__('ADJ_VEC_DESTROY_CB', self.__vec_destroy_callback__)
-    self.__register_data_callback__('ADJ_VEC_AXPY_CB', self.__vec_destroy_callback__)
+    self.__register_data_callback__('ADJ_VEC_AXPY_CB', self.__vec_axpy_callback__)
     self.__register_data_callback__('ADJ_MAT_DUPLICATE_CB', self.__mat_duplicate_callback__)
     self.__register_data_callback__('ADJ_MAT_DESTROY_CB', self.__mat_destroy_callback__)
-    self.__register_data_callback__('ADJ_MAT_AXPY_CB', self.__mat_destroy_callback__)
+    self.__register_data_callback__('ADJ_MAT_AXPY_CB', self.__mat_axpy_callback__)
     self.__register_data_callback__('ADJ_SOLVE_CB', self.__mat_solve_callback__)
 
   def __register_data_callback__(self, type_name, func):
@@ -351,7 +389,6 @@ class Adjointer(object):
     that can be called from C. This routine does exactly that.'''
 
     def cfunc(ndepends_c, variables_c, dependencies_c, hermitian_c, coefficient_c, context_c, output_c, rhs_c):
-      print "We've gotten into cfunc in block assembly"
       # build the Python objects from the C objects
       variables = [Variable(var=variables_c[i]) for i in range(ndepends_c)]
       dependencies = [vector(dependencies_c[i]) for i in range(ndepends_c)]
@@ -373,12 +410,45 @@ class Adjointer(object):
 
     return self.block_assembly_type(cfunc)
 
-  def __register_block_assembly_callback__(self, name, bassembly_cb):
-    clib.adj_register_operator_callback.argtypes = [ctypes.POINTER(clib.adj_adjointer), ctypes.c_int, ctypes.c_char_p, self.block_assembly_type]
-    fn = self.__cfunc_from_block_assembly__(bassembly_cb)
-    self.functions_registered.append(fn)
-    clib.adj_register_operator_callback(self.adjointer, int(constants.adj_constants['ADJ_BLOCK_ASSEMBLY_CB']), name, fn)
-    clib.adj_register_operator_callback.argtypes = [ctypes.POINTER(clib.adj_adjointer), ctypes.c_int, ctypes.c_char_p, ctypes.CFUNCTYPE(None)]
+  def __cfunc_from_block_action__(self, baction_cb):
+    '''Given a block action function defined using the Pythonic interface, we want to translate that into a function
+    that can be called from C. This routine does exactly that.'''
+
+    def cfunc(ndepends_c, variables_c, dependencies_c, hermitian_c, coefficient_c, input_c, context_c, output_c):
+      # build the Python objects from the C objects
+      variables = [Variable(var=variables_c[i]) for i in range(ndepends_c)]
+      dependencies = [vector(dependencies_c[i]) for i in range(ndepends_c)]
+      hermitian = (hermitian_c == 1)
+      coefficient = coefficient_c
+      input = vector(input_c)
+      context = context_c
+      
+      # Now call the callback we've been given
+      output = baction_cb(variables, dependencies, hermitian, coefficient, input, context)
+
+      assert output is not None
+      output_c[0].ptr = python_utils.c_ptr(output)
+      python_utils.incref(output)
+
+    return self.block_action_type(cfunc)
+
+  def __register_operator_callback__(self, name, type_name, func):
+    type_to_api = {"ADJ_BLOCK_ASSEMBLY_CB": (self.block_assembly_type, self.__cfunc_from_block_assembly__),
+                   "ADJ_BLOCK_ACTION_CB": (self.block_action_type, self.__cfunc_from_block_action__)}
+    if type_name in type_to_api:
+      clib.adj_register_operator_callback.argtypes = [ctypes.POINTER(clib.adj_adjointer), ctypes.c_int, ctypes.c_char_p, type_to_api[type_name][0]]
+      fn=type_to_api[type_name][1](func)
+      self.functions_registered.append(fn)
+      clib.adj_register_operator_callback(self.adjointer, int(constants.adj_constants[type_name]), name, fn)
+      clib.adj_register_operator_callback.argtypes = [ctypes.POINTER(clib.adj_adjointer), ctypes.c_int, ctypes.c_char_p, ctypes.CFUNCTYPE(None)]
+    else:
+      raise LibadjointErrorNotImplemented("Unknown API for data callback " + type_name)
+
+  # def __register_block_assembly_callback__(self, name, bassembly_cb):
+  #   fn = self.__cfunc_from_block_assembly__(bassembly_cb)
+  #   self.functions_registered.append(fn)
+  #   clib.adj_register_operator_callback(self.adjointer, int(constants.adj_constants['ADJ_BLOCK_ASSEMBLY_CB']), name, fn)
+  #   clib.adj_register_operator_callback.argtypes = [ctypes.POINTER(clib.adj_adjointer), ctypes.c_int, ctypes.c_char_p, ctypes.CFUNCTYPE(None)]
 
   @staticmethod
   def __vec_duplicate_callback__(adj_vec, adj_vec_ptr):
@@ -413,14 +483,14 @@ class Adjointer(object):
 
   @staticmethod
   def __mat_destroy_callback__(adj_mat_ptr):
-    mat = matrix(adj_mat_ptr.ptr)
+    mat = matrix(adj_mat_ptr[0])
 
     # Do the corresponding decref of the object, so that the Python GC can pick it up
     python_utils.decref(mat)
 
   @staticmethod
   def __mat_axpy_callback__(adj_mat_ptr, alpha, adj_mat):
-    y = matrix(adj_mat_ptr.ptr)
+    y = matrix(adj_mat_ptr[0])
     x = matrix(adj_mat)
     y.axpy(alpha, x)
 
@@ -428,9 +498,10 @@ class Adjointer(object):
   def __mat_solve_callback__(adj_var, adj_mat, adj_rhs, adj_soln_ptr):
     A = matrix(adj_mat)
     b = vector(adj_rhs)
-    x = vector(adj_soln_ptr[0])
 
-    A.solve(b, x)
+    x = A.solve(b)
+    python_utils.incref(x)
+    adj_soln_ptr[0].ptr = python_utils.c_ptr(x)
 
 class LinAlg(object):
   '''Base class for adjoint vector or matrix objects. In libadjoint,
@@ -512,10 +583,10 @@ class Vector(LinAlg):
 class Matrix(LinAlg):
   '''Base class for adjoint matrix objects.'''
 
-  def solve(self, b, x):
-    '''solve(self, b, x)
+  def solve(self, b):
+    '''solve(self, b)
 
-    This method must solve the system self*x = b and place the answer in x.'''
+    This method must solve the system self*x = b and return the answer.'''
 
     raise LibadjointErrorNeedCallback(
       'Class '+self.__class__.__name__+' has no solve() method')        

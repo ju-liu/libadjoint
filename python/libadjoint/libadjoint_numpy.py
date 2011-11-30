@@ -34,9 +34,10 @@ class Matrix(libadjoint.Matrix):
     class to wrap the numpy matrix mat in a libadjoint matrix.'''
     self.mat = mat
 
-  def solve(self, b, x):
+  def solve(self, b):
 
-    x.vec=numpy.linalg.solve(A.mat, b.vec)
+
+    return Vector(numpy.linalg.solve(A.mat, b.vec))
   
 
   def axpy(self, alpha, x):
