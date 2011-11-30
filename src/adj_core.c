@@ -247,7 +247,7 @@ int adj_get_adjoint_equation(adj_adjointer* adjointer, int equation, char* funct
               ierr = adj_get_variable_value(adjointer, depending_eqn.targets[j], &target);
               if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
 
-              ierr = adj_create_nonlinear_block_derivative(adjointer, depending_eqn.blocks[j].nonlinear_block, fwd_var, target, ADJ_TRUE, &derivs[l]);
+              ierr = adj_create_nonlinear_block_derivative(adjointer, depending_eqn.blocks[j].nonlinear_block, depending_eqn.blocks[j].coefficient, fwd_var, target, ADJ_TRUE, &derivs[l]);
               if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
               l++;
             }

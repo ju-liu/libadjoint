@@ -530,7 +530,7 @@ int adj_variable_set_auxiliary(adj_variable* var, int auxiliary)
   return ADJ_OK;
 }
 
-int adj_create_nonlinear_block_derivative(adj_adjointer* adjointer, adj_nonlinear_block nblock, adj_variable fwd, adj_vector contraction, int hermitian, adj_nonlinear_block_derivative* deriv)
+int adj_create_nonlinear_block_derivative(adj_adjointer* adjointer, adj_nonlinear_block nblock, adj_scalar block_coefficient, adj_variable fwd, adj_vector contraction, int hermitian, adj_nonlinear_block_derivative* deriv)
 {
   if (adjointer->callbacks.vec_duplicate == NULL)
   {
@@ -544,6 +544,7 @@ int adj_create_nonlinear_block_derivative(adj_adjointer* adjointer, adj_nonlinea
   }
 
   deriv->nonlinear_block = nblock;
+  deriv->nonlinear_block.coefficient *= block_coefficient;
   deriv->variable = fwd;
   deriv->hermitian = hermitian;
 

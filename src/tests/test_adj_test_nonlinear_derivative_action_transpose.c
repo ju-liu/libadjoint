@@ -52,7 +52,7 @@ void test_adj_test_nonlinear_derivative_action_transpose(void)
   adj_test_assert(ierr==ADJ_OK, "Should have worked");
   ierr = adj_nonlinear_block_set_test_hermitian(&nblock, ADJ_TRUE, number_of_tests, tol); 
   adj_test_assert(ierr==ADJ_OK, "Should have worked");
-  ierr = adj_create_nonlinear_block_derivative(&adjointer, nblock, var2, contraction, ADJ_FALSE, &nblock_deriv);
+  ierr = adj_create_nonlinear_block_derivative(&adjointer, nblock, 1.0, var2, contraction, ADJ_FALSE, &nblock_deriv);
   adj_test_assert(ierr==ADJ_OK, "Should have worked");
 
   ierr = adj_test_nonlinear_derivative_action_transpose(&adjointer, nblock_deriv, petsc_vec_to_adj_vector(&input), petsc_vec_to_adj_vector(&output), number_of_tests, tol);

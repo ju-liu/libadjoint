@@ -310,7 +310,7 @@ int adj_equation_set_rhs_callback(adj_equation* equation, void (*fn)(adj_adjoint
 
 #ifndef ADJ_HIDE_FROM_USER
 int adj_variable_equal(adj_variable* var1, adj_variable* var2, int nvars);
-int adj_create_nonlinear_block_derivative(adj_adjointer* adjointer, adj_nonlinear_block nblock, adj_variable fwd, adj_vector contraction, int hermitian, adj_nonlinear_block_derivative* deriv);
+int adj_create_nonlinear_block_derivative(adj_adjointer* adjointer, adj_nonlinear_block nblock, adj_scalar block_coefficient, adj_variable fwd, adj_vector contraction, int hermitian, adj_nonlinear_block_derivative* deriv);
 int adj_destroy_nonlinear_block_derivative(adj_adjointer* adjointer, adj_nonlinear_block_derivative* deriv);
 int adj_copy_nonlinear_block(adj_nonlinear_block src, adj_nonlinear_block* dest);
 #endif
