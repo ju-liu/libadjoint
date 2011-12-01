@@ -201,7 +201,12 @@ class Equation(object):
 
       # Now cast the outputs back to C
       has_output_c.value = (output is None)
-      output_c[0].ptr = python_utils.c_ptr(output)
+      output_c[0].klass = 0
+      output_c[0].flags = 0
+      output_c[0].ptr = 0
+      if output:
+        output_c[0].ptr = python_utils.c_ptr(output)
+
       python_utils.incref(output)
 
     rhs_func_type = ctypes.CFUNCTYPE(None, ctypes.POINTER(clib.adj_adjointer), clib.adj_variable, ctypes.c_int, ctypes.POINTER(clib.adj_variable), ctypes.POINTER(clib.adj_vector), ctypes.POINTER(None),
@@ -402,10 +407,14 @@ class Adjointer(object):
       # Now cast the outputs back to C
       assert matrix is not None
       output_c[0].ptr = python_utils.c_ptr(matrix)
+      output_c[0].klass = 0
+      output_c[0].flags = 0
       python_utils.incref(matrix)
 
       assert rhs is not None
       rhs_c[0].ptr = python_utils.c_ptr(rhs)
+      rhs_c[0].klass = 0
+      rhs_c[0].flags = 0
       python_utils.incref(rhs)
 
     return self.block_assembly_type(cfunc)
@@ -428,6 +437,8 @@ class Adjointer(object):
 
       assert output is not None
       output_c[0].ptr = python_utils.c_ptr(output)
+      output_c[0].klass = 0
+      output_c[0].flags = 0
       python_utils.incref(output)
 
     return self.block_action_type(cfunc)
@@ -458,6 +469,8 @@ class Adjointer(object):
     # Increase the reference counter of the new object to protect it from deallocation at the end of the callback
     python_utils.incref(new_vec)
     adj_vec_ptr.ptr = python_utils.c_ptr(new_vec)
+    adj_vec_ptr.klass = 0
+    adj_vec_ptr.flags = 0
 
   @staticmethod
   def __vec_destroy_callback__(adj_vec_ptr):
@@ -480,6 +493,8 @@ class Adjointer(object):
     # Increase the reference counter of the new object to protect it from deallocation at the end of the callback
     python_utils.incref(new_mat)
     adj_mat_ptr.ptr = python_utils.c_ptr(new_mat)
+    adj_mat_ptr.klass = 0
+    adj_mat_ptr.flags = 0
 
   @staticmethod
   def __mat_destroy_callback__(adj_mat_ptr):
@@ -502,6 +517,8 @@ class Adjointer(object):
     x = A.solve(b)
     python_utils.incref(x)
     adj_soln_ptr[0].ptr = python_utils.c_ptr(x)
+    adj_soln_ptr[0].klass = 0
+    adj_soln_ptr[0].flags = 0
 
 class LinAlg(object):
   '''Base class for adjoint vector or matrix objects. In libadjoint,
