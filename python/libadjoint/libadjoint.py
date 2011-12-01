@@ -89,7 +89,7 @@ class Block(object):
       c_context = ctypes.byref(context)
 
     if nblock is not None and dependencies is not None:
-      raise LibadjointErrorInvalidInput, "Cannot have both nblock and dependencies"
+      raise exceptions.LibadjointErrorInvalidInput, "Cannot have both nblock and dependencies"
 
     if nblock is None:
       if dependencies is not None and len(dependencies) > 0:
@@ -387,7 +387,7 @@ class Adjointer(object):
 
       clib.adj_register_data_callback.argtypes = [ctypes.POINTER(clib.adj_adjointer), ctypes.c_int, ctypes.CFUNCTYPE(None)]
     else:
-      raise LibadjointErrorNotImplemented("Unknown API for data callback " + type_name)
+      raise exceptions.LibadjointErrorNotImplemented("Unknown API for data callback " + type_name)
 
   def __cfunc_from_block_assembly__(self, bassembly_cb):
     '''Given a block assembly function defined using the Pythonic interface, we want to translate that into a function
@@ -527,7 +527,7 @@ class LinAlg(object):
   instead of this directly.'''
 
   def __init__(self):
-    raise LibadjointErrorNotImplemented("Shouldn't ever instantiate a LinAlg object directly")
+    raise exceptions.LibadjointErrorNotImplemented("Shouldn't ever instantiate a LinAlg object directly")
 
   def axpy(self, alpha, x):
     '''axpy(self, alpha, x)
@@ -535,7 +535,7 @@ class LinAlg(object):
     This method must update the Vector with self=self+alpha*x where
     alpha is a scalar and x is a Vector'''
 
-    raise LibadjointErrorNeedCallback(
+    raise exceptions.LibadjointErrorNeedCallback(
       'Class '+self.__class__.__name__+' has no axpy(alpha,x) method')
 
 class Vector(LinAlg):
@@ -547,7 +547,7 @@ class Vector(LinAlg):
 
     This method must return a newly allocated duplicate of its
     parent. The value of every entry of the duplicate must be zero.'''
-    raise LibadjointErrorNeedCallback(
+    raise exceptions.LibadjointErrorNeedCallback(
       'Class '+self.__class__.__name__+' has no copy() method')
 
   def set_values(self, scalars):
@@ -556,7 +556,7 @@ class Vector(LinAlg):
     This method must set the value of Vector to that given by the array
     of scalars.'''
 
-    raise LibadjointErrorNeedCallback(
+    raise exceptions.LibadjointErrorNeedCallback(
       'Class '+self.__class__.__name__+' has no set_values(scalars) method')
 
   def size(self):
@@ -564,7 +564,7 @@ class Vector(LinAlg):
 
     This method must return the number of degrees of freedom in this Vector.'''
 
-    raise LibadjointErrorNeedCallback(
+    raise exceptions.LibadjointErrorNeedCallback(
       'Class '+self.__class__.__name__+' has no size() method')    
 
   def norm(self):
@@ -573,19 +573,19 @@ class Vector(LinAlg):
     This method must return a norm for this vector. It does not matter which
     norm is chosen, so long as it satisfies the usual axioms for a norm.'''
 
-    raise LibadjointErrorNeedCallback(
+    raise exceptions.LibadjointErrorNeedCallback(
       'Class '+self.__class__.__name__+' has no norm() method')    
 
   def set_random(self):
     '''This method must set the entries of a given vector x to pseudo-random values.'''
 
-    raise LibadjointErrorNeedCallback(
+    raise exceptions.LibadjointErrorNeedCallback(
       'Class '+self.__class__.__name__+' has no set_random() method')        
 
   def dot_product(self, b):
     '''This method must return the result of dot(self, b).'''
 
-    raise LibadjointErrorNeedCallback(
+    raise exceptions.LibadjointErrorNeedCallback(
       'Class '+self.__class__.__name__+' has no dot_product() method')        
 
 
@@ -605,7 +605,7 @@ class Matrix(LinAlg):
 
     This method must solve the system self*x = b and return the answer.'''
 
-    raise LibadjointErrorNeedCallback(
+    raise exceptions.LibadjointErrorNeedCallback(
       'Class '+self.__class__.__name__+' has no solve() method')        
 
 
