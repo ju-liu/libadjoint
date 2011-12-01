@@ -200,7 +200,7 @@ class Equation(object):
       output = rhs_cb(adjointer, variable, dependencies, values, context)
 
       # Now cast the outputs back to C
-      has_output_c.value = (output is None)
+      has_output_c[0] = (output is not None)
       output_c[0].klass = 0
       output_c[0].flags = 0
       output_c[0].ptr = 0
