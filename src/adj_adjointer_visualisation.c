@@ -104,20 +104,37 @@ void adj_html_write_row(FILE* fp, char** strings, char** desc, int nb_strings, i
   }
 }
 
+/* The first columns are allocated by the auxiliary variables (as they might be targets of blocks as well) followed by the other variables */
 int adj_html_find_column_index(adj_adjointer* adjointer, adj_variable* variable, int* col)
 {
   int i;
   adj_equation* adj_eqn;
+  char buf[ADJ_NAME_LEN];
+	adj_variable_hash* varhash;
+
+  /* Check for auxiliary variables */
+  *col = 0;
+	for (varhash = adjointer->varhash; varhash != NULL; varhash = varhash->hh.next)
+	{
+		if (varhash->variable.auxiliary == ADJ_TRUE)
+    {
+			if (adj_variable_equal(&varhash->variable, variable, 1))
+				return ADJ_OK;
+			*col = *col+1;
+    }
+	}
+
+  /* Check for variables that are solved in an equation */
   for (i=0; i < adjointer->nequations; i++)
   {
     adj_eqn = &adjointer->equations[i];
     if (adj_variable_equal(&adj_eqn->variable, variable, 1))
-    {
-      *col = i;
       return ADJ_OK;
-    }
+    *col = *col+1;
   }
-  strncpy(adj_error_msg, "Variable not found.", ADJ_ERROR_MSG_BUF);
+
+  adj_variable_str(*variable, buf, ADJ_NAME_LEN);
+  snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Could not find the column index for variable %s.", buf);
   return adj_chkierr_auto(ADJ_ERR_INVALID_INPUTS);
 }
 
@@ -126,6 +143,20 @@ void adj_html_print_statistics(FILE* fp, adj_adjointer* adjointer)
   fprintf(fp, "<h1>General information</h1>");
   fprintf(fp, "<p>Number of timesteps: %i</p>", adjointer->ntimesteps);
   fprintf(fp, "<p>Number of registered equations: %i</p>", adjointer->nequations);
+}
+
+int adj_html_count_auxiliary_variables(adj_adjointer* adjointer)
+{
+	adj_variable_hash* varhash;
+	int ierr;
+	int n=0;
+
+	for (varhash = adjointer->varhash; varhash != NULL; varhash = varhash->hh.next)
+	{
+		if (varhash->variable.auxiliary == ADJ_TRUE)
+			n++;
+	}
+	return n;
 }
 
 void adj_html_print_auxiliary_variables(FILE* fp, adj_adjointer* adjointer)
@@ -302,8 +333,35 @@ void adj_html_vars(FILE* fp, adj_adjointer* adjointer, int type)
   char adj_name[ADJ_NAME_LEN];
   adj_variable adj_var;
   adj_variable_data* data_ptr;
+	adj_variable_hash* varhash;
+
   fprintf(fp, "<div style=\"height:150px\"></div>\n");
   fprintf(fp, "<tr>\n");
+
+  /* First print the auxiliary variables */
+	for (varhash = adjointer->varhash; varhash != NULL; varhash = varhash->hh.next)
+	{
+		if (varhash->variable.auxiliary == ADJ_TRUE)
+    {
+			adj_var = varhash->variable;
+
+      ierr = adj_has_variable_value(adjointer, adj_var);
+      /* Green color -> Variable is recorded, red otherwise */
+      if (ierr != ADJ_OK)
+        fprintf(fp, "<th class=\"box_rotate redfont\">");
+      else
+        fprintf(fp, "<th class=\"box_rotate greenfont\">");
+      /* Print the variables name */
+      adj_var.type = type;
+      adj_variable_str(adj_var, adj_name, ADJ_NAME_LEN);
+      fprintf(fp, "%s", adj_name);
+
+      fprintf(fp, "</th>\n");
+    }
+	}
+
+  /* And then everything else */
+
   for (i = 0; i < adjointer->nequations; i++)
   {
     if (type!=ADJ_ADJOINT)
@@ -399,13 +457,14 @@ void adj_html_vars(FILE* fp, adj_adjointer* adjointer, int type)
 int adj_html_eqn(FILE* fp, adj_adjointer* adjointer, adj_equation adj_eqn, int diag_index, char* class)
 {
   int i,k;
-  char* row[adjointer->nequations];
-  char* desc[adjointer->nequations];
+  int nb_vars = adjointer->nequations + adj_html_count_auxiliary_variables(adjointer);
+  char* row[nb_vars];
+  char* desc[nb_vars];
   char buf[ADJ_NAME_LEN];
   int col, ierr;
 
   /* Allocate the strings for this row */
-  for (i = 0; i < adjointer->nequations; ++i)
+  for (i = 0; i < nb_vars; ++i)
   {
     row[i] = malloc(ADJ_NAME_LEN*sizeof(char));
     ADJ_CHKMALLOC(row[i]);
@@ -492,16 +551,16 @@ int adj_html_eqn(FILE* fp, adj_adjointer* adjointer, adj_equation adj_eqn, int d
 int adj_html_adjoint_eqn(FILE* fp, adj_adjointer* adjointer, adj_equation fwd_eqn, int diag_index, char* class)
 {
   int i, j, k, l;
-  char* row[adjointer->nequations];
-  char* desc[adjointer->nequations];
+  int nb_vars = adjointer->nequations + adj_html_count_auxiliary_variables(adjointer);
+  char* row[nb_vars];
+  char* desc[nb_vars];
   char buf[ADJ_NAME_LEN];
   int col, ierr;
   adj_variable fwd_var;
   adj_variable_data *fwd_data;
 
-
   /* Allocate the strings for this row */
-  for (i = 0; i < adjointer->nequations; ++i)
+  for (i = 0; i < nb_vars; ++i)
   {
     row[i] = malloc(ADJ_NAME_LEN*sizeof(char));
     ADJ_CHKMALLOC(row[i]);
@@ -686,7 +745,7 @@ int adj_html_adjoint_system(adj_adjointer* adjointer, char* filename)
   fp=fopen(filename, "w+");
   if (fp==NULL)
   {
-    strncpy(adj_error_msg, "File could not be opened.", ADJ_ERROR_MSG_BUF);
+    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "File %s could not be opened.", filename);
     return adj_chkierr_auto(ADJ_ERR_INVALID_INPUTS);
   }
 
@@ -746,7 +805,7 @@ int adj_html_forward_system(adj_adjointer* adjointer, char* filename)
   fp=fopen(filename, "w+");
   if (fp==NULL)
   {
-    strncpy(adj_error_msg, "File could not be opened.", ADJ_ERROR_MSG_BUF);
+    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "File %s could not be opened.", filename);
     return adj_chkierr_auto(ADJ_ERR_INVALID_INPUTS);
   }
 

@@ -430,21 +430,12 @@ int adj_create_equation(adj_variable var, int nblocks, adj_block* blocks, adj_va
     return adj_chkierr_auto(ADJ_ERR_INVALID_INPUTS);
   }
 
-  /* So we haven't seen this variable before. Let's check that the equation actually references this variable.
-     Let's also check that no targets are auxiliary */
+  /* So we haven't seen this variable before. Let's check that the equation actually references this variable. */
   targets_variable = 0;
   for (i = 0; i < nblocks; i++)
   {
     if (adj_variable_equal(&var, &(targets[i]), 1))
       targets_variable = 1;
-
-    if (targets[i].auxiliary)
-    {
-      char buf[ADJ_NAME_LEN];
-      adj_variable_str(var, buf, ADJ_NAME_LEN);
-      snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Cannot target an auxiliary variable %s.", buf);
-      return adj_chkierr_auto(ADJ_ERR_INVALID_INPUTS);
-    }
   }
 
   if (!targets_variable)
