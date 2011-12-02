@@ -54,10 +54,10 @@ static PyObject * c_deref(PyObject *self, PyObject *args)
 };
 
 static PyMethodDef AdjMethods[] = {
-    {"incref",  incref, METH_VARARGS,
+/*    {"incref",  incref, METH_VARARGS,
      "Increment the reference count of a python object."},
     {"decref",  decref, METH_VARARGS,
-     "Decrement the reference count of a python object."},
+     "Decrement the reference count of a python object."}, */
     {"c_ptr",  c_ptr, METH_VARARGS,
      "Find the memory address of a python object."},
     {"c_deref",  c_deref, METH_VARARGS,

@@ -5,6 +5,7 @@ import clibadjoint as clib
 import python_utils
 
 adj_scalar = ctypes.c_double
+references_taken = []
 
 def handle_error(ierr):
   if ierr != 0:
@@ -207,7 +208,7 @@ class Equation(object):
       if output:
         output_c[0].ptr = python_utils.c_ptr(output)
 
-      python_utils.incref(output)
+      references_taken.append(output)
 
     rhs_func_type = ctypes.CFUNCTYPE(None, ctypes.POINTER(clib.adj_adjointer), clib.adj_variable, ctypes.c_int, ctypes.POINTER(clib.adj_variable), ctypes.POINTER(clib.adj_vector), ctypes.POINTER(None),
                                      ctypes.POINTER(clib.adj_vector), ctypes.POINTER(ctypes.c_int))
@@ -320,7 +321,7 @@ class Adjointer(object):
 
     clib.adj_record_variable(self.adjointer, var.var, storage.storage_data)
 
-    python_utils.incref(storage.vec)
+    references_taken.append(storage.vec)
 
   def to_html(self, filename, viztype):
     try:
@@ -339,9 +340,9 @@ class Adjointer(object):
     fwd_var = clib.adj_variable()
     clib.adj_get_forward_equation(self.adjointer, equation, lhs, rhs, fwd_var)
     lhs_py = python_utils.c_deref(lhs.ptr)
-    #python_utils.decref(lhs_py)
+    references_taken.remove(lhs_py)
     rhs_py = python_utils.c_deref(rhs.ptr)
-    #python_utils.decref(rhs_py)
+    references_taken.remove(rhs_py)
 
     return (lhs_py, rhs_py)
 
@@ -350,7 +351,7 @@ class Adjointer(object):
     fwd_var = clib.adj_variable()
     clib.adj_get_forward_solution(self.adjointer, equation, output, fwd_var)
     output_py = python_utils.c_deref(output.ptr)
-    #python_utils.decref(output_py)
+    references_taken.remove(output_py)
 
     return (Variable(var=fwd_var), output_py)
 
@@ -409,13 +410,13 @@ class Adjointer(object):
       output_c[0].ptr = python_utils.c_ptr(matrix)
       output_c[0].klass = 0
       output_c[0].flags = 0
-      python_utils.incref(matrix)
+      references_taken.append(matrix)
 
       assert rhs is not None
       rhs_c[0].ptr = python_utils.c_ptr(rhs)
       rhs_c[0].klass = 0
       rhs_c[0].flags = 0
-      python_utils.incref(rhs)
+      references_taken.append(rhs)
 
     return self.block_assembly_type(cfunc)
 
@@ -439,7 +440,8 @@ class Adjointer(object):
       output_c[0].ptr = python_utils.c_ptr(output)
       output_c[0].klass = 0
       output_c[0].flags = 0
-      python_utils.incref(output)
+      references_taken.append(output)
+      
 
     return self.block_action_type(cfunc)
 
@@ -467,7 +469,7 @@ class Adjointer(object):
     new_vec = vec.duplicate()
 
     # Increase the reference counter of the new object to protect it from deallocation at the end of the callback
-    python_utils.incref(new_vec)
+    references_taken.append(new_vec)
     adj_vec_ptr.ptr = python_utils.c_ptr(new_vec)
     adj_vec_ptr.klass = 0
     adj_vec_ptr.flags = 0
@@ -477,7 +479,7 @@ class Adjointer(object):
     vec = vector(adj_vec_ptr[0])
 
     # Do the corresponding decref of the object, so that the Python GC can pick it up
-    python_utils.decref(vec)
+    references_taken.remove(vec)
 
   @staticmethod
   def __vec_axpy_callback__(adj_vec_ptr, alpha, adj_vec):
@@ -491,7 +493,7 @@ class Adjointer(object):
     new_mat = mat.duplicate()
 
     # Increase the reference counter of the new object to protect it from deallocation at the end of the callback
-    python_utils.incref(new_mat)
+    references_taken.append(new_mat)
     adj_mat_ptr.ptr = python_utils.c_ptr(new_mat)
     adj_mat_ptr.klass = 0
     adj_mat_ptr.flags = 0
@@ -501,7 +503,7 @@ class Adjointer(object):
     mat = matrix(adj_mat_ptr[0])
 
     # Do the corresponding decref of the object, so that the Python GC can pick it up
-    python_utils.decref(mat)
+    references_taken.remove(mat)
 
   @staticmethod
   def __mat_axpy_callback__(adj_mat_ptr, alpha, adj_mat):
@@ -515,7 +517,8 @@ class Adjointer(object):
     b = vector(adj_rhs)
 
     x = A.solve(b)
-    python_utils.incref(x)
+    references_taken.append(x)
+
     adj_soln_ptr[0].ptr = python_utils.c_ptr(x)
     adj_soln_ptr[0].klass = 0
     adj_soln_ptr[0].flags = 0
