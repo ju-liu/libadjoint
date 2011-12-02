@@ -692,8 +692,15 @@ int adj_get_forward_equation(adj_adjointer* adjointer, int equation, adj_matrix*
   }
 
   /* And any forward source terms */
+  has_output = -666;
   ierr = adj_evaluate_forward_source(adjointer, equation, &rhs_tmp, &has_output);
   if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
+  if (has_output != ADJ_TRUE && has_output != ADJ_FALSE)
+  {
+    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "The RHS callback must set has_output.");
+    ierr = ADJ_ERR_INVALID_INPUTS;
+    return adj_chkierr_auto(ierr);
+  }
 
   if (has_output)
   {
