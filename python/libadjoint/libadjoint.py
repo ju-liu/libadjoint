@@ -416,7 +416,6 @@ class Adjointer(object):
       rhs_c[0].klass = 0
       rhs_c[0].flags = 0
       python_utils.incref(rhs)
-      print rhs
 
     return self.block_assembly_type(cfunc)
 

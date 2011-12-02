@@ -48,7 +48,9 @@ static PyObject * c_deref(PyObject *self, PyObject *args)
     return NULL;
   
   /* The value of the python integer is the pointer */
-  return (PyObject *)PyInt_AsLong(pointer);
+  PyObject* pyobj = (PyObject*) PyInt_AsLong(pointer);
+  Py_INCREF(pyobj);
+  return pyobj;
 };
 
 static PyMethodDef AdjMethods[] = {
