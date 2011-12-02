@@ -51,7 +51,7 @@ int adj_evaluate_block_assembly(adj_adjointer* adjointer, adj_block block, adj_m
   int ndepends = 0;
   adj_variable* variables = NULL;
 
-  ierr = adj_find_operator_callback(adjointer, ADJ_BLOCK_ASSEMBLY_CB, block. name, (void (**)(void)) &block_assembly_func);
+  ierr = adj_find_operator_callback(adjointer, ADJ_BLOCK_ASSEMBLY_CB, block.name, (void (**)(void)) &block_assembly_func);
   if (ierr != ADJ_OK)
     return adj_chkierr_auto(ierr);
 
@@ -73,9 +73,6 @@ int adj_evaluate_block_assembly(adj_adjointer* adjointer, adj_block block, adj_m
   }
 
   block_assembly_func(ndepends, variables, dependencies, block.hermitian, block.coefficient, block.context, output, rhs);
-
-  assert(output->ptr != NULL);
-  assert(rhs->ptr != NULL);
 
   if (block.has_nonlinear_block)
     free(dependencies);

@@ -247,7 +247,7 @@ int adj_get_adjoint_equation(adj_adjointer* adjointer, int equation, char* funct
               ierr = adj_get_variable_value(adjointer, depending_eqn.targets[j], &target);
               if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
 
-              ierr = adj_create_nonlinear_block_derivative(adjointer, depending_eqn.blocks[j].nonlinear_block, fwd_var, target, ADJ_TRUE, &derivs[l]);
+              ierr = adj_create_nonlinear_block_derivative(adjointer, depending_eqn.blocks[j].nonlinear_block, depending_eqn.blocks[j].coefficient, fwd_var, target, ADJ_TRUE, &derivs[l]);
               if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
               l++;
             }
@@ -521,7 +521,6 @@ int adj_get_forward_equation(adj_adjointer* adjointer, int equation, adj_matrix*
   adj_variable_data* fwd_data;
   adj_vector rhs_tmp;
   int i, j;
-  int has_output;
 
   if (adjointer->options[ADJ_ACTIVITY] == ADJ_ACTIVITY_NOTHING)
   {
@@ -557,18 +556,15 @@ int adj_get_forward_equation(adj_adjointer* adjointer, int equation, adj_matrix*
   }
 
   fwd_eqn = adjointer->equations[equation];
-  if (fwd_eqn.rhs_callback == NULL && fwd_eqn.nblocks == 1)
+  *fwd_var = fwd_eqn.variable;
+  if (fwd_eqn.rhs_callback == NULL)
   {
-    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "You have asked for a forward equation, but without a source term or off-diagonal blocks, this field will be zero.");
-    return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
-  }
-  if (fwd_eqn.rhs_callback == NULL && fwd_eqn.nrhsdeps != 0)
-  {
-    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "You have asked for a forward equation, and the right-hand side has dependencies, but no rhs callback has been provided.");
+    char buf[255];
+    adj_variable_str(*fwd_var, buf, 255);
+    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "You have asked for the forward equation for %s, but no right-hand side term has been supplied for this equation.", buf);
     return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
   }
 
-  *fwd_var = fwd_eqn.variable;
 
   ierr = adj_find_variable_data(&(adjointer->varhash), fwd_var, &fwd_data);
   assert(ierr == ADJ_OK);
@@ -692,20 +688,17 @@ int adj_get_forward_equation(adj_adjointer* adjointer, int equation, adj_matrix*
   }
 
   /* And any forward source terms */
-  has_output = -666;
-  ierr = adj_evaluate_forward_source(adjointer, equation, &rhs_tmp, &has_output);
-  if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
-  if (has_output != ADJ_TRUE && has_output != ADJ_FALSE)
+  if (adjointer->equations[equation].rhs_callback != NULL) 
   {
-    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "The RHS callback must set has_output.");
-    ierr = ADJ_ERR_INVALID_INPUTS;
-    return adj_chkierr_auto(ierr);
-  }
+    int has_output = -666;
+    ierr = adj_evaluate_forward_source(adjointer, equation, &rhs_tmp, &has_output);
+    if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
 
-  if (has_output)
-  {
-    adjointer->callbacks.vec_axpy(rhs, (adj_scalar)1.0, rhs_tmp);
-    adjointer->callbacks.vec_destroy(&rhs_tmp);
+    if (has_output)
+    {
+      adjointer->callbacks.vec_axpy(rhs, (adj_scalar)1.0, rhs_tmp);
+      adjointer->callbacks.vec_destroy(&rhs_tmp);
+    }
   }
 
   return ADJ_OK;

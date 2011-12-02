@@ -19,6 +19,8 @@ void adj_html_table_begin(FILE* fp, char* args);
 void adj_html_table_end(FILE* fp);
 void adj_html_write_row(FILE* fp, char** strings, char** desc, int nb_strings, int diag_index, char* class);
 int adj_html_find_column_index(adj_adjointer* adjointer, adj_variable* variable, int* col);
+void adj_html_print_statistics(FILE* fp, adj_adjointer* adjointer);
+void adj_html_print_auxiliary_variables(FILE* fp, adj_adjointer* adjointer);
 void adj_html_vars(FILE* fp, adj_adjointer* adjointer, int type);
 int adj_html_eqn(FILE* fp, adj_adjointer* adjointer, adj_equation adj_eqn, int diag_index, char* class);
 int adj_html_adjoint_eqn(FILE* fp, adj_adjointer* adjointer, adj_equation fwd_eqn, int diag_index, char* class);
