@@ -21,9 +21,10 @@ def list_to_carray(vars, klass):
   return listt
 
 # Let's make handle_error the restype for all of our libadjoint functions
+handler_exceptions = ["adj_variable_equal"]
 for member in dir(clib):
   # Looping over all of the objects this module offers us ...
-  if member.startswith("adj_"):
+  if member.startswith("adj_") and member not in handler_exceptions:
     obj = getattr(clib, member)
     if hasattr(obj, "restype"):
       if obj.restype == ctypes.c_int:

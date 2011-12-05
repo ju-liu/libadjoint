@@ -306,10 +306,10 @@ int adj_add_terms(adj_term termA, adj_term termB, adj_term* termC);
 int adj_destroy_term(adj_term* term);
 int adj_add_term_to_equation(adj_term term, adj_equation* equation);
 int adj_equation_set_rhs_callback(adj_equation* equation, void (*fn)(adj_adjointer* adjointer, adj_variable variable, int ndepends, adj_variable* variables, adj_vector* dependencies, void* context, adj_vector* output, int* has_output));
+int adj_variable_equal(adj_variable* var1, adj_variable* var2, int nvars);
 
 
 #ifndef ADJ_HIDE_FROM_USER
-int adj_variable_equal(adj_variable* var1, adj_variable* var2, int nvars);
 int adj_create_nonlinear_block_derivative(adj_adjointer* adjointer, adj_nonlinear_block nblock, adj_scalar block_coefficient, adj_variable fwd, adj_vector contraction, int hermitian, adj_nonlinear_block_derivative* deriv);
 int adj_destroy_nonlinear_block_derivative(adj_adjointer* adjointer, adj_nonlinear_block_derivative* deriv);
 int adj_copy_nonlinear_block(adj_nonlinear_block src, adj_nonlinear_block* dest);
