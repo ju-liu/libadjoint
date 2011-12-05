@@ -60,6 +60,10 @@ class Variable(object):
     else:
       raise AttributeError
 
+  def __eq__(self, other):
+
+    return (clib.adj_variable_equal(self.var, other.var, 1)==1)
+
 class NonlinearBlock(object):
   def __init__(self, name, dependencies, context=None, coefficient=None):
     self.nblock = clib.adj_nonlinear_block()
@@ -170,6 +174,7 @@ class Equation(object):
     self.equation = clib.adj_equation()
     self.c_object = self.equation
     self.blocks=blocks
+    self.var=var
 
     assert len(blocks) == len(targets)
 
@@ -248,7 +253,6 @@ class MemoryStorage(Storage):
     # Ensure that the storage object always holds a reference to the vec
     self.vec = vec
 
-
 class DiskStorage(Storage):
   '''Wrapper class for Vectors that contains additional information for storing the vector values in memory.'''
   def __init__(self, vec):
@@ -259,10 +263,70 @@ class DiskStorage(Storage):
     # Ensure that the storage object always holds a reference to the vec
     self.vec = vec
 
+class Functional(object):
+  '''Base class for functionals and their derivatives.'''
+  def __init__(self):
+    pass
+
+  def __call__(self, variables, dependencies):
+    '''__call__(self, variables, dependencies)
+
+    Evaluate functional given the dependencies corresponding to variables. The result must be a scalar.
+    '''
+
+    raise LibadjointErrorNotImplemented("No __call__ method provided for" + type_name)
+
+  def __str__(self):
+
+    return hex(id(self))
+
+  def derivative(self, variable, dependencies, values):
+    '''derivative(self, variable, dependencies, values)
+
+    Evaluate the derivative of the functional with respect to variable given dependencies with values. The result will be a Vector.
+    '''
+
+    raise LibadjointErrorNotImplemented("No derivative method provided for" + type_name)
+
+  def dependencies(self, adjointer, timestep):
+    '''dependencies(self, adjointer, timestep)
+
+    Return the list of Variables on which this functional depends at timestep. The adjointer may be queried to find the actual value of time if required.'''
+
+    raise LibadjointErrorNotImplemented("No dependencies method provided for" + type_name)
+
+
+  def __cfunc_from_derivative__(self):
+    '''Return a c-callable function wrapping the derivative method.'''
+
+    def cfunc(adjointer_c, variable_c, ndepends_c, dependencies_c, values_c, name_c, output_c):
+      # build the Python objects from the C objects
+      adjointer = Adjointer(adjointer_c)
+      variable  = Variable(var=variable_c)
+      dependencies = [Variable(var=dependencies_c[i]) for i in range(ndepends_c)]
+      values = [vector(values_c[i]) for i in range(ndepends_c)]
+      
+      # Now call the callback we've been given
+      output = self.derivative(variable, dependencies, values)
+
+      # Now cast the outputs back to C
+      output_c[0].klass = 0
+      output_c[0].flags = 0
+      output_c[0].ptr = python_utils.c_ptr(output)
+
+      references_taken.append(output)
+
+    functional_derivative_type = ctypes.CFUNCTYPE(None, ctypes.POINTER(clib.adj_adjointer), clib.adj_variable, ctypes.c_int, ctypes.POINTER(clib.adj_variable), ctypes.POINTER(clib.adj_vector), 
+                                                  ctypes.c_char_p, ctypes.POINTER(clib.adj_vector))
+    return functional_derivative_type(cfunc)
+
+
 class Adjointer(object):
   def __init__(self, adjointer=None):
     self.functions_registered = []
     self.set_function_apis()
+
+    self.equation_timestep=[]
 
     if adjointer is None:
       self.adjointer = clib.adj_adjointer()
@@ -288,6 +352,8 @@ class Adjointer(object):
     self.mat_destroy_type = ctypes.CFUNCTYPE(None, ctypes.POINTER(clib.adj_matrix))
     self.mat_axpy_type = ctypes.CFUNCTYPE(None, ctypes.POINTER(clib.adj_matrix), adj_scalar, clib.adj_matrix)
     self.solve_type = ctypes.CFUNCTYPE(None, clib.adj_variable, clib.adj_matrix, clib.adj_vector, ctypes.POINTER(clib.adj_vector))
+    self.functional_type = ctypes.CFUNCTYPE(None, ctypes.POINTER(clib.adj_adjointer), ctypes.c_int, ctypes.c_int, ctypes.POINTER(clib.adj_variable), ctypes.POINTER(clib.adj_vector), 
+                                                  ctypes.c_char_p, ctypes.POINTER(clib.adj_vector))
 
   def __del__(self):
     if self.adjointer_created:
@@ -298,10 +364,17 @@ class Adjointer(object):
       equation_count = ctypes.c_int()
       clib.adj_equation_count(self.adjointer, equation_count)
       return equation_count.value
+    elif name == "timestep_count":
+      timestep_count = ctypes.c_int()
+      clib.adj_timestep_count(self.adjointer, timestep_count)
+      return timestep_count.value
     else:
       raise AttributeError(name)
 
   def register_equation(self, equation):
+    
+    self.equation_timestep.append(equation.var.timestep)
+
     cs = ctypes.c_int()
     clib.adj_register_equation(self.adjointer, equation.equation, cs)
     assert cs.value == 0
@@ -313,6 +386,26 @@ class Adjointer(object):
       if not(block.assemble is Block.assemble):
         # There is an assemble method to register.
         self.__register_operator_callback__(block.name, "ADJ_BLOCK_ASSEMBLY_CB", block.assemble)
+
+  def __register_functional_derivative__(self, functional):
+    assert(isinstance(functional, Functional))
+
+    cfunc=functional.__cfunc_from_derivative__()
+    self.functions_registered.append(cfunc)
+
+    clib.adj_register_functional_derivative_callback(self.adjointer, str(functional), cfunc)
+
+
+  def __set_functional_dependencies__(self, functional, equation):
+    
+    timestep = self.equation_timestep[equation]
+
+    dependencies = functional.dependencies(self,timestep)
+
+    list_type = clib.adj_variable * len(dependencies)
+    c_dependencies=list_type(*[var.var for var in dependencies])
+
+    clib.adj_timestep_set_functional_dependencies(self.adjointer, timestep, str(functional), len(c_dependencies), c_dependencies)
 
   def record_variable(self, var, storage):
     '''record_variable(self, var, storage)
@@ -356,10 +449,33 @@ class Adjointer(object):
     return (Variable(var=fwd_var), output_py)
 
   def get_adjoint_equation(self, equation, functional):
+
+    self.__register_functional_derivative__(functional)
+    self.__set_functional_dependencies__(functional, equation)
+
     lhs = clib.adj_matrix()
     rhs = clib.adj_vector()
     adj_var = clib.adj_variable()
-    clib.adj_get_adjoint_equation(self.adjointer, equation, functional, lhs, rhs, adj_var)
+    clib.adj_get_adjoint_equation(self.adjointer, equation, str(functional), lhs, rhs, adj_var)
+    lhs_py = python_utils.c_deref(lhs.ptr)
+    references_taken.remove(lhs_py)
+    rhs_py = python_utils.c_deref(rhs.ptr)
+    references_taken.remove(rhs_py)
+
+    return (lhs_py, rhs_py)
+  
+  def get_adjoint_solution(self, equation, functional):
+
+    self.__register_functional_derivative__(functional)
+    self.__set_functional_dependencies__(functional, equation)
+
+    output = clib.adj_vector()
+    adj_var = clib.adj_variable()
+    clib.adj_get_adjoint_solution(self.adjointer, equation, str(functional), output, adj_var)
+    output_py = python_utils.c_deref(output.ptr)
+    references_taken.remove(output_py)
+
+    return (Variable(var=adj_var), output_py)
 
   def __register_data_callbacks__(self):
     self.__register_data_callback__('ADJ_VEC_DUPLICATE_CB', self.__vec_duplicate_callback__)
