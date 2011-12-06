@@ -96,14 +96,17 @@ int adj_get_adjoint_equation(adj_adjointer* adjointer, int equation, char* funct
   /* The adjoint equations this variable is necessary for are:
      * The (adjoint equation) of (the target) of (each block) in (the forward equation) associated with (the adjoint equation we're fetching)
      * The (adjoint equation) of (the dependencies) of (each block) in (the forward equation) associated with (the adjoint equation we're fetching)
+     * The (adjoint equation) of (the dependencies) of (the right-hand-side) of (the forward equation) associated with (the adjoint equation we're fetching)
    Do you see why working that out gave me an almighty headache? */
   for (i = 0; i < fwd_eqn.nblocks; i++)
   {
+    /* A* terms */
     adj_variable_data* block_target_data;
     ierr = adj_find_variable_data(&(adjointer->varhash), &(fwd_eqn.targets[i]), &block_target_data);
     if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
     adj_append_unique(&(adj_data->adjoint_equations), &(adj_data->nadjoint_equations), block_target_data->equation);
 
+    /* G* terms */
     for (j = 0; j < fwd_eqn.blocks[i].nonlinear_block.ndepends; j++)
     {
       adj_variable_data* j_data;
@@ -111,6 +114,14 @@ int adj_get_adjoint_equation(adj_adjointer* adjointer, int equation, char* funct
       if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
       adj_append_unique(&(adj_data->adjoint_equations), &(adj_data->nadjoint_equations), j_data->equation);
     }
+  }
+  /* J* terms */
+  for (i = 0; i < fwd_eqn.nrhsdeps; i++)
+  {
+    adj_variable_data* rhs_dep_data;
+    ierr = adj_find_variable_data(&(adjointer->varhash), &(fwd_eqn.rhsdeps[i]), &rhs_dep_data);
+    if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
+    adj_append_unique(&(adj_data->adjoint_equations), &(adj_data->nadjoint_equations), rhs_dep_data->equation);
   }
 
   /* --------------------------------------------------------------------------
