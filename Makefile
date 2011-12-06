@@ -195,9 +195,21 @@ clean:
 	@rm -f tags
 	@rm -f include/libadjoint/adj_constants_f.h include/libadjoint/adj_error_handling_f.h
 
+ifneq (,$(H2XML))
+test: $(FTEST) $(CTEST) $(PTEST)
+else
 test: $(FTEST) $(CTEST)
+endif
+	@export PYTHONPATH=$(PWD)/python
 	@echo "  TEST bin/tests"
 	@bin/unittest bin/tests
+
+pybuild: python/build
+
+python/build: python/libadjoint/*.c
+	@echo "  PYBUILD python/libadjoint"
+	@cd python && python setup.py -q build
+	@bin/link_python
 
 doc: doc/design/design.pdf doc/manual/manual.pdf
 

@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+
+cd python/libadjoint
+fullpath=$(readlink -f ../../python/build)
+for file in $(find $fullpath -name '*.so')
+do
+  ln -sf $file
+done
