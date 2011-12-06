@@ -604,9 +604,9 @@ class Adjointer(object):
 
     # Increase the reference counter of the new object to protect it from deallocation at the end of the callback
     references_taken.append(new_vec)
-    adj_vec_ptr.ptr = python_utils.c_ptr(new_vec)
-    adj_vec_ptr.klass = 0
-    adj_vec_ptr.flags = 0
+    adj_vec_ptr[0].ptr = python_utils.c_ptr(new_vec)
+    adj_vec_ptr[0].klass = 0
+    adj_vec_ptr[0].flags = 0
 
   @staticmethod
   def __vec_destroy_callback__(adj_vec_ptr):
