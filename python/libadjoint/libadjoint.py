@@ -7,6 +7,12 @@ import python_utils
 adj_scalar = ctypes.c_double
 references_taken = []
 
+def adj_test_assert(fail, msg=None):
+  assert isinstance(fail, bool)
+  clib.adj_test_assert(ctypes.c_int(fail), "Python error")
+  if fail and msg is not None:
+    print "  " + msg
+
 def handle_error(ierr):
   if ierr != 0:
     exception = exceptions.get_exception(ierr)
@@ -63,7 +69,10 @@ class Variable(object):
 
   def __eq__(self, other):
 
-    return (clib.adj_variable_equal(self.var, other.var, 1)==1)
+    if not isinstance(other, Variable): 
+      return False
+    else:
+      return (clib.adj_variable_equal(self.var, other.var, 1)==1)
 
 class NonlinearBlock(object):
   def __init__(self, name, dependencies, context=None, coefficient=None):
@@ -95,7 +104,7 @@ class Block(object):
       c_context = ctypes.byref(context)
 
     if nblock is not None and dependencies is not None:
-      raise exceptions.LibadjointErrorInvalidInput, "Cannot have both nblock and dependencies"
+      raise exceptions.LibadjointErrorInvalidInputs, "Cannot have both nblock and dependencies"
 
     if nblock is None:
       if dependencies is not None and len(dependencies) > 0:
@@ -212,6 +221,8 @@ class Equation(object):
       output_c[0].flags = 0
       output_c[0].ptr = 0
       if output:
+        if not isinstance(output, Vector):
+          raise exceptions.LibadjointErrorInvalidInputs("Output from RHS callback must be None or a Vector.")
         output_c[0].ptr = python_utils.c_ptr(output)
 
       references_taken.append(output)
@@ -275,7 +286,7 @@ class Functional(object):
     Evaluate functional given the dependencies corresponding to variables. The result must be a scalar.
     '''
 
-    raise LibadjointErrorNotImplemented("No __call__ method provided for" + type_name)
+    raise exceptions.LibadjointErrorNotImplemented("No __call__ method provided for" + type_name)
 
   def __str__(self):
 
@@ -287,14 +298,14 @@ class Functional(object):
     Evaluate the derivative of the functional with respect to variable given dependencies with values. The result will be a Vector.
     '''
 
-    raise LibadjointErrorNotImplemented("No derivative method provided for" + type_name)
+    raise exceptions.LibadjointErrorNotImplemented("No derivative method provided for" + type_name)
 
   def dependencies(self, adjointer, timestep):
     '''dependencies(self, adjointer, timestep)
 
     Return the list of Variables on which this functional depends at timestep. The adjointer may be queried to find the actual value of time if required.'''
 
-    raise LibadjointErrorNotImplemented("No dependencies method provided for" + type_name)
+    raise exceptions.LibadjointErrorNotImplemented("No dependencies method provided for" + type_name)
 
 
   def __cfunc_from_derivative__(self):
@@ -421,7 +432,7 @@ class Adjointer(object):
     try:
       typecode = {"forward": 1, "adjoint": 2, "tlm": 3}[viztype]
     except IndexError:
-      raise exceptions.LibadjointErrorInvalidInput, "Argument viztype has to be one of the following: 'forward', 'adjoint', 'tlm'"
+      raise exceptions.LibadjointErrorInvalidInputs, "Argument viztype has to be one of the following: 'forward', 'adjoint', 'tlm'"
 
     if viztype == 'tlm':
       raise exceptions.LibadjointErrorNotImplemented, "HTML output for TLM is not implemented"
@@ -523,16 +534,20 @@ class Adjointer(object):
       (matrix, rhs) = bassembly_cb(variables, dependencies, hermitian, coefficient, context)
 
       # Now cast the outputs back to C
-      assert matrix is not None
-      output_c[0].ptr = python_utils.c_ptr(matrix)
       output_c[0].klass = 0
       output_c[0].flags = 0
+      output_c[0].ptr = 0
+      if not isinstance(matrix, Matrix):
+        raise exceptions.LibadjointErrorInvalidInputs("matrix object returned from block assembly callback must be a subclass of Matrix")
+      output_c[0].ptr = python_utils.c_ptr(matrix)
       references_taken.append(matrix)
 
-      assert rhs is not None
-      rhs_c[0].ptr = python_utils.c_ptr(rhs)
       rhs_c[0].klass = 0
       rhs_c[0].flags = 0
+      rhs_c[0].ptr = 0
+      if not isinstance(rhs, Vector):
+        raise exceptions.LibadjointErrorInvalidInputs("rhs object returned from block assembly callback must be a subclass of Vector")
+      rhs_c[0].ptr = python_utils.c_ptr(rhs)
       references_taken.append(rhs)
 
     return self.block_assembly_type(cfunc)
@@ -553,10 +568,12 @@ class Adjointer(object):
       # Now call the callback we've been given
       output = baction_cb(variables, dependencies, hermitian, coefficient, input, context)
 
-      assert output is not None
-      output_c[0].ptr = python_utils.c_ptr(output)
       output_c[0].klass = 0
       output_c[0].flags = 0
+      output_c[0].ptr = 0
+      if not isinstance(output, Vector):
+        raise exceptions.LibadjointErrorInvalidInputs("object returned from block action callback must be a subclass of Vector")
+      output_c[0].ptr = python_utils.c_ptr(output)
       references_taken.append(output)
       
 
@@ -572,7 +589,7 @@ class Adjointer(object):
       clib.adj_register_operator_callback(self.adjointer, int(constants.adj_constants[type_name]), name, fn)
       clib.adj_register_operator_callback.argtypes = [ctypes.POINTER(clib.adj_adjointer), ctypes.c_int, ctypes.c_char_p, ctypes.CFUNCTYPE(None)]
     else:
-      raise LibadjointErrorNotImplemented("Unknown API for data callback " + type_name)
+      raise exceptions.LibadjointErrorNotImplemented("Unknown API for data callback " + type_name)
 
   # def __register_block_assembly_callback__(self, name, bassembly_cb):
   #   fn = self.__cfunc_from_block_assembly__(bassembly_cb)
@@ -602,6 +619,8 @@ class Adjointer(object):
   def __vec_axpy_callback__(adj_vec_ptr, alpha, adj_vec):
     y = vector(adj_vec_ptr[0])
     x = vector(adj_vec)
+    assert isinstance(y, Vector)
+    assert isinstance(x, Vector)
     y.axpy(alpha, x)
 
   @staticmethod

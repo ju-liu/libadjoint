@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 from libadjoint.libadjoint_numpy import *
 
 A=libadjoint.Adjointer()
@@ -31,4 +33,8 @@ e1=libadjoint.Equation(var1, [b], [var1], rhs_cb=rhs_cb1, rhs_deps=[var])
 
 A.register_equation(e1)
 
-A.get_forward_solution(0)
+(var, soln0) = A.get_forward_solution(0)
+libadjoint.adj_test_assert(all(soln0.vec[:] == v.vec[:]), "First solution should be v")
+
+(var, soln1) = A.get_forward_solution(1)
+libadjoint.adj_test_assert(all(soln0.vec[:] == soln1.vec[:]), "Second solution should also be v")

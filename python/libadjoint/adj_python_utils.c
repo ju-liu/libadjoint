@@ -49,7 +49,7 @@ static PyObject * c_deref(PyObject *self, PyObject *args)
   
   /* The value of the python integer is the pointer */
   PyObject* pyobj = (PyObject*) PyInt_AsLong(pointer);
-  Py_INCREF(pyobj);
+  Py_XINCREF(pyobj);
   return pyobj;
 };
 

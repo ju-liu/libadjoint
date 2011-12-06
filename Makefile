@@ -220,7 +220,7 @@ install: python
 
 python/libadjoint/clibadjoint.py: lib/libadjoint.so
 	@echo "  H2XML  include/libadjoint/libadjoint.h"
-	@cpp include/libadjoint/libadjoint.h > include/libadjoint/pylibadjoint.h
+	@cpp -DPYTHON_BINDINGS include/libadjoint/libadjoint.h > include/libadjoint/pylibadjoint.h
 	@$(H2XML) -q -I. include/libadjoint/pylibadjoint.h -o python/libadjoint/libadjoint.xml
 	@rm -f include/libadjoint/pylibadjoint.h
 	@echo "  XML2PY python/libadjoint/clibadjoint.py"
