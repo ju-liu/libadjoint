@@ -16,6 +16,7 @@ CXXOBJ = $(patsubst src/%.cpp,obj/%.o,$(CXXSRC))
 DISABLED_TESTS = 
 FTEST = $(filter-out $(DISABLED_TESTS), $(patsubst src/tests/%,bin/tests/%,$(basename $(filter-out src/tests/test_main.F90, $(wildcard src/tests/*.F90)))))
 CTEST = $(filter-out $(DISABLED_TESTS), $(patsubst src/tests/%,bin/tests/%,$(basename $(filter-out src/tests/test_main.c, $(wildcard src/tests/*.c)))))
+PTEST = $(filter-out $(DISABLED_TESTS), $(patsubst src/tests/%,bin/tests/%,$(basename $(wildcard src/tests/*.py))))
 
 ###############################################################################
 # Variables for unit tests                                                    #
@@ -142,6 +143,10 @@ bin/tests/%: src/tests/%.c src/tests/test_main.c lib/libadjoint.a
 bin/tests/%: src/tests/%.F90 src/tests/test_main.F90 lib/libadjoint.a
 	@echo "  FC $@"
 	@$(FC) $(FFLAGS) -DTESTNAME=$(notdir $@) -o $@ $< src/tests/test_main.F90 lib/libadjoint.a $(PETSC_LDFLAGS) $(LIBS)
+
+bin/tests/%: src/tests/%.py pybuild
+	@echo "  PY $@"
+	@cp src/tests/$(notdir $@).py bin/tests
 
 obj/%.o: src/%.F90
 	@echo "  FC $<"
