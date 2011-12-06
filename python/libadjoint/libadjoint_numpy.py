@@ -42,29 +42,3 @@ class Matrix(libadjoint.Matrix):
 
   def axpy(self, alpha, x):
     self.mat += alpha*x.mat
-
-def _test_():
-
-  A=libadjoint.Adjointer()
-
-  v=Vector(numpy.random.rand(10))
-
-  var=libadjoint.Variable('foo', 0)
-
-  b=libadjoint.Block("Identity")
-
-  def id_assemble(variables, dependencies, hermitian, coefficient, context):
-    return (Matrix(coefficient*numpy.eye(10)), Vector(coefficient*numpy.zeros(10)))
-  
-  b.assemble=id_assemble
-
-  def rhs_cb(adjointer, variable, dependencies, values, context):
-    return v
-
-  e=libadjoint.Equation(var, [b], [var], rhs_cb=rhs_cb)
-
-  A.register_equation(e)
- 
-  # This currently causes a segfault.
-  A.record_variable(var, libadjoint.MemoryStorage(v))
-  

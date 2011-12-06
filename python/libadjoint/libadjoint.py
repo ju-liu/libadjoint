@@ -9,9 +9,7 @@ references_taken = []
 
 def adj_test_assert(test_pass, msg=None):
   assert isinstance(test_pass, bool)
-  clib.adj_test_assert(ctypes.c_int(test_pass), "Python error")
-  if not test_pass and msg is not None:
-    print "  " + msg
+  clib.adj_test_assert(ctypes.c_int(test_pass), msg)
 
 def handle_error(ierr):
   if ierr != 0:
@@ -324,8 +322,10 @@ class Functional(object):
       # Now cast the outputs back to C
       output_c[0].klass = 0
       output_c[0].flags = 0
+      output_c[0].ptr = 0
+      if not isinstance(output, Vector):
+        raise exceptions.LibadjointErrorInvalidInputs("Output from functional derivative must be a Vector.")
       output_c[0].ptr = python_utils.c_ptr(output)
-
       references_taken.append(output)
 
     functional_derivative_type = ctypes.CFUNCTYPE(None, ctypes.POINTER(clib.adj_adjointer), clib.adj_variable, ctypes.c_int, ctypes.POINTER(clib.adj_variable), ctypes.POINTER(clib.adj_vector), 
