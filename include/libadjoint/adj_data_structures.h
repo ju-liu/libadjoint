@@ -75,6 +75,8 @@ typedef struct
   adj_variable* rhsdeps;
   void* rhs_context;
   void (*rhs_callback)(void* adjointer, adj_variable variable, int ndepends, adj_variable* variables, adj_vector* dependencies, void* context, adj_vector* output, int* has_output);
+  void (*rhs_deriv_action_callback)(void* adjointer, adj_variable variable, int ndepends, adj_variable* variables, adj_vector* dependencies, \
+                                    adj_variable d_variable, adj_vector contraction, int hermitian, void* context, adj_vector* output, int* has_output);
   int memory_checkpoint; /* Can we restart the computation from this equation using variables in memory? */
   int disk_checkpoint; /* Can we restart the computation from this equation using variables on disk? */
 } adj_equation;

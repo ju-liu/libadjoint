@@ -412,6 +412,7 @@ int adj_create_equation(adj_variable var, int nblocks, adj_block* blocks, adj_va
   int i;
 
   equation->rhs_callback = NULL;
+  equation->rhs_deriv_action_callback = NULL;
 
   /* First, let's check the variable isn't auxiliary.
      Auxiliary means we don't solve an equation for it ... */
