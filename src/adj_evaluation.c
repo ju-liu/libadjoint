@@ -582,3 +582,44 @@ int adj_evaluate_forward_source(adj_adjointer* adjointer, int equation, adj_vect
   free(dependencies);
   return ADJ_OK;
 }
+
+int adj_evaluate_rhs_deriv_action(adj_adjointer* adjointer, adj_equation source_eqn, adj_variable diff_var, int hermitian, char* functional, adj_vector* output, int* has_output)
+{
+  int nrhsdeps;
+  int j;
+  int ierr;
+  adj_variable* variables;
+  adj_vector* dependencies;
+
+  adj_variable contraction_var;
+  adj_vector contraction;
+
+  if (source_eqn.rhs_deriv_action_callback == NULL)
+  {
+    char buf[255];
+    adj_variable_str(source_eqn.variable, buf, 255);
+    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Need the derivative action callback for the source term associated with the forward equation for %s.", buf);
+    return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
+  }
+
+  nrhsdeps = source_eqn.nrhsdeps;
+  variables = source_eqn.rhsdeps;
+  dependencies = (adj_vector*) malloc(nrhsdeps * sizeof(adj_vector));
+  ADJ_CHKMALLOC(dependencies);
+
+  for (j=0 ; j < nrhsdeps; j++)
+  {
+    ierr = adj_get_variable_value(adjointer, variables[j], &(dependencies[j]));
+    if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
+  }
+
+  contraction_var = source_eqn.variable; contraction_var.type = ADJ_ADJOINT; strncpy(contraction_var.functional, functional, ADJ_NAME_LEN);
+  ierr = adj_get_variable_value(adjointer, contraction_var, &contraction);
+  if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
+
+  source_eqn.rhs_deriv_action_callback((void*) adjointer, source_eqn.variable, nrhsdeps, variables, dependencies, diff_var, contraction, hermitian, source_eqn.rhs_context, output, has_output);
+
+  free(dependencies);
+  return ADJ_OK;
+
+}
