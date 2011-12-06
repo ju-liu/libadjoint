@@ -83,7 +83,7 @@ typedef struct
 
 typedef struct
 {
-	/* Should we compare against something we already have? */
+  /* Should we compare against something we already have? */
   int compare;
   adj_scalar comparison_tolerance;
 
@@ -308,6 +308,8 @@ int adj_add_terms(adj_term termA, adj_term termB, adj_term* termC);
 int adj_destroy_term(adj_term* term);
 int adj_add_term_to_equation(adj_term term, adj_equation* equation);
 int adj_equation_set_rhs_callback(adj_equation* equation, void (*fn)(adj_adjointer* adjointer, adj_variable variable, int ndepends, adj_variable* variables, adj_vector* dependencies, void* context, adj_vector* output, int* has_output));
+int adj_equation_set_rhs_derivative_action_callback(adj_equation* equation, void (*fn)(adj_adjointer* adjointer, adj_variable variable, int ndepends, adj_variable* variables, adj_vector* dependencies, \
+                                    adj_variable d_variable, adj_vector contraction, int hermitian, void* context, adj_vector* output, int* has_output));
 int adj_variable_equal(adj_variable* var1, adj_variable* var2, int nvars);
 
 
