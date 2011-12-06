@@ -184,12 +184,14 @@ clean:
 	@echo "  RM lib/*.a"
 	@rm -f lib/*.so
 	@echo "  RM lib/*.so"
-	@rm -f python/clibadjoint.py
-	@echo "  RM python/clibadjoint.py"
-	@rm -f python/clibadjoint_constants.py
-	@echo "  RM pbython/clibadjoint_constants.py"
-	@rm -rf python/build
-	@echo "  RM -rf python/build"
+	@rm -f python/libadjoint/clibadjoint.py
+	@echo "  RM python/libadjoint/clibadjoint.py"
+	@rm -f python/libadjoint/python_utils.so
+	@echo "  RM python/libadjoint/python_utils.so"
+	@rm -f python/libadjoint/clibadjoint_constants.py
+	@echo "  RM python/libadjoint/clibadjoint_constants.py"
+	@rm -rf python/build python/libadjoint/*.pyc
+	@echo "  RM python/build"
 	@rm -f tags
 	@rm -f include/libadjoint/adj_constants_f.h include/libadjoint/adj_error_handling_f.h
 
