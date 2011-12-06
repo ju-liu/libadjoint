@@ -521,7 +521,6 @@ int adj_get_forward_equation(adj_adjointer* adjointer, int equation, adj_matrix*
   adj_variable_data* fwd_data;
   adj_vector rhs_tmp;
   int i, j;
-  int has_output;
 
   if (adjointer->options[ADJ_ACTIVITY] == ADJ_ACTIVITY_NOTHING)
   {
@@ -558,15 +557,6 @@ int adj_get_forward_equation(adj_adjointer* adjointer, int equation, adj_matrix*
 
   fwd_eqn = adjointer->equations[equation];
   *fwd_var = fwd_eqn.variable;
-  if (fwd_eqn.rhs_callback == NULL)
-  {
-    char buf[255];
-    adj_variable_str(*fwd_var, buf, 255);
-    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "You have asked for the forward equation for %s, but no right-hand side term has been supplied for this equation.", buf);
-    return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
-  }
-
-
   ierr = adj_find_variable_data(&(adjointer->varhash), fwd_var, &fwd_data);
   assert(ierr == ADJ_OK);
 
@@ -689,8 +679,9 @@ int adj_get_forward_equation(adj_adjointer* adjointer, int equation, adj_matrix*
   }
 
   /* And any forward source terms */
-  if (adjointer->equations[equation].rhs_callback != NULL) 
+  if (fwd_eqn.rhs_callback != NULL) 
   {
+    int has_output = -666;
     ierr = adj_evaluate_forward_source(adjointer, equation, &rhs_tmp, &has_output);
     if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
 

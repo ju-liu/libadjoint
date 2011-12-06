@@ -148,7 +148,6 @@ void adj_html_print_statistics(FILE* fp, adj_adjointer* adjointer)
 int adj_html_count_auxiliary_variables(adj_adjointer* adjointer)
 {
 	adj_variable_hash* varhash;
-	int ierr;
 	int n=0;
 
 	for (varhash = adjointer->varhash; varhash != NULL; varhash = varhash->hh.next)

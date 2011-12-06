@@ -7,3 +7,7 @@
 #include "adj_data_structures.h"
 #include "adj_core.h"
 #include "adj_debug.h"
+
+#ifdef PYTHON_BINDINGS
+#include "adj_test_tools.h"
+#endif

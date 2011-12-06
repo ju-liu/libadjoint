@@ -113,5 +113,6 @@ if __name__ == "__main__":
       os.putenv("LD_PRELOAD", "/usr/lib/libefence.so.0.0")
       os.putenv("EF_DISABLE_BANNER", "1")
 
+    os.putenv("PYTHONPATH", os.path.abspath(os.getcwd() + os.sep + "python" + os.sep))
     TestHarness = UnitTestHarness(sys.argv[-1])
     TestHarness.run()

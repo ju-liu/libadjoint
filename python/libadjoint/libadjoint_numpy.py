@@ -34,18 +34,11 @@ class Matrix(libadjoint.Matrix):
     class to wrap the numpy matrix mat in a libadjoint matrix.'''
     self.mat = mat
 
-  def duplicate(self):
-    return Matrix(numpy.zeros(self.mat.shape))
+  def solve(self, bb):
+
+
+    return Vector(numpy.linalg.solve(self.mat, bb.vec))
+  
 
   def axpy(self, alpha, x):
     self.mat += alpha*x.mat
-
-def _test_():
-
-  A=libadjoint.Adjointer()
-
-  v=Vector(numpy.random.rand(10))
-
-  var=libadjoint.Variable('foo', 0)
-
-  A.record_variable(var, libadjoint.MemoryStorage(v))

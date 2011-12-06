@@ -16,6 +16,7 @@ CXXOBJ = $(patsubst src/%.cpp,obj/%.o,$(CXXSRC))
 DISABLED_TESTS = 
 FTEST = $(filter-out $(DISABLED_TESTS), $(patsubst src/tests/%,bin/tests/%,$(basename $(filter-out src/tests/test_main.F90, $(wildcard src/tests/*.F90)))))
 CTEST = $(filter-out $(DISABLED_TESTS), $(patsubst src/tests/%,bin/tests/%,$(basename $(filter-out src/tests/test_main.c, $(wildcard src/tests/*.c)))))
+PTEST = $(filter-out $(DISABLED_TESTS), $(patsubst src/tests/%,bin/tests/%,$(basename $(wildcard src/tests/*.py))))
 
 ###############################################################################
 # Variables for unit tests                                                    #
@@ -143,6 +144,10 @@ bin/tests/%: src/tests/%.F90 src/tests/test_main.F90 lib/libadjoint.a
 	@echo "  FC $@"
 	@$(FC) $(FFLAGS) -DTESTNAME=$(notdir $@) -o $@ $< src/tests/test_main.F90 lib/libadjoint.a $(PETSC_LDFLAGS) $(LIBS)
 
+bin/tests/%: src/tests/%.py pybuild
+	@echo "  PY $@"
+	@cp src/tests/$(notdir $@).py bin/tests
+
 obj/%.o: src/%.F90
 	@echo "  FC $<"
 	@$(FC) $(FFLAGS) -c -o $@ $<
@@ -179,18 +184,32 @@ clean:
 	@echo "  RM lib/*.a"
 	@rm -f lib/*.so
 	@echo "  RM lib/*.so"
-	@rm -f python/clibadjoint.py
-	@echo "  RM python/clibadjoint.py"
-	@rm -f python/clibadjoint_constants.py
-	@echo "  RM pbython/clibadjoint_constants.py"
-	@rm -rf python/build
-	@echo "  RM -rf python/build"
+	@rm -f python/libadjoint/clibadjoint.py
+	@echo "  RM python/libadjoint/clibadjoint.py"
+	@rm -f python/libadjoint/python_utils.so
+	@echo "  RM python/libadjoint/python_utils.so"
+	@rm -f python/libadjoint/clibadjoint_constants.py
+	@echo "  RM python/libadjoint/clibadjoint_constants.py"
+	@rm -rf python/build python/libadjoint/*.pyc
+	@echo "  RM python/build"
 	@rm -f tags
 	@rm -f include/libadjoint/adj_constants_f.h include/libadjoint/adj_error_handling_f.h
 
+ifneq (,$(H2XML))
+test: $(FTEST) $(CTEST) $(PTEST)
+else
 test: $(FTEST) $(CTEST)
+endif
+	@export PYTHONPATH=$(PWD)/python
 	@echo "  TEST bin/tests"
 	@bin/unittest bin/tests
+
+pybuild: python/build
+
+python/build: python/libadjoint/*.c
+	@echo "  PYBUILD python/libadjoint"
+	@cd python && python setup.py -q build
+	@bin/link_python
 
 doc: doc/design/design.pdf doc/manual/manual.pdf
 
@@ -220,11 +239,11 @@ install: python
 
 python/libadjoint/clibadjoint.py: lib/libadjoint.so
 	@echo "  H2XML  include/libadjoint/libadjoint.h"
-	@cpp include/libadjoint/libadjoint.h > include/libadjoint/pylibadjoint.h
+	@cpp -DPYTHON_BINDINGS include/libadjoint/libadjoint.h > include/libadjoint/pylibadjoint.h
 	@$(H2XML) -q -I. include/libadjoint/pylibadjoint.h -o python/libadjoint/libadjoint.xml
 	@rm -f include/libadjoint/pylibadjoint.h
 	@echo "  XML2PY python/libadjoint/clibadjoint.py"
-	@$(XML2PY) -r '^adj.*' -l lib/libadjoint.so python/libadjoint/libadjoint.xml -o python/libadjoint/clibadjoint.py
+	@$(XML2PY) -r '^adj.*' -l $(shell readlink -f lib/libadjoint.so) python/libadjoint/libadjoint.xml -o python/libadjoint/clibadjoint.py
 	@rm -f python/libadjoint/libadjoint.xml
 	@chmod a-x python/libadjoint/clibadjoint.py
 python/libadjoint/clibadjoint_constants.py:
@@ -244,7 +263,7 @@ ifeq ($(LIBADJOINT_BUILDING_DEBIAN),yes)
 else
 	@cd python; python setup.py install --prefix=$(DESTDIR)/$(prefix) $(LIBADJOINT_PYTHON_INSTALL_ARGS)
 endif
-	@find $(DESTDIR)/$(prefix) -name clibadjoint.py | xargs sed -i "s@CDLL('lib/libadjoint.so')@CDLL('/usr/lib/libadjoint.so')@"
+	@find $(DESTDIR)/$(prefix) -name clibadjoint.py | xargs sed -i "s@CDLL('$(shell readlink -f lib/libadjoint.so)')@CDLL('/$(prefix)/lib/libadjoint.so')@"
 endif
 	@echo "  INSTALL $(DESTDIR)/$(prefix)/include/libadjoint"
 	@install -d $(DESTDIR)/$(prefix)/include/libadjoint

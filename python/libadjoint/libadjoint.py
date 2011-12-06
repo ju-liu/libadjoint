@@ -4,6 +4,13 @@ import exceptions
 import clibadjoint as clib
 import python_utils
 
+adj_scalar = ctypes.c_double
+references_taken = []
+
+def adj_test_assert(test_pass, msg=None):
+  assert isinstance(test_pass, bool)
+  clib.adj_test_assert(ctypes.c_int(test_pass), msg)
+
 def handle_error(ierr):
   if ierr != 0:
     exception = exceptions.get_exception(ierr)
@@ -18,9 +25,10 @@ def list_to_carray(vars, klass):
   return listt
 
 # Let's make handle_error the restype for all of our libadjoint functions
+handler_exceptions = ["adj_variable_equal"]
 for member in dir(clib):
   # Looping over all of the objects this module offers us ...
-  if member.startswith("adj_"):
+  if member.startswith("adj_") and member not in handler_exceptions:
     obj = getattr(clib, member)
     if hasattr(obj, "restype"):
       if obj.restype == ctypes.c_int:
@@ -57,6 +65,13 @@ class Variable(object):
     else:
       raise AttributeError
 
+  def __eq__(self, other):
+
+    if not isinstance(other, Variable): 
+      return False
+    else:
+      return (clib.adj_variable_equal(self.var, other.var, 1)==1)
+
 class NonlinearBlock(object):
   def __init__(self, name, dependencies, context=None, coefficient=None):
     self.nblock = clib.adj_nonlinear_block()
@@ -80,12 +95,14 @@ class Block(object):
   def __init__(self, name, nblock=None, context=None, coefficient=None, hermitian=False, dependencies=None):
     self.block = clib.adj_block()
     self.c_object = self.block
+    self.name = name
+
     c_context = None
     if context is not None:
       c_context = ctypes.byref(context)
 
     if nblock is not None and dependencies is not None:
-      raise LibadjointErrorInvalidInput, "Cannot have both nblock and dependencies"
+      raise exceptions.LibadjointErrorInvalidInputs, "Cannot have both nblock and dependencies"
 
     if nblock is None:
       if dependencies is not None and len(dependencies) > 0:
@@ -112,10 +129,60 @@ class Block(object):
   def set_hermitian(self, hermitian):
     clib.adj_block_set_hermitian(self.block, hermitian)
 
+  @staticmethod
+  def assemble(variables, dependencies, hermitian, coefficient, context):
+    '''def assemble(variables, dependencies, hermitian, coefficient, context)
+
+    This method must assemble the block and return a tuple (matrix, rhs) where matrix.
+
+      variables is a list of Variable objects giving the variables on which the block depends.
+    
+      dependencies is a list of Vector objects giving the values of those dependencies.
+
+      hermitian is a boolean value indicating whether the hermitian of the operator is to be constructed.
+      
+      coefficient is a coefficient by which the routine must scale the output.
+
+      context is the python object passed to the Block on construction.
+    '''
+
+    # The registration code will notice unimplemented methods and fail to register them.
+    pass
+
+
+  @staticmethod
+  def action(variables, dependencies, hermitian, coefficient, input, context):
+    '''def action(variables, dependencies, hermitian, coefficient, input, context)
+
+    If hermitian is False, this method must return:
+                    coefficient * dot(block, input)
+    If hermitian is True, this method must return:
+                    coefficient * dot(block*, input)
+
+      variables is a list of Variable objects giving the variables on which the block depends.
+    
+      dependencies is a list of Vector objects giving the values of those dependencies.
+
+      hermitian is a boolean value indicating whether the hermitian of the operator is to be constructed.
+      
+      coefficient is a coefficient by which the routine must scale the output.
+
+      input is a Vector which is is to be the subject of the action.
+
+      context is the python object passed to the Block on construction.
+    '''
+    
+    # The registration code will notice unimplemented methods and fail to register them.
+    pass
+    
+    
+
 class Equation(object):
   def __init__(self, var, blocks, targets, rhs_deps=None, rhs_context=None, rhs_cb=None):
     self.equation = clib.adj_equation()
     self.c_object = self.equation
+    self.blocks=blocks
+    self.var=var
 
     assert len(blocks) == len(targets)
 
@@ -147,9 +214,16 @@ class Equation(object):
       output = rhs_cb(adjointer, variable, dependencies, values, context)
 
       # Now cast the outputs back to C
-      has_output_c.value = (output is None)
-      output_c[0].ptr = python_utils.c_ptr(output)
-      python_utils.incref(output)
+      has_output_c[0] = (output is not None)
+      output_c[0].klass = 0
+      output_c[0].flags = 0
+      output_c[0].ptr = 0
+      if output:
+        if not isinstance(output, Vector):
+          raise exceptions.LibadjointErrorInvalidInputs("Output from RHS callback must be None or a Vector.")
+        output_c[0].ptr = python_utils.c_ptr(output)
+
+      references_taken.append(output)
 
     rhs_func_type = ctypes.CFUNCTYPE(None, ctypes.POINTER(clib.adj_adjointer), clib.adj_variable, ctypes.c_int, ctypes.POINTER(clib.adj_variable), ctypes.POINTER(clib.adj_vector), ctypes.POINTER(None),
                                      ctypes.POINTER(clib.adj_vector), ctypes.POINTER(ctypes.c_int))
@@ -189,7 +263,6 @@ class MemoryStorage(Storage):
     # Ensure that the storage object always holds a reference to the vec
     self.vec = vec
 
-
 class DiskStorage(Storage):
   '''Wrapper class for Vectors that contains additional information for storing the vector values in memory.'''
   def __init__(self, vec):
@@ -200,40 +273,151 @@ class DiskStorage(Storage):
     # Ensure that the storage object always holds a reference to the vec
     self.vec = vec
 
+class Functional(object):
+  '''Base class for functionals and their derivatives.'''
+  def __init__(self):
+    pass
+
+  def __call__(self, variables, dependencies):
+    '''__call__(self, variables, dependencies)
+
+    Evaluate functional given the dependencies corresponding to variables. The result must be a scalar.
+    '''
+
+    raise exceptions.LibadjointErrorNotImplemented("No __call__ method provided for" + type_name)
+
+  def __str__(self):
+
+    return hex(id(self))
+
+  def derivative(self, variable, dependencies, values):
+    '''derivative(self, variable, dependencies, values)
+
+    Evaluate the derivative of the functional with respect to variable given dependencies with values. The result will be a Vector.
+    '''
+
+    raise exceptions.LibadjointErrorNotImplemented("No derivative method provided for" + type_name)
+
+  def dependencies(self, adjointer, timestep):
+    '''dependencies(self, adjointer, timestep)
+
+    Return the list of Variables on which this functional depends at timestep. The adjointer may be queried to find the actual value of time if required.'''
+
+    raise exceptions.LibadjointErrorNotImplemented("No dependencies method provided for" + type_name)
+
+
+  def __cfunc_from_derivative__(self):
+    '''Return a c-callable function wrapping the derivative method.'''
+
+    def cfunc(adjointer_c, variable_c, ndepends_c, dependencies_c, values_c, name_c, output_c):
+      # build the Python objects from the C objects
+      adjointer = Adjointer(adjointer_c)
+      variable  = Variable(var=variable_c)
+      dependencies = [Variable(var=dependencies_c[i]) for i in range(ndepends_c)]
+      values = [vector(values_c[i]) for i in range(ndepends_c)]
+      
+      # Now call the callback we've been given
+      output = self.derivative(variable, dependencies, values)
+
+      # Now cast the outputs back to C
+      output_c[0].klass = 0
+      output_c[0].flags = 0
+      output_c[0].ptr = 0
+      if not isinstance(output, Vector):
+        raise exceptions.LibadjointErrorInvalidInputs("Output from functional derivative must be a Vector.")
+      output_c[0].ptr = python_utils.c_ptr(output)
+      references_taken.append(output)
+
+    functional_derivative_type = ctypes.CFUNCTYPE(None, ctypes.POINTER(clib.adj_adjointer), clib.adj_variable, ctypes.c_int, ctypes.POINTER(clib.adj_variable), ctypes.POINTER(clib.adj_vector), 
+                                                  ctypes.c_char_p, ctypes.POINTER(clib.adj_vector))
+    return functional_derivative_type(cfunc)
+
+
 class Adjointer(object):
   def __init__(self, adjointer=None):
+    self.functions_registered = []
+    self.set_function_apis()
+
+    self.equation_timestep=[]
+
     if adjointer is None:
       self.adjointer = clib.adj_adjointer()
       clib.adj_create_adjointer(self.adjointer)
+      self.adjointer_created = True
       self.c_object = self.adjointer
       self.__register_data_callbacks__()
     else:
+      self.adjointer_created = False
       self.adjointer = adjointer
       self.c_object = self.adjointer
 
-    self.functions_registered = []
 
-    self.block_assembly_type = ctypes.CFUNCTYPE(None, ctypes.c_int, ctypes.POINTER(clib.adj_variable), ctypes.POINTER(clib.adj_vector), ctypes.c_int, ctypes.c_double, ctypes.POINTER(None),
+  def set_function_apis(self):
+    self.block_assembly_type = ctypes.CFUNCTYPE(None, ctypes.c_int, ctypes.POINTER(clib.adj_variable), ctypes.POINTER(clib.adj_vector), ctypes.c_int, adj_scalar, ctypes.POINTER(None),
                                                 ctypes.POINTER(clib.adj_matrix), ctypes.POINTER(clib.adj_vector))
+    self.block_action_type = ctypes.CFUNCTYPE(None, ctypes.c_int, ctypes.POINTER(clib.adj_variable), ctypes.POINTER(clib.adj_vector), ctypes.c_int, adj_scalar, clib.adj_vector, 
+                                              ctypes.POINTER(None),ctypes.POINTER(clib.adj_vector))
+    self.vec_duplicate_type = ctypes.CFUNCTYPE(None, clib.adj_vector, ctypes.POINTER(clib.adj_vector))
+    self.vec_destroy_type = ctypes.CFUNCTYPE(None, ctypes.POINTER(clib.adj_vector))
+    self.vec_axpy_type = ctypes.CFUNCTYPE(None, ctypes.POINTER(clib.adj_vector), adj_scalar, clib.adj_vector)
+    self.mat_duplicate_type = ctypes.CFUNCTYPE(None, clib.adj_matrix, ctypes.POINTER(clib.adj_matrix))
+    self.mat_destroy_type = ctypes.CFUNCTYPE(None, ctypes.POINTER(clib.adj_matrix))
+    self.mat_axpy_type = ctypes.CFUNCTYPE(None, ctypes.POINTER(clib.adj_matrix), adj_scalar, clib.adj_matrix)
+    self.solve_type = ctypes.CFUNCTYPE(None, clib.adj_variable, clib.adj_matrix, clib.adj_vector, ctypes.POINTER(clib.adj_vector))
+    self.functional_type = ctypes.CFUNCTYPE(None, ctypes.POINTER(clib.adj_adjointer), ctypes.c_int, ctypes.c_int, ctypes.POINTER(clib.adj_variable), ctypes.POINTER(clib.adj_vector), 
+                                                  ctypes.c_char_p, ctypes.POINTER(clib.adj_vector))
 
   def __del__(self):
-    clib.adj_destroy_adjointer(self.adjointer)
+    if self.adjointer_created:
+      clib.adj_destroy_adjointer(self.adjointer)
 
   def __getattr__(self, name):
     if name == "equation_count":
       equation_count = ctypes.c_int()
       clib.adj_equation_count(self.adjointer, equation_count)
       return equation_count.value
+    elif name == "timestep_count":
+      timestep_count = ctypes.c_int()
+      clib.adj_timestep_count(self.adjointer, timestep_count)
+      return timestep_count.value
     else:
-      raise AttributeError
+      raise AttributeError(name)
 
   def register_equation(self, equation):
+    
+    self.equation_timestep.append(equation.var.timestep)
+
     cs = ctypes.c_int()
     clib.adj_register_equation(self.adjointer, equation.equation, cs)
     assert cs.value == 0
 
     if hasattr(equation, 'rhs_fn'):
       self.functions_registered.append(equation.rhs_fn)
+
+    for block in equation.blocks:
+      if not(block.assemble is Block.assemble):
+        # There is an assemble method to register.
+        self.__register_operator_callback__(block.name, "ADJ_BLOCK_ASSEMBLY_CB", block.assemble)
+
+  def __register_functional_derivative__(self, functional):
+    assert(isinstance(functional, Functional))
+
+    cfunc=functional.__cfunc_from_derivative__()
+    self.functions_registered.append(cfunc)
+
+    clib.adj_register_functional_derivative_callback(self.adjointer, str(functional), cfunc)
+
+
+  def __set_functional_dependencies__(self, functional, equation):
+    
+    timestep = self.equation_timestep[equation]
+
+    dependencies = functional.dependencies(self,timestep)
+
+    list_type = clib.adj_variable * len(dependencies)
+    c_dependencies=list_type(*[var.var for var in dependencies])
+
+    clib.adj_timestep_set_functional_dependencies(self.adjointer, timestep, str(functional), len(c_dependencies), c_dependencies)
 
   def record_variable(self, var, storage):
     '''record_variable(self, var, storage)
@@ -242,13 +426,13 @@ class Adjointer(object):
 
     clib.adj_record_variable(self.adjointer, var.var, storage.storage_data)
 
-    python_utils.incref(storage.vec)
+    references_taken.append(storage.vec)
 
   def to_html(self, filename, viztype):
     try:
       typecode = {"forward": 1, "adjoint": 2, "tlm": 3}[viztype]
     except IndexError:
-      raise exceptions.LibadjointErrorInvalidInput, "Argument viztype has to be one of the following: 'forward', 'adjoint', 'tlm'"
+      raise exceptions.LibadjointErrorInvalidInputs, "Argument viztype has to be one of the following: 'forward', 'adjoint', 'tlm'"
 
     if viztype == 'tlm':
       raise exceptions.LibadjointErrorNotImplemented, "HTML output for TLM is not implemented"
@@ -261,41 +445,84 @@ class Adjointer(object):
     fwd_var = clib.adj_variable()
     clib.adj_get_forward_equation(self.adjointer, equation, lhs, rhs, fwd_var)
     lhs_py = python_utils.c_deref(lhs.ptr)
-    #python_utils.decref(lhs_py)
+    references_taken.remove(lhs_py)
     rhs_py = python_utils.c_deref(rhs.ptr)
-    #python_utils.decref(rhs_py)
+    references_taken.remove(rhs_py)
 
     return (lhs_py, rhs_py)
 
+  def get_forward_solution(self, equation):
+    output = clib.adj_vector()
+    fwd_var = clib.adj_variable()
+    clib.adj_get_forward_solution(self.adjointer, equation, output, fwd_var)
+    output_py = python_utils.c_deref(output.ptr)
+    references_taken.remove(output_py)
+
+    return (Variable(var=fwd_var), output_py)
+
   def get_adjoint_equation(self, equation, functional):
+
+    self.__register_functional_derivative__(functional)
+    self.__set_functional_dependencies__(functional, equation)
+
     lhs = clib.adj_matrix()
     rhs = clib.adj_vector()
     adj_var = clib.adj_variable()
-    clib.adj_get_adjoint_equation(self.adjointer, equation, functional, lhs, rhs, adj_var)
+    clib.adj_get_adjoint_equation(self.adjointer, equation, str(functional), lhs, rhs, adj_var)
+    lhs_py = python_utils.c_deref(lhs.ptr)
+    references_taken.remove(lhs_py)
+    rhs_py = python_utils.c_deref(rhs.ptr)
+    references_taken.remove(rhs_py)
+
+    return (lhs_py, rhs_py)
+  
+  def get_adjoint_solution(self, equation, functional):
+
+    self.__register_functional_derivative__(functional)
+    self.__set_functional_dependencies__(functional, equation)
+
+    output = clib.adj_vector()
+    adj_var = clib.adj_variable()
+    clib.adj_get_adjoint_solution(self.adjointer, equation, str(functional), output, adj_var)
+    output_py = python_utils.c_deref(output.ptr)
+    references_taken.remove(output_py)
+
+    return (Variable(var=adj_var), output_py)
 
   def __register_data_callbacks__(self):
     self.__register_data_callback__('ADJ_VEC_DUPLICATE_CB', self.__vec_duplicate_callback__)
     self.__register_data_callback__('ADJ_VEC_DESTROY_CB', self.__vec_destroy_callback__)
-    self.__register_data_callback__('ADJ_VEC_AXPY_CB', self.__vec_destroy_callback__)
+    self.__register_data_callback__('ADJ_VEC_AXPY_CB', self.__vec_axpy_callback__)
     self.__register_data_callback__('ADJ_MAT_DUPLICATE_CB', self.__mat_duplicate_callback__)
     self.__register_data_callback__('ADJ_MAT_DESTROY_CB', self.__mat_destroy_callback__)
-    self.__register_data_callback__('ADJ_MAT_AXPY_CB', self.__mat_destroy_callback__)
+    self.__register_data_callback__('ADJ_MAT_AXPY_CB', self.__mat_axpy_callback__)
+    self.__register_data_callback__('ADJ_SOLVE_CB', self.__mat_solve_callback__)
 
   def __register_data_callback__(self, type_name, func):
     type_id = int(constants.adj_constants[type_name])
 
-    try:
-      cfunc = ctypes.CFUNCTYPE(None)
-      clib.adj_register_data_callback(self.adjointer, ctypes.c_int(type_id), cfunc(func))
-    except ctypes.ArgumentError:
-      raise exceptions.LibadjointErrorInvalidInputs, 'Wrong function interface in register_data_callback for "%s".' % type_name 
+    type_to_api = {"ADJ_VEC_DESTROY_CB": self.vec_destroy_type,
+                   "ADJ_VEC_DUPLICATE_CB": self.vec_duplicate_type,
+                   "ADJ_VEC_AXPY_CB": self.vec_axpy_type,
+                   "ADJ_MAT_DUPLICATE_CB": self.mat_duplicate_type,
+                   "ADJ_MAT_DESTROY_CB": self.mat_destroy_type,
+                   "ADJ_MAT_AXPY_CB": self.mat_axpy_type,
+                   "ADJ_SOLVE_CB": self.solve_type}
+    if type_name in type_to_api:
+      clib.adj_register_data_callback.argtypes = [ctypes.POINTER(clib.adj_adjointer), ctypes.c_int, type_to_api[type_name]]
+      data_function = type_to_api[type_name](func)
+      self.functions_registered.append(data_function)
+      clib.adj_register_data_callback(self.adjointer, ctypes.c_int(type_id), data_function)
+
+      clib.adj_register_data_callback.argtypes = [ctypes.POINTER(clib.adj_adjointer), ctypes.c_int, ctypes.CFUNCTYPE(None)]
+    else:
+      raise exceptions.LibadjointErrorNotImplemented("Unknown API for data callback " + type_name)
 
   def __cfunc_from_block_assembly__(self, bassembly_cb):
     '''Given a block assembly function defined using the Pythonic interface, we want to translate that into a function
     that can be called from C. This routine does exactly that.'''
 
     def cfunc(ndepends_c, variables_c, dependencies_c, hermitian_c, coefficient_c, context_c, output_c, rhs_c):
-      print "We've gotten into cfunc in block assembly"
       # build the Python objects from the C objects
       variables = [Variable(var=variables_c[i]) for i in range(ndepends_c)]
       dependencies = [vector(dependencies_c[i]) for i in range(ndepends_c)]
@@ -307,22 +534,68 @@ class Adjointer(object):
       (matrix, rhs) = bassembly_cb(variables, dependencies, hermitian, coefficient, context)
 
       # Now cast the outputs back to C
-      assert matrix is not None
+      output_c[0].klass = 0
+      output_c[0].flags = 0
+      output_c[0].ptr = 0
+      if not isinstance(matrix, Matrix):
+        raise exceptions.LibadjointErrorInvalidInputs("matrix object returned from block assembly callback must be a subclass of Matrix")
       output_c[0].ptr = python_utils.c_ptr(matrix)
-      python_utils.incref(matrix)
+      references_taken.append(matrix)
 
-      assert rhs is not None
+      rhs_c[0].klass = 0
+      rhs_c[0].flags = 0
+      rhs_c[0].ptr = 0
+      if not isinstance(rhs, Vector):
+        raise exceptions.LibadjointErrorInvalidInputs("rhs object returned from block assembly callback must be a subclass of Vector")
       rhs_c[0].ptr = python_utils.c_ptr(rhs)
-      python_utils.incref(rhs)
+      references_taken.append(rhs)
 
     return self.block_assembly_type(cfunc)
 
-  def register_block_assembly_callback(self, name, bassembly_cb):
-    clib.adj_register_operator_callback.argtypes = [ctypes.POINTER(clib.adj_adjointer), ctypes.c_int, ctypes.c_char_p, self.block_assembly_type]
-    fn = self.__cfunc_from_block_assembly__(bassembly_cb)
-    self.functions_registered.append(fn)
-    clib.adj_register_operator_callback(self.adjointer, int(constants.adj_constants['ADJ_BLOCK_ASSEMBLY_CB']), name, fn)
-    clib.adj_register_operator_callback.argtypes = [ctypes.POINTER(clib.adj_adjointer), ctypes.c_int, ctypes.c_char_p, ctypes.CFUNCTYPE(None)]
+  def __cfunc_from_block_action__(self, baction_cb):
+    '''Given a block action function defined using the Pythonic interface, we want to translate that into a function
+    that can be called from C. This routine does exactly that.'''
+
+    def cfunc(ndepends_c, variables_c, dependencies_c, hermitian_c, coefficient_c, input_c, context_c, output_c):
+      # build the Python objects from the C objects
+      variables = [Variable(var=variables_c[i]) for i in range(ndepends_c)]
+      dependencies = [vector(dependencies_c[i]) for i in range(ndepends_c)]
+      hermitian = (hermitian_c == 1)
+      coefficient = coefficient_c
+      input = vector(input_c)
+      context = context_c
+      
+      # Now call the callback we've been given
+      output = baction_cb(variables, dependencies, hermitian, coefficient, input, context)
+
+      output_c[0].klass = 0
+      output_c[0].flags = 0
+      output_c[0].ptr = 0
+      if not isinstance(output, Vector):
+        raise exceptions.LibadjointErrorInvalidInputs("object returned from block action callback must be a subclass of Vector")
+      output_c[0].ptr = python_utils.c_ptr(output)
+      references_taken.append(output)
+      
+
+    return self.block_action_type(cfunc)
+
+  def __register_operator_callback__(self, name, type_name, func):
+    type_to_api = {"ADJ_BLOCK_ASSEMBLY_CB": (self.block_assembly_type, self.__cfunc_from_block_assembly__),
+                   "ADJ_BLOCK_ACTION_CB": (self.block_action_type, self.__cfunc_from_block_action__)}
+    if type_name in type_to_api:
+      clib.adj_register_operator_callback.argtypes = [ctypes.POINTER(clib.adj_adjointer), ctypes.c_int, ctypes.c_char_p, type_to_api[type_name][0]]
+      fn=type_to_api[type_name][1](func)
+      self.functions_registered.append(fn)
+      clib.adj_register_operator_callback(self.adjointer, int(constants.adj_constants[type_name]), name, fn)
+      clib.adj_register_operator_callback.argtypes = [ctypes.POINTER(clib.adj_adjointer), ctypes.c_int, ctypes.c_char_p, ctypes.CFUNCTYPE(None)]
+    else:
+      raise exceptions.LibadjointErrorNotImplemented("Unknown API for data callback " + type_name)
+
+  # def __register_block_assembly_callback__(self, name, bassembly_cb):
+  #   fn = self.__cfunc_from_block_assembly__(bassembly_cb)
+  #   self.functions_registered.append(fn)
+  #   clib.adj_register_operator_callback(self.adjointer, int(constants.adj_constants['ADJ_BLOCK_ASSEMBLY_CB']), name, fn)
+  #   clib.adj_register_operator_callback.argtypes = [ctypes.POINTER(clib.adj_adjointer), ctypes.c_int, ctypes.c_char_p, ctypes.CFUNCTYPE(None)]
 
   @staticmethod
   def __vec_duplicate_callback__(adj_vec, adj_vec_ptr):
@@ -330,21 +603,24 @@ class Adjointer(object):
     new_vec = vec.duplicate()
 
     # Increase the reference counter of the new object to protect it from deallocation at the end of the callback
-    python_utils.incref(new_vec)
+    references_taken.append(new_vec)
     adj_vec_ptr.ptr = python_utils.c_ptr(new_vec)
+    adj_vec_ptr.klass = 0
+    adj_vec_ptr.flags = 0
 
   @staticmethod
   def __vec_destroy_callback__(adj_vec_ptr):
-    vec = vector(adj_vec_ptr.ptr)
-    vec.destroy()
+    vec = vector(adj_vec_ptr[0])
 
-    # And do the corresponding decref of the object, so that the Python GC can pick it up
-    python_utils.decref(vec)
+    # Do the corresponding decref of the object, so that the Python GC can pick it up
+    references_taken.remove(vec)
 
   @staticmethod
   def __vec_axpy_callback__(adj_vec_ptr, alpha, adj_vec):
-    y = vector(adj_vec_ptr.ptr)
+    y = vector(adj_vec_ptr[0])
     x = vector(adj_vec)
+    assert isinstance(y, Vector)
+    assert isinstance(x, Vector)
     y.axpy(alpha, x)
 
   @staticmethod
@@ -353,22 +629,35 @@ class Adjointer(object):
     new_mat = mat.duplicate()
 
     # Increase the reference counter of the new object to protect it from deallocation at the end of the callback
-    python_utils.incref(new_mat)
+    references_taken.append(new_mat)
     adj_mat_ptr.ptr = python_utils.c_ptr(new_mat)
+    adj_mat_ptr.klass = 0
+    adj_mat_ptr.flags = 0
 
   @staticmethod
   def __mat_destroy_callback__(adj_mat_ptr):
-    mat = matrix(adj_mat_ptr.ptr)
-    mat.destroy()
+    mat = matrix(adj_mat_ptr[0])
 
-    # And do the corresponding decref of the object, so that the Python GC can pick it up
-    python_utils.decref(mat)
+    # Do the corresponding decref of the object, so that the Python GC can pick it up
+    references_taken.remove(mat)
 
   @staticmethod
   def __mat_axpy_callback__(adj_mat_ptr, alpha, adj_mat):
-    y = matrix(adj_mat_ptr.ptr)
+    y = matrix(adj_mat_ptr[0])
     x = matrix(adj_mat)
     y.axpy(alpha, x)
+
+  @staticmethod
+  def __mat_solve_callback__(adj_var, adj_mat, adj_rhs, adj_soln_ptr):
+    A = matrix(adj_mat)
+    b = vector(adj_rhs)
+
+    x = A.solve(b)
+    references_taken.append(x)
+
+    adj_soln_ptr[0].ptr = python_utils.c_ptr(x)
+    adj_soln_ptr[0].klass = 0
+    adj_soln_ptr[0].flags = 0
 
 class LinAlg(object):
   '''Base class for adjoint vector or matrix objects. In libadjoint,
@@ -377,21 +666,7 @@ class LinAlg(object):
   instead of this directly.'''
 
   def __init__(self):
-    raise LibadjointErrorNotImplemented("Shouldn't ever instantiate a LinAlg object directly")
-
-  def destroy(self):
-    '''destroy(self)
-
-    Any special tasks to clean up the object. If this is a normal Python object, there is no need to override this method.'''
-    pass
-
-  def duplicate(self):
-    '''duplicate(self)
-
-    This method must return a newly allocated duplicate of its
-    parent. The value of every entry of the duplicate must be zero.'''
-    raise LibadjointErrorNeedCallback(
-      'Class '+self.__class__.__name__+' has no copy() method')
+    raise exceptions.LibadjointErrorNotImplemented("Shouldn't ever instantiate a LinAlg object directly")
 
   def axpy(self, alpha, x):
     '''axpy(self, alpha, x)
@@ -399,12 +674,20 @@ class LinAlg(object):
     This method must update the Vector with self=self+alpha*x where
     alpha is a scalar and x is a Vector'''
 
-    raise LibadjointErrorNeedCallback(
+    raise exceptions.LibadjointErrorNeedCallback(
       'Class '+self.__class__.__name__+' has no axpy(alpha,x) method')
 
 class Vector(LinAlg):
   '''Base class for adjoint vector objects. User applications should
   subclass this and provide their own data and methods.'''
+
+  def duplicate(self):
+    '''duplicate(self)
+
+    This method must return a newly allocated duplicate of its
+    parent. The value of every entry of the duplicate must be zero.'''
+    raise exceptions.LibadjointErrorNeedCallback(
+      'Class '+self.__class__.__name__+' has no copy() method')
 
   def set_values(self, scalars):
     '''set_values(self, scalars)
@@ -412,7 +695,7 @@ class Vector(LinAlg):
     This method must set the value of Vector to that given by the array
     of scalars.'''
 
-    raise LibadjointErrorNeedCallback(
+    raise exceptions.LibadjointErrorNeedCallback(
       'Class '+self.__class__.__name__+' has no set_values(scalars) method')
 
   def size(self):
@@ -420,7 +703,7 @@ class Vector(LinAlg):
 
     This method must return the number of degrees of freedom in this Vector.'''
 
-    raise LibadjointErrorNeedCallback(
+    raise exceptions.LibadjointErrorNeedCallback(
       'Class '+self.__class__.__name__+' has no size() method')    
 
   def norm(self):
@@ -429,19 +712,19 @@ class Vector(LinAlg):
     This method must return a norm for this vector. It does not matter which
     norm is chosen, so long as it satisfies the usual axioms for a norm.'''
 
-    raise LibadjointErrorNeedCallback(
+    raise exceptions.LibadjointErrorNeedCallback(
       'Class '+self.__class__.__name__+' has no norm() method')    
 
   def set_random(self):
     '''This method must set the entries of a given vector x to pseudo-random values.'''
 
-    raise LibadjointErrorNeedCallback(
+    raise exceptions.LibadjointErrorNeedCallback(
       'Class '+self.__class__.__name__+' has no set_random() method')        
 
   def dot_product(self, b):
     '''This method must return the result of dot(self, b).'''
 
-    raise LibadjointErrorNeedCallback(
+    raise exceptions.LibadjointErrorNeedCallback(
       'Class '+self.__class__.__name__+' has no dot_product() method')        
 
 
@@ -455,6 +738,15 @@ class Vector(LinAlg):
 
 class Matrix(LinAlg):
   '''Base class for adjoint matrix objects.'''
+
+  def solve(self, b):
+    '''solve(self, b)
+
+    This method must solve the system self*x = b and return the answer.'''
+
+    raise exceptions.LibadjointErrorNeedCallback(
+      'Class '+self.__class__.__name__+' has no solve() method')        
+
 
   def as_adj_matrix(self):
     '''as_adj_matrix(self)
@@ -477,3 +769,21 @@ def matrix(adj_matrix):
   Return the Python Matrix object contained in a C adj_matrix'''
 
   return python_utils.c_deref(adj_matrix.ptr)
+
+# class Time(object):
+#   def __init__(self, time=0.0, timestep=0, iteration=0):
+    
+#     '''Time at the start of each timestep.'''
+#     self.times=[time]
+    
+#     self.timestep=timestep
+#     self.iteration=iteration
+
+#   def new_timestep(time=None, timestep=None, iteration=None):
+#     '''Update time object for a new timestep.'''
+
+# class TimeStep(object):
+#     def __init__(self, time, time_offset, iteration_offset):
+      
+#       if not isinstance(time, Time):
+#         raise TypeError("time must be an instance of class Time")
