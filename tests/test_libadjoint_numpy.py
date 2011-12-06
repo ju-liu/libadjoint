@@ -27,7 +27,7 @@ A.record_variable(var, libadjoint.MemoryStorage(v))
 var1=libadjoint.Variable('foo', 1)
 
 def rhs_cb1(adjointer, variable, dependencies, values, context):
-    return dependencies[0]
+    return values[0]
  
 e1=libadjoint.Equation(var1, [b], [var1], rhs_cb=rhs_cb1, rhs_deps=[var])
 

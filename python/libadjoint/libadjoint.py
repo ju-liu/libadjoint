@@ -7,10 +7,10 @@ import python_utils
 adj_scalar = ctypes.c_double
 references_taken = []
 
-def adj_test_assert(fail, msg=None):
-  assert isinstance(fail, bool)
-  clib.adj_test_assert(ctypes.c_int(fail), "Python error")
-  if fail and msg is not None:
+def adj_test_assert(test_pass, msg=None):
+  assert isinstance(test_pass, bool)
+  clib.adj_test_assert(ctypes.c_int(test_pass), "Python error")
+  if not test_pass and msg is not None:
     print "  " + msg
 
 def handle_error(ierr):
