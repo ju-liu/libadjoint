@@ -235,11 +235,11 @@ class Storage(object):
   '''Wrapper class for Vectors that contains additional information about how and where libadjoint 
   stores the vector values. This should never be used directly, instead use MemoryStorage or DiskStorage.'''
 
-  def set_compare(self, tol):
-    if tol > 0.0:
+  def set_compare(self, tol=None):
+    if tol is not None:
       clib.adj_storage_set_compare(self.storage_data, 1, tol)
     else:
-      clib.adj_storage_set_compare(self.storage_data, 0, tol)
+      clib.adj_storage_set_compare(self.storage_data, 0, 0.0)
 
   def set_overwrite(self, flag=True):
     if flag:
@@ -360,6 +360,7 @@ class Adjointer(object):
     self.vec_duplicate_type = ctypes.CFUNCTYPE(None, clib.adj_vector, ctypes.POINTER(clib.adj_vector))
     self.vec_destroy_type = ctypes.CFUNCTYPE(None, ctypes.POINTER(clib.adj_vector))
     self.vec_axpy_type = ctypes.CFUNCTYPE(None, ctypes.POINTER(clib.adj_vector), adj_scalar, clib.adj_vector)
+    self.vec_get_norm_type = ctypes.CFUNCTYPE(None, clib.adj_vector, ctypes.POINTER(adj_scalar))
     self.mat_duplicate_type = ctypes.CFUNCTYPE(None, clib.adj_matrix, ctypes.POINTER(clib.adj_matrix))
     self.mat_destroy_type = ctypes.CFUNCTYPE(None, ctypes.POINTER(clib.adj_matrix))
     self.mat_axpy_type = ctypes.CFUNCTYPE(None, ctypes.POINTER(clib.adj_matrix), adj_scalar, clib.adj_matrix)
@@ -424,7 +425,11 @@ class Adjointer(object):
 
     This method records the provided variable according to the settings in storage.'''
 
-    clib.adj_record_variable(self.adjointer, var.var, storage.storage_data)
+    try:
+      clib.adj_record_variable(self.adjointer, var.var, storage.storage_data)
+    except:
+      references_taken.append(storage.vec)
+      raise
 
     references_taken.append(storage.vec)
 
@@ -493,6 +498,7 @@ class Adjointer(object):
     self.__register_data_callback__('ADJ_VEC_DUPLICATE_CB', self.__vec_duplicate_callback__)
     self.__register_data_callback__('ADJ_VEC_DESTROY_CB', self.__vec_destroy_callback__)
     self.__register_data_callback__('ADJ_VEC_AXPY_CB', self.__vec_axpy_callback__)
+    self.__register_data_callback__('ADJ_VEC_GET_NORM_CB', self.__vec_norm_callback__)
     self.__register_data_callback__('ADJ_MAT_DUPLICATE_CB', self.__mat_duplicate_callback__)
     self.__register_data_callback__('ADJ_MAT_DESTROY_CB', self.__mat_destroy_callback__)
     self.__register_data_callback__('ADJ_MAT_AXPY_CB', self.__mat_axpy_callback__)
@@ -504,6 +510,7 @@ class Adjointer(object):
     type_to_api = {"ADJ_VEC_DESTROY_CB": self.vec_destroy_type,
                    "ADJ_VEC_DUPLICATE_CB": self.vec_duplicate_type,
                    "ADJ_VEC_AXPY_CB": self.vec_axpy_type,
+                   'ADJ_VEC_GET_NORM_CB': self.vec_get_norm_type,
                    "ADJ_MAT_DUPLICATE_CB": self.mat_duplicate_type,
                    "ADJ_MAT_DESTROY_CB": self.mat_destroy_type,
                    "ADJ_MAT_AXPY_CB": self.mat_axpy_type,
@@ -613,7 +620,12 @@ class Adjointer(object):
     vec = vector(adj_vec_ptr[0])
 
     # Do the corresponding decref of the object, so that the Python GC can pick it up
-    references_taken.remove(vec)
+    try:
+      references_taken.remove(vec)
+    except:
+      print vec.data
+      print references_taken
+      raise
 
   @staticmethod
   def __vec_axpy_callback__(adj_vec_ptr, alpha, adj_vec):
@@ -623,6 +635,12 @@ class Adjointer(object):
     assert isinstance(x, Vector)
     y.axpy(alpha, x)
 
+  @staticmethod
+  def __vec_norm_callback__(adj_vec, x):
+    y = vector(adj_vec)
+    
+    x[0] = y.norm()
+  
   @staticmethod
   def __mat_duplicate_callback__(adj_mat, adj_mat_ptr):
     mat = matrix(adj_mat)
