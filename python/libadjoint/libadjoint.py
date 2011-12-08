@@ -427,11 +427,11 @@ class Adjointer(object):
 
     try:
       clib.adj_record_variable(self.adjointer, var.var, storage.storage_data)
-    except:
+    except exceptions.LibadjointWarnException, err:
+      print err
+    finally:
       references_taken.append(storage.vec)
-      raise
 
-    references_taken.append(storage.vec)
 
   def to_html(self, filename, viztype):
     try:
