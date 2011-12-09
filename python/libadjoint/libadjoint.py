@@ -255,10 +255,13 @@ class Storage(object):
 
 class MemoryStorage(Storage):
   '''Wrapper class for Vectors that contains additional information for storing the vector values in memory.'''
-  def __init__(self, vec):
+  def __init__(self, vec, copy=True):
     self.storage_data = clib.adj_storage_data()
     self.c_object = self.storage_data
-    clib.adj_storage_memory_incref(vec.as_adj_vector(), self.storage_data)
+    if copy:
+      clib.adj_storage_memory_copy(vec.as_adj_vector(), self.storage_data)
+    else:
+      clib.adj_storage_memory_incref(vec.as_adj_vector(), self.storage_data)
 
     # Ensure that the storage object always holds a reference to the vec
     self.vec = vec
