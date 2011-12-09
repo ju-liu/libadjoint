@@ -414,7 +414,10 @@ class Adjointer(object):
 
   def __set_functional_dependencies__(self, functional, equation):
     
-    timestep = self.equation_timestep[equation]
+    try:
+      timestep = self.equation_timestep[equation]
+    except IndexError:
+      return
 
     dependencies = functional.dependencies(self,timestep)
 

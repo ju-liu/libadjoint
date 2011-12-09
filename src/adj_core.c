@@ -313,10 +313,11 @@ int adj_get_adjoint_equation(adj_adjointer* adjointer, int equation, char* funct
    * Computation of J* terms                                                  |
    * -------------------------------------------------------------------------- */
   {
-    for (i = 0; i < fwd_eqn.nrhsdeps; i++)
+    for (i = 0; i < fwd_data->nrhs_equations; i++)
     {
+      int rhs_equation = fwd_data->rhs_equations[i];
       /* Does this J* contribute to the adjoint matrix ... */
-      if (adj_variable_equal(&(fwd_eqn.rhsdeps[i]), &fwd_var, 1))
+      if (adj_variable_equal(&(adjointer->equations[rhs_equation].variable), &fwd_var, 1))
       {
         snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Equations with right-hand sides that depend on the variable being solved for are not supported (yet).");
         return adj_chkierr_auto(ADJ_ERR_NOT_IMPLEMENTED);
@@ -325,18 +326,11 @@ int adj_get_adjoint_equation(adj_adjointer* adjointer, int equation, char* funct
       else
       {
         /* Get the adj_equation associated with this dependency, so we can pull out the relevant rhs_deriv_action callback */
-        adj_variable_data* other_fwd_data;
-        adj_equation other_fwd_eqn;
         adj_vector deriv_action;
         int has_output;
 
-
-        ierr = adj_find_variable_data(&(adjointer->varhash), &(fwd_eqn.rhsdeps[i]), &other_fwd_data);
-        if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
-        other_fwd_eqn = adjointer->equations[other_fwd_data->equation];
-
         has_output = -666;
-        ierr = adj_evaluate_rhs_deriv_action(adjointer, other_fwd_eqn, fwd_var, ADJ_TRUE, functional, &deriv_action, &has_output);
+        ierr = adj_evaluate_rhs_deriv_action(adjointer, adjointer->equations[rhs_equation], fwd_var, ADJ_TRUE, functional, &deriv_action, &has_output);
         if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
 
         if (has_output)
