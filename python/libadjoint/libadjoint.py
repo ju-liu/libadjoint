@@ -176,9 +176,8 @@ class Block(object):
     pass
     
     
-
 class Equation(object):
-  def __init__(self, var, blocks, targets, rhs_deps=None, rhs_context=None, rhs_cb=None):
+  def __init__(self, var, blocks, targets, rhs=None):
     self.equation = clib.adj_equation()
     self.c_object = self.equation
     self.blocks=blocks
@@ -188,13 +187,10 @@ class Equation(object):
 
     clib.adj_create_equation(var.var, len(blocks), list_to_carray(blocks, clib.adj_block), list_to_carray(targets, clib.adj_variable), self.equation)
 
-MOVE THIS TO RHS OBJECT
-    if rhs_deps is not None and len(rhs_deps) > 0:
-      clib.adj_equation_set_rhs_dependencies(self.equation, len(rhs_deps), list_to_carray(rhs_deps, clib.adj_variable), rhs_context)
-
-    if rhs_cb is not None:
-      self.rhs_fn = self.__cfunc_from_rhs__(rhs_cb)
-      clib.adj_equation_set_rhs_callback(self.equation, self.rhs_fn)
+    if (rhs is not None):
+      self.rhs=rhs
+      rhs.register(self)
+    
 
   def __del__(self):
     clib.adj_destroy_equation(self.equation)
@@ -277,6 +273,31 @@ class Functional(object):
 
     raise exceptions.LibadjointErrorNotImplemented("No dependencies method provided for" + type_name)
 
+  def __cfunc_from_derivative__(self):
+    '''Return a c-callable function wrapping the derivative method.'''
+    
+    def cfunc(adjointer_c, variable_c, ndepends_c, dependencies_c, values_c, name_c, output_c):
+      # build the Python objects from the C objects
+      adjointer = Adjointer(adjointer_c)
+      variable  = Variable(var=variable_c)
+      dependencies = [Variable(var=dependencies_c[i]) for i in range(ndepends_c)]
+      values = [vector(values_c[i]) for i in range(ndepends_c)]
+      
+      # Now call the callback we've been given
+      output = self.derivative(variable, dependencies, values)
+      
+      # Now cast the outputs back to C
+      output_c[0].klass = 0
+      output_c[0].flags = 0
+      output_c[0].ptr = 0
+      if not isinstance(output, Vector):
+        raise exceptions.LibadjointErrorInvalidInputs("Output from functional derivative must be a Vector.")
+      output_c[0].ptr = python_utils.c_ptr(output)
+      references_taken.append(output)
+      
+    functional_derivative_type = ctypes.CFUNCTYPE(None, ctypes.POINTER(clib.adj_adjointer), clib.adj_variable, ctypes.c_int, ctypes.POINTER(clib.adj_variable), ctypes.POINTER(clib.adj_vector), ctypes.c_char_p, ctypes.POINTER(clib.adj_vector))
+    return functional_derivative_type(cfunc)
+
 class RHS(object):
   '''Base class for equation Right Hand Sides and their derivatives.'''
   def __init__(self):
@@ -308,6 +329,22 @@ class RHS(object):
     Return the list of Variables on which this functional depends.'''
 
     raise exceptions.LibadjointErrorNotImplemented("No dependencies method provided for" + type_name)
+
+  def register(self, equation):
+    '''register(self, equation)
+    
+    Register this RHS as the RHS of equation.'''
+
+    rhs_deps=self.dependencies()
+    if rhs_deps is not None and len(rhs_deps) > 0:
+      clib.adj_equation_set_rhs_dependencies(equation.equation, len(rhs_deps), list_to_carray(rhs_deps, clib.adj_variable), None)
+
+    equation.rhs_fn = self.__cfunc_from_rhs__()
+    clib.adj_equation_set_rhs_callback(equation.equation, equation.rhs_fn)
+
+    equation.rhs_derivative_action_fn=self.__cfunc_from_derivative_action__()
+    clib.adj_equation_set_rhs_derivative_action_callback(equation.equation, equation.rhs_derivative_action_fn)
+
 
   def __cfunc_from_rhs__(self):
     '''Given a rhs function defined using the Pythonic interface, we want to translate that into a function that
@@ -352,7 +389,7 @@ class RHS(object):
       contraction_vector = vector(contraction_c)
     
       # Now call the callback we've been given
-      output = self.derivative_action(self, dependencies, values, variable, contraction_vector, hermitian):
+      output = self.derivative_action(self, dependencies, values, variable, contraction_vector, hermitian)
 
       # Now cast the outputs back to C
       has_output_c[0] = (output is not None)
@@ -367,7 +404,7 @@ class RHS(object):
       references_taken.append(output)
 
     rhs_deriv_action_type = ctypes.CFUNCTYPE(None, ctypes.POINTER(clib.adj_adjointer), clib.adj_variable, ctypes.c_int, ctypes.POINTER(clib.adj_variable),
-        ctypes.POINTER(clib.adj_vector), clib.adj_variable, clib.adj_vector, ctypes,c_int, ctypes.POINTER(None), ctypes.POINTER(clib.adj_vector), ctypes.POINTER(ctypes.c_int))
+        ctypes.POINTER(clib.adj_vector), clib.adj_variable, clib.adj_vector, ctypes.c_int, ctypes.POINTER(None), ctypes.POINTER(clib.adj_vector), ctypes.POINTER(ctypes.c_int))
     return rhs_deriv_action_type(cfunc)
 
 
