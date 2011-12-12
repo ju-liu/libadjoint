@@ -389,7 +389,7 @@ class RHS(object):
       contraction_vector = vector(contraction_c)
     
       # Now call the callback we've been given
-      output = self.derivative_action(self, dependencies, values, variable, contraction_vector, hermitian)
+      output = self.derivative_action(dependencies, values, variable, contraction_vector, hermitian)
 
       # Now cast the outputs back to C
       has_output_c[0] = (output is not None)
@@ -469,6 +469,9 @@ class Adjointer(object):
 
     if hasattr(equation, 'rhs_fn'):
       self.functions_registered.append(equation.rhs_fn)
+
+    if hasattr(equation, 'rhs_derivative_action_fn'):
+      self.functions_registered.append(equation.rhs_derivative_action_fn)
 
     for block in equation.blocks:
       if not(block.assemble is Block.assemble):
