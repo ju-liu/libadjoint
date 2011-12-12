@@ -310,7 +310,7 @@ int adj_get_adjoint_equation(adj_adjointer* adjointer, int equation, char* funct
   }
 
   /* --------------------------------------------------------------------------
-   * Computation of J* terms                                                  |
+   * Computation of R* terms                                                  |
    * -------------------------------------------------------------------------- */
   {
     for (i = 0; i < fwd_data->nrhs_equations; i++)
