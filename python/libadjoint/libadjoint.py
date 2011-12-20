@@ -246,10 +246,10 @@ class Functional(object):
   def __init__(self):
     pass
 
-  def __call__(self, variables, dependencies):
-    '''__call__(self, variables, dependencies)
+  def __call__(self, dependencies, values):
+    '''__call__(self, dependencies, values)
 
-    Evaluate functional given the dependencies corresponding to variables. The result must be a scalar.
+    Evaluate functional given dependencies with values. The result must be a scalar.
     '''
 
     raise exceptions.LibadjointErrorNotImplemented("No __call__ method provided for" + type_name)
@@ -297,6 +297,21 @@ class Functional(object):
       
     functional_derivative_type = ctypes.CFUNCTYPE(None, ctypes.POINTER(clib.adj_adjointer), clib.adj_variable, ctypes.c_int, ctypes.POINTER(clib.adj_variable), ctypes.POINTER(clib.adj_vector), ctypes.c_char_p, ctypes.POINTER(clib.adj_vector))
     return functional_derivative_type(cfunc)
+
+  def __cfunc_from_functional__(self):
+    '''Return a c-callable function wrapping the derivative method.'''
+    
+    def cfunc(adjointer_c, timestep, ndepends_c, dependencies_c, values_c, name_c, output_c):
+      # build the Python objects from the C objects
+      dependencies = [Variable(var=dependencies_c[i]) for i in range(ndepends_c)]
+      values = [vector(values_c[i]) for i in range(ndepends_c)]
+      
+      # Now call the callback we've been given
+      output[0] = self(dependencies, values)
+            
+    functional_type = ctypes.CFUNCTYPE(None, ctypes.POINTER(clib.adj_adjointer), ctypes.c_int, ctypes.c_int, ctypes.POINTER(clib.adj_variable), ctypes.POINTER(clib.adj_vector), ctypes.c_char_p, ctypes.POINTER(ctypes.c_double))
+    return functional_type(cfunc)
+
 
 class RHS(object):
   '''Base class for equation Right Hand Sides and their derivatives.'''
@@ -436,6 +451,7 @@ class Adjointer(object):
     self.vec_destroy_type = ctypes.CFUNCTYPE(None, ctypes.POINTER(clib.adj_vector))
     self.vec_axpy_type = ctypes.CFUNCTYPE(None, ctypes.POINTER(clib.adj_vector), adj_scalar, clib.adj_vector)
     self.vec_get_norm_type = ctypes.CFUNCTYPE(None, clib.adj_vector, ctypes.POINTER(adj_scalar))
+    self.vec_dot_product_type = ctypes.CFUNCTYPE(None, clib.adj_vector, clib.adj_vector, ctypes.POINTER(adj_scalar))
     self.mat_duplicate_type = ctypes.CFUNCTYPE(None, clib.adj_matrix, ctypes.POINTER(clib.adj_matrix))
     self.mat_destroy_type = ctypes.CFUNCTYPE(None, ctypes.POINTER(clib.adj_matrix))
     self.mat_axpy_type = ctypes.CFUNCTYPE(None, ctypes.POINTER(clib.adj_matrix), adj_scalar, clib.adj_matrix)
@@ -478,7 +494,7 @@ class Adjointer(object):
         # There is an assemble method to register.
         self.__register_operator_callback__(block.name, "ADJ_BLOCK_ASSEMBLY_CB", block.assemble)
 
-  def __register_functional_derivative__(self, functional):
+  def __register_functional__(self, functional):
     assert(isinstance(functional, Functional))
 
     cfunc=functional.__cfunc_from_derivative__()
@@ -486,6 +502,10 @@ class Adjointer(object):
 
     clib.adj_register_functional_derivative_callback(self.adjointer, str(functional), cfunc)
 
+    cfunc=functional.__cfunc_from_functional__()
+    self.functions_registered.append(cfunc)
+
+    clib.adj_register_functional_callback(self.adjointer, str(functional), cfunc)
 
   def __set_functional_dependencies__(self, functional, equation):
     
@@ -513,6 +533,16 @@ class Adjointer(object):
     finally:
       references_taken.append(storage.vec)
 
+  def evaluate_functional(self, functional, timestep):
+    '''evaluate_functional(self, functional, timestep)
+
+    Evaluate the functional provided at t=timestep.'''
+
+    output=clib.POINTER(clib.c_double)
+
+    clib.adj_evaluate_functional(self.adjointer, timestep, functional.__str__(), output)
+
+    return output.ptr
 
   def to_html(self, filename, viztype):
     try:
@@ -548,7 +578,7 @@ class Adjointer(object):
 
   def get_adjoint_equation(self, equation, functional):
 
-    self.__register_functional_derivative__(functional)
+    self.__register_functional__(functional)
     self.__set_functional_dependencies__(functional, equation)
 
     lhs = clib.adj_matrix()
@@ -564,7 +594,7 @@ class Adjointer(object):
   
   def get_adjoint_solution(self, equation, functional):
 
-    self.__register_functional_derivative__(functional)
+    self.__register_functional__(functional)
     self.__set_functional_dependencies__(functional, equation)
 
     output = clib.adj_vector()
@@ -580,6 +610,7 @@ class Adjointer(object):
     self.__register_data_callback__('ADJ_VEC_DESTROY_CB', self.__vec_destroy_callback__)
     self.__register_data_callback__('ADJ_VEC_AXPY_CB', self.__vec_axpy_callback__)
     self.__register_data_callback__('ADJ_VEC_GET_NORM_CB', self.__vec_norm_callback__)
+    self.__register_data_callback__('ADJ_VEC_DOT_PRODUCT_CB', self.__vec_dot_callback__)
     self.__register_data_callback__('ADJ_MAT_DUPLICATE_CB', self.__mat_duplicate_callback__)
     self.__register_data_callback__('ADJ_MAT_DESTROY_CB', self.__mat_destroy_callback__)
     self.__register_data_callback__('ADJ_MAT_AXPY_CB', self.__mat_axpy_callback__)
@@ -592,6 +623,7 @@ class Adjointer(object):
                    "ADJ_VEC_DUPLICATE_CB": self.vec_duplicate_type,
                    "ADJ_VEC_AXPY_CB": self.vec_axpy_type,
                    'ADJ_VEC_GET_NORM_CB': self.vec_get_norm_type,
+                   'ADJ_VEC_DOT_PRODUCT_CB': self.vec_dot_product_type,
                    "ADJ_MAT_DUPLICATE_CB": self.mat_duplicate_type,
                    "ADJ_MAT_DESTROY_CB": self.mat_destroy_type,
                    "ADJ_MAT_AXPY_CB": self.mat_axpy_type,
@@ -721,6 +753,13 @@ class Adjointer(object):
     y = vector(adj_vec)
     
     x[0] = y.norm()
+
+  @staticmethod
+  def __vec_dot_callback__(adj_vec_x, adj_vec_y, dot):
+    x = vector(adj_vec_x)
+    y = vector(adj_vec_y)
+    
+    dot[0] = x.dot_product(y)
   
   @staticmethod
   def __mat_duplicate_callback__(adj_mat, adj_mat_ptr):
