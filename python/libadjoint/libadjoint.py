@@ -307,7 +307,7 @@ class Functional(object):
       values = [vector(values_c[i]) for i in range(ndepends_c)]
       
       # Now call the callback we've been given
-      output[0] = self(dependencies, values)
+      output_c[0] = self(dependencies, values)
             
     functional_type = ctypes.CFUNCTYPE(None, ctypes.POINTER(clib.adj_adjointer), ctypes.c_int, ctypes.c_int, ctypes.POINTER(clib.adj_variable), ctypes.POINTER(clib.adj_vector), ctypes.c_char_p, ctypes.POINTER(ctypes.c_double))
     return functional_type(cfunc)
@@ -507,19 +507,18 @@ class Adjointer(object):
 
     clib.adj_register_functional_callback(self.adjointer, str(functional), cfunc)
 
-  def __set_functional_dependencies__(self, functional, equation):
+  def __set_functional_dependencies__(self, functional, timestep):
     
-    try:
-      timestep = self.equation_timestep[equation]
-    except IndexError:
-      return
-
     dependencies = functional.dependencies(self,timestep)
 
     list_type = clib.adj_variable * len(dependencies)
     c_dependencies=list_type(*[var.var for var in dependencies])
 
-    clib.adj_timestep_set_functional_dependencies(self.adjointer, timestep, str(functional), len(c_dependencies), c_dependencies)
+    try:
+      clib.adj_timestep_set_functional_dependencies(self.adjointer, timestep, str(functional), len(c_dependencies), c_dependencies)
+    except exceptions.LibadjointErrorInvalidInputs:
+      # Don't die in the case where these dependencies have already been set.
+      pass
 
   def record_variable(self, var, storage):
     '''record_variable(self, var, storage)
@@ -538,11 +537,14 @@ class Adjointer(object):
 
     Evaluate the functional provided at t=timestep.'''
 
-    output=clib.POINTER(clib.c_double)
+    self.__register_functional__(functional)
+    self.__set_functional_dependencies__(functional, timestep)
+
+    output=clib.c_double()
 
     clib.adj_evaluate_functional(self.adjointer, timestep, functional.__str__(), output)
 
-    return output.ptr
+    return output.value
 
   def to_html(self, filename, viztype):
     try:
@@ -579,7 +581,7 @@ class Adjointer(object):
   def get_adjoint_equation(self, equation, functional):
 
     self.__register_functional__(functional)
-    self.__set_functional_dependencies__(functional, equation)
+    self.__set_functional_dependencies__(functional, self.equation_timestep[equation])
 
     lhs = clib.adj_matrix()
     rhs = clib.adj_vector()
@@ -595,7 +597,7 @@ class Adjointer(object):
   def get_adjoint_solution(self, equation, functional):
 
     self.__register_functional__(functional)
-    self.__set_functional_dependencies__(functional, equation)
+    self.__set_functional_dependencies__(functional, self.equation_timestep[equation])
 
     output = clib.adj_vector()
     adj_var = clib.adj_variable()
