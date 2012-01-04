@@ -96,14 +96,17 @@ int adj_get_adjoint_equation(adj_adjointer* adjointer, int equation, char* funct
   /* The adjoint equations this variable is necessary for are:
      * The (adjoint equation) of (the target) of (each block) in (the forward equation) associated with (the adjoint equation we're fetching)
      * The (adjoint equation) of (the dependencies) of (each block) in (the forward equation) associated with (the adjoint equation we're fetching)
+     * The (adjoint equation) of (the dependencies) of (the right-hand-side) of (the forward equation) associated with (the adjoint equation we're fetching)
    Do you see why working that out gave me an almighty headache? */
   for (i = 0; i < fwd_eqn.nblocks; i++)
   {
+    /* A* terms */
     adj_variable_data* block_target_data;
     ierr = adj_find_variable_data(&(adjointer->varhash), &(fwd_eqn.targets[i]), &block_target_data);
     if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
     adj_append_unique(&(adj_data->adjoint_equations), &(adj_data->nadjoint_equations), block_target_data->equation);
 
+    /* G* terms */
     for (j = 0; j < fwd_eqn.blocks[i].nonlinear_block.ndepends; j++)
     {
       adj_variable_data* j_data;
@@ -111,6 +114,14 @@ int adj_get_adjoint_equation(adj_adjointer* adjointer, int equation, char* funct
       if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
       adj_append_unique(&(adj_data->adjoint_equations), &(adj_data->nadjoint_equations), j_data->equation);
     }
+  }
+  /* R* terms */
+  for (i = 0; i < fwd_eqn.nrhsdeps; i++)
+  {
+    adj_variable_data* rhs_dep_data;
+    ierr = adj_find_variable_data(&(adjointer->varhash), &(fwd_eqn.rhsdeps[i]), &rhs_dep_data);
+    if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
+    adj_append_unique(&(adj_data->adjoint_equations), &(adj_data->nadjoint_equations), rhs_dep_data->equation);
   }
 
   /* --------------------------------------------------------------------------
@@ -299,13 +310,36 @@ int adj_get_adjoint_equation(adj_adjointer* adjointer, int equation, char* funct
   }
 
   /* --------------------------------------------------------------------------
-   * Computation of J* terms                                                  |
+   * Computation of R* terms                                                  |
    * -------------------------------------------------------------------------- */
   {
-    if (fwd_data->nrhs_equations != 0)
+    for (i = 0; i < fwd_data->nrhs_equations; i++)
     {
-      snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Sorry, we can't handle nonlinear right-hand-side terms (yet).");
-      return adj_chkierr_auto(ADJ_ERR_NOT_IMPLEMENTED);
+      int rhs_equation = fwd_data->rhs_equations[i];
+      /* Does this R* contribute to the adjoint matrix ... */
+      if (adj_variable_equal(&(adjointer->equations[rhs_equation].variable), &fwd_var, 1))
+      {
+        snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Equations with right-hand sides that depend on the variable being solved for are not supported (yet).");
+        return adj_chkierr_auto(ADJ_ERR_NOT_IMPLEMENTED);
+      }
+      /* ... or to the right-hand side of the adjoint system? */
+      else
+      {
+        /* Get the adj_equation associated with this dependency, so we can pull out the relevant rhs_deriv_action callback */
+        adj_vector deriv_action;
+        int has_output;
+
+        has_output = -666;
+        ierr = adj_evaluate_rhs_deriv_action(adjointer, adjointer->equations[rhs_equation], fwd_var, ADJ_TRUE, functional, &deriv_action, &has_output);
+        if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
+
+        if (has_output)
+        {
+          /* Now that we have the contribution, we need to add it to the adjoint right hand side */
+          adjointer->callbacks.vec_axpy(rhs, (adj_scalar)1.0, deriv_action);
+          adjointer->callbacks.vec_destroy(&deriv_action);
+        }
+      }
     }
   }
 

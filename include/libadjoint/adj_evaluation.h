@@ -24,6 +24,7 @@ int adj_evaluate_nonlinear_colouring(adj_adjointer* adjointer, adj_nonlinear_blo
     int sz, int* colouring);
 int adj_evaluate_functional_derivative(adj_adjointer* adjointer, adj_variable variable, char* functional, adj_vector* output, int* has_output);
 int adj_evaluate_forward_source(adj_adjointer* adjointer, int equation, adj_vector* output, int* has_output);
+int adj_evaluate_rhs_deriv_action(adj_adjointer* adjointer, adj_equation source_eqn, adj_variable diff_var, int hermitian, char* functional, adj_vector* output, int* has_output);
 #endif
 int adj_evaluate_functional(adj_adjointer* adjointer, int timestep, char* functional, adj_scalar* output);
 

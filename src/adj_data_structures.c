@@ -363,7 +363,7 @@ int adj_destroy_term(adj_term* term)
 /* Adds additional non-diagonal blocks to an existing equation */
 int adj_add_term_to_equation(adj_term term, adj_equation* equation)
 {
-	int i, ierr;
+  int i, ierr;
   adj_equation old_equation = *equation;
 
   equation->nblocks = old_equation.nblocks + term.nblocks;
@@ -412,6 +412,7 @@ int adj_create_equation(adj_variable var, int nblocks, adj_block* blocks, adj_va
   int i;
 
   equation->rhs_callback = NULL;
+  equation->rhs_deriv_action_callback = NULL;
 
   /* First, let's check the variable isn't auxiliary.
      Auxiliary means we don't solve an equation for it ... */
@@ -580,3 +581,9 @@ int adj_equation_set_rhs_callback(adj_equation* equation, void (*fn)(adj_adjoint
   return ADJ_OK;
 }
 
+int adj_equation_set_rhs_derivative_action_callback(adj_equation* equation, void (*fn)(adj_adjointer* adjointer, adj_variable variable, int ndepends, adj_variable* variables, adj_vector* dependencies, \
+                                    adj_variable d_variable, adj_vector contraction, int hermitian, void* context, adj_vector* output, int* has_output))
+{
+  equation->rhs_deriv_action_callback = (void (*) (void* adjointer, adj_variable variable, int ndepends, adj_variable* variables, adj_vector* dependencies, adj_variable d_variable, adj_vector contraction, int hermitian, void* context, adj_vector* output, int* has_output)) fn;
+  return ADJ_OK;
+}

@@ -55,6 +55,7 @@ module libadjoint_data_structures
     type(c_ptr) :: rhsdeps
     type(c_ptr) :: rhs_context
     type(c_funptr) :: rhs_callback
+    type(c_funptr) :: rhs_deriv_action_callback
     integer(kind=c_int) :: memory_checkpoint
     integer(kind=c_int) :: disk_checkpoint
   end type adj_equation
@@ -736,6 +737,15 @@ module libadjoint
       type(c_funptr), intent(in), value :: fnptr
       integer(kind=c_int) :: ierr
     end function adj_equation_set_rhs_callback
+
+    function adj_equation_set_rhs_derivative_action_callback(equation, fnptr) &
+                                                      & result(ierr) bind(c, name='adj_equation_set_rhs_derivative_action_callback')
+      use libadjoint_data_structures
+      use iso_c_binding
+      type(adj_equation), intent(inout) :: equation
+      type(c_funptr), intent(in), value :: fnptr
+      integer(kind=c_int) :: ierr
+    end function adj_equation_set_rhs_derivative_action_callback
 
     function adj_forget_adjoint_equation(adjointer, equation) result(ierr) bind(c, name='adj_forget_adjoint_equation')
       use libadjoint_data_structures
