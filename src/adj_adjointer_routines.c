@@ -2430,3 +2430,14 @@ int adj_variable_get_depending_timestep(adj_adjointer* adjointer, adj_variable v
 
   return adj_chkierr_auto(ADJ_ERR_INVALID_INPUTS);
 }
+
+int adj_variable_known(adj_adjointer* adjointer, adj_variable var, int* known)
+{
+  int ierr;
+  adj_variable_data* data_ptr;
+
+  ierr = adj_find_variable_data(&(adjointer->varhash), &var, &data_ptr);
+  *known = (ierr != ADJ_ERR_HASH_FAILED);
+
+  return ADJ_OK;
+}

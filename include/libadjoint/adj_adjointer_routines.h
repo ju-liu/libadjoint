@@ -39,6 +39,8 @@ int adj_storage_set_compare(adj_storage_data* data, int compare, adj_scalar comp
 int adj_storage_set_overwrite(adj_storage_data* data, int overwrite);
 int adj_storage_set_checkpoint(adj_storage_data* data, int checkpoint);
 
+int adj_variable_known(adj_adjointer* adjointer, adj_variable var, int* known);
+
 #ifndef ADJ_HIDE_FROM_USER
 int adj_set_storage_memory_copy(adj_adjointer* adjointer, adj_variable* var);
 int adj_set_storage_memory_incref(adj_adjointer* adjointer, adj_variable* var);
