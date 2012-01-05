@@ -490,9 +490,13 @@ class Adjointer(object):
       self.functions_registered.append(equation.rhs_derivative_action_fn)
 
     for block in equation.blocks:
-      if not(block.assemble is Block.assemble):
+      if not (block.assemble is Block.assemble):
         # There is an assemble method to register.
         self.__register_operator_callback__(block.name, "ADJ_BLOCK_ASSEMBLY_CB", block.assemble)
+
+      if not (block.action is Block.action):
+        # There is an action method to register.
+        self.__register_operator_callback__(block.name, "ADJ_BLOCK_ACTION_CB", block.action)
 
   def __register_functional__(self, functional):
     assert(isinstance(functional, Functional))
