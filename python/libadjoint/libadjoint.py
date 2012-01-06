@@ -636,7 +636,24 @@ class Adjointer(object):
       except:
         import sys
         import traceback
+        print
+        print "Python traceback: "
         traceback.print_tb(sys.exc_info()[2])
+
+        print
+
+        # Try to print out a C traceback, too
+        import ctypes
+        try:
+          libc = ctypes.CDLL("libc.so.6")
+          datatype = ctypes.c_void_p * 200
+          pointers = datatype()
+          size = libc.backtrace(pointers, 200)
+          print "C traceback: "
+          libc.backtrace_symbols_fd(pointers, size, 2)
+        except (OSError, AttributeError):
+          pass
+
         sys.exit(1)
 
     type_to_api = {"ADJ_VEC_DESTROY_CB": self.vec_destroy_type,
