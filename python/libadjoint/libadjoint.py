@@ -630,6 +630,15 @@ class Adjointer(object):
   def __register_data_callback__(self, type_name, func):
     type_id = int(constants.adj_constants[type_name])
 
+    def newfunc(*args, **kwargs):
+      try:
+        func(*args, **kwargs)
+      except:
+        import sys
+        import traceback
+        traceback.print_tb(sys.exc_info()[2])
+        sys.exit(1)
+
     type_to_api = {"ADJ_VEC_DESTROY_CB": self.vec_destroy_type,
                    "ADJ_VEC_DUPLICATE_CB": self.vec_duplicate_type,
                    "ADJ_VEC_AXPY_CB": self.vec_axpy_type,
@@ -641,7 +650,7 @@ class Adjointer(object):
                    "ADJ_SOLVE_CB": self.solve_type}
     if type_name in type_to_api:
       clib.adj_register_data_callback.argtypes = [ctypes.POINTER(clib.adj_adjointer), ctypes.c_int, type_to_api[type_name]]
-      data_function = type_to_api[type_name](func)
+      data_function = type_to_api[type_name](newfunc)
       self.functions_registered.append(data_function)
       clib.adj_register_data_callback(self.adjointer, ctypes.c_int(type_id), data_function)
 
