@@ -638,7 +638,7 @@ class Adjointer(object):
         import traceback
         print
         print "Python traceback: "
-        traceback.print_tb(sys.exc_info()[2])
+        traceback.print_exc()
 
         print
 
