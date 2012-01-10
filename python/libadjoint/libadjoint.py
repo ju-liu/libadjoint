@@ -73,7 +73,7 @@ class Variable(object):
       return (clib.adj_variable_equal(self.var, other.var, 1)==1)
 
 class NonlinearBlock(object):
-  def __init__(self, name, dependencies, context=None, coefficient=None, test_hermitian=None):
+  def __init__(self, name, dependencies, context=None, coefficient=None, test_hermitian=None, test_derivative=None):
     self.name = name
     self.nblock = clib.adj_nonlinear_block()
     c_context = None
@@ -91,6 +91,10 @@ class NonlinearBlock(object):
       tolerance = test_hermitian[1]
       self.set_test_hermitian(number_of_tests, tolerance)
 
+    if test_derivative is not None:
+      number_of_rounds = test_derivative
+      self.set_test_derivative(number_of_rounds)
+
   def __del__(self):
     clib.adj_destroy_nonlinear_block(self.nblock)
 
@@ -100,8 +104,11 @@ class NonlinearBlock(object):
   def set_test_hermitian(self, number_of_tests, tolerance):
     clib.adj_nonlinear_block_set_test_hermitian(self.nblock, 1, number_of_tests, tolerance)
 
+  def set_test_derivative(self, number_of_rounds):
+    clib.adj_nonlinear_block_set_test_derivative(self.nblock, 1, number_of_rounds)
+
 class Block(object):
-  def __init__(self, name, nblock=None, context=None, coefficient=None, hermitian=False, dependencies=None, test_hermitian=None):
+  def __init__(self, name, nblock=None, context=None, coefficient=None, hermitian=False, dependencies=None, test_hermitian=None, test_derivative=None):
     self.block = clib.adj_block()
     self.c_object = self.block
     self.name = name
@@ -115,7 +122,7 @@ class Block(object):
 
     if nblock is None:
       if dependencies is not None and len(dependencies) > 0:
-        nblock = NonlinearBlock(name, dependencies, context=context, test_hermitian=test_hermitian)
+        nblock = NonlinearBlock(name, dependencies, context=context, test_hermitian=test_hermitian, test_derivative=test_derivative)
 
     if nblock is not None:
       self.nblock = nblock
