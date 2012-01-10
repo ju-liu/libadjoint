@@ -935,7 +935,12 @@ class Adjointer(object):
   def __vec_set_values_callback__(adj_vec_ptr, values):
     import numpy
     y = vector(adj_vec_ptr[0])
-    y.set_values(numpy.array(values))
+
+    sz = y.size()
+    nparray = numpy.zeros(sz)
+    for i in range(sz):
+      nparray[i] = values[i]
+    y.set_values(numpy.array(nparray))
 
   @staticmethod
   def __vec_get_size_callback__(adj_vec, sz):
