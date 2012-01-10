@@ -935,7 +935,7 @@ class Adjointer(object):
   def __vec_set_values_callback__(adj_vec_ptr, values):
     import numpy
     y = vector(adj_vec_ptr[0])
-    y.set_random(numpy.array(values))
+    y.set_values(numpy.array(values))
 
   @staticmethod
   def __vec_get_size_callback__(adj_vec, sz):
