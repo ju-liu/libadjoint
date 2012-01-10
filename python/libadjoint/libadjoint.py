@@ -74,6 +74,7 @@ class Variable(object):
 
 class NonlinearBlock(object):
   def __init__(self, name, dependencies, context=None, coefficient=None):
+    self.name = name
     self.nblock = clib.adj_nonlinear_block()
     c_context = None
     if context is not None:
@@ -132,17 +133,17 @@ class Block(object):
     clib.adj_block_set_hermitian(self.block, hermitian)
 
   @staticmethod
-  def assemble(variables, dependencies, hermitian, coefficient, context):
-    '''def assemble(variables, dependencies, hermitian, coefficient, context)
+  def assemble(dependencies, values, hermitian, coefficient, context):
+    '''def assemble(dependencies, values, hermitian, coefficient, context)
 
     This method must assemble the block and return a tuple (matrix, rhs) where matrix.
 
-      variables is a list of Variable objects giving the variables on which the block depends.
-    
-      dependencies is a list of Vector objects giving the values of those dependencies.
+      dependencies is a list of Variable objects giving the variables on which the block depends.
+
+      values is a list of Vector objects giving the values of those values.
 
       hermitian is a boolean value indicating whether the hermitian of the operator is to be constructed.
-      
+
       coefficient is a coefficient by which the routine must scale the output.
 
       context is the python object passed to the Block on construction.
@@ -153,31 +154,61 @@ class Block(object):
 
 
   @staticmethod
-  def action(variables, dependencies, hermitian, coefficient, input, context):
-    '''def action(variables, dependencies, hermitian, coefficient, input, context)
+  def action(dependencies, values, hermitian, coefficient, input, context):
+    '''def action(dependencies, values, hermitian, coefficient, input, context)
 
     If hermitian is False, this method must return:
                     coefficient * dot(block, input)
     If hermitian is True, this method must return:
                     coefficient * dot(block*, input)
 
-      variables is a list of Variable objects giving the variables on which the block depends.
-    
-      dependencies is a list of Vector objects giving the values of those dependencies.
+      dependencies is a list of Variable objects giving the variables on which the block depends.
+
+      values is a list of Vector objects giving the values of those values.
 
       hermitian is a boolean value indicating whether the hermitian of the operator is to be constructed.
-      
+
       coefficient is a coefficient by which the routine must scale the output.
 
       input is a Vector which is is to be the subject of the action.
 
       context is the python object passed to the Block on construction.
     '''
-    
+
     # The registration code will notice unimplemented methods and fail to register them.
     pass
-    
-    
+
+  @staticmethod
+  def derivative_action(dependencies, values, variable, contraction_vector, hermitian, input, coefficient, context):
+    '''def derivative_action(dependencies, values, variable, contraction_vector, hermitian, input, coefficient, context)
+
+    If hermitian is False, this method must return:
+                    coefficient * (diff(block, variable).contraction) . input
+    If hermitian is True, this method must return:
+                    coefficient * (diff(block, variable).contraction)^* . input
+    See the libadjoint manual for more details (ADJ_NBLOCK_DERIVATIVE_ACTION_CB).
+
+      dependencies is a list of Variable objects giving the variables on which the block depends.
+
+      values is a list of Vector objects giving the values of those values.
+
+      variable is the Variable with respect to which the block must be differentiated.
+
+      contraction_vector is the Vector with which the derivative operation is to be contracted.
+
+      hermitian is a boolean value indicating whether the hermitian of the operator is to be constructed.
+
+      input is a Vector which is is to be the subject of the action.
+
+      coefficient is a coefficient by which the routine must scale the output.
+
+      context is the python object passed to the Block on construction.
+    '''
+
+    # The registration code will notice unimplemented methods and fail to register them.
+    pass
+
+
 class Equation(object):
   def __init__(self, var, blocks, targets, rhs=None):
     self.equation = clib.adj_equation()
@@ -192,7 +223,7 @@ class Equation(object):
     if (rhs is not None):
       self.rhs=rhs
       rhs.register(self)
-    
+
 
   def __del__(self):
     clib.adj_destroy_equation(self.equation)
@@ -277,17 +308,17 @@ class Functional(object):
 
   def __cfunc_from_derivative__(self):
     '''Return a c-callable function wrapping the derivative method.'''
-    
+
     def cfunc(adjointer_c, variable_c, ndepends_c, dependencies_c, values_c, name_c, output_c):
       # build the Python objects from the C objects
       adjointer = Adjointer(adjointer_c)
       variable  = Variable(var=variable_c)
       dependencies = [Variable(var=dependencies_c[i]) for i in range(ndepends_c)]
       values = [vector(values_c[i]) for i in range(ndepends_c)]
-      
+
       # Now call the callback we've been given
       output = self.derivative(variable, dependencies, values)
-      
+
       # Now cast the outputs back to C
       output_c[0].klass = 0
       output_c[0].flags = 0
@@ -296,21 +327,21 @@ class Functional(object):
         raise exceptions.LibadjointErrorInvalidInputs("Output from functional derivative must be a Vector.")
       output_c[0].ptr = python_utils.c_ptr(output)
       references_taken.append(output)
-      
+
     functional_derivative_type = ctypes.CFUNCTYPE(None, ctypes.POINTER(clib.adj_adjointer), clib.adj_variable, ctypes.c_int, ctypes.POINTER(clib.adj_variable), ctypes.POINTER(clib.adj_vector), ctypes.c_char_p, ctypes.POINTER(clib.adj_vector))
     return functional_derivative_type(cfunc)
 
   def __cfunc_from_functional__(self):
     '''Return a c-callable function wrapping the derivative method.'''
-    
+
     def cfunc(adjointer_c, timestep, ndepends_c, dependencies_c, values_c, name_c, output_c):
       # build the Python objects from the C objects
       dependencies = [Variable(var=dependencies_c[i]) for i in range(ndepends_c)]
       values = [vector(values_c[i]) for i in range(ndepends_c)]
-      
+
       # Now call the callback we've been given
       output_c[0] = self(dependencies, values)
-            
+
     functional_type = ctypes.CFUNCTYPE(None, ctypes.POINTER(clib.adj_adjointer), ctypes.c_int, ctypes.c_int, ctypes.POINTER(clib.adj_variable), ctypes.POINTER(clib.adj_vector), ctypes.c_char_p, ctypes.POINTER(ctypes.c_double))
     return functional_type(cfunc)
 
@@ -349,7 +380,7 @@ class RHS(object):
 
   def register(self, equation):
     '''register(self, equation)
-    
+
     Register this RHS as the RHS of equation.'''
 
     rhs_deps=self.dependencies()
@@ -404,7 +435,7 @@ class RHS(object):
       values = [vector(values_c[i]) for i in range(ndepends_c)]
       hermitian = (hermitian_c==1)
       contraction_vector = vector(contraction_c)
-    
+
       # Now call the callback we've been given
       output = self.derivative_action(dependencies, values, variable, contraction_vector, hermitian)
 
@@ -478,7 +509,7 @@ class Adjointer(object):
       raise AttributeError(name)
 
   def register_equation(self, equation):
-    
+
     self.equation_timestep.append(equation.var.timestep)
 
     cs = ctypes.c_int()
@@ -500,6 +531,10 @@ class Adjointer(object):
         # There is an action method to register.
         self.__register_operator_callback__(block.name, "ADJ_BLOCK_ACTION_CB", block.action)
 
+      if block.block.has_nonlinear_block:
+        if not (block.derivative_action is Block.derivative_action):
+          self.__register_operator_callback__(block.nblock.name, "ADJ_NBLOCK_DERIVATIVE_ACTION_CB", block.derivative_action)
+
   def __register_functional__(self, functional):
     assert(isinstance(functional, Functional))
 
@@ -514,7 +549,7 @@ class Adjointer(object):
     clib.adj_register_functional_callback(self.adjointer, str(functional), cfunc)
 
   def __set_functional_dependencies__(self, functional, timestep):
-    
+
     dependencies = functional.dependencies(self,timestep)
 
     list_type = clib.adj_variable * len(dependencies)
@@ -599,7 +634,7 @@ class Adjointer(object):
     references_taken.remove(rhs_py)
 
     return (lhs_py, rhs_py)
-  
+
   def get_adjoint_solution(self, equation, functional):
 
     self.__register_functional__(functional)
@@ -726,7 +761,7 @@ class Adjointer(object):
       coefficient = coefficient_c
       input = vector(input_c)
       context = context_c
-      
+
       # Now call the callback we've been given
       output = baction_cb(variables, dependencies, hermitian, coefficient, input, context)
 
@@ -737,7 +772,7 @@ class Adjointer(object):
         raise exceptions.LibadjointErrorInvalidInputs("object returned from block action callback must be a subclass of Vector")
       output_c[0].ptr = python_utils.c_ptr(output)
       references_taken.append(output)
-      
+
 
     return self.block_action_type(cfunc)
 
@@ -793,16 +828,16 @@ class Adjointer(object):
   @staticmethod
   def __vec_norm_callback__(adj_vec, x):
     y = vector(adj_vec)
-    
+
     x[0] = y.norm()
 
   @staticmethod
   def __vec_dot_callback__(adj_vec_x, adj_vec_y, dot):
     x = vector(adj_vec_x)
     y = vector(adj_vec_y)
-    
+
     dot[0] = x.dot_product(y)
-  
+
   @staticmethod
   def __mat_duplicate_callback__(adj_mat, adj_mat_ptr):
     mat = matrix(adj_mat)
@@ -952,10 +987,10 @@ def matrix(adj_matrix):
 
 # class Time(object):
 #   def __init__(self, time=0.0, timestep=0, iteration=0):
-    
+
 #     '''Time at the start of each timestep.'''
 #     self.times=[time]
-    
+
 #     self.timestep=timestep
 #     self.iteration=iteration
 
@@ -964,6 +999,6 @@ def matrix(adj_matrix):
 
 # class TimeStep(object):
 #     def __init__(self, time, time_offset, iteration_offset):
-      
+
 #       if not isinstance(time, Time):
 #         raise TypeError("time must be an instance of class Time")
