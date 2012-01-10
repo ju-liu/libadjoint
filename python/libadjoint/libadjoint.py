@@ -618,6 +618,9 @@ class Adjointer(object):
     clib.adj_variable_known(self.adjointer, variable.var, known)
     return (known.value == 1)
 
+  def forget_adjoint_equation(self, equation):
+    clib.adj_forget_adjoint_equation(self.adjointer, equation)
+
   def __register_data_callbacks__(self):
     self.__register_data_callback__('ADJ_VEC_DUPLICATE_CB', self.__vec_duplicate_callback__)
     self.__register_data_callback__('ADJ_VEC_DESTROY_CB', self.__vec_destroy_callback__)
