@@ -455,7 +455,7 @@ int adj_register_equation(adj_adjointer* adjointer, adj_equation equation, int* 
         else if (ierr == ADJ_ERR_HASH_FAILED)
         {
           char buf[ADJ_NAME_LEN];
-          adj_variable_str(equation.rhsdeps[i], buf, ADJ_NAME_LEN);
+          adj_variable_str(equation.blocks[i].nonlinear_block.depends[j], buf, ADJ_NAME_LEN);
           snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Hash failed for variable %s.", buf);
           return adj_chkierr_auto(ierr);
         }
