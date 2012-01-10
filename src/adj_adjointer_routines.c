@@ -392,6 +392,9 @@ int adj_register_equation(adj_adjointer* adjointer, adj_equation equation, int* 
     }
     else if (ierr == ADJ_ERR_HASH_FAILED)
     {
+      char buf[ADJ_NAME_LEN];
+      adj_variable_str(equation.rhsdeps[i], buf, ADJ_NAME_LEN);
+      snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Hash failed for variable %s.", buf);
       return adj_chkierr_auto(ierr);
     }
 
@@ -451,6 +454,9 @@ int adj_register_equation(adj_adjointer* adjointer, adj_equation equation, int* 
         }
         else if (ierr == ADJ_ERR_HASH_FAILED)
         {
+          char buf[ADJ_NAME_LEN];
+          adj_variable_str(equation.rhsdeps[i], buf, ADJ_NAME_LEN);
+          snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Hash failed for variable %s.", buf);
           return adj_chkierr_auto(ierr);
         }
         ierr = adj_append_unique(&(data_ptr->depending_equations), &(data_ptr->ndepending_equations), adjointer->nequations - 1);
