@@ -73,7 +73,7 @@ class Variable(object):
       return (clib.adj_variable_equal(self.var, other.var, 1)==1)
 
 class NonlinearBlock(object):
-  def __init__(self, name, dependencies, context=None, coefficient=None):
+  def __init__(self, name, dependencies, context=None, coefficient=None, test_hermitian=None):
     self.name = name
     self.nblock = clib.adj_nonlinear_block()
     c_context = None
@@ -86,14 +86,22 @@ class NonlinearBlock(object):
     if coefficient is not None:
       self.set_coefficient(coefficient)
 
+    if test_hermitian is not None:
+      number_of_tests = test_hermitian[0]
+      tolerance = test_hermitian[1]
+      self.set_test_hermitian(number_of_tests, tolerance)
+
   def __del__(self):
     clib.adj_destroy_nonlinear_block(self.nblock)
 
   def set_coefficient(self, c):
     clib.adj_nonlinear_block_set_coefficient(self.nblock, c)
 
+  def set_test_hermitian(self, number_of_tests, tolerance):
+    clib.adj_nonlinear_block_set_test_hermitian(self.nblock, 1, number_of_tests, tolerance)
+
 class Block(object):
-  def __init__(self, name, nblock=None, context=None, coefficient=None, hermitian=False, dependencies=None):
+  def __init__(self, name, nblock=None, context=None, coefficient=None, hermitian=False, dependencies=None, test_hermitian=None):
     self.block = clib.adj_block()
     self.c_object = self.block
     self.name = name
@@ -107,7 +115,7 @@ class Block(object):
 
     if nblock is None:
       if dependencies is not None and len(dependencies) > 0:
-        nblock = NonlinearBlock(name, dependencies, context=context)
+        nblock = NonlinearBlock(name, dependencies, context=context, test_hermitian=test_hermitian)
 
     if nblock is not None:
       self.nblock = nblock
@@ -123,6 +131,11 @@ class Block(object):
     if hermitian:
       self.set_hermitian(hermitian)
 
+    if test_hermitian is not None:
+      number_of_tests = test_hermitian[0]
+      tolerance = test_hermitian[1]
+      self.set_test_hermitian(number_of_tests, tolerance)
+
   def __del__(self):
     clib.adj_destroy_block(self.block)
 
@@ -131,6 +144,9 @@ class Block(object):
 
   def set_hermitian(self, hermitian):
     clib.adj_block_set_hermitian(self.block, hermitian)
+
+  def set_test_hermitian(self, number_of_tests, tolerance):
+    clib.adj_block_set_test_hermitian(self.block, 1, number_of_tests, tolerance)
 
   @staticmethod
   def assemble(dependencies, values, hermitian, coefficient, context):
@@ -487,6 +503,7 @@ class Adjointer(object):
     self.vec_axpy_type = ctypes.CFUNCTYPE(None, ctypes.POINTER(clib.adj_vector), adj_scalar, clib.adj_vector)
     self.vec_get_norm_type = ctypes.CFUNCTYPE(None, clib.adj_vector, ctypes.POINTER(adj_scalar))
     self.vec_dot_product_type = ctypes.CFUNCTYPE(None, clib.adj_vector, clib.adj_vector, ctypes.POINTER(adj_scalar))
+    self.vec_set_random_type = ctypes.CFUNCTYPE(None, ctypes.POINTER(clib.adj_vector))
     self.mat_duplicate_type = ctypes.CFUNCTYPE(None, clib.adj_matrix, ctypes.POINTER(clib.adj_matrix))
     self.mat_destroy_type = ctypes.CFUNCTYPE(None, ctypes.POINTER(clib.adj_matrix))
     self.mat_axpy_type = ctypes.CFUNCTYPE(None, ctypes.POINTER(clib.adj_matrix), adj_scalar, clib.adj_matrix)
@@ -664,6 +681,7 @@ class Adjointer(object):
     self.__register_data_callback__('ADJ_VEC_AXPY_CB', self.__vec_axpy_callback__)
     self.__register_data_callback__('ADJ_VEC_GET_NORM_CB', self.__vec_norm_callback__)
     self.__register_data_callback__('ADJ_VEC_DOT_PRODUCT_CB', self.__vec_dot_callback__)
+    self.__register_data_callback__('ADJ_VEC_SET_RANDOM_CB', self.__vec_set_random_callback__)
     self.__register_data_callback__('ADJ_MAT_DUPLICATE_CB', self.__mat_duplicate_callback__)
     self.__register_data_callback__('ADJ_MAT_DESTROY_CB', self.__mat_destroy_callback__)
     self.__register_data_callback__('ADJ_MAT_AXPY_CB', self.__mat_axpy_callback__)
@@ -703,6 +721,7 @@ class Adjointer(object):
                    "ADJ_VEC_AXPY_CB": self.vec_axpy_type,
                    'ADJ_VEC_GET_NORM_CB': self.vec_get_norm_type,
                    'ADJ_VEC_DOT_PRODUCT_CB': self.vec_dot_product_type,
+                   'ADJ_VEC_SET_RANDOM_CB': self.vec_set_random_type,
                    "ADJ_MAT_DUPLICATE_CB": self.mat_duplicate_type,
                    "ADJ_MAT_DESTROY_CB": self.mat_destroy_type,
                    "ADJ_MAT_AXPY_CB": self.mat_axpy_type,
@@ -864,6 +883,11 @@ class Adjointer(object):
     dot[0] = x.dot_product(y)
 
   @staticmethod
+  def __vec_set_random_callback__(adj_vec_ptr):
+    y = vector(adj_vec_ptr[0])
+    y.set_random()
+
+  @staticmethod
   def __mat_duplicate_callback__(adj_mat, adj_mat_ptr):
     mat = matrix(adj_mat)
     new_mat = mat.duplicate()
@@ -966,7 +990,6 @@ class Vector(LinAlg):
 
     raise exceptions.LibadjointErrorNeedCallback(
       'Class '+self.__class__.__name__+' has no dot_product() method')        
-
 
   def as_adj_vector(self):
     '''as_adj_vector(self)
