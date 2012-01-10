@@ -106,11 +106,13 @@ class Block(object):
 
     if nblock is None:
       if dependencies is not None and len(dependencies) > 0:
-        c_nblock = NonlinearBlock(name, dependencies, context=context).nblock
-      else:
-        c_nblock = None
-    else:
+        nblock = NonlinearBlock(name, dependencies, context=context)
+
+    if nblock is not None:
+      self.nblock = nblock
       c_nblock = nblock.nblock
+    else:
+      c_nblock = None
 
     clib.adj_create_block(name, c_nblock, c_context, 1.0, self.block)
 
