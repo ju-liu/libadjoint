@@ -480,6 +480,8 @@ class Adjointer(object):
                                                 ctypes.POINTER(clib.adj_matrix), ctypes.POINTER(clib.adj_vector))
     self.block_action_type = ctypes.CFUNCTYPE(None, ctypes.c_int, ctypes.POINTER(clib.adj_variable), ctypes.POINTER(clib.adj_vector), ctypes.c_int, adj_scalar, clib.adj_vector, 
                                               ctypes.POINTER(None),ctypes.POINTER(clib.adj_vector))
+    self.nblock_derivative_action_type = ctypes.CFUNCTYPE(None, ctypes.c_int, ctypes.POINTER(clib.adj_variable), ctypes.POINTER(clib.adj_vector), clib.adj_variable, clib.adj_vector, ctypes.c_int, clib.adj_vector,
+                                                          adj_scalar, ctypes.POINTER(None), ctypes.POINTER(clib.adj_vector))
     self.vec_duplicate_type = ctypes.CFUNCTYPE(None, clib.adj_vector, ctypes.POINTER(clib.adj_vector))
     self.vec_destroy_type = ctypes.CFUNCTYPE(None, ctypes.POINTER(clib.adj_vector))
     self.vec_axpy_type = ctypes.CFUNCTYPE(None, ctypes.POINTER(clib.adj_vector), adj_scalar, clib.adj_vector)
@@ -776,9 +778,38 @@ class Adjointer(object):
 
     return self.block_action_type(cfunc)
 
+  def __cfunc_from_nblock_derivative_action__(self, nbaction_cb):
+    '''Given a nonlinear block derivative action function defined using the Pythonic interface, we want to translate that into a function
+    that can be called from C. This routine does exactly that.'''
+
+    def cfunc(ndepends_c, dependencies_c, values_c, variable_c, contraction_c, hermitian_c, input_c, coefficient_c, context_c, output_c):
+      # build the Python objects from the C objects
+      dependencies = [Variable(var=dependencies_c[i]) for i in range(ndepends_c)]
+      values = [vector(values_c[i]) for i in range(ndepends_c)]
+      variable = Variable(var=variable_c)
+      contraction = vector(contraction_c)
+      hermitian = (hermitian_c == 1)
+      input = vector(input_c)
+      coefficient = coefficient_c
+      context = context_c
+
+      # Now call the callback we've been given
+      output = nbaction_cb(dependencies, values, variable, contraction, hermitian, input, coefficient, context)
+
+      output_c[0].klass = 0
+      output_c[0].flags = 0
+      output_c[0].ptr = 0
+      if not isinstance(output, Vector):
+        raise exceptions.LibadjointErrorInvalidInputs("object returned from nonlinear block derivative action callback must be a subclass of Vector")
+      output_c[0].ptr = python_utils.c_ptr(output)
+      references_taken.append(output)
+
+    return self.nblock_derivative_action_type(cfunc)
+
   def __register_operator_callback__(self, name, type_name, func):
     type_to_api = {"ADJ_BLOCK_ASSEMBLY_CB": (self.block_assembly_type, self.__cfunc_from_block_assembly__),
-                   "ADJ_BLOCK_ACTION_CB": (self.block_action_type, self.__cfunc_from_block_action__)}
+                   "ADJ_BLOCK_ACTION_CB": (self.block_action_type, self.__cfunc_from_block_action__),
+                   "ADJ_NBLOCK_DERIVATIVE_ACTION_CB": (self.nblock_derivative_action_type, self.__cfunc_from_nblock_derivative_action__)}
     if type_name in type_to_api:
       clib.adj_register_operator_callback.argtypes = [ctypes.POINTER(clib.adj_adjointer), ctypes.c_int, ctypes.c_char_p, type_to_api[type_name][0]]
       fn=type_to_api[type_name][1](func)
@@ -787,12 +818,6 @@ class Adjointer(object):
       clib.adj_register_operator_callback.argtypes = [ctypes.POINTER(clib.adj_adjointer), ctypes.c_int, ctypes.c_char_p, ctypes.CFUNCTYPE(None)]
     else:
       raise exceptions.LibadjointErrorNotImplemented("Unknown API for data callback " + type_name)
-
-  # def __register_block_assembly_callback__(self, name, bassembly_cb):
-  #   fn = self.__cfunc_from_block_assembly__(bassembly_cb)
-  #   self.functions_registered.append(fn)
-  #   clib.adj_register_operator_callback(self.adjointer, int(constants.adj_constants['ADJ_BLOCK_ASSEMBLY_CB']), name, fn)
-  #   clib.adj_register_operator_callback.argtypes = [ctypes.POINTER(clib.adj_adjointer), ctypes.c_int, ctypes.c_char_p, ctypes.CFUNCTYPE(None)]
 
   @staticmethod
   def __vec_duplicate_callback__(adj_vec, adj_vec_ptr):
