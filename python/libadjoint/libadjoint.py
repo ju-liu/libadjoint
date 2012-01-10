@@ -511,6 +511,8 @@ class Adjointer(object):
     self.vec_get_norm_type = ctypes.CFUNCTYPE(None, clib.adj_vector, ctypes.POINTER(adj_scalar))
     self.vec_dot_product_type = ctypes.CFUNCTYPE(None, clib.adj_vector, clib.adj_vector, ctypes.POINTER(adj_scalar))
     self.vec_set_random_type = ctypes.CFUNCTYPE(None, ctypes.POINTER(clib.adj_vector))
+    self.vec_set_values_type = ctypes.CFUNCTYPE(None, ctypes.POINTER(clib.adj_vector), ctypes.POINTER(adj_scalar))
+    self.vec_get_size_type = ctypes.CFUNCTYPE(None, clib.adj_vector, ctypes.POINTER(ctypes.c_int))
     self.mat_duplicate_type = ctypes.CFUNCTYPE(None, clib.adj_matrix, ctypes.POINTER(clib.adj_matrix))
     self.mat_destroy_type = ctypes.CFUNCTYPE(None, ctypes.POINTER(clib.adj_matrix))
     self.mat_axpy_type = ctypes.CFUNCTYPE(None, ctypes.POINTER(clib.adj_matrix), adj_scalar, clib.adj_matrix)
@@ -689,6 +691,8 @@ class Adjointer(object):
     self.__register_data_callback__('ADJ_VEC_GET_NORM_CB', self.__vec_norm_callback__)
     self.__register_data_callback__('ADJ_VEC_DOT_PRODUCT_CB', self.__vec_dot_callback__)
     self.__register_data_callback__('ADJ_VEC_SET_RANDOM_CB', self.__vec_set_random_callback__)
+    self.__register_data_callback__('ADJ_VEC_SET_VALUES_CB', self.__vec_set_values_callback__)
+    self.__register_data_callback__('ADJ_VEC_GET_SIZE_CB', self.__vec_get_size_callback__)
     self.__register_data_callback__('ADJ_MAT_DUPLICATE_CB', self.__mat_duplicate_callback__)
     self.__register_data_callback__('ADJ_MAT_DESTROY_CB', self.__mat_destroy_callback__)
     self.__register_data_callback__('ADJ_MAT_AXPY_CB', self.__mat_axpy_callback__)
@@ -729,6 +733,8 @@ class Adjointer(object):
                    'ADJ_VEC_GET_NORM_CB': self.vec_get_norm_type,
                    'ADJ_VEC_DOT_PRODUCT_CB': self.vec_dot_product_type,
                    'ADJ_VEC_SET_RANDOM_CB': self.vec_set_random_type,
+                   'ADJ_VEC_SET_VALUES_CB': self.vec_set_values_type,
+                   'ADJ_VEC_GET_SIZE_CB': self.vec_get_size_type,
                    "ADJ_MAT_DUPLICATE_CB": self.mat_duplicate_type,
                    "ADJ_MAT_DESTROY_CB": self.mat_destroy_type,
                    "ADJ_MAT_AXPY_CB": self.mat_axpy_type,
@@ -893,6 +899,17 @@ class Adjointer(object):
   def __vec_set_random_callback__(adj_vec_ptr):
     y = vector(adj_vec_ptr[0])
     y.set_random()
+
+  @staticmethod
+  def __vec_set_values_callback__(adj_vec_ptr, values):
+    import numpy
+    y = vector(adj_vec_ptr[0])
+    y.set_random(numpy.array(values))
+
+  @staticmethod
+  def __vec_get_size_callback__(adj_vec, sz):
+    y = vector(adj_vec)
+    sz[0] = y.size()
 
   @staticmethod
   def __mat_duplicate_callback__(adj_mat, adj_mat_ptr):
