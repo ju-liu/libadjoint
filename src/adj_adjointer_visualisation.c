@@ -473,9 +473,9 @@ int adj_html_eqn(FILE* fp, adj_adjointer* adjointer, adj_equation adj_eqn, int d
     desc[i][0]='\0';
   }
 
-  /* Fill in the data */
   for (i = 0; i < adj_eqn.nblocks; i++)
   {
+  	/* Add the block data to the table */
     ierr = adj_html_find_column_index(adjointer, &adj_eqn.targets[i], &col);
     if (ierr != ADJ_OK)
       return adj_chkierr_auto(ierr);
@@ -575,171 +575,226 @@ int adj_html_adjoint_eqn(FILE* fp, adj_adjointer* adjointer, adj_equation fwd_eq
 
   /* --------------------------------------------------------------------------
    * Visualisation of A* terms                                                  |
-   * -------------------------------------------------------------------------- */
+   * --------------------------------------------------------------------------
+   */
   {
     /* Each targeting equation corresponds to one column in the considered row */
     for (i = 0; i < fwd_data->ntargeting_equations; i++)
     {
-        adj_equation other_fwd_eqn;
-        adj_variable other_adj_var;
+      adj_equation other_fwd_eqn;
+      adj_variable other_adj_var;
 
-        other_fwd_eqn = adjointer->equations[fwd_data->targeting_equations[i]];
+      other_fwd_eqn = adjointer->equations[fwd_data->targeting_equations[i]];
 
-        /* Find the index in other_fwd_eqn of the block fwd_var is multiplied with */
-        for (j=0; j<other_fwd_eqn.nblocks; j++)
-        {
-          if (adj_variable_equal(&other_fwd_eqn.targets[j], &fwd_var, 1))
-            break;
-        }
-        assert(j!=other_fwd_eqn.nblocks);
-
-        /* find the column in which this blocks belongs */
-        ierr = adj_html_find_column_index(adjointer, &other_fwd_eqn.variable, &col);
-        if (ierr != ADJ_OK)
-          return adj_chkierr_auto(ierr);
-
-        other_adj_var = other_fwd_eqn.targets[j];
-        other_adj_var.type = ADJ_ADJOINT;
-
-        /* Fill in the data */
-        strncpy(row[col], other_fwd_eqn.blocks[j].name, 5);
-        row[col][5]='\0';
-
-        /* Write the information that is displayed when hovering over the block */
-        strncpy(desc[col], "Targets: ", ADJ_NAME_LEN);
-        adj_variable_str(other_adj_var, buf, ADJ_NAME_LEN);
-        strncat(desc[col], buf, ADJ_NAME_LEN);
-        strncat(desc[col], "\nTimestep:", ADJ_NAME_LEN);
-        snprintf(buf, ADJ_NAME_LEN, "%d", other_adj_var.timestep);
-        strncat(desc[col], buf, ADJ_NAME_LEN);
-        strncat(desc[col], "\nIteration:", ADJ_NAME_LEN);
-        snprintf(buf, ADJ_NAME_LEN, "%d", other_adj_var.iteration);
-        strncat(desc[col], buf, ADJ_NAME_LEN);
-        strncat(desc[col], "\n\n===== Block description =====\n\n", ADJ_NAME_LEN);
-
-        strncat(desc[col], other_fwd_eqn.blocks[j].name, ADJ_NAME_LEN);
-        strncat(desc[col], "\n------------------", ADJ_NAME_LEN);
-        strncat(desc[col], "\nCoefficient: ", ADJ_NAME_LEN);
-        snprintf(buf, ADJ_NAME_LEN, "%f", other_fwd_eqn.blocks[j].coefficient);
-        strncat(desc[col], buf, ADJ_NAME_LEN);
-        strncat(desc[col], "\nHermitian: ", ADJ_NAME_LEN);
-
-        /* We are printing the adjoint equation, therefore hermitian has to be NOT'ed */
-        if (other_fwd_eqn.blocks[j].hermitian==ADJ_TRUE)
-          snprintf(buf, ADJ_NAME_LEN, "false");
-        else
-          snprintf(buf, ADJ_NAME_LEN, "true");
-        strncat(desc[col], buf, ADJ_NAME_LEN);
-
-        if (other_fwd_eqn.blocks[j].has_nonlinear_block)
-        {
-          strncat(desc[col], "\nNonlinear Block: ", ADJ_NAME_LEN);
-          strncat(desc[col], other_fwd_eqn.blocks[j].nonlinear_block.name, ADJ_NAME_LEN);
-          strncat(desc[col], " Dependencies: ", ADJ_NAME_LEN);
-          for (k=0; k<other_fwd_eqn.blocks[j].nonlinear_block.ndepends; k++)
-          {
-            strncat(desc[col], other_fwd_eqn.blocks[j].nonlinear_block.depends[k].name, ADJ_NAME_LEN);
-            strncat(desc[col], ":", ADJ_NAME_LEN);
-            snprintf(buf, ADJ_NAME_LEN, "%d", other_fwd_eqn.blocks[j].nonlinear_block.depends[k].timestep);
-            strncat(desc[col], buf, ADJ_NAME_LEN);
-            strncat(desc[col], ":", ADJ_NAME_LEN);
-            snprintf(buf, ADJ_NAME_LEN, "%d", other_fwd_eqn.blocks[j].nonlinear_block.depends[k].iteration);
-            strncat(desc[col], buf, ADJ_NAME_LEN);
-            if (k!=other_fwd_eqn.blocks[j].nonlinear_block.ndepends-1)
-              strncat(desc[col], ", ", ADJ_NAME_LEN);
-          }
-
-        }
-      }
-
-      /* --------------------------------------------------------------------------
-       * Visualisation of G* terms                                                  |
-       * -------------------------------------------------------------------------- */
-
-      /* We need to loop through the equations that depend on fwd_var; each one of those will produce
-         a term in this row of G*. */
+      /* Find the index in other_fwd_eqn of the block fwd_var is multiplied with */
+      for (j=0; j<other_fwd_eqn.nblocks; j++)
       {
-
-        for (i = 0; i < fwd_data->ndepending_equations; i++)
-        {
-          /* We are looking for the block of G*. */
-          int ndepending_eqn;
-          adj_equation depending_eqn;
-          int k;
-
-          ndepending_eqn = fwd_data->depending_equations[i];
-          depending_eqn = adjointer->equations[ndepending_eqn];
-
-          for (j = 0; j < depending_eqn.nblocks; j++)
-          {
-
-            if (depending_eqn.blocks[j].has_nonlinear_block)
-            {
-              for (k = 0; k < depending_eqn.blocks[j].nonlinear_block.ndepends; k++)
-              {
-
-                if (adj_variable_equal(&fwd_var, &depending_eqn.blocks[j].nonlinear_block.depends[k], 1))
-                {
-                   ierr = adj_html_find_column_index(adjointer, &depending_eqn.variable, &col);
-                  if (ierr != ADJ_OK)
-                    return adj_chkierr_auto(ierr);
-
-                  /* Fill in the data */
-
-                  if (strlen(row[col])==0)
-                  {
-                  	/* If no name was written in the block yet, we conclude that this block
-                  	 * does not have a A* contribution. In order to make the hover functionality
-                  	 * work we need to provide a dummy name...
-                  	 */
-										strncpy(row[col], "_____", 5);
-										row[col][5]='\0';
-                  }
-                  else
-                  {
-                  	/* ... otherwise this block contains of a sum, so lets add a plus sign
-                  	 * to the description text
-                  	 */
-                  	strncat(desc[col], "\n\n+\n\n", ADJ_NAME_LEN);
-                  }
-
-                  /* Write the information that is displayed when hovering over the block */
-                  strncat(desc[col], "Derivative of ", ADJ_NAME_LEN);
-                  strncat(desc[col], depending_eqn.blocks[j].nonlinear_block.name, ADJ_NAME_LEN);
-                  strncat(desc[col], "\nwith respect to ", ADJ_NAME_LEN);
-                  adj_variable_str(fwd_var, buf, ADJ_NAME_LEN);
-                  strncat(desc[col], buf, ADJ_NAME_LEN);
-                  strncat(desc[col], "\ncontracted with ", ADJ_NAME_LEN);
-                  adj_variable_str(depending_eqn.targets[j], buf, ADJ_NAME_LEN);
-                  strncat(desc[col], buf, ADJ_NAME_LEN);
-                  strncat(desc[col], "\n------------------", ADJ_NAME_LEN);
-                  strncat(desc[col], "\nCoefficient: ", ADJ_NAME_LEN);
-                  snprintf(buf, ADJ_NAME_LEN, "%f", depending_eqn.blocks[j].nonlinear_block.coefficient);
-                  strncat(desc[col], buf, ADJ_NAME_LEN);
-                  strncat(desc[col], "\nHermitian: true", ADJ_NAME_LEN);
-                  strncat(desc[col], "\nDependencies: ", ADJ_NAME_LEN);
-                   for (l=0; l<depending_eqn.blocks[j].nonlinear_block.ndepends; l++)
-                   {
-                     strncat(desc[col], depending_eqn.blocks[j].nonlinear_block.depends[l].name, ADJ_NAME_LEN);
-                     strncat(desc[col], ":", ADJ_NAME_LEN);
-                     snprintf(buf, ADJ_NAME_LEN, "%d", depending_eqn.blocks[j].nonlinear_block.depends[l].timestep);
-                     strncat(desc[col], buf, ADJ_NAME_LEN);
-                     strncat(desc[col], ":", ADJ_NAME_LEN);
-                     snprintf(buf, ADJ_NAME_LEN, "%d", depending_eqn.blocks[j].nonlinear_block.depends[l].iteration);
-                     strncat(desc[col], buf, ADJ_NAME_LEN);
-                     if (l!=depending_eqn.blocks[j].nonlinear_block.ndepends-1)
-                       strncat(desc[col], ", ", ADJ_NAME_LEN);
-                   }
-
-                }
-
-              }
-            }
-
-          }
-        }
-
+        if (adj_variable_equal(&other_fwd_eqn.targets[j], &fwd_var, 1))
+          break;
       }
+      assert(j!=other_fwd_eqn.nblocks);
+
+      /* find the column in which this blocks belongs */
+      ierr = adj_html_find_column_index(adjointer, &other_fwd_eqn.variable, &col);
+      if (ierr != ADJ_OK)
+        return adj_chkierr_auto(ierr);
+
+      other_adj_var = other_fwd_eqn.targets[j];
+      other_adj_var.type = ADJ_ADJOINT;
+
+    	/* Add the block data to the table */
+      strncpy(row[col], other_fwd_eqn.blocks[j].name, 5);
+      row[col][5]='\0';
+
+      /* Write the information that is displayed when hovering over the block */
+      strncpy(desc[col], "Targets: ", ADJ_NAME_LEN);
+      adj_variable_str(other_adj_var, buf, ADJ_NAME_LEN);
+      strncat(desc[col], buf, ADJ_NAME_LEN);
+      strncat(desc[col], "\nTimestep:", ADJ_NAME_LEN);
+      snprintf(buf, ADJ_NAME_LEN, "%d", other_adj_var.timestep);
+      strncat(desc[col], buf, ADJ_NAME_LEN);
+      strncat(desc[col], "\nIteration:", ADJ_NAME_LEN);
+      snprintf(buf, ADJ_NAME_LEN, "%d", other_adj_var.iteration);
+      strncat(desc[col], buf, ADJ_NAME_LEN);
+      strncat(desc[col], "\n\n===== Block description =====\n\n", ADJ_NAME_LEN);
+
+      strncat(desc[col], other_fwd_eqn.blocks[j].name, ADJ_NAME_LEN);
+      strncat(desc[col], "\n------------------", ADJ_NAME_LEN);
+      strncat(desc[col], "\nCoefficient: ", ADJ_NAME_LEN);
+      snprintf(buf, ADJ_NAME_LEN, "%f", other_fwd_eqn.blocks[j].coefficient);
+      strncat(desc[col], buf, ADJ_NAME_LEN);
+      strncat(desc[col], "\nHermitian: ", ADJ_NAME_LEN);
+
+      /* We are printing the adjoint equation, therefore hermitian has to be NOT'ed */
+      if (other_fwd_eqn.blocks[j].hermitian==ADJ_TRUE)
+        snprintf(buf, ADJ_NAME_LEN, "false");
+      else
+        snprintf(buf, ADJ_NAME_LEN, "true");
+      strncat(desc[col], buf, ADJ_NAME_LEN);
+
+      if (other_fwd_eqn.blocks[j].has_nonlinear_block)
+      {
+        strncat(desc[col], "\nNonlinear Block: ", ADJ_NAME_LEN);
+        strncat(desc[col], other_fwd_eqn.blocks[j].nonlinear_block.name, ADJ_NAME_LEN);
+        strncat(desc[col], " Dependencies: ", ADJ_NAME_LEN);
+        for (k=0; k<other_fwd_eqn.blocks[j].nonlinear_block.ndepends; k++)
+        {
+          strncat(desc[col], other_fwd_eqn.blocks[j].nonlinear_block.depends[k].name, ADJ_NAME_LEN);
+          strncat(desc[col], ":", ADJ_NAME_LEN);
+          snprintf(buf, ADJ_NAME_LEN, "%d", other_fwd_eqn.blocks[j].nonlinear_block.depends[k].timestep);
+          strncat(desc[col], buf, ADJ_NAME_LEN);
+          strncat(desc[col], ":", ADJ_NAME_LEN);
+          snprintf(buf, ADJ_NAME_LEN, "%d", other_fwd_eqn.blocks[j].nonlinear_block.depends[k].iteration);
+          strncat(desc[col], buf, ADJ_NAME_LEN);
+          if (k!=other_fwd_eqn.blocks[j].nonlinear_block.ndepends-1)
+            strncat(desc[col], ", ", ADJ_NAME_LEN);
+        }
+      }
+    }
+
+		/* --------------------------------------------------------------------------
+		 * Visualisation of G* terms                                                  |
+		 * --------------------------------------------------------------------------
+		 */
+		{
+		 /* We need to loop through the equations that depend on fwd_var; each one of those will produce
+		  * a term in this row of G*.
+		  */
+			for (i = 0; i < fwd_data->ndepending_equations; i++)
+			{
+				/* We are looking for the block of G*. */
+				int ndepending_eqn;
+				adj_equation depending_eqn;
+				int k;
+
+				ndepending_eqn = fwd_data->depending_equations[i];
+				depending_eqn = adjointer->equations[ndepending_eqn];
+
+				for (j = 0; j < depending_eqn.nblocks; j++)
+				{
+					/* We do not have a G* contribution of linear blocks */
+					if (!depending_eqn.blocks[j].has_nonlinear_block)
+						continue;
+
+					for (k = 0; k < depending_eqn.blocks[j].nonlinear_block.ndepends; k++)
+					{
+						/* Does this G* contribute to the adjoint equation? */
+						if (adj_variable_equal(&fwd_var, &depending_eqn.blocks[j].nonlinear_block.depends[k], 1))
+						{
+							ierr = adj_html_find_column_index(adjointer, &depending_eqn.variable, &col);
+							if (ierr != ADJ_OK)
+								return adj_chkierr_auto(ierr);
+
+							/* Add the block data to the table */
+							if (strlen(row[col])==0)
+							{
+								/* If no block name was provided to the html table yet, we conclude that this block
+					       * does not have a A* contribution. In order to make the "hover over" functionality
+								 * work we need to provide a dummy name...
+								 */
+								strncpy(row[col], "_____", 5);
+								row[col][5]='\0';
+							}
+							else
+							{
+								/* ... otherwise this block contains of a sum, so lets add a plus sign
+								 * to the description text
+								 */
+								strncat(desc[col], "\n\n+\n\n", ADJ_NAME_LEN);
+							}
+
+							/* Write the information that is displayed when hovering over the block */
+							strncat(desc[col], "Derivative of ", ADJ_NAME_LEN);
+							strncat(desc[col], depending_eqn.blocks[j].nonlinear_block.name, ADJ_NAME_LEN);
+							strncat(desc[col], "\nwith respect to ", ADJ_NAME_LEN);
+							adj_variable_str(fwd_var, buf, ADJ_NAME_LEN);
+							strncat(desc[col], buf, ADJ_NAME_LEN);
+							strncat(desc[col], "\ncontracted with ", ADJ_NAME_LEN);
+							adj_variable_str(depending_eqn.targets[j], buf, ADJ_NAME_LEN);
+							strncat(desc[col], buf, ADJ_NAME_LEN);
+							strncat(desc[col], "\n------------------", ADJ_NAME_LEN);
+							strncat(desc[col], "\nCoefficient: ", ADJ_NAME_LEN);
+							snprintf(buf, ADJ_NAME_LEN, "%f", depending_eqn.blocks[j].nonlinear_block.coefficient);
+							strncat(desc[col], buf, ADJ_NAME_LEN);
+							strncat(desc[col], "\nHermitian: true", ADJ_NAME_LEN);
+							strncat(desc[col], "\nDependencies: ", ADJ_NAME_LEN);
+						 for (l=0; l<depending_eqn.blocks[j].nonlinear_block.ndepends; l++)
+						 {
+							 strncat(desc[col], depending_eqn.blocks[j].nonlinear_block.depends[l].name, ADJ_NAME_LEN);
+							 strncat(desc[col], ":", ADJ_NAME_LEN);
+							 snprintf(buf, ADJ_NAME_LEN, "%d", depending_eqn.blocks[j].nonlinear_block.depends[l].timestep);
+							 strncat(desc[col], buf, ADJ_NAME_LEN);
+							 strncat(desc[col], ":", ADJ_NAME_LEN);
+							 snprintf(buf, ADJ_NAME_LEN, "%d", depending_eqn.blocks[j].nonlinear_block.depends[l].iteration);
+							 strncat(desc[col], buf, ADJ_NAME_LEN);
+							 if (l!=depending_eqn.blocks[j].nonlinear_block.ndepends-1)
+								 strncat(desc[col], ", ", ADJ_NAME_LEN);
+						 }
+						}
+					}
+				}
+			}
+		}
+
+		/* --------------------------------------------------------------------------
+		 * Visualisation of R* terms                                                  |
+		 * --------------------------------------------------------------------------
+		 */
+		{
+	    for (i = 0; i < fwd_data->nrhs_equations; i++)
+	    {
+	      int rhs_equation = fwd_data->rhs_equations[i];
+
+	      /* Every rhs which depends on fwd_var contributes to the adjoint matrix. */
+				ierr = adj_html_find_column_index(adjointer, &(adjointer->equations[rhs_equation].variable), &col);
+				if (ierr != ADJ_OK)
+					return adj_chkierr_auto(ierr);
+
+				/* Add the rhs data to the table */
+				if (strlen(row[col])==0)
+				{
+					/* If no block name was provided to the html table yet, we conclude that this block
+					 * does not have a A* contribution. In order to make the "hover over" functionality
+					 * work we need to provide a dummy name...
+					 */
+					strncpy(row[col], "_____", 5);
+					row[col][5]='\0';
+				}
+				else
+				{
+					/* ... otherwise this block contains of a sum, so lets add a plus sign
+					 * to the description text
+					 */
+					strncat(desc[col], "\n\n+\n\n", ADJ_NAME_LEN);
+				}
+
+				/* Write the information that is displayed when hovering over the block */
+				strncat(desc[col], "Derivative of rhs of equation targeting variable ", ADJ_NAME_LEN);
+				adj_variable_str(adjointer->equations[rhs_equation].variable, buf, ADJ_NAME_LEN);
+				strncat(desc[col], buf, ADJ_NAME_LEN);
+				strncat(desc[col], "\nwith respect to ", ADJ_NAME_LEN);
+				adj_variable_str(fwd_var, buf, ADJ_NAME_LEN);
+				strncat(desc[col], buf, ADJ_NAME_LEN);
+				strncat(desc[col], "\n------------------", ADJ_NAME_LEN);
+				strncat(desc[col], "\nCoefficient: ", ADJ_NAME_LEN);
+				snprintf(buf, ADJ_NAME_LEN, "%f", 1.0);
+				strncat(desc[col], buf, ADJ_NAME_LEN);
+				strncat(desc[col], "\nHermitian: true", ADJ_NAME_LEN);
+				strncat(desc[col], "\nDependencies: ", ADJ_NAME_LEN);
+			  for (l=0; l<adjointer->equations[rhs_equation].nrhsdeps; l++)
+			  {
+				  strncat(desc[col], adjointer->equations[rhs_equation].rhsdeps[l].name, ADJ_NAME_LEN);
+				  strncat(desc[col], ":", ADJ_NAME_LEN);
+				  snprintf(buf, ADJ_NAME_LEN, "%d", adjointer->equations[rhs_equation].rhsdeps[l].timestep);
+				  strncat(desc[col], buf, ADJ_NAME_LEN);
+				  strncat(desc[col], ":", ADJ_NAME_LEN);
+				  snprintf(buf, ADJ_NAME_LEN, "%d", adjointer->equations[rhs_equation].rhsdeps[l].iteration);
+				  strncat(desc[col], buf, ADJ_NAME_LEN);
+				  if (l!=adjointer->equations[rhs_equation].nrhsdeps-1)
+				 	 strncat(desc[col], ", ", ADJ_NAME_LEN);
+			  }
+	    }
+		}
 
   }
 
