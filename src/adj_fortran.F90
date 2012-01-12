@@ -1053,6 +1053,15 @@ module libadjoint
       integer(kind=c_int) :: eq
     end function adj_variable_equal_c
 
+    function adj_variable_known_c(adjointer, var, known) result(ierr) bind(c, name='adj_variable_known')
+      use libadjoint_data_structures
+      use iso_c_binding
+      type(adj_adjointer), intent(inout) :: adjointer
+      type(adj_variable), intent(in), value :: var
+      integer(kind=c_int), intent(out) :: known
+      integer(kind=c_int) :: ierr
+    end function adj_variable_known_c
+
   end interface
 
   private :: adj_variable_equal, adj_variable_equal_c
@@ -1832,6 +1841,17 @@ module libadjoint
 
     ierr = adj_set_error_checking_c(c_check)
   end function adj_set_error_checking
+
+  function adj_variable_known(adjointer, var) result(known)
+    type(adj_adjointer), intent(inout) :: adjointer
+    type(adj_variable), intent(in) :: var
+    logical :: known
+
+    integer(kind=c_int) :: ierr, known_c
+
+    ierr = adj_variable_known_c(adjointer, var, known_c)
+    known = (known_c == 1)
+  end function adj_variable_known
 
 end module libadjoint
 

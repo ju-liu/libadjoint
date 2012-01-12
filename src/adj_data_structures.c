@@ -587,3 +587,19 @@ int adj_equation_set_rhs_derivative_action_callback(adj_equation* equation, void
   equation->rhs_deriv_action_callback = (void (*) (void* adjointer, adj_variable variable, int ndepends, adj_variable* variables, adj_vector* dependencies, adj_variable d_variable, adj_vector contraction, int hermitian, void* context, adj_vector* output, int* has_output)) fn;
   return ADJ_OK;
 }
+
+int adj_equation_rhs_nonlinear_index(adj_equation eqn)
+{
+  int i;
+
+  for (i = 0; i < eqn.nrhsdeps; i++)
+  {
+    adj_variable other_fwd_var;
+
+    other_fwd_var = eqn.rhsdeps[i];
+    if (adj_variable_equal(&other_fwd_var, &eqn.variable, 1))
+      return i;
+  }
+
+  return -1;
+}

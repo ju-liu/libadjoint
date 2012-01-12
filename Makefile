@@ -196,7 +196,7 @@ clean:
 	@rm -f include/libadjoint/adj_constants_f.h include/libadjoint/adj_error_handling_f.h
 
 ifneq (,$(H2XML))
-test: $(FTEST) $(CTEST) $(PTEST)
+test: $(FTEST) $(CTEST) $(PTEST) pybuild
 else
 test: $(FTEST) $(CTEST)
 endif

@@ -42,3 +42,13 @@ class Matrix(libadjoint.Matrix):
 
   def axpy(self, alpha, x):
     self.mat += alpha*x.mat
+
+class RHS(libadjoint.RHS):
+  def __init__(self, v):
+    self.v = v
+  def __call__(self, dependencies, values):
+    assert len(dependencies) == 0
+    return self.v
+  def dependencies(self):
+    return []
+

@@ -35,7 +35,7 @@ static PyObject * c_ptr(PyObject *self, PyObject *args)
     return NULL;
 
   /* Note that we purposefully do not dereference object. */ 
-  return PyInt_FromLong((long)object);
+  return PyLong_FromUnsignedLong((unsigned long) object);
 };
 
 static PyObject * c_deref(PyObject *self, PyObject *args)
@@ -48,7 +48,8 @@ static PyObject * c_deref(PyObject *self, PyObject *args)
     return NULL;
   
   /* The value of the python integer is the pointer */
-  PyObject* pyobj = (PyObject*) PyInt_AsLong(pointer);
+  unsigned long long_ptr = PyLong_AsUnsignedLong(pointer);
+  PyObject* pyobj = (PyObject*) long_ptr;
   Py_XINCREF(pyobj);
   return pyobj;
 };

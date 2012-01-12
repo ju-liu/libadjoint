@@ -265,7 +265,7 @@ void adj_html_print_callback_information(FILE* fp, adj_adjointer* adjointer)
   cb_ptr= adjointer->block_action_list.firstnode;
   fprintf(fp, "<div>");
   while (cb_ptr != NULL) {
-    fprintf(fp, "%s", cb_ptr->name);
+    fprintf(fp, "%s<br/>\n", cb_ptr->name);
     cb_ptr = cb_ptr->next;
   }
   fprintf(fp, "</div>");
@@ -274,7 +274,7 @@ void adj_html_print_callback_information(FILE* fp, adj_adjointer* adjointer)
   cb_ptr= adjointer->block_assembly_list.firstnode;
   fprintf(fp, "<div>");
   while (cb_ptr != NULL) {
-    fprintf(fp, "%s", cb_ptr->name);
+    fprintf(fp, "%s<br/>\n", cb_ptr->name);
     cb_ptr = cb_ptr->next;
   }
   fprintf(fp, "</div>");
@@ -283,7 +283,7 @@ void adj_html_print_callback_information(FILE* fp, adj_adjointer* adjointer)
   cb_ptr= adjointer->nonlinear_action_list.firstnode;
   fprintf(fp, "<div>");
   while (cb_ptr != NULL) {
-    fprintf(fp, "%s", cb_ptr->name);
+    fprintf(fp, "%s<br/>\n", cb_ptr->name);
     cb_ptr = cb_ptr->next;
   }
   fprintf(fp, "</div>");
@@ -292,7 +292,7 @@ void adj_html_print_callback_information(FILE* fp, adj_adjointer* adjointer)
   cb_ptr= adjointer->nonlinear_derivative_action_list.firstnode;
   fprintf(fp, "<div>");
   while (cb_ptr != NULL) {
-    fprintf(fp, "%s", cb_ptr->name);
+    fprintf(fp, "%s<br/>\n", cb_ptr->name);
     cb_ptr = cb_ptr->next;
   }
   fprintf(fp, "</div>");
@@ -301,7 +301,7 @@ void adj_html_print_callback_information(FILE* fp, adj_adjointer* adjointer)
   cb_ptr= adjointer->nonlinear_derivative_assembly_list.firstnode;
   fprintf(fp, "<div>");
   while (cb_ptr != NULL) {
-    fprintf(fp, "%s", cb_ptr->name);
+    fprintf(fp, "%s<br/>\n", cb_ptr->name);
     cb_ptr = cb_ptr->next;
   }
   fprintf(fp, "</div>");
@@ -310,7 +310,7 @@ void adj_html_print_callback_information(FILE* fp, adj_adjointer* adjointer)
   func_cb_ptr= adjointer->functional_list.firstnode;
   fprintf(fp, "<div>");
   while (func_cb_ptr != NULL) {
-    fprintf(fp, "<div class=\"greenfont\">%s</div>", func_cb_ptr->name);
+    fprintf(fp, "<div class=\"greenfont\">%s</div><br/>\n", func_cb_ptr->name);
     func_cb_ptr = func_cb_ptr->next;
   }
   fprintf(fp, "</div>");
@@ -319,7 +319,7 @@ void adj_html_print_callback_information(FILE* fp, adj_adjointer* adjointer)
   func_deriv_cb_ptr= adjointer->functional_derivative_list.firstnode;
   fprintf(fp, "<div>");
   while (func_deriv_cb_ptr != NULL) {
-    fprintf(fp, "<div class=\"greenfont\">%s</div>", func_deriv_cb_ptr->name);
+    fprintf(fp, "<div class=\"greenfont\">%s</div><br/>\n", func_deriv_cb_ptr->name);
     func_deriv_cb_ptr = func_deriv_cb_ptr->next;
   }
   fprintf(fp, "</div>");

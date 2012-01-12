@@ -392,6 +392,9 @@ int adj_register_equation(adj_adjointer* adjointer, adj_equation equation, int* 
     }
     else if (ierr == ADJ_ERR_HASH_FAILED)
     {
+      char buf[ADJ_NAME_LEN];
+      adj_variable_str(equation.rhsdeps[i], buf, ADJ_NAME_LEN);
+      snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Hash failed for variable %s.", buf);
       return adj_chkierr_auto(ierr);
     }
 
@@ -451,6 +454,9 @@ int adj_register_equation(adj_adjointer* adjointer, adj_equation equation, int* 
         }
         else if (ierr == ADJ_ERR_HASH_FAILED)
         {
+          char buf[ADJ_NAME_LEN];
+          adj_variable_str(equation.blocks[i].nonlinear_block.depends[j], buf, ADJ_NAME_LEN);
+          snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Hash failed for variable %s.", buf);
           return adj_chkierr_auto(ierr);
         }
         ierr = adj_append_unique(&(data_ptr->depending_equations), &(data_ptr->ndepending_equations), adjointer->nequations - 1);
@@ -2429,4 +2435,15 @@ int adj_variable_get_depending_timestep(adj_adjointer* adjointer, adj_variable v
   }
 
   return adj_chkierr_auto(ADJ_ERR_INVALID_INPUTS);
+}
+
+int adj_variable_known(adj_adjointer* adjointer, adj_variable var, int* known)
+{
+  int ierr;
+  adj_variable_data* data_ptr;
+
+  ierr = adj_find_variable_data(&(adjointer->varhash), &var, &data_ptr);
+  *known = (ierr != ADJ_ERR_HASH_FAILED);
+
+  return ADJ_OK;
 }
