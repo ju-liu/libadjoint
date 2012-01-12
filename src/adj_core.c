@@ -115,7 +115,7 @@ int adj_get_adjoint_equation(adj_adjointer* adjointer, int equation, char* funct
       adj_append_unique(&(adj_data->adjoint_equations), &(adj_data->nadjoint_equations), j_data->equation);
     }
   }
-  /* J* terms */
+  /* R* terms */
   for (i = 0; i < fwd_eqn.nrhsdeps; i++)
   {
     adj_variable_data* rhs_dep_data;
@@ -316,7 +316,7 @@ int adj_get_adjoint_equation(adj_adjointer* adjointer, int equation, char* funct
     for (i = 0; i < fwd_data->nrhs_equations; i++)
     {
       int rhs_equation = fwd_data->rhs_equations[i];
-      /* Does this J* contribute to the adjoint matrix ... */
+      /* Does this R* contribute to the adjoint matrix ... */
       if (adj_variable_equal(&(adjointer->equations[rhs_equation].variable), &fwd_var, 1))
       {
         snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Equations with right-hand sides that depend on the variable being solved for are not supported (yet).");
