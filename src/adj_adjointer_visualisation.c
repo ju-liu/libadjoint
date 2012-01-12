@@ -605,6 +605,7 @@ int adj_html_adjoint_eqn(FILE* fp, adj_adjointer* adjointer, adj_equation fwd_eq
         strncpy(row[col], other_fwd_eqn.blocks[j].name, 5);
         row[col][5]='\0';
 
+        /* Write the information that is displayed when hovering over the block */
         strncpy(desc[col], "Targets: ", ADJ_NAME_LEN);
         adj_variable_str(other_adj_var, buf, ADJ_NAME_LEN);
         strncat(desc[col], buf, ADJ_NAME_LEN);
@@ -683,7 +684,26 @@ int adj_html_adjoint_eqn(FILE* fp, adj_adjointer* adjointer, adj_equation fwd_eq
                   if (ierr != ADJ_OK)
                     return adj_chkierr_auto(ierr);
 
-                  strncat(desc[col], "\n\n+\n\n", ADJ_NAME_LEN);
+                  /* Fill in the data */
+
+                  if (strlen(row[col])==0)
+                  {
+                  	/* If no name was written in the block yet, we conclude that this block
+                  	 * does not have a A* contribution. In order to make the hover functionality
+                  	 * work we need to provide a dummy name...
+                  	 */
+										strncpy(row[col], "_____", 5);
+										row[col][5]='\0';
+                  }
+                  else
+                  {
+                  	/* ... otherwise this block contains of a sum, so lets add a plus sign
+                  	 * to the description text
+                  	 */
+                  	strncat(desc[col], "\n\n+\n\n", ADJ_NAME_LEN);
+                  }
+
+                  /* Write the information that is displayed when hovering over the block */
                   strncat(desc[col], "Derivative of ", ADJ_NAME_LEN);
                   strncat(desc[col], depending_eqn.blocks[j].nonlinear_block.name, ADJ_NAME_LEN);
                   strncat(desc[col], "\nwith respect to ", ADJ_NAME_LEN);
@@ -752,6 +772,7 @@ int adj_html_adjoint_system(adj_adjointer* adjointer, char* filename)
 
   adj_html_print_statistics(fp, adjointer);
 
+  /* Print the annontate matrix system in a html table */
   fprintf(fp, "<h1>Adjoint system</h1>\n");
   if (adjointer->nequations==0)
     return ADJ_OK;
@@ -812,6 +833,7 @@ int adj_html_forward_system(adj_adjointer* adjointer, char* filename)
 
   adj_html_print_statistics(fp, adjointer);
 
+  /* Print the annontate matrix system in a html table */
   fprintf(fp, "<h1>Forward system</h1>\n");
   if (adjointer->nequations==0)
     return ADJ_OK;
