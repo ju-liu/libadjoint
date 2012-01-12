@@ -89,7 +89,7 @@ void adj_html_table_end(FILE* fp)
   fprintf(fp, "</table>\n");
 }
 
-void adj_html_write_row(FILE* fp, char** strings, char** desc, int nb_strings, int diag_index, char* class)
+void adj_html_write_row(FILE* fp, char* strings[], char* desc[], int nb_strings, int diag_index, char* class)
 {
   int i;
   for (i = 0; i < nb_strings; i++)
@@ -460,6 +460,8 @@ int adj_html_eqn(FILE* fp, adj_adjointer* adjointer, adj_equation adj_eqn, int d
   char* row[nb_vars];
   char* desc[nb_vars];
   char buf[ADJ_NAME_LEN];
+  char* row_rhs[1];
+  char* desc_rhs[1];
   int col, ierr;
 
   /* Allocate the strings for this row */
@@ -472,6 +474,9 @@ int adj_html_eqn(FILE* fp, adj_adjointer* adjointer, adj_equation adj_eqn, int d
     ADJ_CHKMALLOC(desc[i]);
     desc[i][0]='\0';
   }
+  /* Allocate the strings for the rhs */
+  row_rhs[0] = malloc(ADJ_NAME_LEN*sizeof(char));
+  desc_rhs[0] = malloc(ADJ_NAME_LEN*sizeof(char));
 
   for (i = 0; i < adj_eqn.nblocks; i++)
   {
@@ -527,14 +532,31 @@ int adj_html_eqn(FILE* fp, adj_adjointer* adjointer, adj_equation adj_eqn, int d
 
     }
   }
-  /* Write it to file */
+  /* Write the row */
   adj_html_write_row(fp, row, desc, adjointer->nequations, diag_index, class);
 
-  /* Write the rhs information on as last column */
-  for (i=0; i < adj_eqn.nrhsdeps; i++)
+  if (adj_eqn.nrhsdeps>0)
   {
-    adj_variable_str(adj_eqn.rhsdeps[i], buf, ADJ_NAME_LEN);
-    fprintf(fp, "<td class=\"rhs\">%s</div></td>\n", buf);
+		/* Write the rhs information to the last column */
+		strncpy(row_rhs[0], "Rhs\0", ADJ_NAME_LEN);
+
+		/* Add the dependency information as hover text */
+		strncpy(desc_rhs[0], "Dependencies: ", ADJ_NAME_LEN);
+		for (i=0; i<adj_eqn.nrhsdeps; i++)
+		{
+			strncat(desc_rhs[0], adj_eqn.rhsdeps[i].name, ADJ_NAME_LEN);
+			strncat(desc_rhs[0], ":", ADJ_NAME_LEN);
+			snprintf(buf, ADJ_NAME_LEN, "%d", adj_eqn.rhsdeps[i].timestep);
+			strncat(desc_rhs[0], buf, ADJ_NAME_LEN);
+			strncat(desc_rhs[0], ":", ADJ_NAME_LEN);
+			snprintf(buf, ADJ_NAME_LEN, "%d", adj_eqn.rhsdeps[i].iteration);
+			strncat(desc_rhs[0], buf, ADJ_NAME_LEN);
+			if (i!=adj_eqn.nrhsdeps-1)
+			 strncat(desc_rhs[0], ", ", ADJ_NAME_LEN);
+		}
+
+		strncpy(buf, "rhs\0", ADJ_NAME_LEN);
+		adj_html_write_row(fp, row_rhs, desc_rhs, 1, -1, buf);
   }
 
   /* Tidy up */
@@ -543,6 +565,9 @@ int adj_html_eqn(FILE* fp, adj_adjointer* adjointer, adj_equation adj_eqn, int d
     free(row[i]);
     free(desc[i]);
   }
+  free(row_rhs[0]);
+  free(desc_rhs[0]);
+
   return ADJ_OK;
 }
 
@@ -777,9 +802,9 @@ int adj_html_adjoint_eqn(FILE* fp, adj_adjointer* adjointer, adj_equation fwd_eq
 				strncat(desc[col], buf, ADJ_NAME_LEN);
 				strncat(desc[col], "\n------------------", ADJ_NAME_LEN);
 				strncat(desc[col], "\nCoefficient: ", ADJ_NAME_LEN);
-				snprintf(buf, ADJ_NAME_LEN, "%f", 1.0);
+				snprintf(buf, ADJ_NAME_LEN, "%f", -1.0); /* The coefficient is always 1.0 */
 				strncat(desc[col], buf, ADJ_NAME_LEN);
-				strncat(desc[col], "\nHermitian: true", ADJ_NAME_LEN);
+				strncat(desc[col], "\nHermitian: true", ADJ_NAME_LEN); /* The rhs contribution is always hermitian */
 				strncat(desc[col], "\nDependencies: ", ADJ_NAME_LEN);
 			  for (l=0; l<adjointer->equations[rhs_equation].nrhsdeps; l++)
 			  {
