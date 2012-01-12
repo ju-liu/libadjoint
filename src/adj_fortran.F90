@@ -56,6 +56,7 @@ module libadjoint_data_structures
     type(c_ptr) :: rhs_context
     type(c_funptr) :: rhs_callback
     type(c_funptr) :: rhs_deriv_action_callback
+    type(c_funptr) :: rhs_deriv_assembly_callback
     integer(kind=c_int) :: memory_checkpoint
     integer(kind=c_int) :: disk_checkpoint
   end type adj_equation

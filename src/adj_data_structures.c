@@ -588,6 +588,13 @@ int adj_equation_set_rhs_derivative_action_callback(adj_equation* equation, void
   return ADJ_OK;
 }
 
+int adj_equation_set_rhs_derivative_assembly_callback(adj_equation* equation, void (*fn)(adj_adjointer* adjointer, adj_variable variable, int ndepends, adj_variable* variables, adj_vector* dependencies, \
+                                    int hermitian, void* context, adj_matrix* output))
+{
+  equation->rhs_deriv_assembly_callback = (void (*) (void* adjointer, adj_variable variable, int ndepends, adj_variable* variables, adj_vector* dependencies, int hermitian, void* context, adj_matrix* output)) fn;
+  return ADJ_OK;
+}
+
 int adj_equation_rhs_nonlinear_index(adj_equation eqn)
 {
   int i;
