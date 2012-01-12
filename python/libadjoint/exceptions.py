@@ -28,6 +28,9 @@ class LibadjointErrorToleranceExceeded(LibadjointErrorException):
 class LibadjointErrorMallocFailed(LibadjointErrorException):
   pass
 
+class LibadjointErrorRevolveError(LibadjointErrorException):
+  pass
+
 class LibadjointWarnException(LibadjointException):
   pass
 
@@ -52,6 +55,7 @@ ierr_to_exception = {
     6: LibadjointErrorDictFailed,
     7: LibadjointErrorToleranceExceeded,
     8: LibadjointErrorMallocFailed,
+    9: LibadjointErrorRevolveError,
    -1: LibadjointWarnAlreadyRecorded,
    -2: LibadjointWarnComparisonFailed,
    -3: LibadjointWarnUninitialisedValue,

@@ -276,13 +276,15 @@ class Storage(object):
 
 class MemoryStorage(Storage):
   '''Wrapper class for Vectors that contains additional information for storing the vector values in memory.'''
-  def __init__(self, vec, copy=True):
+  def __init__(self, vec, copy=True, cs=False):
     self.storage_data = clib.adj_storage_data()
     self.c_object = self.storage_data
     if copy:
       clib.adj_storage_memory_copy(vec.as_adj_vector(), self.storage_data)
     else:
       clib.adj_storage_memory_incref(vec.as_adj_vector(), self.storage_data)
+
+    self.set_checkpoint(cs)
 
     # Ensure that the storage object always holds a reference to the vec
     self.vec = vec
@@ -533,6 +535,15 @@ class Adjointer(object):
       self.adjointer = adjointer
       self.c_object = self.adjointer
 
+  def set_checkpoint_strategy(self, strategy):
+    strategy_id = int(constants.adj_constants['ADJ_CHECKPOINT_REVOLVE_' + strategy.upper()])
+    clib.adj_set_checkpoint_strategy(self.adjointer, strategy_id)
+
+  def set_revolve_options(self, steps, snaps_on_disk, snaps_in_ram, verbose=False):
+      clib.adj_set_revolve_options(self.adjointer, steps, snaps_on_disk, snaps_in_ram, verbose)
+
+  def set_revolve_debug_options(self, overwrite, comparison_tolerance):
+      clib.adj_set_revolve_debug_options(self.adjointer, overwrite, comparison_tolerance)
 
   def set_function_apis(self):
     self.block_assembly_type = ctypes.CFUNCTYPE(None, ctypes.c_int, ctypes.POINTER(clib.adj_variable), ctypes.POINTER(clib.adj_vector), ctypes.c_int, adj_scalar, ctypes.POINTER(None),
@@ -579,7 +590,6 @@ class Adjointer(object):
 
     cs = ctypes.c_int()
     clib.adj_register_equation(self.adjointer, equation.equation, cs)
-    assert cs.value == 0
 
     if hasattr(equation, 'rhs_fn'):
       self.functions_registered.append(equation.rhs_fn)
@@ -607,6 +617,9 @@ class Adjointer(object):
           def nblock_action(dependencies, values, input, context):
             return block.action(dependencies, values, False, 1.0, input, context)
           self.__register_operator_callback__(block.nblock.name, "ADJ_NBLOCK_ACTION_CB", nblock_action)
+
+    # Return the checkpoint flag
+    return cs.value
 
   def __register_functional__(self, functional):
     assert(isinstance(functional, Functional))
