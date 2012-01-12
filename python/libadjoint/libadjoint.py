@@ -536,7 +536,10 @@ class Adjointer(object):
       self.c_object = self.adjointer
 
   def set_checkpoint_strategy(self, strategy):
-    strategy_id = int(constants.adj_constants['ADJ_CHECKPOINT_REVOLVE_' + strategy.upper()])
+    try:
+      strategy_id = int(constants.adj_constants['ADJ_CHECKPOINT_REVOLVE_' + strategy.upper()])
+    except KeyError:
+      raise libadjoint.exceptions.LibadjointErrorInvalidInputs("Unknown checkpointing strategy " + strategy + ". Known strategies: ['offline', 'online', 'multistage'].")
     clib.adj_set_checkpoint_strategy(self.adjointer, strategy_id)
 
   def set_revolve_options(self, steps, snaps_on_disk, snaps_in_ram, verbose=False):
