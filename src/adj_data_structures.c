@@ -588,7 +588,7 @@ int adj_equation_set_rhs_derivative_action_callback(adj_equation* equation, void
   return ADJ_OK;
 }
 
-int adj_equation_rhs_is_nonlinear(adj_equation eqn)
+int adj_equation_rhs_nonlinear_index(adj_equation eqn)
 {
   int i;
 

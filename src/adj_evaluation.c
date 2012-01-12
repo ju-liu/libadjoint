@@ -567,7 +567,7 @@ int adj_evaluate_forward_source(adj_adjointer* adjointer, int equation, adj_vect
   int ierr;
   int nonlinear_idx;
 
-  nonlinear_idx = adj_equation_rhs_is_nonlinear(adjointer->equations[equation]);
+  nonlinear_idx = adj_equation_rhs_nonlinear_index(adjointer->equations[equation]);
   if (nonlinear_idx >= 0)
   {
     nrhsdeps = adjointer->equations[equation].nrhsdeps - 1; /* we don't claim to supply a value for the variable we're solving the equation for ... */
