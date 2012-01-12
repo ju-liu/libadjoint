@@ -603,11 +603,10 @@ int adj_evaluate_forward_source(adj_adjointer* adjointer, int equation, adj_vect
 int adj_evaluate_rhs_deriv_action(adj_adjointer* adjointer, adj_equation source_eqn, adj_variable diff_var, int hermitian, char* functional, adj_vector* output, int* has_output)
 {
   int nrhsdeps;
-  int j, k;
+  int j;
   int ierr;
   adj_variable* variables;
   adj_vector* dependencies;
-  int nonlinear_idx;
 
   adj_variable contraction_var;
   adj_vector contraction;
@@ -620,30 +619,18 @@ int adj_evaluate_rhs_deriv_action(adj_adjointer* adjointer, adj_equation source_
     return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
   }
 
-  nonlinear_idx = adj_equation_rhs_nonlinear_index(source_eqn);
-  if (nonlinear_idx >= 0)
-  {
-    nrhsdeps = source_eqn.nrhsdeps - 1; /* we don't claim to supply a value for the variable we're solving the equation for ... */
-  }
-  else
-  {
-    nrhsdeps = source_eqn.nrhsdeps;
-  }
+  nrhsdeps = source_eqn.nrhsdeps;
 
   variables = (adj_variable*) malloc(nrhsdeps * sizeof(adj_variable));
   ADJ_CHKMALLOC(variables);
   dependencies = (adj_vector*) malloc(nrhsdeps * sizeof(adj_vector));
   ADJ_CHKMALLOC(dependencies);
 
-  for (j=0, k=0; j < source_eqn.nrhsdeps; j++)
+  for (j=0; j < nrhsdeps; j++)
   {
-    if (j == nonlinear_idx) continue;
-
-    memcpy(&variables[k], &source_eqn.rhsdeps[j], sizeof(adj_variable));
-    ierr = adj_get_variable_value(adjointer, variables[k], &(dependencies[k]));
+    memcpy(&variables[j], &source_eqn.rhsdeps[j], sizeof(adj_variable));
+    ierr = adj_get_variable_value(adjointer, variables[j], &(dependencies[j]));
     if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
-
-    k++;
   }
 
   contraction_var = source_eqn.variable; contraction_var.type = ADJ_ADJOINT; strncpy(contraction_var.functional, functional, ADJ_NAME_LEN);
@@ -661,11 +648,10 @@ int adj_evaluate_rhs_deriv_action(adj_adjointer* adjointer, adj_equation source_
 int adj_evaluate_rhs_deriv_assembly(adj_adjointer* adjointer, adj_equation source_eqn, int hermitian, adj_matrix* output)
 {
   int nrhsdeps;
-  int j, k;
+  int j;
   int ierr;
   adj_variable* variables;
   adj_vector* dependencies;
-  int nonlinear_idx;
 
   if (source_eqn.rhs_deriv_assembly_callback == NULL)
   {
@@ -675,30 +661,18 @@ int adj_evaluate_rhs_deriv_assembly(adj_adjointer* adjointer, adj_equation sourc
     return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
   }
 
-  nonlinear_idx = adj_equation_rhs_nonlinear_index(source_eqn);
-  if (nonlinear_idx >= 0)
-  {
-    nrhsdeps = source_eqn.nrhsdeps - 1; /* we don't claim to supply a value for the variable we're solving the equation for ... */
-  }
-  else
-  {
-    nrhsdeps = source_eqn.nrhsdeps;
-  }
+  nrhsdeps = source_eqn.nrhsdeps;
 
   variables = (adj_variable*) malloc(nrhsdeps * sizeof(adj_variable));
   ADJ_CHKMALLOC(variables);
   dependencies = (adj_vector*) malloc(nrhsdeps * sizeof(adj_vector));
   ADJ_CHKMALLOC(dependencies);
 
-  for (j=0, k=0; j < source_eqn.nrhsdeps; j++)
+  for (j=0; j < nrhsdeps; j++)
   {
-    if (j == nonlinear_idx) continue;
-
-    memcpy(&variables[k], &source_eqn.rhsdeps[j], sizeof(adj_variable));
-    ierr = adj_get_variable_value(adjointer, variables[k], &(dependencies[k]));
+    memcpy(&variables[j], &source_eqn.rhsdeps[j], sizeof(adj_variable));
+    ierr = adj_get_variable_value(adjointer, variables[j], &(dependencies[j]));
     if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
-
-    k++;
   }
 
   source_eqn.rhs_deriv_assembly_callback((void*) adjointer, source_eqn.variable, nrhsdeps, variables, dependencies, hermitian, source_eqn.rhs_context, output);

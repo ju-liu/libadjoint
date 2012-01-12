@@ -322,7 +322,7 @@ int adj_get_adjoint_equation(adj_adjointer* adjointer, int equation, char* funct
         adj_matrix rstar;
         ierr = adj_evaluate_rhs_deriv_assembly(adjointer, adjointer->equations[rhs_equation], ADJ_TRUE, &rstar);
         if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
-        adjointer->callbacks.mat_axpy(lhs, (adj_scalar) 1.0, rstar); /* Add the R* contribution to the adjoint lhs */
+        adjointer->callbacks.mat_axpy(lhs, (adj_scalar) -1.0, rstar); /* Subtract the R* contribution from the adjoint lhs */
         adjointer->callbacks.mat_destroy(&rstar);
       }
       /* ... or to the right-hand side of the adjoint system? */
