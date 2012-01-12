@@ -308,7 +308,7 @@ class Functional(object):
     Evaluate functional given dependencies with values. The result must be a scalar.
     '''
 
-    raise exceptions.LibadjointErrorNotImplemented("No __call__ method provided for" + type_name)
+    raise exceptions.LibadjointErrorNotImplemented("No __call__ method provided for functional.")
 
   def __str__(self):
 
@@ -320,14 +320,14 @@ class Functional(object):
     Evaluate the derivative of the functional with respect to variable given dependencies with values. The result will be a Vector.
     '''
 
-    raise exceptions.LibadjointErrorNotImplemented("No derivative method provided for" + type_name)
+    raise exceptions.LibadjointErrorNotImplemented("No derivative method provided for functional.")
 
   def dependencies(self, adjointer, timestep):
     '''dependencies(self, adjointer, timestep)
 
     Return the list of Variables on which this functional depends at timestep. The adjointer may be queried to find the actual value of time if required.'''
 
-    raise exceptions.LibadjointErrorNotImplemented("No dependencies method provided for" + type_name)
+    raise exceptions.LibadjointErrorNotImplemented("No dependencies method provided for functional.")
 
   def __cfunc_from_derivative__(self):
     '''Return a c-callable function wrapping the derivative method.'''
@@ -380,7 +380,7 @@ class RHS(object):
     Evaluate RHS given the values corresponding to dependencies. The result must be a Vector.
     '''
 
-    raise exceptions.LibadjointErrorNotImplemented("No __call__ method provided for" + type_name)
+    raise exceptions.LibadjointErrorNotImplemented("No __call__ method provided for RHS.")
 
   def __str__(self):
 
@@ -392,14 +392,22 @@ class RHS(object):
     Evaluate the action of the derivative of the RHS with respect to variable given dependencies with values on contraction_vector. The result will be a Vector.
     '''
 
-    raise exceptions.LibadjointErrorNotImplemented("No derivative method provided for" + type_name)
+    raise exceptions.LibadjointErrorNotImplemented("No derivative action method provided for RHS.")
+
+  def derivative_assembly(self, dependencies, values, variable, hermitian):
+    '''derivative_assembly(self, dependencies, values, variable, hermitian):
+
+    Evaluate the derivative of the RHS with respect to variable given dependencies with values on contraction_vector. The result will be a Matrix.
+    '''
+
+    raise exceptions.LibadjointErrorNotImplemented("No derivative assembly method provided for RHS.")
 
   def dependencies(self):
     '''dependencies(self)
 
     Return the list of Variables on which this functional depends.'''
 
-    raise exceptions.LibadjointErrorNotImplemented("No dependencies method provided for" + type_name)
+    raise exceptions.LibadjointErrorNotImplemented("No dependencies method provided for RHS.")
 
   def register(self, equation):
     '''register(self, equation)
@@ -413,9 +421,11 @@ class RHS(object):
     equation.rhs_fn = self.__cfunc_from_rhs__()
     clib.adj_equation_set_rhs_callback(equation.equation, equation.rhs_fn)
 
-    equation.rhs_derivative_action_fn=self.__cfunc_from_derivative_action__()
+    equation.rhs_derivative_action_fn = self.__cfunc_from_derivative_action__()
     clib.adj_equation_set_rhs_derivative_action_callback(equation.equation, equation.rhs_derivative_action_fn)
 
+    equation.rhs_derivative_assembly_fn = self.__cfunc_from_derivative_assembly__()
+    clib.adj_equation_set_rhs_derivative_assembly_callback(equation.equation, equation.rhs_derivative_assembly_fn)
 
   def __cfunc_from_rhs__(self):
     '''Given a rhs function defined using the Pythonic interface, we want to translate that into a function that
@@ -469,7 +479,7 @@ class RHS(object):
       output_c[0].ptr = 0
       if output:
         if not isinstance(output, Vector):
-          raise exceptions.LibadjointErrorInvalidInputs("Output from RHS callback must be None or a Vector.")
+          raise exceptions.LibadjointErrorInvalidInputs("Output from RHS derivative_action callback must be None or a Vector.")
         output_c[0].ptr = python_utils.c_ptr(output)
 
       references_taken.append(output)
@@ -478,6 +488,32 @@ class RHS(object):
         ctypes.POINTER(clib.adj_vector), clib.adj_variable, clib.adj_vector, ctypes.c_int, ctypes.POINTER(None), ctypes.POINTER(clib.adj_vector), ctypes.POINTER(ctypes.c_int))
     return rhs_deriv_action_type(cfunc)
 
+  def __cfunc_from_derivative_assembly__(self):
+    '''Return a c-callable function wrapping the derivative_assembly method.'''
+
+    def cfunc(adjointer_c, source_variable_c, ndepends_c, dependencies_c, values_c, hermitian_c, context_c, output_c):
+      # build the Python objects from the C objects
+      variable  = Variable(var=source_variable_c)
+      dependencies = [Variable(var=dependencies_c[i]) for i in range(ndepends_c)]
+      values = [vector(values_c[i]) for i in range(ndepends_c)]
+      hermitian = (hermitian_c==1)
+
+      # Now call the callback we've been given
+      output = self.derivative_assembly(dependencies, values, variable, hermitian)
+
+      # Now cast the outputs back to C
+      output_c[0].klass = 0
+      output_c[0].flags = 0
+      output_c[0].ptr = 0
+      if not isinstance(output, Matrix):
+        raise exceptions.LibadjointErrorInvalidInputs("Output from RHS derivative_assembly callback must be a Matrix.")
+      output_c[0].ptr = python_utils.c_ptr(output)
+
+      references_taken.append(output)
+
+    rhs_deriv_assembly_type = ctypes.CFUNCTYPE(None, ctypes.POINTER(clib.adj_adjointer), clib.adj_variable, ctypes.c_int, ctypes.POINTER(clib.adj_variable),
+        ctypes.POINTER(clib.adj_vector), ctypes.c_int, ctypes.POINTER(None), ctypes.POINTER(clib.adj_matrix))
+    return rhs_deriv_assembly_type(cfunc)
 
 class Adjointer(object):
   def __init__(self, adjointer=None):
@@ -550,6 +586,9 @@ class Adjointer(object):
 
     if hasattr(equation, 'rhs_derivative_action_fn'):
       self.functions_registered.append(equation.rhs_derivative_action_fn)
+
+    if hasattr(equation, 'rhs_derivative_assembly_fn'):
+      self.functions_registered.append(equation.rhs_derivative_assembly_fn)
 
     for block in equation.blocks:
       if not (block.assemble is Block.assemble):
