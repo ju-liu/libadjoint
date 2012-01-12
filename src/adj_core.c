@@ -330,10 +330,17 @@ int adj_get_adjoint_equation(adj_adjointer* adjointer, int equation, char* funct
       {
         /* Get the adj_equation associated with this dependency, so we can pull out the relevant rhs_deriv_action callback */
         adj_vector deriv_action;
+        adj_variable contraction_var;
+        adj_vector contraction;
         int has_output;
 
         has_output = -666;
-        ierr = adj_evaluate_rhs_deriv_action(adjointer, adjointer->equations[rhs_equation], fwd_var, ADJ_TRUE, functional, &deriv_action, &has_output);
+
+        contraction_var = adjointer->equations[rhs_equation].variable; contraction_var.type = ADJ_ADJOINT; strncpy(contraction_var.functional, functional, ADJ_NAME_LEN);
+        ierr = adj_get_variable_value(adjointer, contraction_var, &contraction);
+        if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
+
+        ierr = adj_evaluate_rhs_deriv_action(adjointer, adjointer->equations[rhs_equation], fwd_var, contraction, ADJ_TRUE, &deriv_action, &has_output);
         if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
 
         if (has_output)
