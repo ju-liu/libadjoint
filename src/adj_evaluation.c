@@ -563,22 +563,39 @@ int adj_evaluate_forward_source(adj_adjointer* adjointer, int equation, adj_vect
   adj_variable* variables;
   adj_vector* dependencies;
   int nrhsdeps;
-  int j;
+  int j, k;
   int ierr;
+  int nonlinear_idx;
 
-  nrhsdeps = adjointer->equations[equation].nrhsdeps;
-  variables = adjointer->equations[equation].rhsdeps;
+  nonlinear_idx = adj_equation_rhs_is_nonlinear(adjointer->equations[equation]);
+  if (nonlinear_idx >= 0)
+  {
+    nrhsdeps = adjointer->equations[equation].nrhsdeps - 1; /* we don't claim to supply a value for the variable we're solving the equation for ... */
+  }
+  else
+  {
+    nrhsdeps = adjointer->equations[equation].nrhsdeps;
+  }
+
+  variables = (adj_variable*) malloc(nrhsdeps * sizeof(adj_variable));
+  ADJ_CHKMALLOC(variables);
   dependencies = (adj_vector*) malloc(nrhsdeps * sizeof(adj_vector));
   ADJ_CHKMALLOC(dependencies);
 
-  for (j=0 ; j < nrhsdeps; j++)
+  for (j=0, k=0; j < nrhsdeps; j++)
   {
-    ierr = adj_get_variable_value(adjointer, variables[j], &(dependencies[j]));
+    if (j == nonlinear_idx) continue;
+
+    memcpy(&variables[k], &adjointer->equations[equation].rhsdeps[j], sizeof(adj_variable));
+    ierr = adj_get_variable_value(adjointer, variables[k], &(dependencies[k]));
     if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
+
+    k++;
   }
 
   adjointer->equations[equation].rhs_callback((void*) adjointer, adjointer->equations[equation].variable, nrhsdeps, variables, dependencies, adjointer->equations[equation].rhs_context, output, has_output);
 
+  free(variables);
   free(dependencies);
   return ADJ_OK;
 }
