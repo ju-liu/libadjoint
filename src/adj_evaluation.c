@@ -582,7 +582,7 @@ int adj_evaluate_forward_source(adj_adjointer* adjointer, int equation, adj_vect
   dependencies = (adj_vector*) malloc(nrhsdeps * sizeof(adj_vector));
   ADJ_CHKMALLOC(dependencies);
 
-  for (j=0, k=0; j < nrhsdeps; j++)
+  for (j=0, k=0; j < adjointer->equations[equation].nrhsdeps; j++)
   {
     if (j == nonlinear_idx) continue;
 
