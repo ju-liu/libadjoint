@@ -609,7 +609,7 @@ int adj_get_forward_equation(adj_adjointer* adjointer, int equation, adj_matrix*
       {
         other_fwd_var = nl_block.depends[j];
         ierr = adj_has_variable_value(adjointer, other_fwd_var);
-        if (ierr != ADJ_OK)
+        if (ierr != ADJ_OK && !adj_variable_equal(fwd_var, &other_fwd_var, 1)) /* it's OK to not have the variable we're solving for, I suppose */
         {
           char buf[255];
           adj_variable_str(other_fwd_var, buf, 255);
@@ -640,7 +640,7 @@ int adj_get_forward_equation(adj_adjointer* adjointer, int equation, adj_matrix*
 
     other_fwd_var = fwd_eqn.rhsdeps[i];
     ierr = adj_has_variable_value(adjointer, other_fwd_var);
-    if (ierr != ADJ_OK)
+    if (ierr != ADJ_OK && !adj_variable_equal(fwd_var, &other_fwd_var, 1)) /* it's OK to not have the variable we're solving for, I suppose */
     {
       char buf[255];
       adj_variable_str(other_fwd_var, buf, 255);
