@@ -851,7 +851,6 @@ int adj_get_tlm_equation(adj_adjointer* adjointer, int equation, char* parameter
 {
   int ierr;
   adj_equation fwd_eqn;
-  adj_variable_data* fwd_data;
   adj_vector rhs_tmp;
   int i, j;
   adj_variable fwd_var;
@@ -893,8 +892,7 @@ int adj_get_tlm_equation(adj_adjointer* adjointer, int equation, char* parameter
   fwd_var = fwd_eqn.variable;
   memcpy(&fwd_var, &fwd_eqn.variable, sizeof(adj_variable));
   memcpy(tlm_var, &fwd_var, sizeof(adj_variable));
-  ierr = adj_find_variable_data(&(adjointer->varhash), &fwd_var, &fwd_data);
-  assert(ierr == ADJ_OK);
+  tlm_var->type = ADJ_TLM; strncpy(tlm_var->functional, parameter, ADJ_NAME_LEN);
 
   /* Check that we have all the forward values we need, before we start allocating stuff */
   for (i = 0; i < fwd_eqn.nblocks; i++)
@@ -1126,6 +1124,8 @@ int adj_get_tlm_equation(adj_adjointer* adjointer, int equation, char* parameter
         if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
 
         ierr = adj_evaluate_rhs_deriv_action(adjointer, fwd_eqn, fwd_eqn.rhsdeps[i], contraction, ADJ_FALSE, &deriv_action, &has_output);
+        if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
+
         if (has_output)
         {
           /* Now that we have the contribution, we need to add it to the adjoint right hand side */
