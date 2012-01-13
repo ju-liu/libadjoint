@@ -2447,3 +2447,26 @@ int adj_variable_known(adj_adjointer* adjointer, adj_variable var, int* known)
 
   return ADJ_OK;
 }
+
+int adj_find_parameter_source_callback(adj_adjointer* adjointer, char* parameter, void (**fn)(adj_adjointer* adjointer, adj_variable derivative, int ndepends, adj_variable* variables, adj_vector* dependencies, char* name, adj_vector* output, int* has_output))
+{
+  adj_parameter_source_callback_list* cb_list_ptr;
+  adj_parameter_source_callback* cb_ptr;
+
+  cb_list_ptr = &(adjointer->parameter_source_list);
+
+  cb_ptr = cb_list_ptr->firstnode;
+  while (cb_ptr != NULL)
+  {
+    if (strncmp(cb_ptr->name, parameter, ADJ_NAME_LEN) == 0)
+    {
+      *fn = (void (*)(adj_adjointer* adjointer, adj_variable derivative, int ndepends, adj_variable* variables, adj_vector* dependencies, char* name, adj_vector* output, int* has_output)) cb_ptr->callback;
+      return ADJ_OK;
+    }
+    cb_ptr = cb_ptr->next;
+  }
+
+  snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Could not find parameter source callback %s.", parameter);
+  return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
+}
+

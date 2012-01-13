@@ -846,3 +846,203 @@ int adj_replay_forward_equations(adj_adjointer* adjointer, int start_equation, i
 
   return ADJ_OK;
 }
+
+int adj_get_tlm_equation(adj_adjointer* adjointer, int equation, char* parameter, adj_matrix* lhs, adj_vector* rhs, adj_variable* tlm_var)
+{
+  int ierr;
+  adj_equation fwd_eqn;
+  adj_variable_data* fwd_data;
+  adj_vector rhs_tmp;
+  int i, j;
+  adj_variable fwd_var;
+
+  if (adjointer->options[ADJ_ACTIVITY] == ADJ_ACTIVITY_NOTHING)
+  {
+    strncpy(adj_error_msg, "You have asked for a tangent linear model equation, but the adjointer has been deactivated.", ADJ_ERROR_MSG_BUF);
+    return adj_chkierr_auto(ADJ_ERR_INVALID_INPUTS);
+  }
+
+  if (equation < 0 || equation >= adjointer->nequations)
+  {
+    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Invalid equation number %d.", equation);
+    return adj_chkierr_auto(ADJ_ERR_INVALID_INPUTS);
+  }
+
+  if (adjointer->callbacks.vec_destroy == NULL)
+  {
+    strncpy(adj_error_msg, "Need the ADJ_VEC_DESTROY_CB callback, but it hasn't been supplied.", ADJ_ERROR_MSG_BUF);
+    return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
+  }
+  if (adjointer->callbacks.vec_axpy == NULL)
+  {
+    strncpy(adj_error_msg, "Need the ADJ_VEC_AXPY_CB callback, but it hasn't been supplied.", ADJ_ERROR_MSG_BUF);
+    return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
+  }
+  if (adjointer->callbacks.mat_axpy == NULL)
+  {
+    strncpy(adj_error_msg, "Need the ADJ_MAT_AXPY_CB callback, but it hasn't been supplied.", ADJ_ERROR_MSG_BUF);
+    return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
+  }
+  if (adjointer->callbacks.mat_destroy == NULL)
+  {
+    strncpy(adj_error_msg, "Need the ADJ_MAT_DESTROY_CB callback, but it hasn't been supplied.", ADJ_ERROR_MSG_BUF);
+    return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
+  }
+
+  fwd_eqn = adjointer->equations[equation];
+  fwd_var = fwd_eqn.variable;
+  memcpy(&fwd_var, &fwd_eqn.variable, sizeof(adj_variable));
+  memcpy(tlm_var, &fwd_var, sizeof(adj_variable));
+  ierr = adj_find_variable_data(&(adjointer->varhash), &fwd_var, &fwd_data);
+  assert(ierr == ADJ_OK);
+
+  /* Check that we have all the forward values we need, before we start allocating stuff */
+  for (i = 0; i < fwd_eqn.nblocks; i++)
+  {
+    adj_variable other_fwd_var;
+
+    /* Check that we have the nonlinear block dependencies */
+    if (fwd_eqn.blocks[i].has_nonlinear_block)
+    {
+      adj_nonlinear_block nl_block;
+
+      nl_block = fwd_eqn.blocks[i].nonlinear_block;
+      for (j=0; j < nl_block.ndepends; j++)
+      {
+        other_fwd_var = nl_block.depends[j];
+        ierr = adj_has_variable_value(adjointer, other_fwd_var);
+        if (ierr != ADJ_OK && !adj_variable_equal(&fwd_var, &other_fwd_var, 1)) /* it's OK to not have the variable we're solving for, I suppose */
+        {
+          char buf[255];
+          adj_variable_str(other_fwd_var, buf, 255);
+          snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Need a value for variable %s, but don't have one.", buf);
+          return adj_chkierr_auto(ADJ_ERR_NEED_VALUE);
+        }
+      }
+    }
+
+    /* Get the forward variable we want this to multiply */
+    other_fwd_var = fwd_eqn.targets[i];
+    if (adj_variable_equal(&fwd_var, &other_fwd_var, 1)) continue; /* that term goes in the lhs */
+    /* and now check it has a value */
+    ierr = adj_has_variable_value(adjointer, other_fwd_var);
+    if (ierr != ADJ_OK)
+    {
+      char buf[255];
+      adj_variable_str(other_fwd_var, buf, 255);
+      snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Need a value for variable %s, but don't have one.", buf);
+      return adj_chkierr_auto(ADJ_ERR_NEED_VALUE);
+    }
+  }
+
+  /* --------------------------------------------------------------------------
+   * Computation of A terms                                                  |
+   * -------------------------------------------------------------------------- */
+
+  /* fwd_data->targeting_equations what forward equations have nonzero blocks in the column of A associated with fwd_var. */
+
+  {
+    adj_block block;
+    int blockcount = 0;
+    for (i = 0; i < fwd_eqn.nblocks; i++)
+    {
+      if (adj_variable_equal(&(fwd_eqn.targets[i]), &fwd_var, 1))
+      {
+        /* this is the right block */
+        block = fwd_eqn.blocks[i];
+        blockcount++;
+        if (blockcount == 1) /* the first one we've found */
+        {
+          ierr = adj_evaluate_block_assembly(adjointer, block, lhs, rhs);
+          if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
+        }
+        else
+        {
+          adj_matrix lhs_tmp;
+          adj_vector rhs_tmp;
+          ierr = adj_evaluate_block_assembly(adjointer, block, &lhs_tmp, &rhs_tmp);
+          if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
+          adjointer->callbacks.vec_destroy(&rhs_tmp); /* we already have rhs from the first block assembly */
+          adjointer->callbacks.mat_axpy(lhs, (adj_scalar) 1.0, lhs_tmp); /* add lhs_tmp to lhs */
+          adjointer->callbacks.mat_destroy(&lhs_tmp);
+        }
+      }
+    }
+  }
+
+  /* Great! Now let's assemble the RHS contributions of A. */
+
+  /* Now loop through the off-diagonal blocks of A. */
+  for (i = 0; i < fwd_eqn.nblocks; i++)
+  {
+    adj_block block;
+    adj_variable other_var;
+    adj_vector value;
+
+    /* Get the forward variable we want this block to multiply with */
+    other_var = fwd_eqn.targets[i];
+
+    /* Ignore the diagonal block */
+    if (adj_variable_equal(&other_var, &fwd_var, 1))
+      continue;
+
+    block = fwd_eqn.blocks[i];
+
+    /* and now get its value */
+    ierr = adj_get_variable_value(adjointer, other_var, &value);
+    assert(ierr == ADJ_OK); /* we should have them all, we checked for them earlier */
+
+    ierr = adj_evaluate_block_action(adjointer, block, value, &rhs_tmp);
+    if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
+    adjointer->callbacks.vec_axpy(rhs, (adj_scalar)-1.0, rhs_tmp);
+    adjointer->callbacks.vec_destroy(&rhs_tmp);
+  }
+
+  /* --------------------------------------------------------------------------
+   * Computation of G terms                                                  |
+   * -------------------------------------------------------------------------- */
+
+  /* --------------------------------------------------------------------------
+   * Computation of R terms                                                  |
+   * -------------------------------------------------------------------------- */
+
+  /* And any tangent linear source terms */
+  {
+    adj_vector rhs_tmp;
+    int has_psrc;
+    has_psrc = -666;
+    ierr = adj_evaluate_parameter_source(adjointer, fwd_var, parameter, &rhs_tmp, &has_psrc);
+    if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
+    if (has_psrc)
+    {
+      adjointer->callbacks.vec_axpy(rhs, (adj_scalar)1.0, rhs_tmp);
+      adjointer->callbacks.vec_destroy(&rhs_tmp);
+    }
+  }
+
+  return ADJ_OK;
+
+}
+
+int adj_get_tlm_solution(adj_adjointer* adjointer, int equation, char* parameter, adj_vector* soln, adj_variable* tlm_var)
+{
+  int ierr;
+  adj_matrix lhs;
+  adj_vector rhs;
+
+  /* Check for the required callbacks */ 
+  strncpy(adj_error_msg, "Need the solve data callback, but it hasn't been supplied.", ADJ_ERROR_MSG_BUF);
+  if (adjointer->callbacks.solve == NULL) return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
+  strncpy(adj_error_msg, "", ADJ_ERROR_MSG_BUF);
+
+  ierr = adj_get_tlm_equation(adjointer, equation, parameter, &lhs, &rhs, tlm_var);
+  if (ierr != ADJ_OK)
+    return adj_chkierr_auto(ierr);
+
+  /* Solve the linear system */
+  adjointer->callbacks.solve(*tlm_var, lhs, rhs, soln); 
+  adjointer->callbacks.vec_destroy(&rhs);
+  adjointer->callbacks.mat_destroy(&lhs);
+  
+  return ADJ_OK;
+}
