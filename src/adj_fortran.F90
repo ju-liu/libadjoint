@@ -986,6 +986,31 @@ module libadjoint
       integer(kind=c_int) :: ierr
     end function adj_get_forward_solution
     
+    function adj_get_tlm_equation_c(adjointer, equation, parameter, lhs, rhs, variable) result(ierr) &
+            & bind(c, name='adj_get_tlm_equation')
+      use libadjoint_data_structures
+      use iso_c_binding
+      type(adj_adjointer), intent(inout) :: adjointer
+      integer(kind=c_int), intent(in), value :: equation
+      character(kind=c_char), dimension(ADJ_NAME_LEN), intent(in) :: parameter
+      type(adj_matrix), intent(out) :: lhs
+      type(adj_vector), intent(out) :: rhs
+      type(adj_variable), intent(out) :: variable
+      integer(kind=c_int) :: ierr
+    end function adj_get_tlm_equation_c
+    
+    function adj_get_tlm_solution_c(adjointer, equation, parameter, soln, variable) result(ierr) &
+            & bind(c, name='adj_get_tlm_solution')
+      use libadjoint_data_structures
+      use iso_c_binding
+      type(adj_adjointer), intent(inout) :: adjointer
+      integer(kind=c_int), intent(in), value :: equation
+      character(kind=c_char), dimension(ADJ_NAME_LEN), intent(in) :: parameter
+      type(adj_vector), intent(out) :: soln
+      type(adj_variable), intent(out) :: variable
+      integer(kind=c_int) :: ierr
+    end function adj_get_tlm_solution_c
+
     function adj_adjointer_to_html_c(adjointer, filename, type) result(ierr) &
             & bind(c, name='adj_adjointer_to_html')
       use libadjoint_data_structures
@@ -1127,6 +1152,56 @@ module libadjoint
 
     ierr = adj_get_adjoint_solution_c(adjointer, equation, functional_c, soln, variable)
   end function adj_get_adjoint_solution
+
+  function adj_get_tlm_equation(adjointer, equation, parameter, lhs, rhs, adj_var) result(ierr)
+    type(adj_adjointer), intent(inout) :: adjointer
+    integer(kind=c_int), intent(in), value :: equation
+    character(len=*), intent(in) :: parameter
+    type(adj_matrix), intent(out) :: lhs
+    type(adj_vector), intent(out) :: rhs
+    type(adj_variable), intent(out) :: adj_var
+    integer(kind=c_int) :: ierr
+    
+    character(kind=c_char), dimension(ADJ_NAME_LEN) :: parameter_c
+    integer :: j
+
+    if (len_trim(parameter) .ge. ADJ_NAME_LEN - 1) then
+      ! Can't set the error message from Fortran, I think?
+      ierr = ADJ_ERR_INVALID_INPUTS
+    end if
+
+    do j=1,len_trim(parameter)
+      parameter_c(j) = parameter(j:j)
+    end do
+    do j=len_trim(parameter)+1,ADJ_NAME_LEN
+      parameter_c(j) = c_null_char
+    end do
+    parameter_c(ADJ_NAME_LEN) = c_null_char
+
+    ierr = adj_get_tlm_equation_c(adjointer, equation, parameter_c, lhs, rhs, adj_var)
+  end function adj_get_tlm_equation
+
+  function adj_get_tlm_solution(adjointer, equation, parameter, soln, variable) result(ierr)
+    type(adj_adjointer), intent(inout) :: adjointer
+    integer(kind=c_int), intent(in), value :: equation
+    character(len=*), intent(in) :: parameter
+    type(adj_vector), intent(out) :: soln
+    type(adj_variable), intent(out) :: variable
+    integer(kind=c_int) :: ierr
+    
+    character(kind=c_char), dimension(ADJ_NAME_LEN) :: parameter_c
+    integer :: j
+
+    do j=1,len_trim(parameter)
+      parameter_c(j) = parameter(j:j)
+    end do
+    do j=len_trim(parameter)+1,ADJ_NAME_LEN
+      parameter_c(j) = c_null_char
+    end do
+    parameter_c(ADJ_NAME_LEN) = c_null_char
+
+    ierr = adj_get_tlm_solution_c(adjointer, equation, parameter_c, soln, variable)
+  end function adj_get_tlm_solution
 
   function adj_create_variable(name, timestep, iteration, auxiliary, variable) result(ierr)
     character(len=*), intent(in) :: name
