@@ -924,6 +924,8 @@ int adj_get_tlm_equation(adj_adjointer* adjointer, int equation, char* parameter
     /* Get the forward variable we want this to multiply */
     other_fwd_var = fwd_eqn.targets[i];
     if (adj_variable_equal(&fwd_var, &other_fwd_var, 1)) continue; /* that term goes in the lhs */
+    other_fwd_var.type = ADJ_TLM;
+    strncpy(other_fwd_var.functional, parameter, ADJ_NAME_LEN);
     /* and now check it has a value */
     ierr = adj_has_variable_value(adjointer, other_fwd_var);
     if (ierr != ADJ_OK)
@@ -938,8 +940,6 @@ int adj_get_tlm_equation(adj_adjointer* adjointer, int equation, char* parameter
   /* --------------------------------------------------------------------------
    * Computation of A terms                                                  |
    * -------------------------------------------------------------------------- */
-
-  /* fwd_data->targeting_equations what forward equations have nonzero blocks in the column of A associated with fwd_var. */
 
   {
     adj_block block;
@@ -976,20 +976,22 @@ int adj_get_tlm_equation(adj_adjointer* adjointer, int equation, char* parameter
   for (i = 0; i < fwd_eqn.nblocks; i++)
   {
     adj_block block;
-    adj_variable other_var;
+    adj_variable tlm_var;
     adj_vector value;
 
-    /* Get the forward variable we want this block to multiply with */
-    other_var = fwd_eqn.targets[i];
-
     /* Ignore the diagonal block */
-    if (adj_variable_equal(&other_var, &fwd_var, 1))
+    if (adj_variable_equal(&fwd_eqn.targets[i], &fwd_var, 1))
       continue;
+
+    /* Get the TLM variable we want this block to multiply with */
+    tlm_var = fwd_eqn.targets[i];
+    tlm_var.type = ADJ_TLM;
+    strncpy(tlm_var.functional, parameter, ADJ_NAME_LEN);
 
     block = fwd_eqn.blocks[i];
 
     /* and now get its value */
-    ierr = adj_get_variable_value(adjointer, other_var, &value);
+    ierr = adj_get_variable_value(adjointer, tlm_var, &value);
     assert(ierr == ADJ_OK); /* we should have them all, we checked for them earlier */
 
     ierr = adj_evaluate_block_action(adjointer, block, value, &rhs_tmp);
