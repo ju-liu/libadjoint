@@ -1025,69 +1025,72 @@ int adj_get_tlm_equation(adj_adjointer* adjointer, int equation, char* parameter
     }
 
     /* Now that we have nderivs, let's use it */
-    derivs = (adj_nonlinear_block_derivative*) malloc(nderivs * sizeof(adj_nonlinear_block_derivative));
-    ADJ_CHKMALLOC(derivs);
-    l = 0;
-    for (i = 0; i < fwd_eqn.nblocks; i++)
-    {
-      if (fwd_eqn.blocks[i].has_nonlinear_block)
-      {
-        for (k = 0; k < fwd_eqn.blocks[i].nonlinear_block.ndepends; k++)
-        {
-          adj_vector target;
-          ierr = adj_get_variable_value(adjointer, fwd_eqn.targets[i], &target);
-          if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
 
-          ierr = adj_create_nonlinear_block_derivative(adjointer, fwd_eqn.blocks[i].nonlinear_block, fwd_eqn.blocks[i].coefficient, fwd_eqn.blocks[i].nonlinear_block.depends[k], target, ADJ_FALSE, &derivs[l]);
-          l++;
+    if (nderivs > 0)
+    {
+      derivs = (adj_nonlinear_block_derivative*) malloc(nderivs * sizeof(adj_nonlinear_block_derivative));
+      ADJ_CHKMALLOC(derivs);
+      l = 0;
+      for (i = 0; i < fwd_eqn.nblocks; i++)
+      {
+        if (fwd_eqn.blocks[i].has_nonlinear_block)
+        {
+          for (k = 0; k < fwd_eqn.blocks[i].nonlinear_block.ndepends; k++)
+          {
+            adj_vector target;
+            ierr = adj_get_variable_value(adjointer, fwd_eqn.targets[i], &target);
+            if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
+
+            ierr = adj_create_nonlinear_block_derivative(adjointer, fwd_eqn.blocks[i].nonlinear_block, fwd_eqn.blocks[i].coefficient, fwd_eqn.blocks[i].nonlinear_block.depends[k], target, ADJ_FALSE, &derivs[l]);
+            l++;
+          }
         }
       }
-    }
 
-    /* OK, Here's where we do our simplifications; this can be a significant optimisation */
-    /* .......................................................................................... */
-    ierr = adj_simplify_derivatives(adjointer, nderivs, derivs, &nnew_derivs, &new_derivs);
-    for (l = 0; l < nderivs; l++)
-    {
-      ierr = adj_destroy_nonlinear_block_derivative(adjointer, &derivs[l]);
-      if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
-    }
-    free(derivs);
-
-    /* Now, we go and evaluate each one of the derivatives, assembling or acting as appropriate */
-    for (l = 0; l < nnew_derivs; l++)
-    {
-      if (adj_variable_equal(&new_derivs[l].variable, &fwd_var, 1))
+      /* OK, Here's where we do our simplifications; this can be a significant optimisation */
+      /* .......................................................................................... */
+      ierr = adj_simplify_derivatives(adjointer, nderivs, derivs, &nnew_derivs, &new_derivs);
+      for (l = 0; l < nderivs; l++)
       {
-        /* This G-block is on the diagonal, and so we must assemble it .. later */
-        snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Sorry, we can't handle G-blocks on the diagonal (yet).");
-        return adj_chkierr_auto(ADJ_ERR_NOT_IMPLEMENTED);
-      }
-      else
-      {
-        /* This G-block is NOT on the diagonal, so we only need its action */
-        adj_variable tlm_associated;
-        adj_vector tlm_value;
-
-        tlm_associated = new_derivs[l].variable;
-        tlm_associated.type = ADJ_TLM;
-        strncpy(tlm_associated.functional, parameter, ADJ_NAME_LEN);
-        ierr = adj_get_variable_value(adjointer, tlm_associated, &tlm_value);
-        if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
-
-        /* And now we are ready */
-        ierr = adj_evaluate_nonlinear_derivative_action(adjointer, 1, &new_derivs[l], tlm_value, rhs);
+        ierr = adj_destroy_nonlinear_block_derivative(adjointer, &derivs[l]);
         if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
       }
-    }
+      free(derivs);
 
-    for (l = 0; l < nnew_derivs; l++)
-    {
-      ierr = adj_destroy_nonlinear_block_derivative(adjointer, &new_derivs[l]);
-      if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
-    }
-    free(new_derivs);
+      /* Now, we go and evaluate each one of the derivatives, assembling or acting as appropriate */
+      for (l = 0; l < nnew_derivs; l++)
+      {
+        if (adj_variable_equal(&new_derivs[l].variable, &fwd_var, 1))
+        {
+          /* This G-block is on the diagonal, and so we must assemble it .. later */
+          snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Sorry, we can't handle G-blocks on the diagonal (yet).");
+          return adj_chkierr_auto(ADJ_ERR_NOT_IMPLEMENTED);
+        }
+        else
+        {
+          /* This G-block is NOT on the diagonal, so we only need its action */
+          adj_variable tlm_associated;
+          adj_vector tlm_value;
 
+          tlm_associated = new_derivs[l].variable;
+          tlm_associated.type = ADJ_TLM;
+          strncpy(tlm_associated.functional, parameter, ADJ_NAME_LEN);
+          ierr = adj_get_variable_value(adjointer, tlm_associated, &tlm_value);
+          if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
+
+          /* And now we are ready */
+          ierr = adj_evaluate_nonlinear_derivative_action(adjointer, 1, &new_derivs[l], tlm_value, rhs);
+          if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
+        }
+      }
+
+      for (l = 0; l < nnew_derivs; l++)
+      {
+        ierr = adj_destroy_nonlinear_block_derivative(adjointer, &new_derivs[l]);
+        if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
+      }
+      free(new_derivs);
+    }
   }
 
   /* --------------------------------------------------------------------------
