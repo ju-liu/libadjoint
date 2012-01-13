@@ -78,6 +78,8 @@ int adj_destroy_adjointer(adj_adjointer* adjointer)
   adj_func_callback* func_cb_ptr_tmp;
   adj_func_deriv_callback* func_deriv_cb_ptr;
   adj_func_deriv_callback* func_deriv_cb_ptr_tmp;
+  adj_parameter_source_callback* parameter_source_cb_ptr;
+  adj_parameter_source_callback* parameter_source_cb_ptr_tmp;
   adj_functional_data* functional_data_ptr_next = NULL;
   adj_functional_data* functional_data_ptr = NULL;
 
@@ -174,6 +176,14 @@ int adj_destroy_adjointer(adj_adjointer* adjointer)
     func_deriv_cb_ptr_tmp = func_deriv_cb_ptr;
     func_deriv_cb_ptr = func_deriv_cb_ptr->next;
     free(func_deriv_cb_ptr_tmp);
+  }
+
+  parameter_source_cb_ptr = adjointer->parameter_source_list.firstnode;
+  while(parameter_source_cb_ptr != NULL)
+  {
+    parameter_source_cb_ptr_tmp = parameter_source_cb_ptr;
+    parameter_source_cb_ptr = parameter_source_cb_ptr->next;
+    free(parameter_source_cb_ptr_tmp);
   }
 
   adj_create_adjointer(adjointer);
@@ -2468,5 +2478,48 @@ int adj_find_parameter_source_callback(adj_adjointer* adjointer, char* parameter
 
   snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Could not find parameter source callback %s.", parameter);
   return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
+}
+
+int adj_register_parameter_source_callback(adj_adjointer* adjointer, char* name, void (*fn)(adj_adjointer* adjointer, adj_variable variable, int ndepends, adj_variable* variables, adj_vector* dependencies, char* name, adj_vector* output, int* has_output))
+{
+  adj_parameter_source_callback_list* cb_list_ptr;
+  adj_parameter_source_callback* cb_ptr;
+
+  if (adjointer->options[ADJ_ACTIVITY] == ADJ_ACTIVITY_NOTHING) return ADJ_OK;
+
+  cb_list_ptr = &(adjointer->parameter_source_list);
+
+  /* First, we look for an existing callback data structure that might already exist, to replace the function */
+  cb_ptr = cb_list_ptr->firstnode;
+  while (cb_ptr != NULL)
+  {
+    if (strncmp(cb_ptr->name, name, ADJ_NAME_LEN) == 0)
+    {
+      cb_ptr->callback = (void (*)(void* adjointer, adj_variable variable, int ndepends, adj_variable* variables, adj_vector* dependencies, char* name, adj_vector* output, int* has_output)) fn;
+      return ADJ_OK;
+    }
+    cb_ptr = cb_ptr->next;
+  }
+
+  /* If we got here, that means that we didn't find it. Tack it on to the end of the list. */
+  cb_ptr = (adj_parameter_source_callback*) malloc(sizeof(adj_parameter_source_callback));
+  ADJ_CHKMALLOC(cb_ptr);
+  strncpy(cb_ptr->name, name, ADJ_NAME_LEN);
+  cb_ptr->callback = (void (*)(void* adjointer, adj_variable variable, int ndepends, adj_variable* variables, adj_vector* dependencies, char* name, adj_vector* output, int* has_output)) fn;
+  cb_ptr->next = NULL;
+
+  /* Special case for the first callback */
+  if (cb_list_ptr->firstnode == NULL)
+  {
+    cb_list_ptr->firstnode = cb_ptr;
+    cb_list_ptr->lastnode = cb_ptr;
+  }
+  else
+  {
+    cb_list_ptr->lastnode->next = cb_ptr;
+    cb_list_ptr->lastnode = cb_ptr;
+  }
+
+  return ADJ_OK;
 }
 
