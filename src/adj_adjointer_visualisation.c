@@ -179,7 +179,7 @@ void adj_html_print_auxiliary_variables(FILE* fp, adj_adjointer* adjointer)
         fprintf(fp, "<span class=\"greenfont\">");
 
 			adj_variable_str(varhash->variable, adj_name, ADJ_NAME_LEN);
-			fprintf(fp, "%s</span> ", adj_name);
+			fprintf(fp, "%s</span> ", encode_html(adj_name));
     }
 
 	}
@@ -265,7 +265,7 @@ void adj_html_print_callback_information(FILE* fp, adj_adjointer* adjointer)
   cb_ptr= adjointer->block_action_list.firstnode;
   fprintf(fp, "<div>");
   while (cb_ptr != NULL) {
-    fprintf(fp, "%s<br/>\n", cb_ptr->name);
+    fprintf(fp, "%s<br/>\n", encode_html(cb_ptr->name));
     cb_ptr = cb_ptr->next;
   }
   fprintf(fp, "</div>");
@@ -274,7 +274,7 @@ void adj_html_print_callback_information(FILE* fp, adj_adjointer* adjointer)
   cb_ptr= adjointer->block_assembly_list.firstnode;
   fprintf(fp, "<div>");
   while (cb_ptr != NULL) {
-    fprintf(fp, "%s<br/>\n", cb_ptr->name);
+    fprintf(fp, "%s<br/>\n", encode_html(cb_ptr->name));
     cb_ptr = cb_ptr->next;
   }
   fprintf(fp, "</div>");
@@ -283,7 +283,7 @@ void adj_html_print_callback_information(FILE* fp, adj_adjointer* adjointer)
   cb_ptr= adjointer->nonlinear_action_list.firstnode;
   fprintf(fp, "<div>");
   while (cb_ptr != NULL) {
-    fprintf(fp, "%s<br/>\n", cb_ptr->name);
+    fprintf(fp, "%s<br/>\n", encode_html(cb_ptr->name));
     cb_ptr = cb_ptr->next;
   }
   fprintf(fp, "</div>");
@@ -292,7 +292,7 @@ void adj_html_print_callback_information(FILE* fp, adj_adjointer* adjointer)
   cb_ptr= adjointer->nonlinear_derivative_action_list.firstnode;
   fprintf(fp, "<div>");
   while (cb_ptr != NULL) {
-    fprintf(fp, "%s<br/>\n", cb_ptr->name);
+    fprintf(fp, "%s<br/>\n", encode_html(cb_ptr->name));
     cb_ptr = cb_ptr->next;
   }
   fprintf(fp, "</div>");
@@ -301,7 +301,7 @@ void adj_html_print_callback_information(FILE* fp, adj_adjointer* adjointer)
   cb_ptr= adjointer->nonlinear_derivative_assembly_list.firstnode;
   fprintf(fp, "<div>");
   while (cb_ptr != NULL) {
-    fprintf(fp, "%s<br/>\n", cb_ptr->name);
+    fprintf(fp, "%s<br/>\n", encode_html(cb_ptr->name));
     cb_ptr = cb_ptr->next;
   }
   fprintf(fp, "</div>");
@@ -310,7 +310,7 @@ void adj_html_print_callback_information(FILE* fp, adj_adjointer* adjointer)
   func_cb_ptr= adjointer->functional_list.firstnode;
   fprintf(fp, "<div>");
   while (func_cb_ptr != NULL) {
-    fprintf(fp, "<div class=\"greenfont\">%s</div><br/>\n", func_cb_ptr->name);
+    fprintf(fp, "<div class=\"greenfont\">%s</div><br/>\n", encode_html(func_cb_ptr->name));
     func_cb_ptr = func_cb_ptr->next;
   }
   fprintf(fp, "</div>");
@@ -319,7 +319,7 @@ void adj_html_print_callback_information(FILE* fp, adj_adjointer* adjointer)
   func_deriv_cb_ptr= adjointer->functional_derivative_list.firstnode;
   fprintf(fp, "<div>");
   while (func_deriv_cb_ptr != NULL) {
-    fprintf(fp, "<div class=\"greenfont\">%s</div><br/>\n", func_deriv_cb_ptr->name);
+    fprintf(fp, "<div class=\"greenfont\">%s</div><br/>\n", encode_html(func_deriv_cb_ptr->name));
     func_deriv_cb_ptr = func_deriv_cb_ptr->next;
   }
   fprintf(fp, "</div>");
@@ -353,7 +353,7 @@ void adj_html_vars(FILE* fp, adj_adjointer* adjointer, int type)
       /* Print the variables name */
       adj_var.type = type;
       adj_variable_str(adj_var, adj_name, ADJ_NAME_LEN);
-      fprintf(fp, "%s", adj_name);
+      fprintf(fp, "%s", encode_html(adj_name));
 
       fprintf(fp, "</th>\n");
     }
@@ -377,7 +377,7 @@ void adj_html_vars(FILE* fp, adj_adjointer* adjointer, int type)
       /* Print the variables name */
       adj_var.type = type;
       adj_variable_str(adj_var, adj_name, ADJ_NAME_LEN);
-      fprintf(fp, "%s", adj_name);
+      fprintf(fp, "%s", encode_html(adj_name));
 
       if (adjointer->equations[i].memory_checkpoint==ADJ_TRUE)
         fprintf(fp, "(memory_checkpoint_equation)");
@@ -423,9 +423,9 @@ void adj_html_vars(FILE* fp, adj_adjointer* adjointer, int type)
       adj_variable_str(adj_var, adj_name, ADJ_NAME_LEN);
       ierr = adj_has_variable_value(adjointer, adj_var);
       if (ierr != ADJ_OK)
-        fprintf(fp, "<div class=\"box_rotate redfont\">%s</div>\n", adj_name);
+        fprintf(fp, "<div class=\"box_rotate redfont\">%s</div>\n", encode_html(adj_name));
       else
-        fprintf(fp, "<div class=\"box_rotate greenfont\">%s</div>\n", adj_name);
+        fprintf(fp, "<div class=\"box_rotate greenfont\">%s</div>\n", encode_html(adj_name));
       fprintf(fp, "</th>\n");
     }
     else
@@ -441,9 +441,9 @@ void adj_html_vars(FILE* fp, adj_adjointer* adjointer, int type)
         adj_variable_str(adj_var, adj_name, ADJ_NAME_LEN);
         ierr = adj_has_variable_value(adjointer, adj_var);
         if (ierr != ADJ_OK)
-          fprintf(fp, "<div class=\"box_rotate redfont\">%s</div>\n", adj_name);
+          fprintf(fp, "<div class=\"box_rotate redfont\">%s</div>\n", encode_html(adj_name));
         else
-          fprintf(fp, "<div class=\"box_rotate greenfont\">%s</div>\n", adj_name);
+          fprintf(fp, "<div class=\"box_rotate greenfont\">%s</div>\n", encode_html(adj_name));
         func_deriv_cb = func_deriv_cb->next;
       }
       fprintf(fp, "</th>\n");
@@ -485,7 +485,7 @@ int adj_html_eqn(FILE* fp, adj_adjointer* adjointer, adj_equation adj_eqn, int d
     if (ierr != ADJ_OK)
       return adj_chkierr_auto(ierr);
 
-    strncpy(row[col], adj_eqn.blocks[i].name, 5);
+    strncpy(row[col], encode_html(adj_eqn.blocks[i].name), 5);
     row[col][5]='\0';
 
     /* Fill in the description */
@@ -628,7 +628,7 @@ int adj_html_adjoint_eqn(FILE* fp, adj_adjointer* adjointer, adj_equation fwd_eq
       other_adj_var.type = ADJ_ADJOINT;
 
     	/* Add the block data to the table */
-      strncpy(row[col], other_fwd_eqn.blocks[j].name, 5);
+      strncpy(row[col], encode_html(other_fwd_eqn.blocks[j].name), 5);
       row[col][5]='\0';
 
       /* Write the information that is displayed when hovering over the block */

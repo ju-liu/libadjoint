@@ -8,6 +8,7 @@
 #include "adj_error_handling.h"
 #include "adj_variable_lookup.h"
 #include "adj_adjointer_routines.h"
+#include "html_encode.h"
 
 int adj_adjointer_to_html(adj_adjointer* adjointer, char* filename, int type);
 
