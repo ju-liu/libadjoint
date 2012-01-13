@@ -9,7 +9,12 @@ int adj_add_variable_data(adj_variable_hash** hash, adj_variable* var, adj_varia
   HASH_FIND(hh, *hash, var, sizeof(adj_variable), check);
 
   if (check != NULL)
+  {
+    char buf[ADJ_NAME_LEN];
+    adj_variable_str(*var, buf, ADJ_NAME_LEN);
+    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Hash failed: %s already has an entry.", buf);
     return adj_chkierr_auto(ADJ_ERR_HASH_FAILED);
+  }
 
   entry = (adj_variable_hash*) malloc(sizeof(adj_variable_hash));
   ADJ_CHKMALLOC(entry);
@@ -28,7 +33,12 @@ int adj_find_variable_data(adj_variable_hash** hash, adj_variable* var, adj_vari
   HASH_FIND(hh, *hash, var, sizeof(adj_variable), check);
 
   if (check == NULL)
+  {
+    char buf[ADJ_NAME_LEN];
+    adj_variable_str(*var, buf, ADJ_NAME_LEN);
+    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Hash failed: %s has no entry.", buf);
     return adj_chkierr_auto(ADJ_ERR_HASH_FAILED);
+  }
 
   *data = check->data;
   return ADJ_OK;

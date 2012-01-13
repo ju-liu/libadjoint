@@ -1096,6 +1096,46 @@ int adj_get_tlm_equation(adj_adjointer* adjointer, int equation, char* parameter
    * Computation of R terms                                                  |
    * -------------------------------------------------------------------------- */
 
+  {
+    for (i = 0; i < fwd_eqn.nrhsdeps; i++)
+    {
+      /* Does this R contribute to the adjoint matrix ... */
+      if (adj_variable_equal(&fwd_var, &fwd_eqn.rhsdeps[i], 1))
+      {
+        adj_matrix r;
+        ierr = adj_evaluate_rhs_deriv_assembly(adjointer, fwd_eqn, ADJ_FALSE, &r);
+        if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
+        adjointer->callbacks.mat_axpy(lhs, (adj_scalar) -1.0, r); /* Subtract the R contribution from the adjoint lhs */
+        adjointer->callbacks.mat_destroy(&r);
+      }
+      /* ... or to the right-hand side of the adjoint system? */
+      else
+      {
+        adj_vector deriv_action;
+        int has_output;
+
+        has_output = -666;
+
+        adj_variable contraction_var;
+        adj_vector contraction;
+
+        contraction_var = fwd_eqn.rhsdeps[i];
+        contraction_var.type = ADJ_TLM;
+        strncpy(contraction_var.functional, parameter, ADJ_NAME_LEN);
+        ierr = adj_get_variable_value(adjointer, contraction_var, &contraction);
+        if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
+
+        ierr = adj_evaluate_rhs_deriv_action(adjointer, fwd_eqn, fwd_eqn.rhsdeps[i], contraction, ADJ_FALSE, &deriv_action, &has_output);
+        if (has_output)
+        {
+          /* Now that we have the contribution, we need to add it to the adjoint right hand side */
+          adjointer->callbacks.vec_axpy(rhs, (adj_scalar)1.0, deriv_action);
+          adjointer->callbacks.vec_destroy(&deriv_action);
+        }
+      }
+    }
+  }
+
   /* And any tangent linear source terms */
   {
     adj_vector rhs_tmp;
