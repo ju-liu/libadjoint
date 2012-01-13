@@ -59,6 +59,8 @@ int adj_create_adjointer(adj_adjointer* adjointer)
   adjointer->functional_list.lastnode = NULL;
   adjointer->functional_derivative_list.firstnode = NULL;
   adjointer->functional_derivative_list.lastnode = NULL;
+  adjointer->parameter_source_list.firstnode = NULL;
+  adjointer->parameter_source_list.lastnode = NULL;
 
   for (i = 0; i < ADJ_NO_OPTIONS; i++)
     adjointer->options[i] = 0; /* 0 is the default for all options */
