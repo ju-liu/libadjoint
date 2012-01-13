@@ -23,7 +23,9 @@ int adj_register_data_callback(adj_adjointer* adjointer, int type, void (*fn)(vo
 int adj_register_functional_callback(adj_adjointer* adjointer, char* name, void (*fn)(adj_adjointer* adjointer, int timestep, int ndepends, adj_variable* variables, adj_vector* dependencies, char* name, adj_scalar* output));
 int adj_register_functional_derivative_callback(adj_adjointer* adjointer, char* name, void (*fn)(adj_adjointer* adjointer, adj_variable derivative, int ndepends, adj_variable* variables, adj_vector* dependencies, char* name, adj_vector* output));
 int adj_register_parameter_source_callback(adj_adjointer* adjointer, char* name, void (*fn)(adj_adjointer* adjointer, adj_variable derivative, int ndepends, adj_variable* variables, adj_vector* dependencies, char* name, adj_vector* output, int* has_output));
+
 int adj_forget_adjoint_equation(adj_adjointer* adjointer, int equation);
+int adj_forget_forward_equation(adj_adjointer* adjointer, int equation);
 
 int adj_timestep_count(adj_adjointer* adjointer, int* count);
 int adj_iteration_count(adj_adjointer* adjointer, adj_variable variable, int* count);
@@ -48,7 +50,6 @@ int adj_set_storage_memory_incref(adj_adjointer* adjointer, adj_variable* var);
 int adj_set_option(adj_adjointer* adjointer, int option, int choice);
 int adj_variable_get_ndepending_timesteps(adj_adjointer* adjointer, adj_variable variable, char* functional, int* ntimesteps);
 int adj_variable_get_depending_timestep(adj_adjointer* adjointer, adj_variable variable, char* functional, int k, int* timestep);
-int adj_forget_forward_equation(adj_adjointer* adjointer, int equation);
 int adj_forget_forward_equation_until(adj_adjointer* adjointer, int equation, int last_equation);
 int adj_get_checkpoint_strategy(adj_adjointer* adjointer, int* strategy);
 
