@@ -1121,7 +1121,7 @@ class Adjointer(object):
     A = matrix(adj_mat)
     b = vector(adj_rhs)
 
-    x = A.solve(b)
+    x = A.solve(adj_var, b)
     references_taken.append(x)
 
     adj_soln_ptr[0].ptr = python_utils.c_ptr(x)
@@ -1207,10 +1207,11 @@ class Vector(LinAlg):
 class Matrix(LinAlg):
   '''Base class for adjoint matrix objects.'''
 
-  def solve(self, b):
-    '''solve(self, b)
+  def solve(self, var, b):
+    '''solve(self, var, b)
 
-    This method must solve the system self*x = b and return the answer.'''
+    This method must solve the system self*x = b and return the answer. The adj_variable corresponding to the variable
+    to be solved for is given by var.'''
 
     raise exceptions.LibadjointErrorNeedCallback(
       'Class '+self.__class__.__name__+' has no solve() method')        
