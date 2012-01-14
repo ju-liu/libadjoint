@@ -62,6 +62,9 @@ class Variable(object):
       iteration = ctypes.c_int()
       clib.adj_variable_get_iteration(self.var, iteration)
       return iteration.value
+    elif name == 'type':
+      int_type_map = {1: 'ADJ_FORWARD', 2: 'ADJ_ADJOINT', 3: 'ADJ_TLM'}
+      return int_type_map[self.c_object.type]
     else:
       raise AttributeError
 
@@ -1121,7 +1124,7 @@ class Adjointer(object):
     A = matrix(adj_mat)
     b = vector(adj_rhs)
 
-    x = A.solve(adj_var, b)
+    x = A.solve(Variable(var=adj_var), b)
     references_taken.append(x)
 
     adj_soln_ptr[0].ptr = python_utils.c_ptr(x)
