@@ -59,6 +59,8 @@ int adj_create_adjointer(adj_adjointer* adjointer)
   adjointer->functional_list.lastnode = NULL;
   adjointer->functional_derivative_list.firstnode = NULL;
   adjointer->functional_derivative_list.lastnode = NULL;
+  adjointer->parameter_source_list.firstnode = NULL;
+  adjointer->parameter_source_list.lastnode = NULL;
 
   for (i = 0; i < ADJ_NO_OPTIONS; i++)
     adjointer->options[i] = 0; /* 0 is the default for all options */
@@ -78,6 +80,8 @@ int adj_destroy_adjointer(adj_adjointer* adjointer)
   adj_func_callback* func_cb_ptr_tmp;
   adj_func_deriv_callback* func_deriv_cb_ptr;
   adj_func_deriv_callback* func_deriv_cb_ptr_tmp;
+  adj_parameter_source_callback* parameter_source_cb_ptr;
+  adj_parameter_source_callback* parameter_source_cb_ptr_tmp;
   adj_functional_data* functional_data_ptr_next = NULL;
   adj_functional_data* functional_data_ptr = NULL;
 
@@ -174,6 +178,14 @@ int adj_destroy_adjointer(adj_adjointer* adjointer)
     func_deriv_cb_ptr_tmp = func_deriv_cb_ptr;
     func_deriv_cb_ptr = func_deriv_cb_ptr->next;
     free(func_deriv_cb_ptr_tmp);
+  }
+
+  parameter_source_cb_ptr = adjointer->parameter_source_list.firstnode;
+  while(parameter_source_cb_ptr != NULL)
+  {
+    parameter_source_cb_ptr_tmp = parameter_source_cb_ptr;
+    parameter_source_cb_ptr = parameter_source_cb_ptr->next;
+    free(parameter_source_cb_ptr_tmp);
   }
 
   adj_create_adjointer(adjointer);
@@ -1527,7 +1539,7 @@ int adj_forget_forward_equation_until(adj_adjointer* adjointer, int equation, in
   while (data != NULL)
   {
     /* Only forget forward variables */
-    if (data->equation<0) /* Adjoint variables have no equation. */
+    if (data->type != ADJ_FORWARD) /* Skip adjoint or TLM variables. */
     {
       data = data->next;
       continue;
@@ -1585,6 +1597,81 @@ int adj_forget_forward_equation_until(adj_adjointer* adjointer, int equation, in
           if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
         }
         if (data->storage.storage_memory_has_value && !data->storage.storage_memory_is_checkpoint)
+        {
+          ierr = adj_forget_variable_value_from_memory(adjointer, data);
+          if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
+        }
+      }
+    }
+
+    data = data->next;
+  }
+
+  return ADJ_OK;
+}
+
+int adj_forget_tlm_equation(adj_adjointer* adjointer, int equation)
+{
+  adj_variable_data* data;
+  int should_we_delete;
+  int i;
+  int ierr;
+
+  if (adjointer->options[ADJ_ACTIVITY] == ADJ_ACTIVITY_NOTHING) return ADJ_OK;
+
+  if (equation >= adjointer->nequations)
+  {
+    strncpy(adj_error_msg, "No such equation.", ADJ_ERROR_MSG_BUF);
+    return adj_chkierr_auto(ADJ_ERR_INVALID_INPUTS);
+  }
+
+  data = adjointer->vardata.firstnode;
+
+  while (data != NULL)
+  {
+    /* Only forget forward variables */
+    if (data->type != ADJ_TLM) /* Skip anything other than TLM variables.. */
+    {
+      data = data->next;
+      continue;
+    }
+
+    if (data->storage.storage_memory_has_value || data->storage.storage_disk_has_value)
+    {
+      should_we_delete = 1;
+      for (i = 0; i < data->ntargeting_equations; i++)
+      {
+        /* If the variable is a target variable for one of the equations
+         * of interest then we keep it.
+         */
+        if (equation < data->targeting_equations[i])
+        {
+          should_we_delete = 0;
+          break;
+        }
+      }
+
+      for (i = 0; i < data->ndepending_equations; i++)
+      {
+        if (equation < data->depending_equations[i])
+        {
+          should_we_delete = 0;
+          break;
+        }
+      }
+
+      for (i = 0; i < data->nrhs_equations; i++)
+      {
+        if (equation < data->rhs_equations[i])
+        {
+          should_we_delete = 0;
+          break;
+        }
+      }
+
+      if (should_we_delete)
+      {
+        if (data->storage.storage_memory_has_value)
         {
           ierr = adj_forget_variable_value_from_memory(adjointer, data);
           if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
@@ -2447,3 +2534,69 @@ int adj_variable_known(adj_adjointer* adjointer, adj_variable var, int* known)
 
   return ADJ_OK;
 }
+
+int adj_find_parameter_source_callback(adj_adjointer* adjointer, char* parameter, void (**fn)(adj_adjointer* adjointer, adj_variable derivative, int ndepends, adj_variable* variables, adj_vector* dependencies, char* name, adj_vector* output, int* has_output))
+{
+  adj_parameter_source_callback_list* cb_list_ptr;
+  adj_parameter_source_callback* cb_ptr;
+
+  cb_list_ptr = &(adjointer->parameter_source_list);
+
+  cb_ptr = cb_list_ptr->firstnode;
+  while (cb_ptr != NULL)
+  {
+    if (strncmp(cb_ptr->name, parameter, ADJ_NAME_LEN) == 0)
+    {
+      *fn = (void (*)(adj_adjointer* adjointer, adj_variable derivative, int ndepends, adj_variable* variables, adj_vector* dependencies, char* name, adj_vector* output, int* has_output)) cb_ptr->callback;
+      return ADJ_OK;
+    }
+    cb_ptr = cb_ptr->next;
+  }
+
+  snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Could not find parameter source callback %s.", parameter);
+  return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
+}
+
+int adj_register_parameter_source_callback(adj_adjointer* adjointer, char* name, void (*fn)(adj_adjointer* adjointer, adj_variable variable, int ndepends, adj_variable* variables, adj_vector* dependencies, char* name, adj_vector* output, int* has_output))
+{
+  adj_parameter_source_callback_list* cb_list_ptr;
+  adj_parameter_source_callback* cb_ptr;
+
+  if (adjointer->options[ADJ_ACTIVITY] == ADJ_ACTIVITY_NOTHING) return ADJ_OK;
+
+  cb_list_ptr = &(adjointer->parameter_source_list);
+
+  /* First, we look for an existing callback data structure that might already exist, to replace the function */
+  cb_ptr = cb_list_ptr->firstnode;
+  while (cb_ptr != NULL)
+  {
+    if (strncmp(cb_ptr->name, name, ADJ_NAME_LEN) == 0)
+    {
+      cb_ptr->callback = (void (*)(void* adjointer, adj_variable variable, int ndepends, adj_variable* variables, adj_vector* dependencies, char* name, adj_vector* output, int* has_output)) fn;
+      return ADJ_OK;
+    }
+    cb_ptr = cb_ptr->next;
+  }
+
+  /* If we got here, that means that we didn't find it. Tack it on to the end of the list. */
+  cb_ptr = (adj_parameter_source_callback*) malloc(sizeof(adj_parameter_source_callback));
+  ADJ_CHKMALLOC(cb_ptr);
+  strncpy(cb_ptr->name, name, ADJ_NAME_LEN);
+  cb_ptr->callback = (void (*)(void* adjointer, adj_variable variable, int ndepends, adj_variable* variables, adj_vector* dependencies, char* name, adj_vector* output, int* has_output)) fn;
+  cb_ptr->next = NULL;
+
+  /* Special case for the first callback */
+  if (cb_list_ptr->firstnode == NULL)
+  {
+    cb_list_ptr->firstnode = cb_ptr;
+    cb_list_ptr->lastnode = cb_ptr;
+  }
+  else
+  {
+    cb_list_ptr->lastnode->next = cb_ptr;
+    cb_list_ptr->lastnode = cb_ptr;
+  }
+
+  return ADJ_OK;
+}
+

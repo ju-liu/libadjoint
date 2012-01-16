@@ -62,6 +62,9 @@ class Variable(object):
       iteration = ctypes.c_int()
       clib.adj_variable_get_iteration(self.var, iteration)
       return iteration.value
+    elif name == 'type':
+      int_type_map = {1: 'ADJ_FORWARD', 2: 'ADJ_ADJOINT', 3: 'ADJ_TLM'}
+      return int_type_map[self.c_object.type]
     else:
       raise AttributeError
 
@@ -370,6 +373,56 @@ class Functional(object):
     functional_type = ctypes.CFUNCTYPE(None, ctypes.POINTER(clib.adj_adjointer), ctypes.c_int, ctypes.c_int, ctypes.POINTER(clib.adj_variable), ctypes.POINTER(clib.adj_vector), ctypes.c_char_p, ctypes.POINTER(ctypes.c_double))
     return functional_type(cfunc)
 
+class Parameter(object):
+  '''Base class for parameters and their source terms.'''
+  def __init__(self):
+    pass
+
+  def __call__(self, dependencies, values, variable):
+    '''__call__(self, dependencies, values)
+
+    Evaluate dF/dm associated with the equation for variable, given dependencies with values. The result must be a Vector.
+    '''
+
+    raise exceptions.LibadjointErrorNotImplemented("No __call__ method provided for parameter.")
+
+  def __str__(self):
+
+    return hex(id(self))
+
+  def dependencies(self, adjointer, variable):
+    '''dependencies(self, adjointer, variable)
+
+    Return the list of Variables on which this parameter's source term depends on for the equation associated with variable.'''
+
+    raise exceptions.LibadjointErrorNotImplemented("No dependencies method provided for variable.")
+
+  def __cfunc_from_parameter_source__(self):
+    '''Return a c-callable function wrapping the parameter source method.'''
+
+    def cfunc(adjointer_c, variable_c, ndepends_c, dependencies_c, values_c, name_c, output_c, has_output_c):
+      # build the Python objects from the C objects
+      adjointer = Adjointer(adjointer_c)
+      variable  = Variable(var=variable_c)
+      dependencies = [Variable(var=dependencies_c[i]) for i in range(ndepends_c)]
+      values = [vector(values_c[i]) for i in range(ndepends_c)]
+
+      # Now call the callback we've been given
+      output = self(dependencies, values, variable)
+
+      has_output_c[0] = (output is not None)
+      output_c[0].klass = 0
+      output_c[0].flags = 0
+      output_c[0].ptr = 0
+      if output:
+        if not isinstance(output, Vector):
+          raise exceptions.LibadjointErrorInvalidInputs("Output from parameter source term must be a Vector.")
+        output_c[0].ptr = python_utils.c_ptr(output)
+
+      references_taken.append(output)
+
+    parameter_type = ctypes.CFUNCTYPE(None, ctypes.POINTER(clib.adj_adjointer), clib.adj_variable, ctypes.c_int, ctypes.POINTER(clib.adj_variable), ctypes.POINTER(clib.adj_vector), ctypes.c_char_p, ctypes.POINTER(clib.adj_vector), ctypes.POINTER(ctypes.c_int))
+    return parameter_type(cfunc)
 
 class RHS(object):
   '''Base class for equation Right Hand Sides and their derivatives.'''
@@ -627,15 +680,23 @@ class Adjointer(object):
   def __register_functional__(self, functional):
     assert(isinstance(functional, Functional))
 
-    cfunc=functional.__cfunc_from_derivative__()
+    cfunc = functional.__cfunc_from_derivative__()
     self.functions_registered.append(cfunc)
 
     clib.adj_register_functional_derivative_callback(self.adjointer, str(functional), cfunc)
 
-    cfunc=functional.__cfunc_from_functional__()
+    cfunc = functional.__cfunc_from_functional__()
     self.functions_registered.append(cfunc)
 
     clib.adj_register_functional_callback(self.adjointer, str(functional), cfunc)
+
+  def __register_parameter__(self, parameter):
+    assert(isinstance(parameter, Parameter))
+
+    cfunc = parameter.__cfunc_from_parameter_source__()
+    self.functions_registered.append(cfunc)
+
+    clib.adj_register_parameter_source_callback(self.adjointer, str(parameter), cfunc)
 
   def __set_functional_dependencies__(self, functional, timestep):
 
@@ -737,6 +798,35 @@ class Adjointer(object):
 
     return (Variable(var=adj_var), output_py)
 
+  def get_tlm_equation(self, equation, parameter):
+
+    self.__register_parameter__(parameter)
+    #self.__set_parameter_dependencies__(parameter, self.equation_timestep[equation])
+
+    lhs = clib.adj_matrix()
+    rhs = clib.adj_vector()
+    adj_var = clib.adj_variable()
+    clib.adj_get_tlm_equation(self.adjointer, equation, str(parameter), lhs, rhs, adj_var)
+    lhs_py = python_utils.c_deref(lhs.ptr)
+    references_taken.remove(lhs_py)
+    rhs_py = python_utils.c_deref(rhs.ptr)
+    references_taken.remove(rhs_py)
+
+    return (lhs_py, rhs_py)
+
+  def get_tlm_solution(self, equation, parameter):
+
+    self.__register_parameter__(parameter)
+    #self.__set_parameter_dependencies__(parameter, self.equation_timestep[equation])
+
+    output = clib.adj_vector()
+    adj_var = clib.adj_variable()
+    clib.adj_get_tlm_solution(self.adjointer, equation, str(parameter), output, adj_var)
+    output_py = python_utils.c_deref(output.ptr)
+    references_taken.remove(output_py)
+
+    return (Variable(var=adj_var), output_py)
+
   def variable_known(self, variable):
     known = ctypes.c_int()
     clib.adj_variable_known(self.adjointer, variable.var, known)
@@ -744,6 +834,12 @@ class Adjointer(object):
 
   def forget_adjoint_equation(self, equation):
     clib.adj_forget_adjoint_equation(self.adjointer, equation)
+
+  def forget_forward_equation(self, equation):
+    clib.adj_forget_forward_equation(self.adjointer, equation)
+
+  def forget_tlm_equation(self, equation):
+    clib.adj_forget_tlm_equation(self.adjointer, equation)
 
   def __register_data_callbacks__(self):
     self.__register_data_callback__('ADJ_VEC_DUPLICATE_CB', self.__vec_duplicate_callback__)
@@ -1031,7 +1127,7 @@ class Adjointer(object):
     A = matrix(adj_mat)
     b = vector(adj_rhs)
 
-    x = A.solve(b)
+    x = A.solve(Variable(var=adj_var), b)
     references_taken.append(x)
 
     adj_soln_ptr[0].ptr = python_utils.c_ptr(x)
@@ -1117,10 +1213,11 @@ class Vector(LinAlg):
 class Matrix(LinAlg):
   '''Base class for adjoint matrix objects.'''
 
-  def solve(self, b):
-    '''solve(self, b)
+  def solve(self, var, b):
+    '''solve(self, var, b)
 
-    This method must solve the system self*x = b and return the answer.'''
+    This method must solve the system self*x = b and return the answer. The adj_variable corresponding to the variable
+    to be solved for is given by var.'''
 
     raise exceptions.LibadjointErrorNeedCallback(
       'Class '+self.__class__.__name__+' has no solve() method')        
