@@ -291,10 +291,12 @@ class MemoryStorage(Storage):
 
 class DiskStorage(Storage):
   '''Wrapper class for Vectors that contains additional information for storing the vector values in memory.'''
-  def __init__(self, vec):
+  def __init__(self, vec, cs=False):
     self.storage_data = clib.adj_storage_data()
     self.c_object = self.storage_data
-    clib.adj_storage_disk_incref(vec.as_adj_vector(), self.storage_data)
+    clib.adj_storage_disk(vec.as_adj_vector(), self.storage_data)
+
+    self.set_checkpoint(cs)
 
     # Ensure that the storage object always holds a reference to the vec
     self.vec = vec
