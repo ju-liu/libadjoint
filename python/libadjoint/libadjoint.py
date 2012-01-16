@@ -666,6 +666,18 @@ class Adjointer(object):
     finally:
       references_taken.append(storage.vec)
 
+    # At this point we should also reregister the from_file callback. 
+    # Note that the initial callback implementation could not access
+    # the user implementation of the read() function, and but we can access it.
+    def __vec_from_file_callback__(adj_vec_ptr, filename):
+        y = storage.vec.__class__.read(filename)
+        # Increase the reference counter of the new object to protect it from deallocation at the end of the callback
+        references_taken.append(y)
+        adj_vec_ptr[0].ptr = python_utils.c_ptr(y)
+        adj_vec_ptr[0].klass = 0
+        adj_vec_ptr[0].flags = 0
+    self.__register_data_callback__('ADJ_VEC_FROM_FILE_CB', __vec_from_file_callback__)
+
   def evaluate_functional(self, functional, timestep):
     '''evaluate_functional(self, functional, timestep)
 
@@ -1017,8 +1029,8 @@ class Adjointer(object):
 
   @staticmethod
   def __vec_from_file_callback__(adj_vec_ptr, filename):
-    raise exceptions.LibadjointErrorNeedCallback(
-      'The libadjointer found no callback for Vector.read(). You need to register an implementation manually.')
+    raise exceptions.LibadjointErrorInvalidInputs(
+        'Internal error: called from_file callback before the first record_variable call.')
 
   @staticmethod
   def __mat_duplicate_callback__(adj_mat, adj_mat_ptr):
