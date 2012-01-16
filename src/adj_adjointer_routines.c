@@ -876,13 +876,13 @@ int adj_initialise_revolve(adj_adjointer* adjointer)
   /* We need one memory checkpoint to checkpoint the last timestep before a FIRSTRUN or YOUTURN action. */
   if (snaps_in_ram < 0)
   {
-    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Checkpointing needs at least one memory checkpoint plus one disk or memory checkpoint.  Make sure you call adj_set_revolve_options with snaps_in_ram greater or equal than 1.");
+    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Checkpointing needs at least one memory checkpoint plus one disk or memory checkpoint.  Make sure you call adj_set_revolve_options with snaps_in_ram>=1.");
     return adj_chkierr_auto(ADJ_ERR_INVALID_INPUTS);
   }
   /* We need at least one snapshot */
   if (snaps <= 0)
   {
-    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Checkpointing needs at least one memory checkpoint plus one disk or memory checkpoint.  Make sure you call adj_set_revolve_options with snaps greater or equal than 2.");
+    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Checkpointing needs at least one memory checkpoint plus one disk or memory checkpoint.  Make sure you call adj_set_revolve_options with appropriate snaps_in_ram and snaps_on_disk values.");
     return adj_chkierr_auto(ADJ_ERR_INVALID_INPUTS);
   }
 
@@ -894,11 +894,11 @@ int adj_initialise_revolve(adj_adjointer* adjointer)
   /* Offline checkpointing */
   if (cs == ADJ_CHECKPOINT_REVOLVE_OFFLINE) 
   {
-    if ((steps > 0) && (snaps > 0))
+    if ((steps > 0) && (snaps > 0) && (snaps_in_ram == 0))
       adjointer->revolve_data.revolve = revolve_create_offline(steps, snaps);
     else
     {
-      snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "You chose to use offline revolve as checkpointing strategy but have not configured it correctly. Make sure you call adj_set_revolve_options with positive 'steps' and 'snaps' arguments.");
+      snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "You chose to use offline revolve as checkpointing strategy but have not configured it correctly. Make sure you call adj_set_revolve_options with 'steps>0' and 'snaps_on_disk>0' and 'snaps_in_ram=1.");
       return adj_chkierr_auto(ADJ_ERR_INVALID_INPUTS);
     }
   }
@@ -910,7 +910,7 @@ int adj_initialise_revolve(adj_adjointer* adjointer)
       adjointer->revolve_data.revolve = revolve_create_multistage(steps, snaps, snaps_in_ram);
     else
     {
-      snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "You chose to use multistage revolve as checkpointing strategy but have not configured it correctly. Make sure you call adj_set_revolve_options with positive 'steps', 'snaps' and 'snaps_in_ram' arguments.");
+      snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "You chose to use multistage revolve as checkpointing strategy but have not configured it correctly. Make sure you call adj_set_revolve_options with 'steps>0' and 'snaps_on_disk>=0' and 'snaps_in_ram>0.");
       return adj_chkierr_auto(ADJ_ERR_INVALID_INPUTS);
     }
   }
