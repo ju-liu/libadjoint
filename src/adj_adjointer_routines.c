@@ -264,13 +264,13 @@ int adj_register_equation(adj_adjointer* adjointer, adj_equation equation, int* 
     int old_timestep;
     /* if  (not same timestep as before)                     &&  (not the next timestep) */
     old_timestep = adjointer->equations[adjointer->nequations-1].variable.timestep;
-    if ((equation.variable.timestep != old_timestep) && (equation.variable.timestep != old_timestep+1))
+/*    if ((equation.variable.timestep != old_timestep) && (equation.variable.timestep != old_timestep+1))
     {
       snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, \
           "Timestep numbers must either stay the same or increment by one. Valid values are %d or %d, but you have supplied %d.", \
           old_timestep, old_timestep+1, equation.variable.timestep);
       return adj_chkierr_auto(ADJ_ERR_INVALID_INPUTS);
-    }
+    } */
   }
 
   if (equation.variable.auxiliary)
