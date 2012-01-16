@@ -109,6 +109,7 @@ typedef struct
 typedef struct adj_variable_data
 {
   int equation; /* the equation that solves for this variable. If the data belongs to a adjoint variable, this will be set to -1 */
+  int type; /* is it ADJ_FORWARD, ADJ_ADJOINT or ADJ_TLM? */
 
   int ntargeting_equations; /* any equations that target this variable */
   int* targeting_equations;
@@ -124,6 +125,7 @@ typedef struct adj_variable_data
 
   int nadjoint_equations; /* computed: the adjoint equations that need this variable */
   int* adjoint_equations;
+
   adj_storage_data storage; /* its storage record */
   struct adj_variable_data* next; /* a pointer to the next one, so we can walk the list */
 } adj_variable_data;

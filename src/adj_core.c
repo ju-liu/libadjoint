@@ -854,6 +854,8 @@ int adj_get_tlm_equation(adj_adjointer* adjointer, int equation, char* parameter
   adj_vector rhs_tmp;
   int i, j;
   adj_variable fwd_var;
+  adj_variable_data* tlm_data;
+  adj_variable_data* fwd_data;
 
   if (adjointer->options[ADJ_ACTIVITY] == ADJ_ACTIVITY_NOTHING)
   {
@@ -893,6 +895,36 @@ int adj_get_tlm_equation(adj_adjointer* adjointer, int equation, char* parameter
   memcpy(&fwd_var, &fwd_eqn.variable, sizeof(adj_variable));
   memcpy(tlm_var, &fwd_var, sizeof(adj_variable));
   tlm_var->type = ADJ_TLM; strncpy(tlm_var->functional, parameter, ADJ_NAME_LEN);
+
+  /* Let's take care of the hash table. */
+  ierr = adj_find_variable_data(&(adjointer->varhash), &fwd_var, &fwd_data);
+  if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
+
+  ierr = adj_find_variable_data(&(adjointer->varhash), tlm_var, &tlm_data);
+  if (ierr == ADJ_ERR_HASH_FAILED)
+  {
+    /* It might not fail, if we have tried to fetch this equation already */
+
+    ierr = adj_add_new_hash_entry(adjointer, tlm_var, &tlm_data);
+    if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
+
+    tlm_data->equation = -2;
+    tlm_data->ntargeting_equations = fwd_data->ntargeting_equations;
+    tlm_data->targeting_equations = (int*) malloc(fwd_data->ntargeting_equations * sizeof(int));
+    ADJ_CHKMALLOC(tlm_data->targeting_equations);
+    memcpy(tlm_data->targeting_equations, fwd_data->targeting_equations, fwd_data->ntargeting_equations * sizeof(int));
+
+    tlm_data->ndepending_equations = fwd_data->ndepending_equations;
+    tlm_data->depending_equations = (int*) malloc(fwd_data->ndepending_equations * sizeof(int));
+    ADJ_CHKMALLOC(tlm_data->depending_equations);
+    memcpy(tlm_data->depending_equations, fwd_data->depending_equations, fwd_data->ndepending_equations * sizeof(int));
+
+    tlm_data->nrhs_equations = fwd_data->nrhs_equations;
+    tlm_data->rhs_equations = (int*) malloc(fwd_data->nrhs_equations * sizeof(int));
+    ADJ_CHKMALLOC(tlm_data->rhs_equations);
+    memcpy(tlm_data->rhs_equations, fwd_data->rhs_equations, fwd_data->nrhs_equations * sizeof(int));
+  }
+
 
   /* Check that we have all the forward values we need, before we start allocating stuff */
   for (i = 0; i < fwd_eqn.nblocks; i++)

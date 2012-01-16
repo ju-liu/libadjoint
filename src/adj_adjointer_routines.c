@@ -1539,7 +1539,7 @@ int adj_forget_forward_equation_until(adj_adjointer* adjointer, int equation, in
   while (data != NULL)
   {
     /* Only forget forward variables */
-    if (data->equation<0) /* Adjoint variables have no equation. */
+    if (data->type != ADJ_FORWARD) /* Skip adjoint or TLM variables. */
     {
       data = data->next;
       continue;
@@ -1597,6 +1597,81 @@ int adj_forget_forward_equation_until(adj_adjointer* adjointer, int equation, in
           if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
         }
         if (data->storage.storage_memory_has_value && !data->storage.storage_memory_is_checkpoint)
+        {
+          ierr = adj_forget_variable_value_from_memory(adjointer, data);
+          if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
+        }
+      }
+    }
+
+    data = data->next;
+  }
+
+  return ADJ_OK;
+}
+
+int adj_forget_tlm_equation(adj_adjointer* adjointer, int equation)
+{
+  adj_variable_data* data;
+  int should_we_delete;
+  int i;
+  int ierr;
+
+  if (adjointer->options[ADJ_ACTIVITY] == ADJ_ACTIVITY_NOTHING) return ADJ_OK;
+
+  if (equation >= adjointer->nequations)
+  {
+    strncpy(adj_error_msg, "No such equation.", ADJ_ERROR_MSG_BUF);
+    return adj_chkierr_auto(ADJ_ERR_INVALID_INPUTS);
+  }
+
+  data = adjointer->vardata.firstnode;
+
+  while (data != NULL)
+  {
+    /* Only forget forward variables */
+    if (data->type != ADJ_TLM) /* Skip anything other than TLM variables.. */
+    {
+      data = data->next;
+      continue;
+    }
+
+    if (data->storage.storage_memory_has_value || data->storage.storage_disk_has_value)
+    {
+      should_we_delete = 1;
+      for (i = 0; i < data->ntargeting_equations; i++)
+      {
+        /* If the variable is a target variable for one of the equations
+         * of interest then we keep it.
+         */
+        if (equation < data->targeting_equations[i])
+        {
+          should_we_delete = 0;
+          break;
+        }
+      }
+
+      for (i = 0; i < data->ndepending_equations; i++)
+      {
+        if (equation < data->depending_equations[i])
+        {
+          should_we_delete = 0;
+          break;
+        }
+      }
+
+      for (i = 0; i < data->nrhs_equations; i++)
+      {
+        if (equation < data->rhs_equations[i])
+        {
+          should_we_delete = 0;
+          break;
+        }
+      }
+
+      if (should_we_delete)
+      {
+        if (data->storage.storage_memory_has_value)
         {
           ierr = adj_forget_variable_value_from_memory(adjointer, data);
           if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);

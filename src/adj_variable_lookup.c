@@ -6,6 +6,8 @@ int adj_add_variable_data(adj_variable_hash** hash, adj_variable* var, adj_varia
   adj_variable_hash* entry;
   adj_variable_hash* check;
 
+  data->type = var->type;
+
   HASH_FIND(hh, *hash, var, sizeof(adj_variable), check);
 
   if (check != NULL)

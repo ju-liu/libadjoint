@@ -762,6 +762,14 @@ module libadjoint
       integer(kind=c_int) :: ierr
     end function adj_forget_adjoint_equation
 
+    function adj_forget_tlm_equation(adjointer, equation) result(ierr) bind(c, name='adj_forget_tlm_equation')
+      use libadjoint_data_structures
+      use iso_c_binding
+      type(adj_adjointer), intent(inout) :: adjointer
+      integer(kind=c_int), intent(in), value :: equation
+      integer(kind=c_int) :: ierr
+    end function adj_forget_tlm_equation
+
     function adj_timestep_count(adjointer, count) result(ierr) bind(c, name='adj_timestep_count')
       use libadjoint_data_structures
       use iso_c_binding
