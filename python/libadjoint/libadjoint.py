@@ -566,6 +566,8 @@ class Adjointer(object):
     self.vec_set_random_type = ctypes.CFUNCTYPE(None, ctypes.POINTER(clib.adj_vector))
     self.vec_set_values_type = ctypes.CFUNCTYPE(None, ctypes.POINTER(clib.adj_vector), ctypes.POINTER(adj_scalar))
     self.vec_get_size_type = ctypes.CFUNCTYPE(None, clib.adj_vector, ctypes.POINTER(ctypes.c_int))
+    self.vec_to_file_type = ctypes.CFUNCTYPE(None, clib.adj_vector, ctypes.c_char_p)
+    self.vec_from_file_type = ctypes.CFUNCTYPE(None, ctypes.POINTER(clib.adj_vector), ctypes.c_char_p)
     self.mat_duplicate_type = ctypes.CFUNCTYPE(None, clib.adj_matrix, ctypes.POINTER(clib.adj_matrix))
     self.mat_destroy_type = ctypes.CFUNCTYPE(None, ctypes.POINTER(clib.adj_matrix))
     self.mat_axpy_type = ctypes.CFUNCTYPE(None, ctypes.POINTER(clib.adj_matrix), adj_scalar, clib.adj_matrix)
@@ -756,6 +758,8 @@ class Adjointer(object):
     self.__register_data_callback__('ADJ_VEC_SET_RANDOM_CB', self.__vec_set_random_callback__)
     self.__register_data_callback__('ADJ_VEC_SET_VALUES_CB', self.__vec_set_values_callback__)
     self.__register_data_callback__('ADJ_VEC_GET_SIZE_CB', self.__vec_get_size_callback__)
+    self.__register_data_callback__('ADJ_VEC_TO_FILE_CB', self.__vec_to_file_callback__)
+    self.__register_data_callback__('ADJ_VEC_FROM_FILE_CB', self.__vec_from_file_callback__)
     self.__register_data_callback__('ADJ_MAT_DUPLICATE_CB', self.__mat_duplicate_callback__)
     self.__register_data_callback__('ADJ_MAT_DESTROY_CB', self.__mat_destroy_callback__)
     self.__register_data_callback__('ADJ_MAT_AXPY_CB', self.__mat_axpy_callback__)
@@ -798,6 +802,8 @@ class Adjointer(object):
                    'ADJ_VEC_SET_RANDOM_CB': self.vec_set_random_type,
                    'ADJ_VEC_SET_VALUES_CB': self.vec_set_values_type,
                    'ADJ_VEC_GET_SIZE_CB': self.vec_get_size_type,
+                   'ADJ_VEC_TO_FILE_CB': self.vec_to_file_type,
+                   'ADJ_VEC_FROM_FILE_CB': self.vec_from_file_type,
                    "ADJ_MAT_DUPLICATE_CB": self.mat_duplicate_type,
                    "ADJ_MAT_DESTROY_CB": self.mat_destroy_type,
                    "ADJ_MAT_AXPY_CB": self.mat_axpy_type,
@@ -1005,6 +1011,16 @@ class Adjointer(object):
     sz[0] = y.size()
 
   @staticmethod
+  def __vec_to_file_callback__(adj_vec, filename):
+    y = vector(adj_vec)
+    y.write(filename)
+
+  @staticmethod
+  def __vec_from_file_callback__(adj_vec_ptr, filename):
+    raise exceptions.LibadjointErrorNeedCallback(
+      'The libadjointer found no callback for Vector.read(). You need to register an implementation manually.')
+
+  @staticmethod
   def __mat_duplicate_callback__(adj_mat, adj_mat_ptr):
     mat = matrix(adj_mat)
     new_mat = mat.duplicate()
@@ -1107,6 +1123,22 @@ class Vector(LinAlg):
 
     raise exceptions.LibadjointErrorNeedCallback(
       'Class '+self.__class__.__name__+' has no dot_product() method')        
+
+  @staticmethod
+  def read(filename):
+    '''This method must return the vector stored in a file. 
+       If the read() functions implements the suggested filename standard, 
+       the vector is stored in "filename".'''
+
+    raise exceptions.LibadjointErrorNeedCallback(
+      'Class Vector has no read() method')        
+
+  def write(self, filename):
+    '''This method must write the vector to file. 
+       "filename" is the suggested name of the target file.'''
+
+    raise exceptions.LibadjointErrorNeedCallback(
+      'Class '+self.__class__.__name__+' has no write() method')        
 
   def as_adj_vector(self):
     '''as_adj_vector(self)
