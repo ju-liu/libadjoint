@@ -129,12 +129,6 @@ typedef struct adj_variable_data
 
 typedef struct
 {
-  adj_variable_data* firstnode;
-  adj_variable_data* lastnode;
-} adj_variable_data_list;
-
-typedef struct
-{
   void (*vec_duplicate)(adj_vector x, adj_vector *newx);
   void (*vec_axpy)(adj_vector *y, adj_scalar alpha, adj_vector x);
   void (*vec_destroy)(adj_vector *x);
@@ -270,7 +264,6 @@ typedef struct adj_adjointer
   adj_revolve_data revolve_data; /* A data struct for revolve related information */
 
   adj_variable_hash* varhash; /* The hash table for looking up information about variables */
-  adj_variable_data_list vardata; /* We also store a linked list so we can walk all our variable data */
 
   int options[ADJ_NO_OPTIONS]; /* Pretty obvious */
 

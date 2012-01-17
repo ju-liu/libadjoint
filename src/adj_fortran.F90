@@ -82,11 +82,6 @@ module libadjoint_data_structures
     type(c_funptr) :: solve
   end type adj_data_callbacks
 
-  type, bind(c) :: adj_variable_data_list
-    type(c_ptr) :: firstnode
-    type(c_ptr) :: lastnode
-  end type adj_variable_data_list
-
   type, bind(c) :: adj_op_callback_list
     type(c_ptr) :: firstnode
     type(c_ptr) :: lastnode
@@ -131,7 +126,6 @@ module libadjoint_data_structures
     type(adj_revolve_data) :: revolve_data
 
     type(c_ptr) :: varhash
-    type(adj_variable_data_list) :: vardata
 
     integer(kind=c_int), dimension(ADJ_NO_OPTIONS) :: options
 

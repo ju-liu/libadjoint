@@ -12,8 +12,6 @@ int adj_create_adjointer(adj_adjointer* adjointer)
   adjointer->timestep_data = NULL;
 
   adjointer->varhash = NULL;
-  adjointer->vardata.firstnode = NULL;
-  adjointer->vardata.lastnode = NULL;
 
   adjointer->callbacks.vec_duplicate = NULL;
   adjointer->callbacks.vec_axpy = NULL;
@@ -2048,18 +2046,6 @@ int adj_add_new_hash_entry(adj_adjointer* adjointer, adj_variable* var, adj_vari
   /* add to the hash table */
   ierr = adj_add_variable_data(&(adjointer->varhash), var, *data);
   if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
-
-  /* and add to the data list */
-  if (adjointer->vardata.firstnode == NULL)
-  {
-    adjointer->vardata.firstnode = *data;
-    adjointer->vardata.lastnode = *data;
-  }
-  else
-  {
-    adjointer->vardata.lastnode->next = *data;
-    adjointer->vardata.lastnode = *data;
-  }
 
   return ADJ_OK;
 }
