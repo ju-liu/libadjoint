@@ -1041,12 +1041,12 @@ class Adjointer(object):
   @staticmethod
   def __vec_from_file_callback__(adj_var, adj_vec_ptr):
     raise exceptions.LibadjointErrorInvalidInputs(
-        'Internal error: called from_file callback before recording any variables.')
+        'Internal error: called vec_read callback before recording any variables.')
 
   @staticmethod
   def __vec_destroy_disk_callback__(adj_var):
     raise exceptions.LibadjointErrorInvalidInputs(
-        'Internal error: called from_file callback before recording any variables.')
+        'Internal error: called vec_delete callback before recording any variables.')
 
     print "To be implemented"
     assert(False)
