@@ -22,9 +22,9 @@ int adj_create_adjointer(adj_adjointer* adjointer)
   adjointer->callbacks.vec_get_norm = NULL;
   adjointer->callbacks.vec_set_random = NULL;
   adjointer->callbacks.vec_dot_product = NULL;
-  adjointer->callbacks.vec_to_file = NULL;
-  adjointer->callbacks.vec_from_file = NULL;
-  adjointer->callbacks.vec_destroy_disk = NULL;
+  adjointer->callbacks.vec_write = NULL;
+  adjointer->callbacks.vec_read = NULL;
+  adjointer->callbacks.vec_delete = NULL;
 
   adjointer->callbacks.mat_duplicate = NULL;
   adjointer->callbacks.mat_axpy = NULL;
@@ -704,12 +704,12 @@ int adj_checkpoint_variable(adj_adjointer* adjointer, adj_variable var, int cs)
   else if  (cs == ADJ_CHECKPOINT_STORAGE_MEMORY && (var_data->storage.storage_memory_has_value != ADJ_TRUE))
   {
     /* Check for the required callbacks */
-    if (adjointer->callbacks.vec_from_file == NULL)
+    if (adjointer->callbacks.vec_read == NULL)
     {
-      strncpy(adj_error_msg, "Need the vec_from_file data callback, but it hasn't been supplied.", ADJ_ERROR_MSG_BUF);
+      strncpy(adj_error_msg, "Need the vec_read data callback, but it hasn't been supplied.", ADJ_ERROR_MSG_BUF);
       return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
     }
-    adjointer->callbacks.vec_from_file(var, &(var_data->storage.value));
+    adjointer->callbacks.vec_read(var, &(var_data->storage.value));
     var_data->storage.storage_memory_has_value=ADJ_TRUE;
 
     var_data->storage.storage_memory_is_checkpoint = ADJ_TRUE;
@@ -1108,9 +1108,9 @@ int adj_record_variable_core_memory(adj_adjointer* adjointer, adj_variable_data*
 /* The core routine to record a variable to disk */
 int adj_record_variable_core_disk(adj_adjointer* adjointer, adj_variable var, adj_variable_data* data_ptr, adj_storage_data storage)
 {
-  if (adjointer->callbacks.vec_to_file == NULL)
+  if (adjointer->callbacks.vec_write == NULL)
   {
-    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "You have asked to record a value to disk, but no ADJ_VEC_TO_FILE_CB callback has been provided.");
+    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "You have asked to record a value to disk, but no ADJ_VEC_WRITE_CB callback has been provided.");
     return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
   }
 
@@ -1128,7 +1128,7 @@ int adj_record_variable_core_disk(adj_adjointer* adjointer, adj_variable var, ad
 
   data_ptr->storage.storage_disk_has_value = storage.storage_disk_has_value;
   data_ptr->storage.storage_disk_is_checkpoint = storage.storage_disk_is_checkpoint;
-  adjointer->callbacks.vec_to_file(var, storage.value);
+  adjointer->callbacks.vec_write(var, storage.value);
 
   return ADJ_OK;
 }
@@ -1289,14 +1289,14 @@ int adj_register_data_callback(adj_adjointer* adjointer, int type, void (*fn)(vo
     case ADJ_VEC_SET_RANDOM_CB:
       adjointer->callbacks.vec_set_random = (void(*)(adj_vector* x)) fn;
       break;
-    case ADJ_VEC_TO_FILE_CB:
-      adjointer->callbacks.vec_to_file = (void(*)(adj_variable, adj_vector x)) fn;
+    case ADJ_VEC_WRITE_CB:
+      adjointer->callbacks.vec_write = (void(*)(adj_variable, adj_vector x)) fn;
       break;
-    case ADJ_VEC_FROM_FILE_CB:
-      adjointer->callbacks.vec_from_file = (void(*)(adj_variable var, adj_vector* x)) fn;
+    case ADJ_VEC_READ_CB:
+      adjointer->callbacks.vec_read = (void(*)(adj_variable var, adj_vector* x)) fn;
       break;
-    case ADJ_VEC_DESTROY_DISK_CB:
-      adjointer->callbacks.vec_destroy_disk = (void(*)(adj_variable var)) fn;
+    case ADJ_VEC_DELETE_CB:
+      adjointer->callbacks.vec_delete = (void(*)(adj_variable var)) fn;
       break;
 
     case ADJ_MAT_DUPLICATE_CB:
@@ -1698,12 +1698,12 @@ int adj_get_variable_value(adj_adjointer* adjointer, adj_variable var, adj_vecto
   /* Disk storage */
   else if(data_ptr->storage.storage_disk_has_value)
   {
-    if (adjointer->callbacks.vec_from_file == NULL)
+    if (adjointer->callbacks.vec_read == NULL)
     {
-      snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "You have asked to get a value from disk, but no ADJ_VEC_FROM_FILE_CB callback has been provided.");
+      snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "You have asked to get a value from disk, but no ADJ_VEC_READ_CB callback has been provided.");
       return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
     }
-    adjointer->callbacks.vec_from_file(var, value);
+    adjointer->callbacks.vec_read(var, value);
     data_ptr->storage.storage_memory_has_value = ADJ_TRUE;
     data_ptr->storage.value = *value;
   }
@@ -1811,16 +1811,16 @@ int adj_forget_variable_value(adj_adjointer* adjointer, adj_variable var, adj_va
 
 int adj_forget_variable_value_from_disk(adj_adjointer* adjointer, adj_variable var, adj_variable_data* data)
 {
-  if (adjointer->callbacks.vec_destroy_disk == NULL)
+  if (adjointer->callbacks.vec_delete == NULL)
   {
-    strncpy(adj_error_msg, "Need vec_destroy_disk data callback.", ADJ_ERROR_MSG_BUF);
+    strncpy(adj_error_msg, "Need vec_delete data callback.", ADJ_ERROR_MSG_BUF);
     return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
   }
 
   assert(data->storage.storage_disk_has_value);
 
   data->storage.storage_disk_has_value = ADJ_FALSE;
-  adjointer->callbacks.vec_destroy_disk(var);
+  adjointer->callbacks.vec_delete(var);
   return ADJ_OK;
 }
 

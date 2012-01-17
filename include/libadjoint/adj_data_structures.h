@@ -138,9 +138,9 @@ typedef struct
   void (*vec_get_norm)(adj_vector x, adj_scalar* norm);
   void (*vec_dot_product)(adj_vector x, adj_vector y, adj_scalar* val);
   void (*vec_set_random)(adj_vector* x);
-  void (*vec_to_file)(adj_variable var, adj_vector x);
-  void (*vec_from_file)(adj_variable var, adj_vector* x);
-  void (*vec_destroy_disk)(adj_variable var);
+  void (*vec_write)(adj_variable var, adj_vector x);
+  void (*vec_read)(adj_variable var, adj_vector* x);
+  void (*vec_delete)(adj_variable var);
 
   void (*mat_duplicate)(adj_matrix matin, adj_matrix *matout);
   void (*mat_axpy)(adj_matrix *Y, adj_scalar alpha, adj_matrix X);

@@ -25,9 +25,9 @@ void petsc_vec_divide_proc(adj_vector *numerator, adj_vector denominator);
 void petsc_vec_getnorm_proc(adj_vector vec, adj_scalar* norm);
 void petsc_vec_set_random_proc(adj_vector* x);
 void petsc_vec_dot_product_proc(adj_vector x, adj_vector y, adj_scalar* val);
-void petsc_vec_to_file_proc(adj_variable var, adj_vector x);
-void petsc_vec_from_file_proc(adj_variable var, adj_vector* x);
-void petsc_vec_destroy_disk_proc(adj_variable var);
+void petsc_vec_write_proc(adj_variable var, adj_vector x);
+void petsc_vec_read_proc(adj_variable var, adj_vector* x);
+void petsc_vec_delete_proc(adj_variable var);
 
 void petsc_mat_getvec_proc(adj_matrix mat, adj_vector *left);
 void petsc_mat_axpy_proc(adj_matrix *Y, adj_scalar alpha, adj_matrix X);

@@ -21,11 +21,11 @@ int adj_set_petsc_data_callbacks(adj_adjointer* adjointer)
   adj_chkierr(ierr);
   ierr = adj_register_data_callback(adjointer, ADJ_VEC_DOT_PRODUCT_CB,(void (*)(void)) petsc_vec_dot_product_proc);
   adj_chkierr(ierr);
-  ierr = adj_register_data_callback(adjointer, ADJ_VEC_TO_FILE_CB,(void (*)(void)) petsc_vec_to_file_proc);
+  ierr = adj_register_data_callback(adjointer, ADJ_VEC_WRITE_CB,(void (*)(void)) petsc_vec_write_proc);
   adj_chkierr(ierr);
-  ierr = adj_register_data_callback(adjointer, ADJ_VEC_FROM_FILE_CB,(void (*)(void)) petsc_vec_from_file_proc);
+  ierr = adj_register_data_callback(adjointer, ADJ_VEC_READ_CB,(void (*)(void)) petsc_vec_read_proc);
   adj_chkierr(ierr);
-  ierr = adj_register_data_callback(adjointer, ADJ_VEC_DESTROY_DISK_CB,(void (*)(void)) petsc_vec_destroy_disk_proc);
+  ierr = adj_register_data_callback(adjointer, ADJ_VEC_DELETE_CB,(void (*)(void)) petsc_vec_delete_proc);
   adj_chkierr(ierr);
   ierr = adj_register_data_callback(adjointer, ADJ_MAT_AXPY_CB,(void (*)(void)) petsc_mat_axpy_proc);
   adj_chkierr(ierr);
@@ -77,7 +77,7 @@ void petsc_vec_destroy_proc(adj_vector *x)
 #endif
 }
 
-void petsc_vec_destroy_disk_proc(adj_variable var)
+void petsc_vec_delete_proc(adj_variable var)
 {
 #ifdef HAVE_PETSC
   /* Generate the filename */
@@ -120,7 +120,7 @@ void petsc_vec_dot_product_proc(adj_vector x, adj_vector y, adj_scalar* val)
 #endif
 }
 
-void petsc_vec_to_file_proc(adj_variable var, adj_vector x)
+void petsc_vec_write_proc(adj_variable var, adj_vector x)
 {
 #ifdef HAVE_PETSC
   /* Generate the filename */
@@ -143,7 +143,7 @@ void petsc_vec_to_file_proc(adj_variable var, adj_vector x)
 #endif
 }
 
-void petsc_vec_from_file_proc(adj_variable var, adj_vector *x)
+void petsc_vec_read_proc(adj_variable var, adj_vector *x)
 {
 #ifdef HAVE_PETSC
   /* Generate the filename */

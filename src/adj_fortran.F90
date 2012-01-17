@@ -71,9 +71,9 @@ module libadjoint_data_structures
     type(c_funptr) :: vec_get_norm
     type(c_funptr) :: vec_dot_product
     type(c_funptr) :: vec_set_random
-    type(c_funptr) :: vec_to_file
-    type(c_funptr) :: vec_from_file
-    type(c_funptr) :: vec_destroy_disk
+    type(c_funptr) :: vec_write
+    type(c_funptr) :: vec_read
+    type(c_funptr) :: vec_delete
 
     type(c_funptr) :: mat_duplicate
     type(c_funptr) :: mat_axpy
@@ -233,22 +233,22 @@ module libadjoint
       type(adj_vector), intent(inout) :: x
     end subroutine adj_vec_set_random
 
-    subroutine adj_vec_to_file(var, x) bind(c)
+    subroutine adj_vec_write(var, x) bind(c)
       use libadjoint_data_structures
       type(adj_variable), intent(in), value :: var
       type(adj_vector), intent(in), value :: x
-    end subroutine adj_vec_to_file
+    end subroutine adj_vec_write
 
-    subroutine adj_vec_from_file(var, x) bind(c)
+    subroutine adj_vec_read(var, x) bind(c)
       use libadjoint_data_structures
       type(adj_variable), intent(in), value :: var
       type(adj_vector), intent(out) :: x
-    end subroutine adj_vec_from_file
+    end subroutine adj_vec_read
 
-    subroutine adj_vec_destroy_disk(var) bind(c)
+    subroutine adj_vec_delete(var) bind(c)
       use libadjoint_data_structures
       type(adj_variable), intent(in), value :: var
-    end subroutine adj_vec_destroy_disk
+    end subroutine adj_vec_delete
 
     subroutine adj_mat_duplicate_proc(matin, matout) bind(c)
       ! Allocate a new matrix, using a given matrix as the model
