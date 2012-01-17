@@ -34,7 +34,7 @@ class Matrix(libadjoint.Matrix):
     class to wrap the numpy matrix mat in a libadjoint matrix.'''
     self.mat = mat
 
-  def solve(self, bb):
+  def solve(self, var, bb):
 
 
     return Vector(numpy.linalg.solve(self.mat, bb.vec))

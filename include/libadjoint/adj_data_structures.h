@@ -108,6 +108,7 @@ typedef struct
 typedef struct adj_variable_data
 {
   int equation; /* the equation that solves for this variable. If the data belongs to a adjoint variable, this will be set to -1 */
+  int type; /* is it ADJ_FORWARD, ADJ_ADJOINT or ADJ_TLM? */
 
   int ntargeting_equations; /* any equations that target this variable */
   int* targeting_equations;
@@ -123,6 +124,7 @@ typedef struct adj_variable_data
 
   int nadjoint_equations; /* computed: the adjoint equations that need this variable */
   int* adjoint_equations;
+
   adj_storage_data storage; /* its storage record */
   struct adj_variable_data* next; /* a pointer to the next one, so we can walk the list */
 } adj_variable_data;
@@ -174,9 +176,17 @@ typedef struct adj_func_deriv_callback
 {
   char name[ADJ_NAME_LEN];
   /* we want this to be adj_adjointer* adjointer, but we haven't defined adj_adjointer yet */
-  void (*callback)(void* adjointer, adj_variable variable, int ndepends, adj_variable* variables, adj_vector* dependencies, char* name, adj_vector* output);
+  void (*callback)(void* adjointer, adj_variable variable, int ndepends, adj_variable* variables, adj_vector* dependencies, char* functional, adj_vector* output);
   struct adj_func_deriv_callback* next;
 } adj_func_deriv_callback;
+
+typedef struct adj_parameter_source_callback
+{
+  char name[ADJ_NAME_LEN];
+  /* we want this to be adj_adjointer* adjointer, but we haven't defined adj_adjointer yet */
+  void (*callback)(void* adjointer, adj_variable variable, int ndepends, adj_variable* variables, adj_vector* dependencies, char* parameter, adj_vector* output, int* has_output);
+  struct adj_parameter_source_callback* next;
+} adj_parameter_source_callback;
 
 typedef struct
 {
@@ -189,6 +199,12 @@ typedef struct
   adj_func_deriv_callback* firstnode;
   adj_func_deriv_callback* lastnode;
 } adj_func_deriv_callback_list;
+
+typedef struct
+{
+  adj_parameter_source_callback* firstnode;
+  adj_parameter_source_callback* lastnode;
+} adj_parameter_source_callback_list;
 
 typedef struct
 {
@@ -276,6 +292,7 @@ typedef struct adj_adjointer
   adj_op_callback_list block_assembly_list;
   adj_func_callback_list functional_list;
   adj_func_deriv_callback_list functional_derivative_list;
+  adj_parameter_source_callback_list parameter_source_list;
 } adj_adjointer;
 
 int adj_create_variable(char* name, int timestep, int iteration, int auxiliary, adj_variable* var);
