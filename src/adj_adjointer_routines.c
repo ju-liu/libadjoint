@@ -738,7 +738,7 @@ int adj_get_revolve_checkpoint_storage(adj_adjointer* adjointer, adj_equation eq
         (adjointer->revolve_data.current_action != CACTION_FIRSTRUN))
     {
       adj_variable_str(equation.variable, buf, ADJ_NAME_LEN);
-      snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "The adjointer and revolve are not consistent (in adj_register_equation of variable %s). This can happen when one tries to register an equation after solving the first adjoint equation.", buf);
+      snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "The adjointer and revolve are not consistent (in adj_register_equation of variable %s). Did you register an equation after solving the first adjoint equation?", buf);
       return adj_chkierr_auto(ADJ_ERR_REVOLVE_ERROR);
     }
   }
