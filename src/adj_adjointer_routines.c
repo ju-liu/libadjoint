@@ -1704,6 +1704,8 @@ int adj_get_variable_value(adj_adjointer* adjointer, adj_variable var, adj_vecto
       return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
     }
     adjointer->callbacks.vec_from_file(var, value);
+    data_ptr->storage.storage_memory_has_value = ADJ_TRUE;
+    data_ptr->storage.value = *value;
   }
   return ADJ_OK;
 }
