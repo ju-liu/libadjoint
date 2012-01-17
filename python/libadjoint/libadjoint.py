@@ -566,8 +566,9 @@ class Adjointer(object):
     self.vec_set_random_type = ctypes.CFUNCTYPE(None, ctypes.POINTER(clib.adj_vector))
     self.vec_set_values_type = ctypes.CFUNCTYPE(None, ctypes.POINTER(clib.adj_vector), ctypes.POINTER(adj_scalar))
     self.vec_get_size_type = ctypes.CFUNCTYPE(None, clib.adj_vector, ctypes.POINTER(ctypes.c_int))
-    self.vec_to_file_type = ctypes.CFUNCTYPE(None, clib.adj_vector, ctypes.c_char_p)
-    self.vec_from_file_type = ctypes.CFUNCTYPE(None, ctypes.POINTER(clib.adj_vector), ctypes.c_char_p)
+    self.vec_to_file_type = ctypes.CFUNCTYPE(None, clib.adj_variable, clib.adj_vector)
+    self.vec_from_file_type = ctypes.CFUNCTYPE(None, clib.adj_variable, ctypes.POINTER(clib.adj_vector))
+    self.vec_destroy_disk_type = ctypes.CFUNCTYPE(None, clib.adj_variable)
     self.mat_duplicate_type = ctypes.CFUNCTYPE(None, clib.adj_matrix, ctypes.POINTER(clib.adj_matrix))
     self.mat_destroy_type = ctypes.CFUNCTYPE(None, ctypes.POINTER(clib.adj_matrix))
     self.mat_axpy_type = ctypes.CFUNCTYPE(None, ctypes.POINTER(clib.adj_matrix), adj_scalar, clib.adj_matrix)
@@ -772,6 +773,7 @@ class Adjointer(object):
     self.__register_data_callback__('ADJ_VEC_GET_SIZE_CB', self.__vec_get_size_callback__)
     self.__register_data_callback__('ADJ_VEC_TO_FILE_CB', self.__vec_to_file_callback__)
     self.__register_data_callback__('ADJ_VEC_FROM_FILE_CB', self.__vec_from_file_callback__)
+    self.__register_data_callback__('ADJ_VEC_DESTROY_DISK_CB', self.__vec_destroy_disk_callback__)
     self.__register_data_callback__('ADJ_MAT_DUPLICATE_CB', self.__mat_duplicate_callback__)
     self.__register_data_callback__('ADJ_MAT_DESTROY_CB', self.__mat_destroy_callback__)
     self.__register_data_callback__('ADJ_MAT_AXPY_CB', self.__mat_axpy_callback__)
@@ -816,6 +818,7 @@ class Adjointer(object):
                    'ADJ_VEC_GET_SIZE_CB': self.vec_get_size_type,
                    'ADJ_VEC_TO_FILE_CB': self.vec_to_file_type,
                    'ADJ_VEC_FROM_FILE_CB': self.vec_from_file_type,
+                   "ADJ_VEC_DESTROY_DISK_CB": self.vec_destroy_disk_type,
                    "ADJ_MAT_DUPLICATE_CB": self.mat_duplicate_type,
                    "ADJ_MAT_DESTROY_CB": self.mat_destroy_type,
                    "ADJ_MAT_AXPY_CB": self.mat_axpy_type,
@@ -1023,14 +1026,28 @@ class Adjointer(object):
     sz[0] = y.size()
 
   @staticmethod
-  def __vec_to_file_callback__(adj_vec, filename):
+  def __vec_to_file_callback__(adj_var, adj_vec):
     y = vector(adj_vec)
-    y.write(filename)
+    y.write(adj_var)
 
   @staticmethod
-  def __vec_from_file_callback__(adj_vec_ptr, filename):
+  def __vec_from_file_callback__(adj_var, adj_vec_ptr):
     raise exceptions.LibadjointErrorInvalidInputs(
         'Internal error: called from_file callback before the first record_variable call.')
+
+  @staticmethod
+  def __vec_destroy_disk_callback__(adj_var):
+    print "To be implemented"
+    assert(False)
+    vec = vector(adj_vec_ptr[0])
+
+    # Do the corresponding decref of the object, so that the Python GC can pick it up
+    try:
+      references_taken.remove(vec)
+    except:
+      print vec.data
+      print references_taken
+      raise
 
   @staticmethod
   def __mat_duplicate_callback__(adj_mat, adj_mat_ptr):
