@@ -667,16 +667,23 @@ class Adjointer(object):
     finally:
       references_taken.append(storage.vec)
 
-    # At this point we should also reregister the from_file callback. 
+    # At this point we should also reregister the from_file and the destroy_disk callbacks.
     # Note that the initial callback implementation could not access
-    # the user implementation of the read() function, and but we can access it.
-    def __vec_from_file_callback__(adj_vec_ptr, filename):
-        y = storage.vec.__class__.read(filename)
+    # the user implementation of the read() and delete() functions, and but here we can.
+    def __vec_from_file_callback__(adj_var, adj_vec_ptr):
+        var = Variable(var=adj_var)
+        y = storage.vec.__class__.read(var)
         # Increase the reference counter of the new object to protect it from deallocation at the end of the callback
         references_taken.append(y)
         adj_vec_ptr[0].ptr = python_utils.c_ptr(y)
         adj_vec_ptr[0].klass = 0
         adj_vec_ptr[0].flags = 0
+
+    def __vec_destroy_disk_callback__(adj_var):
+        var = Variable(var=adj_var)
+        storage.vec.__class__.delete(var)
+
+    self.__register_data_callback__('ADJ_VEC_DESTROY_DISK_CB', __vec_destroy_disk_callback__)
     self.__register_data_callback__('ADJ_VEC_FROM_FILE_CB', __vec_from_file_callback__)
 
   def evaluate_functional(self, functional, timestep):
@@ -1027,16 +1034,20 @@ class Adjointer(object):
 
   @staticmethod
   def __vec_to_file_callback__(adj_var, adj_vec):
-    y = vector(adj_vec)
-    y.write(adj_var)
+    var = Variable(var=adj_var)
+    vec = vector(adj_vec)
+    vec.write(var)
 
   @staticmethod
   def __vec_from_file_callback__(adj_var, adj_vec_ptr):
     raise exceptions.LibadjointErrorInvalidInputs(
-        'Internal error: called from_file callback before the first record_variable call.')
+        'Internal error: called from_file callback before recording any variables.')
 
   @staticmethod
   def __vec_destroy_disk_callback__(adj_var):
+    raise exceptions.LibadjointErrorInvalidInputs(
+        'Internal error: called from_file callback before recording any variables.')
+
     print "To be implemented"
     assert(False)
     vec = vector(adj_vec_ptr[0])
