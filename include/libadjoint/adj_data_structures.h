@@ -96,12 +96,11 @@ typedef struct
   /* for ADJ_STORAGE_MEMORY */
   int storage_memory_type; /* ADJ_STORAGE_MEMORY_COPY or ADJ_STORAGE_MEMORY_INCREF */
   int storage_memory_has_value;
-  int storage_memory_is_checkpoint; /* checkpoints are not deleted by adj_forget_forward_equation */
+  int storage_memory_is_checkpoint; /* memory checkpoints are not deleted by adj_forget_forward_equation */
 
   /* for ADJ_STORAGE_DISK */
   int storage_disk_has_value;
-  int storage_disk_is_checkpoint; /* checkpoints are not deleted by adj_forget_forward_equation */
-  char storage_disk_filename[ADJ_NAME_LEN];
+  int storage_disk_is_checkpoint; /* disk checkpoints are not deleted by adj_forget_forward_equation */
 
   /* POD, temporal interpolation, ... */
 } adj_storage_data;
@@ -145,8 +144,9 @@ typedef struct
   void (*vec_get_norm)(adj_vector x, adj_scalar* norm);
   void (*vec_dot_product)(adj_vector x, adj_vector y, adj_scalar* val);
   void (*vec_set_random)(adj_vector* x);
-  void (*vec_to_file)(adj_vector x, char* filename);
-  void (*vec_from_file)(adj_vector* x, char *filename);
+  void (*vec_to_file)(adj_variable var, adj_vector x);
+  void (*vec_from_file)(adj_variable var, adj_vector* x);
+  void (*vec_destroy_disk)(adj_variable var);
 
   void (*mat_duplicate)(adj_matrix matin, adj_matrix *matout);
   void (*mat_axpy)(adj_matrix *Y, adj_scalar alpha, adj_matrix X);

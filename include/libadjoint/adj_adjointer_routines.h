@@ -60,12 +60,12 @@ int adj_has_variable_value_memory(adj_adjointer* adjointer, adj_variable var);
 int adj_has_variable_value_disk(adj_adjointer* adjointer, adj_variable var);
 int adj_is_variable_memory_checkpoint(adj_adjointer* adjointer, adj_variable var);
 int adj_is_variable_disk_checkpoint(adj_adjointer* adjointer, adj_variable var);
-int adj_forget_variable_value(adj_adjointer* adjointer, adj_variable_data* data);
+int adj_forget_variable_value(adj_adjointer* adjointer, adj_variable var, adj_variable_data* data);
 int adj_forget_variable_value_from_memory(adj_adjointer* adjointer, adj_variable_data* data);
-int adj_forget_variable_value_from_disk(adj_adjointer* adjointer, adj_variable_data* data);
-int adj_destroy_variable_data(adj_adjointer* adjointer, adj_variable_data* data);
+int adj_forget_variable_value_from_disk(adj_adjointer* adjointer, adj_variable var, adj_variable_data* data);
+int adj_destroy_variable_data(adj_adjointer* adjointer, adj_variable var, adj_variable_data* data);
 int adj_add_new_hash_entry(adj_adjointer* adjointer, adj_variable* var, adj_variable_data** data);
-int adj_record_variable_core_disk(adj_adjointer* adjointer, adj_variable_data* data_ptr, adj_storage_data storage);
+int adj_record_variable_core_disk(adj_adjointer* adjointer, adj_variable var, adj_variable_data* data_ptr, adj_storage_data storage);
 int adj_record_variable_core_memory(adj_adjointer* adjointer, adj_variable_data* data_ptr, adj_storage_data storage);
 int adj_record_variable_compare(adj_adjointer* adjointer, adj_variable_data* data_ptr, adj_variable var, adj_storage_data storage);
 

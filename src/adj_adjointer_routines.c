@@ -26,6 +26,7 @@ int adj_create_adjointer(adj_adjointer* adjointer)
   adjointer->callbacks.vec_dot_product = NULL;
   adjointer->callbacks.vec_to_file = NULL;
   adjointer->callbacks.vec_from_file = NULL;
+  adjointer->callbacks.vec_destroy_disk = NULL;
 
   adjointer->callbacks.mat_duplicate = NULL;
   adjointer->callbacks.mat_axpy = NULL;
@@ -70,6 +71,7 @@ int adj_destroy_adjointer(adj_adjointer* adjointer)
 {
   int i;
   int ierr;
+  adj_variable_hash* varhash;
   adj_variable_data* data_ptr;
   adj_variable_data* data_ptr_tmp;
   adj_op_callback* cb_ptr;
@@ -102,10 +104,10 @@ int adj_destroy_adjointer(adj_adjointer* adjointer)
     free(adjointer->timestep_data);
   }
 
-  data_ptr = adjointer->vardata.firstnode;
-  while (data_ptr != NULL)
+  for(varhash=adjointer->varhash; varhash != NULL; varhash=varhash->hh.next)
   {
-    ierr = adj_destroy_variable_data(adjointer, data_ptr);
+  	data_ptr=varhash->data;
+    ierr = adj_destroy_variable_data(adjointer, varhash->variable, data_ptr);
     if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
     data_ptr_tmp = data_ptr;
     data_ptr = data_ptr->next;
@@ -676,11 +678,6 @@ int adj_checkpoint_variable(adj_adjointer* adjointer, adj_variable var, int cs)
     return adj_chkierr_auto(ADJ_ERR_NEED_VALUE);
   }
 
-  /* Create the filename in case we need to store/load from disk */
-  char filename[ADJ_NAME_LEN];
-  adj_variable_str(var, filename, ADJ_NAME_LEN);
-  strncat(filename, ".dat", 4);
-
   /* Case 1: variable is on disk and we want to checkpoint it in disk */
   if ((cs == ADJ_CHECKPOINT_STORAGE_DISK) && (var_data->storage.storage_disk_has_value == ADJ_TRUE))
   {
@@ -714,7 +711,7 @@ int adj_checkpoint_variable(adj_adjointer* adjointer, adj_variable var, int cs)
       strncpy(adj_error_msg, "Need the vec_from_file data callback, but it hasn't been supplied.", ADJ_ERROR_MSG_BUF);
       return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
     }
-    adjointer->callbacks.vec_from_file(&(var_data->storage.value), filename);
+    adjointer->callbacks.vec_from_file(var, &(var_data->storage.value));
     var_data->storage.storage_memory_has_value=ADJ_TRUE;
 
     var_data->storage.storage_memory_is_checkpoint = ADJ_TRUE;
@@ -990,15 +987,7 @@ int adj_record_variable(adj_adjointer* adjointer, adj_variable var, adj_storage_
   else if (storage.storage_memory_has_value && !data_ptr->storage.storage_memory_has_value)
     return adj_record_variable_core_memory(adjointer, data_ptr, storage);
   else if (storage.storage_disk_has_value && !data_ptr->storage.storage_disk_has_value)
-  {
-    /* Generate the filename */
-    char filename[ADJ_NAME_LEN];
-    adj_variable_str(var, filename, ADJ_NAME_LEN);
-    strncat(filename, ".dat", 4);
-    strncpy(storage.storage_disk_filename, filename, ADJ_NAME_LEN);
-
-    return adj_record_variable_core_disk(adjointer, data_ptr, storage);
-  }
+    return adj_record_variable_core_disk(adjointer, var, data_ptr, storage);
   else
   /* Sorry for the slight mess. The easiest way to understand this block is to build a 2x2 graph of
      compare and overwrite:
@@ -1032,7 +1021,7 @@ int adj_record_variable(adj_adjointer* adjointer, adj_variable var, adj_storage_
       {
         int record_ierr;
 
-        ierr = adj_forget_variable_value(adjointer, data_ptr);
+        ierr = adj_forget_variable_value(adjointer, var, data_ptr);
         if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
 
         record_ierr = adj_record_variable_core_memory(adjointer, data_ptr, storage); /* Overwrite the result anyway */
@@ -1052,7 +1041,7 @@ int adj_record_variable(adj_adjointer* adjointer, adj_variable var, adj_storage_
     {
       if (storage.overwrite)
       {
-        ierr = adj_forget_variable_value(adjointer, data_ptr);
+        ierr = adj_forget_variable_value(adjointer, var, data_ptr);
         if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
         return adj_record_variable_core_memory(adjointer, data_ptr, storage);
       }
@@ -1119,7 +1108,7 @@ int adj_record_variable_core_memory(adj_adjointer* adjointer, adj_variable_data*
 }
 
 /* The core routine to record a variable to disk */
-int adj_record_variable_core_disk(adj_adjointer* adjointer, adj_variable_data* data_ptr, adj_storage_data storage)
+int adj_record_variable_core_disk(adj_adjointer* adjointer, adj_variable var, adj_variable_data* data_ptr, adj_storage_data storage)
 {
   if (adjointer->callbacks.vec_to_file == NULL)
   {
@@ -1141,8 +1130,7 @@ int adj_record_variable_core_disk(adj_adjointer* adjointer, adj_variable_data* d
 
   data_ptr->storage.storage_disk_has_value = storage.storage_disk_has_value;
   data_ptr->storage.storage_disk_is_checkpoint = storage.storage_disk_is_checkpoint;
-  strncpy(data_ptr->storage.storage_disk_filename, storage.storage_disk_filename, ADJ_NAME_LEN);
-  adjointer->callbacks.vec_to_file(storage.value, data_ptr->storage.storage_disk_filename);
+  adjointer->callbacks.vec_to_file(var, storage.value);
 
   return ADJ_OK;
 }
@@ -1304,10 +1292,13 @@ int adj_register_data_callback(adj_adjointer* adjointer, int type, void (*fn)(vo
       adjointer->callbacks.vec_set_random = (void(*)(adj_vector* x)) fn;
       break;
     case ADJ_VEC_TO_FILE_CB:
-      adjointer->callbacks.vec_to_file = (void(*)(adj_vector x, char* filename)) fn;
+      adjointer->callbacks.vec_to_file = (void(*)(adj_variable, adj_vector x)) fn;
       break;
     case ADJ_VEC_FROM_FILE_CB:
-      adjointer->callbacks.vec_from_file = (void(*)(adj_vector* x, char* filename)) fn;
+      adjointer->callbacks.vec_from_file = (void(*)(adj_variable var, adj_vector* x)) fn;
+      break;
+    case ADJ_VEC_DESTROY_DISK_CB:
+      adjointer->callbacks.vec_destroy_disk = (void(*)(adj_variable var)) fn;
       break;
 
     case ADJ_MAT_DUPLICATE_CB:
@@ -1419,6 +1410,7 @@ int adj_register_functional_derivative_callback(adj_adjointer* adjointer, char* 
 
 int adj_forget_adjoint_equation(adj_adjointer* adjointer, int equation)
 {
+  adj_variable_hash* varhash;
   adj_variable_data* data;
   int should_we_delete;
   int i;
@@ -1427,8 +1419,8 @@ int adj_forget_adjoint_equation(adj_adjointer* adjointer, int equation)
 
   if (adjointer->options[ADJ_ACTIVITY] == ADJ_ACTIVITY_NOTHING) return ADJ_OK;
 
-  /* Dont delete any variables if we want to compare in the revolve replays */
-  if (adjointer->revolve_data.overwrite==ADJ_TRUE)
+  /* Do not delete any variables if we want to compare forward variables with the revolve replay */
+  if (adjointer->revolve_data.overwrite == ADJ_TRUE)
     return ADJ_OK;
 
   if (equation >= adjointer->nequations)
@@ -1437,9 +1429,9 @@ int adj_forget_adjoint_equation(adj_adjointer* adjointer, int equation)
     return adj_chkierr_auto(ADJ_ERR_INVALID_INPUTS);
   }
 
-  data = adjointer->vardata.firstnode;
-  while (data != NULL)
+  for(varhash=adjointer->varhash; varhash != NULL; varhash=varhash->hh.next)
   {
+  	data = varhash->data;
     if (data->storage.storage_memory_has_value || data->storage.storage_disk_has_value)
     {
       should_we_delete = 1;
@@ -1473,7 +1465,7 @@ int adj_forget_adjoint_equation(adj_adjointer* adjointer, int equation)
         /* Forget only non-checkpoint variables */
         if (data->storage.storage_disk_has_value && !data->storage.storage_disk_is_checkpoint)
         {
-          ierr = adj_forget_variable_value_from_disk(adjointer, data);
+          ierr = adj_forget_variable_value_from_disk(adjointer, varhash->variable, data);
           if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
         }
         if (data->storage.storage_memory_has_value && !data->storage.storage_memory_is_checkpoint)
@@ -1484,7 +1476,6 @@ int adj_forget_adjoint_equation(adj_adjointer* adjointer, int equation)
       }
     }
 
-    data = data->next;
   }
 
   return ADJ_OK;
@@ -1509,6 +1500,7 @@ int adj_forget_forward_equation(adj_adjointer* adjointer, int equation)
  */
 int adj_forget_forward_equation_until(adj_adjointer* adjointer, int equation, int last_equation)
 {
+  adj_variable_hash* varhash;
   adj_variable_data* data;
   int should_we_delete;
   int i;
@@ -1522,23 +1514,16 @@ int adj_forget_forward_equation_until(adj_adjointer* adjointer, int equation, in
     return adj_chkierr_auto(ADJ_ERR_INVALID_INPUTS);
   }
 
-  data = adjointer->vardata.firstnode;
-
-  while (data != NULL)
+  for(varhash=adjointer->varhash; varhash != NULL; varhash=varhash->hh.next)
   {
+  	data = varhash->data;
     /* Only forget forward variables */
     if (data->equation<0) /* Adjoint variables have no equation. */
-    {
-      data = data->next;
       continue;
-    }
 
     /* Only forget forward variables that are computed at equations <= equation */
     if (data->equation>equation)
-    {
-      data = data->next;
       continue;
-    }
 
     if (data->storage.storage_memory_has_value || data->storage.storage_disk_has_value)
     {
@@ -1581,7 +1566,7 @@ int adj_forget_forward_equation_until(adj_adjointer* adjointer, int equation, in
         /* Forget only non-checkpoint variables */
         if (data->storage.storage_disk_has_value && !data->storage.storage_disk_is_checkpoint)
         {
-          ierr = adj_forget_variable_value_from_disk(adjointer, data);
+          ierr = adj_forget_variable_value_from_disk(adjointer, varhash->variable, data);
           if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
         }
         if (data->storage.storage_memory_has_value && !data->storage.storage_memory_is_checkpoint)
@@ -1592,7 +1577,6 @@ int adj_forget_forward_equation_until(adj_adjointer* adjointer, int equation, in
       }
     }
 
-    data = data->next;
   }
 
   return ADJ_OK;
@@ -1721,7 +1705,7 @@ int adj_get_variable_value(adj_adjointer* adjointer, adj_variable var, adj_vecto
       snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "You have asked to get a value from disk, but no ADJ_VEC_FROM_FILE_CB callback has been provided.");
       return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
     }
-    adjointer->callbacks.vec_from_file(value, data_ptr->storage.storage_disk_filename);
+    adjointer->callbacks.vec_from_file(var, value);
   }
   return ADJ_OK;
 }
@@ -1808,13 +1792,13 @@ int adj_is_variable_memory_checkpoint(adj_adjointer* adjointer, adj_variable var
   return data_ptr->storage.storage_memory_is_checkpoint;
 }
 
-int adj_forget_variable_value(adj_adjointer* adjointer, adj_variable_data* data)
+int adj_forget_variable_value(adj_adjointer* adjointer, adj_variable var, adj_variable_data* data)
 {
   int ierr;
 
   if (data->storage.storage_disk_has_value)
   {
-    ierr = adj_forget_variable_value_from_disk(adjointer, data);
+    ierr = adj_forget_variable_value_from_disk(adjointer, var, data);
     if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
   }
   if (data->storage.storage_memory_has_value)
@@ -1825,22 +1809,18 @@ int adj_forget_variable_value(adj_adjointer* adjointer, adj_variable_data* data)
   return ADJ_OK;
 }
 
-int adj_forget_variable_value_from_disk(adj_adjointer* adjointer, adj_variable_data* data)
+int adj_forget_variable_value_from_disk(adj_adjointer* adjointer, adj_variable var, adj_variable_data* data)
 {
-  int ierr;
-
-  assert(data->storage.storage_disk_has_value);
-  if (access(data->storage.storage_disk_filename, W_OK) == -1) { 
-    char buf[ADJ_NAME_LEN];
-    adj_variable_str(adjointer->equations[data->equation].variable, buf, ADJ_NAME_LEN);
-
-    ierr = ADJ_ERR_INVALID_INPUTS;
-    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Can not access variable %s in file '%s'.", buf, data->storage.storage_disk_filename);
-    return adj_chkierr_auto(ierr);
+  if (adjointer->callbacks.vec_destroy_disk == NULL)
+  {
+    strncpy(adj_error_msg, "Need vec_destroy_disk data callback.", ADJ_ERROR_MSG_BUF);
+    return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
   }
 
+  assert(data->storage.storage_disk_has_value);
+
   data->storage.storage_disk_has_value = ADJ_FALSE;
-  remove(data->storage.storage_disk_filename);
+  adjointer->callbacks.vec_destroy_disk(var);
   return ADJ_OK;
 }
 
@@ -1859,7 +1839,7 @@ int adj_forget_variable_value_from_memory(adj_adjointer* adjointer, adj_variable
   return ADJ_OK;
 }
 
-int adj_destroy_variable_data(adj_adjointer* adjointer, adj_variable_data* data)
+int adj_destroy_variable_data(adj_adjointer* adjointer, adj_variable var, adj_variable_data* data)
 {
 
   if (data->ntargeting_equations > 0)
@@ -1887,7 +1867,7 @@ int adj_destroy_variable_data(adj_adjointer* adjointer, adj_variable_data* data)
   }
 
   if (data->storage.storage_memory_has_value || data->storage.storage_disk_has_value)
-    return adj_forget_variable_value(adjointer, data);
+    return adj_forget_variable_value(adjointer, var, data);
 
   return ADJ_OK;
 }

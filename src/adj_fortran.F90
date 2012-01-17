@@ -73,6 +73,7 @@ module libadjoint_data_structures
     type(c_funptr) :: vec_set_random
     type(c_funptr) :: vec_to_file
     type(c_funptr) :: vec_from_file
+    type(c_funptr) :: vec_destroy_disk
 
     type(c_funptr) :: mat_duplicate
     type(c_funptr) :: mat_axpy
@@ -170,7 +171,6 @@ module libadjoint_data_structures
 
     integer(kind=c_int) :: storage_disk_has_value
     integer(kind=c_int) :: storage_disk_is_checkpoint
-    character(kind=c_char), dimension(ADJ_NAME_LEN) :: storage_disk_filename
   end type adj_storage_data
 
   type, bind(c) :: adj_dictionary
@@ -239,17 +239,22 @@ module libadjoint
       type(adj_vector), intent(inout) :: x
     end subroutine adj_vec_set_random
 
-    subroutine adj_vec_to_file(x, filename) bind(c)
+    subroutine adj_vec_to_file(var, x) bind(c)
       use libadjoint_data_structures
+      type(adj_variable), intent(in), value :: var
       type(adj_vector), intent(in), value :: x
-      character(kind=c_char), dimension(ADJ_NAME_LEN), intent(in) :: filename
     end subroutine adj_vec_to_file
 
-    subroutine adj_vec_from_file(x, filename) bind(c)
+    subroutine adj_vec_from_file(var, x) bind(c)
       use libadjoint_data_structures
+      type(adj_variable), intent(in), value :: var
       type(adj_vector), intent(out) :: x
-      character(kind=c_char), dimension(ADJ_NAME_LEN), intent(in) :: filename
     end subroutine adj_vec_from_file
+
+    subroutine adj_vec_destroy_disk(var) bind(c)
+      use libadjoint_data_structures
+      type(adj_variable), intent(in), value :: var
+    end subroutine adj_vec_destroy_disk
 
     subroutine adj_mat_duplicate_proc(matin, matout) bind(c)
       ! Allocate a new matrix, using a given matrix as the model
