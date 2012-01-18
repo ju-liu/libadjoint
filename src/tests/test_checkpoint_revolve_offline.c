@@ -489,6 +489,7 @@ int test_checkpoints(adj_adjointer *adjointer, int nb_expected_vars, char expect
   int ierr, i, nb_matched_variables, found_match;
   int duplicates=0; /* Number of variables that are recorded on both disk and memory */
   adj_variable var;
+  adj_variable_hash *varhash;
   adj_variable_data* data_ptr;
   char var_name[ADJ_NAME_LEN];
 
@@ -497,20 +498,15 @@ int test_checkpoints(adj_adjointer *adjointer, int nb_expected_vars, char expect
    * If the variable name matches with a variable name in the expectation list,
    * we check if the the storage and checkpoint type match.
    */
-  data_ptr=adjointer->vardata.firstnode;
-  while (data_ptr!=NULL)
+  for(varhash=adjointer->varhash; varhash != NULL; varhash=varhash->hh.next)
   {
+  	data_ptr=varhash->data;
     if (data_ptr->equation<0) /* Ignore adjoint variables */
-    {
-      data_ptr=data_ptr->next;
       continue;
-    }
+
     if ((data_ptr->storage.storage_memory_has_value!=ADJ_TRUE) &&
         (data_ptr->storage.storage_disk_has_value!=ADJ_TRUE)) /* Ignore variables that are not recorded */
-    {
-      data_ptr=data_ptr->next;
       continue;
-    }
 
     var = adjointer->equations[data_ptr->equation].variable;
     ierr = adj_variable_str(var, var_name, ADJ_NAME_LEN);
@@ -577,7 +573,6 @@ int test_checkpoints(adj_adjointer *adjointer, int nb_expected_vars, char expect
     	return ADJ_ERR_NEED_VALUE;
     }
 
-    data_ptr=data_ptr->next;
   }
 
   /* At this point we know that the recorded variables is a subset of
@@ -585,23 +580,19 @@ int test_checkpoints(adj_adjointer *adjointer, int nb_expected_vars, char expect
    * expected variables equal, from which we now that both sets are
    * equivalent.
    */
-  data_ptr=adjointer->vardata.firstnode;
   nb_matched_variables=0; /* Number of checkpoint variables in adjointer */
 
-  while (data_ptr!=NULL)
+  for(varhash=adjointer->varhash; varhash != NULL; varhash=varhash->hh.next)
   {
+  	data_ptr=varhash->data;
     if (data_ptr->equation<0) /* Ignore adjoint variables */
-    {
-      data_ptr=data_ptr->next;
       continue;
-    }
 
     if (data_ptr->storage.storage_memory_has_value)
       nb_matched_variables++;
     if (data_ptr->storage.storage_disk_has_value)
       nb_matched_variables++;
 
-    data_ptr=data_ptr->next;
   }
 
   /* We expect the number of expected and recorded variables to be the same */

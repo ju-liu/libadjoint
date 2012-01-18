@@ -136,6 +136,7 @@ int adj_adjointer_check_checkpoints(adj_adjointer* adjointer)
 
   if (cp_num>0)
   {
+    adj_variable_hash* varhash;
     adj_variable_data* data;
 
     /* The first checkpoint equation must be zero, otherwise */
@@ -147,16 +148,12 @@ int adj_adjointer_check_checkpoints(adj_adjointer* adjointer)
     }
 
     /* Check we have the required variables for the adjoint equations */
-    data = adjointer->vardata.firstnode;
-    /* Loop over every variable */
-    while (data != NULL)
+    for(varhash=adjointer->varhash; varhash != NULL; varhash=varhash->hh.next)
     {
+    	data = varhash->data;
       /* We are only interested in forward variables */
       if (data->equation < 0)
-      {
-        data = data->next;
         continue;
-      }
 
       /* Find out in which checkpoint slot the variable is computed */
       for (cp_iter=0; cp_iter < cp_num-1; cp_iter++)
@@ -187,7 +184,6 @@ int adj_adjointer_check_checkpoints(adj_adjointer* adjointer)
         }
       }
 
-      data = data->next;
     }
   }
 

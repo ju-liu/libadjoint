@@ -294,10 +294,12 @@ class MemoryStorage(Storage):
 
 class DiskStorage(Storage):
   '''Wrapper class for Vectors that contains additional information for storing the vector values in memory.'''
-  def __init__(self, vec):
+  def __init__(self, vec, cs=False):
     self.storage_data = clib.adj_storage_data()
     self.c_object = self.storage_data
-    clib.adj_storage_disk_incref(vec.as_adj_vector(), self.storage_data)
+    clib.adj_storage_disk(vec.as_adj_vector(), self.storage_data)
+
+    self.set_checkpoint(cs)
 
     # Ensure that the storage object always holds a reference to the vec
     self.vec = vec
@@ -617,6 +619,9 @@ class Adjointer(object):
     self.vec_set_random_type = ctypes.CFUNCTYPE(None, ctypes.POINTER(clib.adj_vector))
     self.vec_set_values_type = ctypes.CFUNCTYPE(None, ctypes.POINTER(clib.adj_vector), ctypes.POINTER(adj_scalar))
     self.vec_get_size_type = ctypes.CFUNCTYPE(None, clib.adj_vector, ctypes.POINTER(ctypes.c_int))
+    self.vec_write_type = ctypes.CFUNCTYPE(None, clib.adj_variable, clib.adj_vector)
+    self.vec_read_type = ctypes.CFUNCTYPE(None, clib.adj_variable, ctypes.POINTER(clib.adj_vector))
+    self.vec_delete_type = ctypes.CFUNCTYPE(None, clib.adj_variable)
     self.mat_duplicate_type = ctypes.CFUNCTYPE(None, clib.adj_matrix, ctypes.POINTER(clib.adj_matrix))
     self.mat_destroy_type = ctypes.CFUNCTYPE(None, ctypes.POINTER(clib.adj_matrix))
     self.mat_axpy_type = ctypes.CFUNCTYPE(None, ctypes.POINTER(clib.adj_matrix), adj_scalar, clib.adj_matrix)
@@ -722,6 +727,25 @@ class Adjointer(object):
       print err
     finally:
       references_taken.append(storage.vec)
+
+    # At this point we should also reregister the read and the delete callbacks.
+    # Note that the initial callback implementation could not access
+    # the user implementation of the read() and delete() functions, and but here we can.
+    def __vec_read_callback__(adj_var, adj_vec_ptr):
+        var = Variable(var=adj_var)
+        y = storage.vec.__class__.read(var)
+        # Increase the reference counter of the new object to protect it from deallocation at the end of the callback
+        references_taken.append(y)
+        adj_vec_ptr[0].ptr = python_utils.c_ptr(y)
+        adj_vec_ptr[0].klass = 0
+        adj_vec_ptr[0].flags = 0
+
+    def __vec_delete_callback__(adj_var):
+        var = Variable(var=adj_var)
+        storage.vec.__class__.delete(var)
+
+    self.__register_data_callback__('ADJ_VEC_DELETE_CB', __vec_delete_callback__)
+    self.__register_data_callback__('ADJ_VEC_READ_CB', __vec_read_callback__)
 
   def evaluate_functional(self, functional, timestep):
     '''evaluate_functional(self, functional, timestep)
@@ -850,6 +874,9 @@ class Adjointer(object):
     self.__register_data_callback__('ADJ_VEC_SET_RANDOM_CB', self.__vec_set_random_callback__)
     self.__register_data_callback__('ADJ_VEC_SET_VALUES_CB', self.__vec_set_values_callback__)
     self.__register_data_callback__('ADJ_VEC_GET_SIZE_CB', self.__vec_get_size_callback__)
+    self.__register_data_callback__('ADJ_VEC_WRITE_CB', self.__vec_write_callback__)
+    self.__register_data_callback__('ADJ_VEC_READ_CB', self.__vec_read_callback__)
+    self.__register_data_callback__('ADJ_VEC_DELETE_CB', self.__vec_delete_callback__)
     self.__register_data_callback__('ADJ_MAT_DUPLICATE_CB', self.__mat_duplicate_callback__)
     self.__register_data_callback__('ADJ_MAT_DESTROY_CB', self.__mat_destroy_callback__)
     self.__register_data_callback__('ADJ_MAT_AXPY_CB', self.__mat_axpy_callback__)
@@ -892,6 +919,9 @@ class Adjointer(object):
                    'ADJ_VEC_SET_RANDOM_CB': self.vec_set_random_type,
                    'ADJ_VEC_SET_VALUES_CB': self.vec_set_values_type,
                    'ADJ_VEC_GET_SIZE_CB': self.vec_get_size_type,
+                   'ADJ_VEC_WRITE_CB': self.vec_write_type,
+                   'ADJ_VEC_READ_CB': self.vec_read_type,
+                   "ADJ_VEC_DELETE_CB": self.vec_delete_type,
                    "ADJ_MAT_DUPLICATE_CB": self.mat_duplicate_type,
                    "ADJ_MAT_DESTROY_CB": self.mat_destroy_type,
                    "ADJ_MAT_AXPY_CB": self.mat_axpy_type,
@@ -1099,6 +1129,34 @@ class Adjointer(object):
     sz[0] = y.size()
 
   @staticmethod
+  def __vec_write_callback__(adj_var, adj_vec):
+    var = Variable(var=adj_var)
+    vec = vector(adj_vec)
+    vec.write(var)
+
+  @staticmethod
+  def __vec_read_callback__(adj_var, adj_vec_ptr):
+    raise exceptions.LibadjointErrorInvalidInputs(
+        'Internal error: called vec_read callback before recording any variables.')
+
+  @staticmethod
+  def __vec_delete_callback__(adj_var):
+    raise exceptions.LibadjointErrorInvalidInputs(
+        'Internal error: called vec_delete callback before recording any variables.')
+
+    print "To be implemented"
+    assert(False)
+    vec = vector(adj_vec_ptr[0])
+
+    # Do the corresponding decref of the object, so that the Python GC can pick it up
+    try:
+      references_taken.remove(vec)
+    except:
+      print vec.data
+      print references_taken
+      raise
+
+  @staticmethod
   def __mat_duplicate_callback__(adj_mat, adj_mat_ptr):
     mat = matrix(adj_mat)
     new_mat = mat.duplicate()
@@ -1201,6 +1259,26 @@ class Vector(LinAlg):
 
     raise exceptions.LibadjointErrorNeedCallback(
       'Class '+self.__class__.__name__+' has no dot_product() method')        
+
+  @staticmethod
+  def read(var):
+    '''This method must return a vector containing the values of var from disk.'''
+
+    raise exceptions.LibadjointErrorNeedCallback(
+      'Class Vector has no read() method')        
+
+  @staticmethod
+  def delete(var):
+    '''This method must delete the vector containing the values of var from disk.''' 
+
+    raise exceptions.LibadjointErrorNeedCallback(
+      'Class Vector has no delete() method')        
+
+  def write(self, var):
+    '''This method must write this vector as values of var to disk.'''
+
+    raise exceptions.LibadjointErrorNeedCallback(
+      'Class '+self.__class__.__name__+' has no write() method')        
 
   def as_adj_vector(self):
     '''as_adj_vector(self)

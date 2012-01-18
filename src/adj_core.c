@@ -455,6 +455,15 @@ int adj_revolve_to_adjoint_equation(adj_adjointer* adjointer, int equation)
         oldcapo = revolve_getoldcapo(adjointer->revolve_data.revolve);
         capo = revolve_getcapo(adjointer->revolve_data.revolve);
 
+        /* If revolve advances to a timestep larger than ntimeteps-1,
+         * then the user claimed in the revolve settings to solve for more timesteps then we actually did.
+         */
+        if (capo > adjointer->ntimesteps-1)
+        {
+          snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Revolve expected %i timesteps but only %i were annotated.", capo+1, adjointer->ntimesteps);
+          return adj_chkierr_auto(ADJ_ERR_INVALID_INPUTS);
+        }
+
         ierr = adj_timestep_start_equation(adjointer, oldcapo, &start_eqn);
         if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
         ierr = adj_timestep_end_equation(adjointer, capo-1, &end_eqn);
