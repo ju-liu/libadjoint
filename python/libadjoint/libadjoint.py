@@ -1261,17 +1261,21 @@ class Vector(LinAlg):
       'Class '+self.__class__.__name__+' has no dot_product() method')        
 
   @staticmethod
-  def read(filename):
-    '''This method must return the vector stored in a file. 
-       If the read() functions implements the suggested filename standard, 
-       the vector is stored in "filename".'''
+  def read(var):
+    '''This method must return a vector containing the values of var from disk.'''
 
     raise exceptions.LibadjointErrorNeedCallback(
       'Class Vector has no read() method')        
 
-  def write(self, filename):
-    '''This method must write the vector to file. 
-       "filename" is the suggested name of the target file.'''
+  @staticmethod
+  def delete(var):
+    '''This method must delete the vector containing the values of var from disk.''' 
+
+    raise exceptions.LibadjointErrorNeedCallback(
+      'Class Vector has no delete() method')        
+
+  def write(self, var):
+    '''This method must write this vector as values of var to disk.'''
 
     raise exceptions.LibadjointErrorNeedCallback(
       'Class '+self.__class__.__name__+' has no write() method')        

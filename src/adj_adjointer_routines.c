@@ -718,7 +718,7 @@ int adj_checkpoint_variable(adj_adjointer* adjointer, adj_variable var, int cs)
     /* Check for the required callbacks */
     if (adjointer->callbacks.vec_read == NULL)
     {
-      strncpy(adj_error_msg, "Need the vec_read data callback, but it hasn't been supplied.", ADJ_ERROR_MSG_BUF);
+      strncpy(adj_error_msg, "Need the ADJ_VEC_READ_CB data callback, but it hasn't been supplied.", ADJ_ERROR_MSG_BUF);
       return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
     }
     adjointer->callbacks.vec_read(var, &(var_data->storage.value));
@@ -1897,7 +1897,7 @@ int adj_forget_variable_value_from_disk(adj_adjointer* adjointer, adj_variable v
 {
   if (adjointer->callbacks.vec_delete == NULL)
   {
-    strncpy(adj_error_msg, "Need vec_delete data callback.", ADJ_ERROR_MSG_BUF);
+    strncpy(adj_error_msg, "Need ADJ_VEC_DELETE_CB data callback.", ADJ_ERROR_MSG_BUF);
     return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
   }
 
@@ -1912,7 +1912,7 @@ int adj_forget_variable_value_from_memory(adj_adjointer* adjointer, adj_variable
 {
   if (adjointer->callbacks.vec_destroy == NULL)
   {
-    strncpy(adj_error_msg, "Need vec_destroy data callback.", ADJ_ERROR_MSG_BUF);
+    strncpy(adj_error_msg, "Need ADJ_VEC_DESTROY_CB data callback.", ADJ_ERROR_MSG_BUF);
     return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
   }
 
