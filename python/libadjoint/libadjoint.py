@@ -285,7 +285,9 @@ class MemoryStorage(Storage):
     if copy:
       clib.adj_storage_memory_copy(vec.as_adj_vector(), self.storage_data)
     else:
-      clib.adj_storage_memory_incref(vec.as_adj_vector(), self.storage_data)
+      adjvec = vec.as_adj_vector()
+      clib.adj_storage_memory_incref(adjvec, self.storage_data)
+      references_taken.append(adjvec)
 
     self.set_checkpoint(cs)
 
@@ -420,8 +422,7 @@ class Parameter(object):
         if not isinstance(output, Vector):
           raise exceptions.LibadjointErrorInvalidInputs("Output from parameter source term must be a Vector.")
         output_c[0].ptr = python_utils.c_ptr(output)
-
-      references_taken.append(output)
+        references_taken.append(output)
 
     parameter_type = ctypes.CFUNCTYPE(None, ctypes.POINTER(clib.adj_adjointer), clib.adj_variable, ctypes.c_int, ctypes.POINTER(clib.adj_variable), ctypes.POINTER(clib.adj_vector), ctypes.c_char_p, ctypes.POINTER(clib.adj_vector), ctypes.POINTER(ctypes.c_int))
     return parameter_type(cfunc)
@@ -632,6 +633,7 @@ class Adjointer(object):
   def __del__(self):
     if self.adjointer_created:
       clib.adj_destroy_adjointer(self.adjointer)
+      assert len(references_taken) == 0
 
   def __getattr__(self, name):
     if name == "equation_count":
@@ -725,8 +727,6 @@ class Adjointer(object):
       clib.adj_record_variable(self.adjointer, var.var, storage.storage_data)
     except exceptions.LibadjointWarnException, err:
       print err
-    finally:
-      references_taken.append(storage.vec)
 
     # At this point we should also reregister the read and the delete callbacks.
     # Note that the initial callback implementation could not access

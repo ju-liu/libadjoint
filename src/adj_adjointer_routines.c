@@ -108,7 +108,8 @@ int adj_destroy_adjointer(adj_adjointer* adjointer)
 
   for(varhash=adjointer->varhash; varhash != NULL; varhash=varhash->hh.next)
   {
-  	data_ptr=varhash->data;
+    data_ptr = varhash->data;
+    ierr = adj_forget_variable_value(adjointer, varhash->variable, data_ptr);
     ierr = adj_destroy_variable_data(adjointer, varhash->variable, data_ptr);
     if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
     data_ptr_tmp = data_ptr;
