@@ -80,7 +80,7 @@
 #define ADJ_SOLVE_CB 40
 
 /* prealloc constant */
-#define ADJ_PREALLOC_SIZE 255
+#define ADJ_PREALLOC_SIZE 1
 
 /* value for unset variables */
 #define ADJ_UNSET -666
