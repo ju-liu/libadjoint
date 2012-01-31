@@ -48,6 +48,12 @@ class Variable(object):
       self.c_object = self.var
       self.name = var.name
 
+  def iteration_count(self, adjointer):
+    '''Returns the number of iterations at the variables timestep'''
+    iteration_count = ctypes.c_int()
+    clib.adj_iteration_count(adjointer.adjointer, self.var, iteration_count)
+    return iteration_count.value
+
   def __str__(self):
     buf = ctypes.create_string_buffer(255)
     clib.adj_variable_str(self.var, buf, 255)
