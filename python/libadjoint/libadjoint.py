@@ -636,6 +636,20 @@ class Adjointer(object):
     self.functional_type = ctypes.CFUNCTYPE(None, ctypes.POINTER(clib.adj_adjointer), ctypes.c_int, ctypes.c_int, ctypes.POINTER(clib.adj_variable), ctypes.POINTER(clib.adj_vector), 
                                                   ctypes.c_char_p, ctypes.POINTER(clib.adj_vector))
 
+  def reset(self):
+    ''' Resets all time information and forgets the annotation. '''
+    if self.adjointer_created:
+      clib.adj_destroy_adjointer(self.adjointer)
+      assert len(references_taken) == 0
+
+    self.functions_registered = []
+    self.equation_timestep=[]
+    self.adjointer = clib.adj_adjointer()
+    clib.adj_create_adjointer(self.adjointer)
+    self.adjointer_created = True
+    self.c_object = self.adjointer
+    self.__register_data_callbacks__()
+
   def __del__(self):
     if self.adjointer_created:
       clib.adj_destroy_adjointer(self.adjointer)
