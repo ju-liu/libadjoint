@@ -48,6 +48,12 @@ class Variable(object):
       self.c_object = self.var
       self.name = var.name
 
+  def iteration_count(self, adjointer):
+    '''Returns the number of iterations at the variables timestep'''
+    iteration_count = ctypes.c_int()
+    clib.adj_iteration_count(adjointer.adjointer, self.var, iteration_count)
+    return iteration_count.value
+
   def __str__(self):
     buf = ctypes.create_string_buffer(255)
     clib.adj_variable_str(self.var, buf, 255)
@@ -62,6 +68,9 @@ class Variable(object):
       iteration = ctypes.c_int()
       clib.adj_variable_get_iteration(self.var, iteration)
       return iteration.value
+    elif name == 'type':
+      int_type_map = {1: 'ADJ_FORWARD', 2: 'ADJ_ADJOINT', 3: 'ADJ_TLM'}
+      return int_type_map[self.c_object.type]
     else:
       raise AttributeError
 
@@ -276,23 +285,29 @@ class Storage(object):
 
 class MemoryStorage(Storage):
   '''Wrapper class for Vectors that contains additional information for storing the vector values in memory.'''
-  def __init__(self, vec, copy=True):
+  def __init__(self, vec, copy=True, cs=False):
     self.storage_data = clib.adj_storage_data()
     self.c_object = self.storage_data
     if copy:
       clib.adj_storage_memory_copy(vec.as_adj_vector(), self.storage_data)
     else:
-      clib.adj_storage_memory_incref(vec.as_adj_vector(), self.storage_data)
+      adjvec = vec.as_adj_vector()
+      clib.adj_storage_memory_incref(adjvec, self.storage_data)
+      references_taken.append(adjvec)
+
+    self.set_checkpoint(cs)
 
     # Ensure that the storage object always holds a reference to the vec
     self.vec = vec
 
 class DiskStorage(Storage):
   '''Wrapper class for Vectors that contains additional information for storing the vector values in memory.'''
-  def __init__(self, vec):
+  def __init__(self, vec, cs=False):
     self.storage_data = clib.adj_storage_data()
     self.c_object = self.storage_data
-    clib.adj_storage_disk_incref(vec.as_adj_vector(), self.storage_data)
+    clib.adj_storage_disk(vec.as_adj_vector(), self.storage_data)
+
+    self.set_checkpoint(cs)
 
     # Ensure that the storage object always holds a reference to the vec
     self.vec = vec
@@ -308,7 +323,7 @@ class Functional(object):
     Evaluate functional given dependencies with values. The result must be a scalar.
     '''
 
-    raise exceptions.LibadjointErrorNotImplemented("No __call__ method provided for" + type_name)
+    raise exceptions.LibadjointErrorNotImplemented("No __call__ method provided for functional.")
 
   def __str__(self):
 
@@ -320,14 +335,14 @@ class Functional(object):
     Evaluate the derivative of the functional with respect to variable given dependencies with values. The result will be a Vector.
     '''
 
-    raise exceptions.LibadjointErrorNotImplemented("No derivative method provided for" + type_name)
+    raise exceptions.LibadjointErrorNotImplemented("No derivative method provided for functional.")
 
   def dependencies(self, adjointer, timestep):
     '''dependencies(self, adjointer, timestep)
 
     Return the list of Variables on which this functional depends at timestep. The adjointer may be queried to find the actual value of time if required.'''
 
-    raise exceptions.LibadjointErrorNotImplemented("No dependencies method provided for" + type_name)
+    raise exceptions.LibadjointErrorNotImplemented("No dependencies method provided for functional.")
 
   def __cfunc_from_derivative__(self):
     '''Return a c-callable function wrapping the derivative method.'''
@@ -368,6 +383,55 @@ class Functional(object):
     functional_type = ctypes.CFUNCTYPE(None, ctypes.POINTER(clib.adj_adjointer), ctypes.c_int, ctypes.c_int, ctypes.POINTER(clib.adj_variable), ctypes.POINTER(clib.adj_vector), ctypes.c_char_p, ctypes.POINTER(ctypes.c_double))
     return functional_type(cfunc)
 
+class Parameter(object):
+  '''Base class for parameters and their source terms.'''
+  def __init__(self):
+    pass
+
+  def __call__(self, dependencies, values, variable):
+    '''__call__(self, dependencies, values)
+
+    Evaluate dF/dm associated with the equation for variable, given dependencies with values. The result must be a Vector.
+    '''
+
+    raise exceptions.LibadjointErrorNotImplemented("No __call__ method provided for parameter.")
+
+  def __str__(self):
+
+    return hex(id(self))
+
+  def dependencies(self, adjointer, variable):
+    '''dependencies(self, adjointer, variable)
+
+    Return the list of Variables on which this parameter's source term depends on for the equation associated with variable.'''
+
+    raise exceptions.LibadjointErrorNotImplemented("No dependencies method provided for variable.")
+
+  def __cfunc_from_parameter_source__(self):
+    '''Return a c-callable function wrapping the parameter source method.'''
+
+    def cfunc(adjointer_c, variable_c, ndepends_c, dependencies_c, values_c, name_c, output_c, has_output_c):
+      # build the Python objects from the C objects
+      adjointer = Adjointer(adjointer_c)
+      variable  = Variable(var=variable_c)
+      dependencies = [Variable(var=dependencies_c[i]) for i in range(ndepends_c)]
+      values = [vector(values_c[i]) for i in range(ndepends_c)]
+
+      # Now call the callback we've been given
+      output = self(dependencies, values, variable)
+
+      has_output_c[0] = (output is not None)
+      output_c[0].klass = 0
+      output_c[0].flags = 0
+      output_c[0].ptr = 0
+      if output:
+        if not isinstance(output, Vector):
+          raise exceptions.LibadjointErrorInvalidInputs("Output from parameter source term must be a Vector.")
+        output_c[0].ptr = python_utils.c_ptr(output)
+        references_taken.append(output)
+
+    parameter_type = ctypes.CFUNCTYPE(None, ctypes.POINTER(clib.adj_adjointer), clib.adj_variable, ctypes.c_int, ctypes.POINTER(clib.adj_variable), ctypes.POINTER(clib.adj_vector), ctypes.c_char_p, ctypes.POINTER(clib.adj_vector), ctypes.POINTER(ctypes.c_int))
+    return parameter_type(cfunc)
 
 class RHS(object):
   '''Base class for equation Right Hand Sides and their derivatives.'''
@@ -380,7 +444,7 @@ class RHS(object):
     Evaluate RHS given the values corresponding to dependencies. The result must be a Vector.
     '''
 
-    raise exceptions.LibadjointErrorNotImplemented("No __call__ method provided for" + type_name)
+    raise exceptions.LibadjointErrorNotImplemented("No __call__ method provided for RHS.")
 
   def __str__(self):
 
@@ -392,14 +456,22 @@ class RHS(object):
     Evaluate the action of the derivative of the RHS with respect to variable given dependencies with values on contraction_vector. The result will be a Vector.
     '''
 
-    raise exceptions.LibadjointErrorNotImplemented("No derivative method provided for" + type_name)
+    raise exceptions.LibadjointErrorNotImplemented("No derivative action method provided for RHS.")
+
+  def derivative_assembly(self, dependencies, values, variable, hermitian):
+    '''derivative_assembly(self, dependencies, values, variable, hermitian):
+
+    Evaluate the derivative of the RHS with respect to variable given dependencies with values on contraction_vector. The result will be a Matrix.
+    '''
+
+    raise exceptions.LibadjointErrorNotImplemented("No derivative assembly method provided for RHS.")
 
   def dependencies(self):
     '''dependencies(self)
 
     Return the list of Variables on which this functional depends.'''
 
-    raise exceptions.LibadjointErrorNotImplemented("No dependencies method provided for" + type_name)
+    raise exceptions.LibadjointErrorNotImplemented("No dependencies method provided for RHS.")
 
   def register(self, equation):
     '''register(self, equation)
@@ -413,9 +485,11 @@ class RHS(object):
     equation.rhs_fn = self.__cfunc_from_rhs__()
     clib.adj_equation_set_rhs_callback(equation.equation, equation.rhs_fn)
 
-    equation.rhs_derivative_action_fn=self.__cfunc_from_derivative_action__()
+    equation.rhs_derivative_action_fn = self.__cfunc_from_derivative_action__()
     clib.adj_equation_set_rhs_derivative_action_callback(equation.equation, equation.rhs_derivative_action_fn)
 
+    equation.rhs_derivative_assembly_fn = self.__cfunc_from_derivative_assembly__()
+    clib.adj_equation_set_rhs_derivative_assembly_callback(equation.equation, equation.rhs_derivative_assembly_fn)
 
   def __cfunc_from_rhs__(self):
     '''Given a rhs function defined using the Pythonic interface, we want to translate that into a function that
@@ -469,7 +543,7 @@ class RHS(object):
       output_c[0].ptr = 0
       if output:
         if not isinstance(output, Vector):
-          raise exceptions.LibadjointErrorInvalidInputs("Output from RHS callback must be None or a Vector.")
+          raise exceptions.LibadjointErrorInvalidInputs("Output from RHS derivative_action callback must be None or a Vector.")
         output_c[0].ptr = python_utils.c_ptr(output)
 
       references_taken.append(output)
@@ -478,6 +552,32 @@ class RHS(object):
         ctypes.POINTER(clib.adj_vector), clib.adj_variable, clib.adj_vector, ctypes.c_int, ctypes.POINTER(None), ctypes.POINTER(clib.adj_vector), ctypes.POINTER(ctypes.c_int))
     return rhs_deriv_action_type(cfunc)
 
+  def __cfunc_from_derivative_assembly__(self):
+    '''Return a c-callable function wrapping the derivative_assembly method.'''
+
+    def cfunc(adjointer_c, source_variable_c, ndepends_c, dependencies_c, values_c, hermitian_c, context_c, output_c):
+      # build the Python objects from the C objects
+      variable  = Variable(var=source_variable_c)
+      dependencies = [Variable(var=dependencies_c[i]) for i in range(ndepends_c)]
+      values = [vector(values_c[i]) for i in range(ndepends_c)]
+      hermitian = (hermitian_c==1)
+
+      # Now call the callback we've been given
+      output = self.derivative_assembly(dependencies, values, variable, hermitian)
+
+      # Now cast the outputs back to C
+      output_c[0].klass = 0
+      output_c[0].flags = 0
+      output_c[0].ptr = 0
+      if not isinstance(output, Matrix):
+        raise exceptions.LibadjointErrorInvalidInputs("Output from RHS derivative_assembly callback must be a Matrix.")
+      output_c[0].ptr = python_utils.c_ptr(output)
+
+      references_taken.append(output)
+
+    rhs_deriv_assembly_type = ctypes.CFUNCTYPE(None, ctypes.POINTER(clib.adj_adjointer), clib.adj_variable, ctypes.c_int, ctypes.POINTER(clib.adj_variable),
+        ctypes.POINTER(clib.adj_vector), ctypes.c_int, ctypes.POINTER(None), ctypes.POINTER(clib.adj_matrix))
+    return rhs_deriv_assembly_type(cfunc)
 
 class Adjointer(object):
   def __init__(self, adjointer=None):
@@ -497,6 +597,18 @@ class Adjointer(object):
       self.adjointer = adjointer
       self.c_object = self.adjointer
 
+  def set_checkpoint_strategy(self, strategy):
+    try:
+      strategy_id = int(constants.adj_constants['ADJ_CHECKPOINT_REVOLVE_' + strategy.upper()])
+    except KeyError:
+      raise libadjoint.exceptions.LibadjointErrorInvalidInputs("Unknown checkpointing strategy " + strategy + ". Known strategies: ['offline', 'online', 'multistage'].")
+    clib.adj_set_checkpoint_strategy(self.adjointer, strategy_id)
+
+  def set_revolve_options(self, steps, snaps_on_disk, snaps_in_ram, verbose=False):
+      clib.adj_set_revolve_options(self.adjointer, steps, snaps_on_disk, snaps_in_ram, verbose)
+
+  def set_revolve_debug_options(self, overwrite, comparison_tolerance):
+      clib.adj_set_revolve_debug_options(self.adjointer, overwrite, comparison_tolerance)
 
   def set_function_apis(self):
     self.block_assembly_type = ctypes.CFUNCTYPE(None, ctypes.c_int, ctypes.POINTER(clib.adj_variable), ctypes.POINTER(clib.adj_vector), ctypes.c_int, adj_scalar, ctypes.POINTER(None),
@@ -514,6 +626,9 @@ class Adjointer(object):
     self.vec_set_random_type = ctypes.CFUNCTYPE(None, ctypes.POINTER(clib.adj_vector))
     self.vec_set_values_type = ctypes.CFUNCTYPE(None, ctypes.POINTER(clib.adj_vector), ctypes.POINTER(adj_scalar))
     self.vec_get_size_type = ctypes.CFUNCTYPE(None, clib.adj_vector, ctypes.POINTER(ctypes.c_int))
+    self.vec_write_type = ctypes.CFUNCTYPE(None, clib.adj_variable, clib.adj_vector)
+    self.vec_read_type = ctypes.CFUNCTYPE(None, clib.adj_variable, ctypes.POINTER(clib.adj_vector))
+    self.vec_delete_type = ctypes.CFUNCTYPE(None, clib.adj_variable)
     self.mat_duplicate_type = ctypes.CFUNCTYPE(None, clib.adj_matrix, ctypes.POINTER(clib.adj_matrix))
     self.mat_destroy_type = ctypes.CFUNCTYPE(None, ctypes.POINTER(clib.adj_matrix))
     self.mat_axpy_type = ctypes.CFUNCTYPE(None, ctypes.POINTER(clib.adj_matrix), adj_scalar, clib.adj_matrix)
@@ -521,9 +636,24 @@ class Adjointer(object):
     self.functional_type = ctypes.CFUNCTYPE(None, ctypes.POINTER(clib.adj_adjointer), ctypes.c_int, ctypes.c_int, ctypes.POINTER(clib.adj_variable), ctypes.POINTER(clib.adj_vector), 
                                                   ctypes.c_char_p, ctypes.POINTER(clib.adj_vector))
 
+  def reset(self):
+    ''' Resets all time information and forgets the annotation. '''
+    if self.adjointer_created:
+      clib.adj_destroy_adjointer(self.adjointer)
+      assert len(references_taken) == 0
+
+    self.functions_registered = []
+    self.equation_timestep=[]
+    self.adjointer = clib.adj_adjointer()
+    clib.adj_create_adjointer(self.adjointer)
+    self.adjointer_created = True
+    self.c_object = self.adjointer
+    self.__register_data_callbacks__()
+
   def __del__(self):
     if self.adjointer_created:
       clib.adj_destroy_adjointer(self.adjointer)
+      assert len(references_taken) == 0
 
   def __getattr__(self, name):
     if name == "equation_count":
@@ -543,13 +673,15 @@ class Adjointer(object):
 
     cs = ctypes.c_int()
     clib.adj_register_equation(self.adjointer, equation.equation, cs)
-    assert cs.value == 0
 
     if hasattr(equation, 'rhs_fn'):
       self.functions_registered.append(equation.rhs_fn)
 
     if hasattr(equation, 'rhs_derivative_action_fn'):
       self.functions_registered.append(equation.rhs_derivative_action_fn)
+
+    if hasattr(equation, 'rhs_derivative_assembly_fn'):
+      self.functions_registered.append(equation.rhs_derivative_assembly_fn)
 
     for block in equation.blocks:
       if not (block.assemble is Block.assemble):
@@ -569,18 +701,29 @@ class Adjointer(object):
             return block.action(dependencies, values, False, 1.0, input, context)
           self.__register_operator_callback__(block.nblock.name, "ADJ_NBLOCK_ACTION_CB", nblock_action)
 
+    # Return the checkpoint flag
+    return cs.value
+
   def __register_functional__(self, functional):
     assert(isinstance(functional, Functional))
 
-    cfunc=functional.__cfunc_from_derivative__()
+    cfunc = functional.__cfunc_from_derivative__()
     self.functions_registered.append(cfunc)
 
     clib.adj_register_functional_derivative_callback(self.adjointer, str(functional), cfunc)
 
-    cfunc=functional.__cfunc_from_functional__()
+    cfunc = functional.__cfunc_from_functional__()
     self.functions_registered.append(cfunc)
 
     clib.adj_register_functional_callback(self.adjointer, str(functional), cfunc)
+
+  def __register_parameter__(self, parameter):
+    assert(isinstance(parameter, Parameter))
+
+    cfunc = parameter.__cfunc_from_parameter_source__()
+    self.functions_registered.append(cfunc)
+
+    clib.adj_register_parameter_source_callback(self.adjointer, str(parameter), cfunc)
 
   def __set_functional_dependencies__(self, functional, timestep):
 
@@ -604,8 +747,25 @@ class Adjointer(object):
       clib.adj_record_variable(self.adjointer, var.var, storage.storage_data)
     except exceptions.LibadjointWarnException, err:
       print err
-    finally:
-      references_taken.append(storage.vec)
+
+    # At this point we should also reregister the read and the delete callbacks.
+    # Note that the initial callback implementation could not access
+    # the user implementation of the read() and delete() functions, and but here we can.
+    def __vec_read_callback__(adj_var, adj_vec_ptr):
+        var = Variable(var=adj_var)
+        y = storage.vec.__class__.read(var)
+        # Increase the reference counter of the new object to protect it from deallocation at the end of the callback
+        references_taken.append(y)
+        adj_vec_ptr[0].ptr = python_utils.c_ptr(y)
+        adj_vec_ptr[0].klass = 0
+        adj_vec_ptr[0].flags = 0
+
+    def __vec_delete_callback__(adj_var):
+        var = Variable(var=adj_var)
+        storage.vec.__class__.delete(var)
+
+    self.__register_data_callback__('ADJ_VEC_DELETE_CB', __vec_delete_callback__)
+    self.__register_data_callback__('ADJ_VEC_READ_CB', __vec_read_callback__)
 
   def evaluate_functional(self, functional, timestep):
     '''evaluate_functional(self, functional, timestep)
@@ -682,6 +842,35 @@ class Adjointer(object):
 
     return (Variable(var=adj_var), output_py)
 
+  def get_tlm_equation(self, equation, parameter):
+
+    self.__register_parameter__(parameter)
+    #self.__set_parameter_dependencies__(parameter, self.equation_timestep[equation])
+
+    lhs = clib.adj_matrix()
+    rhs = clib.adj_vector()
+    adj_var = clib.adj_variable()
+    clib.adj_get_tlm_equation(self.adjointer, equation, str(parameter), lhs, rhs, adj_var)
+    lhs_py = python_utils.c_deref(lhs.ptr)
+    references_taken.remove(lhs_py)
+    rhs_py = python_utils.c_deref(rhs.ptr)
+    references_taken.remove(rhs_py)
+
+    return (lhs_py, rhs_py)
+
+  def get_tlm_solution(self, equation, parameter):
+
+    self.__register_parameter__(parameter)
+    #self.__set_parameter_dependencies__(parameter, self.equation_timestep[equation])
+
+    output = clib.adj_vector()
+    adj_var = clib.adj_variable()
+    clib.adj_get_tlm_solution(self.adjointer, equation, str(parameter), output, adj_var)
+    output_py = python_utils.c_deref(output.ptr)
+    references_taken.remove(output_py)
+
+    return (Variable(var=adj_var), output_py)
+
   def variable_known(self, variable):
     known = ctypes.c_int()
     clib.adj_variable_known(self.adjointer, variable.var, known)
@@ -689,6 +878,12 @@ class Adjointer(object):
 
   def forget_adjoint_equation(self, equation):
     clib.adj_forget_adjoint_equation(self.adjointer, equation)
+
+  def forget_forward_equation(self, equation):
+    clib.adj_forget_forward_equation(self.adjointer, equation)
+
+  def forget_tlm_equation(self, equation):
+    clib.adj_forget_tlm_equation(self.adjointer, equation)
 
   def __register_data_callbacks__(self):
     self.__register_data_callback__('ADJ_VEC_DUPLICATE_CB', self.__vec_duplicate_callback__)
@@ -699,6 +894,9 @@ class Adjointer(object):
     self.__register_data_callback__('ADJ_VEC_SET_RANDOM_CB', self.__vec_set_random_callback__)
     self.__register_data_callback__('ADJ_VEC_SET_VALUES_CB', self.__vec_set_values_callback__)
     self.__register_data_callback__('ADJ_VEC_GET_SIZE_CB', self.__vec_get_size_callback__)
+    self.__register_data_callback__('ADJ_VEC_WRITE_CB', self.__vec_write_callback__)
+    self.__register_data_callback__('ADJ_VEC_READ_CB', self.__vec_read_callback__)
+    self.__register_data_callback__('ADJ_VEC_DELETE_CB', self.__vec_delete_callback__)
     self.__register_data_callback__('ADJ_MAT_DUPLICATE_CB', self.__mat_duplicate_callback__)
     self.__register_data_callback__('ADJ_MAT_DESTROY_CB', self.__mat_destroy_callback__)
     self.__register_data_callback__('ADJ_MAT_AXPY_CB', self.__mat_axpy_callback__)
@@ -741,6 +939,9 @@ class Adjointer(object):
                    'ADJ_VEC_SET_RANDOM_CB': self.vec_set_random_type,
                    'ADJ_VEC_SET_VALUES_CB': self.vec_set_values_type,
                    'ADJ_VEC_GET_SIZE_CB': self.vec_get_size_type,
+                   'ADJ_VEC_WRITE_CB': self.vec_write_type,
+                   'ADJ_VEC_READ_CB': self.vec_read_type,
+                   "ADJ_VEC_DELETE_CB": self.vec_delete_type,
                    "ADJ_MAT_DUPLICATE_CB": self.mat_duplicate_type,
                    "ADJ_MAT_DESTROY_CB": self.mat_destroy_type,
                    "ADJ_MAT_AXPY_CB": self.mat_axpy_type,
@@ -948,6 +1149,34 @@ class Adjointer(object):
     sz[0] = y.size()
 
   @staticmethod
+  def __vec_write_callback__(adj_var, adj_vec):
+    var = Variable(var=adj_var)
+    vec = vector(adj_vec)
+    vec.write(var)
+
+  @staticmethod
+  def __vec_read_callback__(adj_var, adj_vec_ptr):
+    raise exceptions.LibadjointErrorInvalidInputs(
+        'Internal error: called vec_read callback before recording any variables.')
+
+  @staticmethod
+  def __vec_delete_callback__(adj_var):
+    raise exceptions.LibadjointErrorInvalidInputs(
+        'Internal error: called vec_delete callback before recording any variables.')
+
+    print "To be implemented"
+    assert(False)
+    vec = vector(adj_vec_ptr[0])
+
+    # Do the corresponding decref of the object, so that the Python GC can pick it up
+    try:
+      references_taken.remove(vec)
+    except:
+      print vec.data
+      print references_taken
+      raise
+
+  @staticmethod
   def __mat_duplicate_callback__(adj_mat, adj_mat_ptr):
     mat = matrix(adj_mat)
     new_mat = mat.duplicate()
@@ -976,7 +1205,7 @@ class Adjointer(object):
     A = matrix(adj_mat)
     b = vector(adj_rhs)
 
-    x = A.solve(b)
+    x = A.solve(Variable(var=adj_var), b)
     references_taken.append(x)
 
     adj_soln_ptr[0].ptr = python_utils.c_ptr(x)
@@ -1051,6 +1280,26 @@ class Vector(LinAlg):
     raise exceptions.LibadjointErrorNeedCallback(
       'Class '+self.__class__.__name__+' has no dot_product() method')        
 
+  @staticmethod
+  def read(var):
+    '''This method must return a vector containing the values of var from disk.'''
+
+    raise exceptions.LibadjointErrorNeedCallback(
+      'Class Vector has no read() method')        
+
+  @staticmethod
+  def delete(var):
+    '''This method must delete the vector containing the values of var from disk.''' 
+
+    raise exceptions.LibadjointErrorNeedCallback(
+      'Class Vector has no delete() method')        
+
+  def write(self, var):
+    '''This method must write this vector as values of var to disk.'''
+
+    raise exceptions.LibadjointErrorNeedCallback(
+      'Class '+self.__class__.__name__+' has no write() method')        
+
   def as_adj_vector(self):
     '''as_adj_vector(self)
 
@@ -1062,10 +1311,11 @@ class Vector(LinAlg):
 class Matrix(LinAlg):
   '''Base class for adjoint matrix objects.'''
 
-  def solve(self, b):
-    '''solve(self, b)
+  def solve(self, var, b):
+    '''solve(self, var, b)
 
-    This method must solve the system self*x = b and return the answer.'''
+    This method must solve the system self*x = b and return the answer. The adj_variable corresponding to the variable
+    to be solved for is given by var.'''
 
     raise exceptions.LibadjointErrorNeedCallback(
       'Class '+self.__class__.__name__+' has no solve() method')        

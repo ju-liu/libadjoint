@@ -258,7 +258,7 @@ int adj_get_adjoint_equation(adj_adjointer* adjointer, int equation, char* funct
               ierr = adj_get_variable_value(adjointer, depending_eqn.targets[j], &target);
               if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
 
-              ierr = adj_create_nonlinear_block_derivative(adjointer, depending_eqn.blocks[j].nonlinear_block, depending_eqn.blocks[j].coefficient, fwd_var, target, ADJ_TRUE, &derivs[l]);
+              ierr = adj_create_nonlinear_block_derivative(adjointer, depending_eqn.blocks[j].nonlinear_block, depending_eqn.blocks[j].coefficient, fwd_var, target, !depending_eqn.blocks[j].hermitian, &derivs[l]);
               if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
               l++;
             }
@@ -319,18 +319,28 @@ int adj_get_adjoint_equation(adj_adjointer* adjointer, int equation, char* funct
       /* Does this R* contribute to the adjoint matrix ... */
       if (adj_variable_equal(&(adjointer->equations[rhs_equation].variable), &fwd_var, 1))
       {
-        snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Equations with right-hand sides that depend on the variable being solved for are not supported (yet).");
-        return adj_chkierr_auto(ADJ_ERR_NOT_IMPLEMENTED);
+        adj_matrix rstar;
+        ierr = adj_evaluate_rhs_deriv_assembly(adjointer, adjointer->equations[rhs_equation], ADJ_TRUE, &rstar);
+        if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
+        adjointer->callbacks.mat_axpy(lhs, (adj_scalar) -1.0, rstar); /* Subtract the R* contribution from the adjoint lhs */
+        adjointer->callbacks.mat_destroy(&rstar);
       }
       /* ... or to the right-hand side of the adjoint system? */
       else
       {
         /* Get the adj_equation associated with this dependency, so we can pull out the relevant rhs_deriv_action callback */
         adj_vector deriv_action;
+        adj_variable contraction_var;
+        adj_vector contraction;
         int has_output;
 
         has_output = -666;
-        ierr = adj_evaluate_rhs_deriv_action(adjointer, adjointer->equations[rhs_equation], fwd_var, ADJ_TRUE, functional, &deriv_action, &has_output);
+
+        contraction_var = adjointer->equations[rhs_equation].variable; contraction_var.type = ADJ_ADJOINT; strncpy(contraction_var.functional, functional, ADJ_NAME_LEN);
+        ierr = adj_get_variable_value(adjointer, contraction_var, &contraction);
+        if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
+
+        ierr = adj_evaluate_rhs_deriv_action(adjointer, adjointer->equations[rhs_equation], fwd_var, contraction, ADJ_TRUE, &deriv_action, &has_output);
         if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
 
         if (has_output)
@@ -444,6 +454,15 @@ int adj_revolve_to_adjoint_equation(adj_adjointer* adjointer, int equation)
       case CACTION_ADVANCE:
         oldcapo = revolve_getoldcapo(adjointer->revolve_data.revolve);
         capo = revolve_getcapo(adjointer->revolve_data.revolve);
+
+        /* If revolve advances to a timestep larger than ntimeteps-1,
+         * then the user claimed in the revolve settings to solve for more timesteps then we actually did.
+         */
+        if (capo > adjointer->ntimesteps-1)
+        {
+          snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Revolve expected %i timesteps but only %i were annotated.", capo+1, adjointer->ntimesteps);
+          return adj_chkierr_auto(ADJ_ERR_INVALID_INPUTS);
+        }
 
         ierr = adj_timestep_start_equation(adjointer, oldcapo, &start_eqn);
         if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
@@ -833,6 +852,371 @@ int adj_replay_forward_equations(adj_adjointer* adjointer, int start_equation, i
       if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
     }
   }
+
+  return ADJ_OK;
+}
+
+int adj_get_tlm_equation(adj_adjointer* adjointer, int equation, char* parameter, adj_matrix* lhs, adj_vector* rhs, adj_variable* tlm_var)
+{
+  int ierr;
+  adj_equation fwd_eqn;
+  adj_vector rhs_tmp;
+  int i, j;
+  adj_variable fwd_var;
+  adj_variable_data* tlm_data;
+  adj_variable_data* fwd_data;
+
+  if (adjointer->options[ADJ_ACTIVITY] == ADJ_ACTIVITY_NOTHING)
+  {
+    strncpy(adj_error_msg, "You have asked for a tangent linear model equation, but the adjointer has been deactivated.", ADJ_ERROR_MSG_BUF);
+    return adj_chkierr_auto(ADJ_ERR_INVALID_INPUTS);
+  }
+
+  if (equation < 0 || equation >= adjointer->nequations)
+  {
+    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Invalid equation number %d.", equation);
+    return adj_chkierr_auto(ADJ_ERR_INVALID_INPUTS);
+  }
+
+  if (adjointer->callbacks.vec_destroy == NULL)
+  {
+    strncpy(adj_error_msg, "Need the ADJ_VEC_DESTROY_CB callback, but it hasn't been supplied.", ADJ_ERROR_MSG_BUF);
+    return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
+  }
+  if (adjointer->callbacks.vec_axpy == NULL)
+  {
+    strncpy(adj_error_msg, "Need the ADJ_VEC_AXPY_CB callback, but it hasn't been supplied.", ADJ_ERROR_MSG_BUF);
+    return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
+  }
+  if (adjointer->callbacks.mat_axpy == NULL)
+  {
+    strncpy(adj_error_msg, "Need the ADJ_MAT_AXPY_CB callback, but it hasn't been supplied.", ADJ_ERROR_MSG_BUF);
+    return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
+  }
+  if (adjointer->callbacks.mat_destroy == NULL)
+  {
+    strncpy(adj_error_msg, "Need the ADJ_MAT_DESTROY_CB callback, but it hasn't been supplied.", ADJ_ERROR_MSG_BUF);
+    return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
+  }
+
+  fwd_eqn = adjointer->equations[equation];
+  fwd_var = fwd_eqn.variable;
+  memcpy(&fwd_var, &fwd_eqn.variable, sizeof(adj_variable));
+  memcpy(tlm_var, &fwd_var, sizeof(adj_variable));
+  tlm_var->type = ADJ_TLM; strncpy(tlm_var->functional, parameter, ADJ_NAME_LEN);
+
+  /* Let's take care of the hash table. */
+  ierr = adj_find_variable_data(&(adjointer->varhash), &fwd_var, &fwd_data);
+  if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
+
+  ierr = adj_find_variable_data(&(adjointer->varhash), tlm_var, &tlm_data);
+  if (ierr == ADJ_ERR_HASH_FAILED)
+  {
+    /* It might not fail, if we have tried to fetch this equation already */
+
+    ierr = adj_add_new_hash_entry(adjointer, tlm_var, &tlm_data);
+    if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
+
+    tlm_data->equation = -2;
+    tlm_data->ntargeting_equations = fwd_data->ntargeting_equations;
+    tlm_data->targeting_equations = (int*) malloc(fwd_data->ntargeting_equations * sizeof(int));
+    ADJ_CHKMALLOC(tlm_data->targeting_equations);
+    memcpy(tlm_data->targeting_equations, fwd_data->targeting_equations, fwd_data->ntargeting_equations * sizeof(int));
+
+    tlm_data->ndepending_equations = fwd_data->ndepending_equations;
+    tlm_data->depending_equations = (int*) malloc(fwd_data->ndepending_equations * sizeof(int));
+    ADJ_CHKMALLOC(tlm_data->depending_equations);
+    memcpy(tlm_data->depending_equations, fwd_data->depending_equations, fwd_data->ndepending_equations * sizeof(int));
+
+    tlm_data->nrhs_equations = fwd_data->nrhs_equations;
+    tlm_data->rhs_equations = (int*) malloc(fwd_data->nrhs_equations * sizeof(int));
+    ADJ_CHKMALLOC(tlm_data->rhs_equations);
+    memcpy(tlm_data->rhs_equations, fwd_data->rhs_equations, fwd_data->nrhs_equations * sizeof(int));
+  }
+
+
+  /* Check that we have all the forward values we need, before we start allocating stuff */
+  for (i = 0; i < fwd_eqn.nblocks; i++)
+  {
+    adj_variable other_fwd_var;
+
+    /* Check that we have the nonlinear block dependencies */
+    if (fwd_eqn.blocks[i].has_nonlinear_block)
+    {
+      adj_nonlinear_block nl_block;
+
+      nl_block = fwd_eqn.blocks[i].nonlinear_block;
+      for (j=0; j < nl_block.ndepends; j++)
+      {
+        other_fwd_var = nl_block.depends[j];
+        ierr = adj_has_variable_value(adjointer, other_fwd_var);
+        if (ierr != ADJ_OK && !adj_variable_equal(&fwd_var, &other_fwd_var, 1)) /* it's OK to not have the variable we're solving for, I suppose */
+        {
+          char buf[255];
+          adj_variable_str(other_fwd_var, buf, 255);
+          snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Need a value for variable %s, but don't have one.", buf);
+          return adj_chkierr_auto(ADJ_ERR_NEED_VALUE);
+        }
+      }
+    }
+
+    /* Get the forward variable we want this to multiply */
+    other_fwd_var = fwd_eqn.targets[i];
+    if (adj_variable_equal(&fwd_var, &other_fwd_var, 1)) continue; /* that term goes in the lhs */
+    other_fwd_var.type = ADJ_TLM;
+    strncpy(other_fwd_var.functional, parameter, ADJ_NAME_LEN);
+    /* and now check it has a value */
+    ierr = adj_has_variable_value(adjointer, other_fwd_var);
+    if (ierr != ADJ_OK)
+    {
+      char buf[255];
+      adj_variable_str(other_fwd_var, buf, 255);
+      snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Need a value for variable %s, but don't have one.", buf);
+      return adj_chkierr_auto(ADJ_ERR_NEED_VALUE);
+    }
+  }
+
+  /* --------------------------------------------------------------------------
+   * Computation of A terms                                                  |
+   * -------------------------------------------------------------------------- */
+
+  {
+    adj_block block;
+    int blockcount = 0;
+    for (i = 0; i < fwd_eqn.nblocks; i++)
+    {
+      if (adj_variable_equal(&(fwd_eqn.targets[i]), &fwd_var, 1))
+      {
+        /* this is the right block */
+        block = fwd_eqn.blocks[i];
+        blockcount++;
+        if (blockcount == 1) /* the first one we've found */
+        {
+          ierr = adj_evaluate_block_assembly(adjointer, block, lhs, rhs);
+          if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
+        }
+        else
+        {
+          adj_matrix lhs_tmp;
+          adj_vector rhs_tmp;
+          ierr = adj_evaluate_block_assembly(adjointer, block, &lhs_tmp, &rhs_tmp);
+          if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
+          adjointer->callbacks.vec_destroy(&rhs_tmp); /* we already have rhs from the first block assembly */
+          adjointer->callbacks.mat_axpy(lhs, (adj_scalar) 1.0, lhs_tmp); /* add lhs_tmp to lhs */
+          adjointer->callbacks.mat_destroy(&lhs_tmp);
+        }
+      }
+    }
+  }
+
+  /* Great! Now let's assemble the RHS contributions of A. */
+
+  /* Now loop through the off-diagonal blocks of A. */
+  for (i = 0; i < fwd_eqn.nblocks; i++)
+  {
+    adj_block block;
+    adj_variable tlm_var;
+    adj_vector value;
+
+    /* Ignore the diagonal block */
+    if (adj_variable_equal(&fwd_eqn.targets[i], &fwd_var, 1))
+      continue;
+
+    /* Get the TLM variable we want this block to multiply with */
+    tlm_var = fwd_eqn.targets[i];
+    tlm_var.type = ADJ_TLM;
+    strncpy(tlm_var.functional, parameter, ADJ_NAME_LEN);
+
+    block = fwd_eqn.blocks[i];
+
+    /* and now get its value */
+    ierr = adj_get_variable_value(adjointer, tlm_var, &value);
+    assert(ierr == ADJ_OK); /* we should have them all, we checked for them earlier */
+
+    ierr = adj_evaluate_block_action(adjointer, block, value, &rhs_tmp);
+    if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
+    adjointer->callbacks.vec_axpy(rhs, (adj_scalar)-1.0, rhs_tmp);
+    adjointer->callbacks.vec_destroy(&rhs_tmp);
+  }
+
+  /* --------------------------------------------------------------------------
+   * Computation of G terms                                                  |
+   * -------------------------------------------------------------------------- */
+
+  /* We need to loop through the dependencies of this equation; each one of those
+     dependencies will produce a G entry. */
+
+  {
+    int nderivs; /* these two are the raw derivatives to compute */
+    adj_nonlinear_block_derivative* derivs;
+
+    int nnew_derivs; /* and these two are after derivative simplification */
+    adj_nonlinear_block_derivative* new_derivs;
+    int l, k;
+
+    /* First, we find how many derivatives we're going to need, so that we can malloc
+       appropriately. */
+    nderivs = 0;
+    for (i = 0; i < fwd_eqn.nblocks; i++)
+    {
+      if (fwd_eqn.blocks[i].has_nonlinear_block)
+      {
+        nderivs += fwd_eqn.blocks[i].nonlinear_block.ndepends;
+      }
+    }
+
+    /* Now that we have nderivs, let's use it */
+
+    if (nderivs > 0)
+    {
+      derivs = (adj_nonlinear_block_derivative*) malloc(nderivs * sizeof(adj_nonlinear_block_derivative));
+      ADJ_CHKMALLOC(derivs);
+      l = 0;
+      for (i = 0; i < fwd_eqn.nblocks; i++)
+      {
+        if (fwd_eqn.blocks[i].has_nonlinear_block)
+        {
+          for (k = 0; k < fwd_eqn.blocks[i].nonlinear_block.ndepends; k++)
+          {
+            adj_vector target;
+            ierr = adj_get_variable_value(adjointer, fwd_eqn.targets[i], &target);
+            if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
+
+            ierr = adj_create_nonlinear_block_derivative(adjointer, fwd_eqn.blocks[i].nonlinear_block, fwd_eqn.blocks[i].coefficient, fwd_eqn.blocks[i].nonlinear_block.depends[k], target, fwd_eqn.blocks[i].hermitian, &derivs[l]);
+            l++;
+          }
+        }
+      }
+
+      /* OK, Here's where we do our simplifications; this can be a significant optimisation */
+      /* .......................................................................................... */
+      ierr = adj_simplify_derivatives(adjointer, nderivs, derivs, &nnew_derivs, &new_derivs);
+      for (l = 0; l < nderivs; l++)
+      {
+        ierr = adj_destroy_nonlinear_block_derivative(adjointer, &derivs[l]);
+        if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
+      }
+      free(derivs);
+
+      /* Now, we go and evaluate each one of the derivatives, assembling or acting as appropriate */
+      for (l = 0; l < nnew_derivs; l++)
+      {
+        if (adj_variable_equal(&new_derivs[l].variable, &fwd_var, 1))
+        {
+          /* This G-block is on the diagonal, and so we must assemble it .. later */
+          snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Sorry, we can't handle G-blocks on the diagonal (yet).");
+          return adj_chkierr_auto(ADJ_ERR_NOT_IMPLEMENTED);
+        }
+        else
+        {
+          /* This G-block is NOT on the diagonal, so we only need its action */
+          adj_variable tlm_associated;
+          adj_vector tlm_value;
+
+          tlm_associated = new_derivs[l].variable;
+          tlm_associated.type = ADJ_TLM;
+          strncpy(tlm_associated.functional, parameter, ADJ_NAME_LEN);
+          ierr = adj_get_variable_value(adjointer, tlm_associated, &tlm_value);
+          if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
+
+          /* And now we are ready */
+          ierr = adj_evaluate_nonlinear_derivative_action(adjointer, 1, &new_derivs[l], tlm_value, rhs);
+          if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
+        }
+      }
+
+      for (l = 0; l < nnew_derivs; l++)
+      {
+        ierr = adj_destroy_nonlinear_block_derivative(adjointer, &new_derivs[l]);
+        if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
+      }
+      free(new_derivs);
+    }
+  }
+
+  /* --------------------------------------------------------------------------
+   * Computation of R terms                                                  |
+   * -------------------------------------------------------------------------- */
+
+  {
+    for (i = 0; i < fwd_eqn.nrhsdeps; i++)
+    {
+      /* Does this R contribute to the adjoint matrix ... */
+      if (adj_variable_equal(&fwd_var, &fwd_eqn.rhsdeps[i], 1))
+      {
+        adj_matrix r;
+        ierr = adj_evaluate_rhs_deriv_assembly(adjointer, fwd_eqn, ADJ_FALSE, &r);
+        if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
+        adjointer->callbacks.mat_axpy(lhs, (adj_scalar) -1.0, r); /* Subtract the R contribution from the adjoint lhs */
+        adjointer->callbacks.mat_destroy(&r);
+      }
+      /* ... or to the right-hand side of the adjoint system? */
+      else
+      {
+        adj_vector deriv_action;
+        int has_output;
+
+        has_output = -666;
+
+        adj_variable contraction_var;
+        adj_vector contraction;
+
+        contraction_var = fwd_eqn.rhsdeps[i];
+        contraction_var.type = ADJ_TLM;
+        strncpy(contraction_var.functional, parameter, ADJ_NAME_LEN);
+        ierr = adj_get_variable_value(adjointer, contraction_var, &contraction);
+        if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
+
+        ierr = adj_evaluate_rhs_deriv_action(adjointer, fwd_eqn, fwd_eqn.rhsdeps[i], contraction, ADJ_FALSE, &deriv_action, &has_output);
+        if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
+
+        if (has_output)
+        {
+          /* Now that we have the contribution, we need to add it to the adjoint right hand side */
+          adjointer->callbacks.vec_axpy(rhs, (adj_scalar)1.0, deriv_action);
+          adjointer->callbacks.vec_destroy(&deriv_action);
+        }
+      }
+    }
+  }
+
+  /* And any tangent linear source terms */
+  {
+    adj_vector rhs_tmp;
+    int has_psrc;
+    has_psrc = -666;
+    ierr = adj_evaluate_parameter_source(adjointer, fwd_var, parameter, &rhs_tmp, &has_psrc);
+    if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
+    if (has_psrc)
+    {
+      adjointer->callbacks.vec_axpy(rhs, (adj_scalar)1.0, rhs_tmp);
+      adjointer->callbacks.vec_destroy(&rhs_tmp);
+    }
+  }
+
+  return ADJ_OK;
+
+}
+
+int adj_get_tlm_solution(adj_adjointer* adjointer, int equation, char* parameter, adj_vector* soln, adj_variable* tlm_var)
+{
+  int ierr;
+  adj_matrix lhs;
+  adj_vector rhs;
+
+  /* Check for the required callbacks */ 
+  strncpy(adj_error_msg, "Need the solve data callback, but it hasn't been supplied.", ADJ_ERROR_MSG_BUF);
+  if (adjointer->callbacks.solve == NULL) return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
+  strncpy(adj_error_msg, "", ADJ_ERROR_MSG_BUF);
+
+  ierr = adj_get_tlm_equation(adjointer, equation, parameter, &lhs, &rhs, tlm_var);
+  if (ierr != ADJ_OK)
+    return adj_chkierr_auto(ierr);
+
+  /* Solve the linear system */
+  adjointer->callbacks.solve(*tlm_var, lhs, rhs, soln); 
+  adjointer->callbacks.vec_destroy(&rhs);
+  adjointer->callbacks.mat_destroy(&lhs);
 
   return ADJ_OK;
 }

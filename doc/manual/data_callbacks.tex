@@ -332,40 +332,56 @@ When necessary: this data callback is necessary when the Hermitian test flag is
 activated on an \refapi{adj_block} with \refapi{adj_block_set_test_hermitian},
 or on an \refapi{adj_nonlinear_block} with \\\refapi{adj_nonlinear_block_set_test_hermitian}.
 
-\defapiss{ADJ_VEC_TO_FILE_CB}
-\begin{boxwithtitle}{\texttt{ADJ_VEC_TO_FILE_CB}}
+\defapiss{ADJ_VEC_WRITE_CB}
+\begin{boxwithtitle}{\texttt{ADJ_VEC_WRITE_CB}}
 \begin{minipage}{\columnwidth}
 \begin{ccode}
-  void (*vec_to_file)(adj_vector x, char* filename);
+  void (*vec_write)(adj_variable var, adj_vector x);
 \end{ccode}
 \begin{fortrancode}
-  subroutine adj_vec_to_file(x, filename) 
+  subroutine adj_vec_write(var, x) 
+    type(adj_variable), intent(in), value :: var
     type(adj_vector), intent(in), value :: x
-    character(kind=c_char), dimension(ADJ_NAME_LEN), intent(in) :: filename
-  end subroutine adj_vec_to_file
+  end subroutine adj_vec_write
 \end{fortrancode}
 \end{minipage}
 \end{boxwithtitle}
-This data callback saves the provided vector into a file named \texttt{filename} on disk.
+This data callback saves the provided vector containing variable \texttt{var} to disk. 
 
 When necessary: If a checkpointing scheme is used.
 
-
-\defapiss{ADJ_VEC_FROM_FILE_CB}
-\begin{boxwithtitle}{\texttt{ADJ_VEC_FROM_FILE_CB}}
+\defapiss{ADJ_VEC_READ_CB}
+\begin{boxwithtitle}{\texttt{ADJ_VEC_READ_CB}}
 \begin{minipage}{\columnwidth}
 \begin{ccode}
-  void (*vec_from_file)(adj_vector* x, char *filename);
+  void (*vec_read)(adj_variable var, adj_vector* x);
 \end{ccode}
 \begin{fortrancode}
-  subroutine adj_vec_from_file(x, filename) 
+  subroutine adj_vec_read(var, x) 
+    type(adj_variable), intent(in), value :: var
     type(adj_vector), intent(out) :: x
-    character(kind=c_char), dimension(ADJ_NAME_LEN), intent(in) :: filename
-  end subroutine adj_vec_from_file
+  end subroutine adj_vec_read
 \end{fortrancode}
 \end{minipage}
 \end{boxwithtitle}
-This data callback loads the vector from file \texttt{filename} on disk.
+This data callback loads the vector containing variable \texttt{var} from disk.
+
+When necessary: if a checkpointing scheme is used.
+
+\defapiss{ADJ_VEC_DELETE_CB}
+\begin{boxwithtitle}{\texttt{ADJ_VEC_DELETE_CB}}
+\begin{minipage}{\columnwidth}
+\begin{ccode}
+  void (*vec_delete)(adj_variable var)
+\end{ccode}
+\begin{fortrancode}
+  subroutine adj_vec_delete(var) 
+    type(adj_variable), intent(in), value :: var
+  end subroutine adj_vec_delete
+\end{fortrancode}
+\end{minipage}
+\end{boxwithtitle}
+This data callback deletes the file that stores variable \texttt{var}. 
 
 When necessary: If a checkpointing scheme is used.
 

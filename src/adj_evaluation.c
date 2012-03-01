@@ -600,16 +600,13 @@ int adj_evaluate_forward_source(adj_adjointer* adjointer, int equation, adj_vect
   return ADJ_OK;
 }
 
-int adj_evaluate_rhs_deriv_action(adj_adjointer* adjointer, adj_equation source_eqn, adj_variable diff_var, int hermitian, char* functional, adj_vector* output, int* has_output)
+int adj_evaluate_rhs_deriv_action(adj_adjointer* adjointer, adj_equation source_eqn, adj_variable diff_var, adj_vector contraction, int hermitian, adj_vector* output, int* has_output)
 {
   int nrhsdeps;
   int j;
   int ierr;
   adj_variable* variables;
   adj_vector* dependencies;
-
-  adj_variable contraction_var;
-  adj_vector contraction;
 
   if (source_eqn.rhs_deriv_action_callback == NULL)
   {
@@ -620,23 +617,81 @@ int adj_evaluate_rhs_deriv_action(adj_adjointer* adjointer, adj_equation source_
   }
 
   nrhsdeps = source_eqn.nrhsdeps;
-  variables = source_eqn.rhsdeps;
+
+  variables = (adj_variable*) malloc(nrhsdeps * sizeof(adj_variable));
+  ADJ_CHKMALLOC(variables);
   dependencies = (adj_vector*) malloc(nrhsdeps * sizeof(adj_vector));
   ADJ_CHKMALLOC(dependencies);
 
-  for (j=0 ; j < nrhsdeps; j++)
+  for (j=0; j < nrhsdeps; j++)
   {
+    memcpy(&variables[j], &source_eqn.rhsdeps[j], sizeof(adj_variable));
     ierr = adj_get_variable_value(adjointer, variables[j], &(dependencies[j]));
     if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
   }
 
-  contraction_var = source_eqn.variable; contraction_var.type = ADJ_ADJOINT; strncpy(contraction_var.functional, functional, ADJ_NAME_LEN);
-  ierr = adj_get_variable_value(adjointer, contraction_var, &contraction);
-  if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
-
   source_eqn.rhs_deriv_action_callback((void*) adjointer, source_eqn.variable, nrhsdeps, variables, dependencies, diff_var, contraction, hermitian, source_eqn.rhs_context, output, has_output);
 
+  free(variables);
   free(dependencies);
   return ADJ_OK;
 
 }
+
+int adj_evaluate_rhs_deriv_assembly(adj_adjointer* adjointer, adj_equation source_eqn, int hermitian, adj_matrix* output)
+{
+  int nrhsdeps;
+  int j;
+  int ierr;
+  adj_variable* variables;
+  adj_vector* dependencies;
+
+  if (source_eqn.rhs_deriv_assembly_callback == NULL)
+  {
+    char buf[255];
+    adj_variable_str(source_eqn.variable, buf, 255);
+    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Need the derivative assembly callback for the source term associated with the forward equation for %s.", buf);
+    return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
+  }
+
+  nrhsdeps = source_eqn.nrhsdeps;
+
+  variables = (adj_variable*) malloc(nrhsdeps * sizeof(adj_variable));
+  ADJ_CHKMALLOC(variables);
+  dependencies = (adj_vector*) malloc(nrhsdeps * sizeof(adj_vector));
+  ADJ_CHKMALLOC(dependencies);
+
+  for (j=0; j < nrhsdeps; j++)
+  {
+    memcpy(&variables[j], &source_eqn.rhsdeps[j], sizeof(adj_variable));
+    ierr = adj_get_variable_value(adjointer, variables[j], &(dependencies[j]));
+    if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
+  }
+
+  source_eqn.rhs_deriv_assembly_callback((void*) adjointer, source_eqn.variable, nrhsdeps, variables, dependencies, hermitian, source_eqn.rhs_context, output);
+
+  free(variables);
+  free(dependencies);
+  return ADJ_OK;
+}
+
+int adj_evaluate_parameter_source(adj_adjointer* adjointer, adj_variable variable, char* parameter, adj_vector* output, int* has_output)
+{
+  int ierr;
+  int ndepends = 0;
+  void (*parameter_source_func)(adj_adjointer* adjointer, adj_variable variable, int ndepends, adj_variable* variables, adj_vector* dependencies, char* parameter, adj_vector* output, int* has_output) = NULL;
+  adj_vector* dependencies = NULL;
+  adj_variable* variables = NULL;
+
+  ierr = adj_find_parameter_source_callback(adjointer, parameter, &parameter_source_func);
+  if (ierr != ADJ_OK)
+    return adj_chkierr_auto(ierr);
+
+  /* at the moment, we assume that the parameter source has no dependencies */
+
+  /* We have the right callback, so let's call it already */ 
+  parameter_source_func(adjointer, variable, ndepends, variables, dependencies, parameter, output, has_output);
+
+  return ADJ_OK;
+}
+

@@ -21,9 +21,11 @@ int adj_set_petsc_data_callbacks(adj_adjointer* adjointer)
   adj_chkierr(ierr);
   ierr = adj_register_data_callback(adjointer, ADJ_VEC_DOT_PRODUCT_CB,(void (*)(void)) petsc_vec_dot_product_proc);
   adj_chkierr(ierr);
-  ierr = adj_register_data_callback(adjointer, ADJ_VEC_TO_FILE_CB,(void (*)(void)) petsc_vec_to_file_proc);
+  ierr = adj_register_data_callback(adjointer, ADJ_VEC_WRITE_CB,(void (*)(void)) petsc_vec_write_proc);
   adj_chkierr(ierr);
-  ierr = adj_register_data_callback(adjointer, ADJ_VEC_FROM_FILE_CB,(void (*)(void)) petsc_vec_from_file_proc);
+  ierr = adj_register_data_callback(adjointer, ADJ_VEC_READ_CB,(void (*)(void)) petsc_vec_read_proc);
+  adj_chkierr(ierr);
+  ierr = adj_register_data_callback(adjointer, ADJ_VEC_DELETE_CB,(void (*)(void)) petsc_vec_delete_proc);
   adj_chkierr(ierr);
   ierr = adj_register_data_callback(adjointer, ADJ_MAT_AXPY_CB,(void (*)(void)) petsc_mat_axpy_proc);
   adj_chkierr(ierr);
@@ -75,6 +77,24 @@ void petsc_vec_destroy_proc(adj_vector *x)
 #endif
 }
 
+void petsc_vec_delete_proc(adj_variable var)
+{
+#ifdef HAVE_PETSC
+  /* Generate the filename */
+  char filename[ADJ_NAME_LEN];
+  adj_variable_str(var, filename, ADJ_NAME_LEN);
+  strncat(filename, ".dat", 4);
+
+	if (access(filename, W_OK) == -1) {
+		char buf[ADJ_NAME_LEN];
+		adj_variable_str(var, buf, ADJ_NAME_LEN);
+    fprintf(stderr, "Can remove variable %s in file '%s'. File does not exist.", buf, filename);
+  }
+
+  remove(filename);
+#endif
+}
+
 void petsc_vec_getnorm_proc(adj_vector x, adj_scalar* norm)
 {
 #ifdef HAVE_PETSC
@@ -100,9 +120,13 @@ void petsc_vec_dot_product_proc(adj_vector x, adj_vector y, adj_scalar* val)
 #endif
 }
 
-void petsc_vec_to_file_proc(adj_vector x, char* filename)
+void petsc_vec_write_proc(adj_variable var, adj_vector x)
 {
 #ifdef HAVE_PETSC
+  /* Generate the filename */
+  char filename[ADJ_NAME_LEN];
+  adj_variable_str(var, filename, ADJ_NAME_LEN);
+  strncat(filename, ".dat", 4);
 
   if (access(filename, W_OK) == 0) 
   {
@@ -110,8 +134,8 @@ void petsc_vec_to_file_proc(adj_vector x, char* filename)
   }
 
   PetscViewer viewer;
-  PetscViewerBinaryOpen(PETSC_COMM_WORLD,filename,FILE_MODE_WRITE,&viewer);
-  VecView(petsc_vec_from_adj_vector(x),viewer);
+  PetscViewerBinaryOpen(PETSC_COMM_WORLD, filename, FILE_MODE_WRITE, &viewer);
+  VecView(petsc_vec_from_adj_vector(x), viewer);
   PetscViewerDestroy(viewer);
 #else
     (void) x;
@@ -119,13 +143,25 @@ void petsc_vec_to_file_proc(adj_vector x, char* filename)
 #endif
 }
 
-void petsc_vec_from_file_proc(adj_vector *x, char* filename)
+void petsc_vec_read_proc(adj_variable var, adj_vector *x)
 {
 #ifdef HAVE_PETSC
+  /* Generate the filename */
+  char filename[ADJ_NAME_LEN];
+  adj_variable_str(var, filename, ADJ_NAME_LEN);
+  strncat(filename, ".dat", 4);
+
+	if (access(filename, W_OK) == -1) {
+		char buf[ADJ_NAME_LEN];
+		adj_variable_str(var, buf, ADJ_NAME_LEN);
+
+		fprintf(stderr, "Can not access variable %s in file '%s'.", buf, filename);
+  }
+
   Vec *vec=(Vec*) malloc(sizeof(Vec));
   PetscViewer viewer;
-  PetscViewerBinaryOpen(PETSC_COMM_WORLD,filename,FILE_MODE_READ,&viewer);
-  VecLoad(viewer,PETSC_NULL,vec);
+  PetscViewerBinaryOpen(PETSC_COMM_WORLD, filename, FILE_MODE_READ, &viewer);
+  VecLoad(viewer, PETSC_NULL, vec);
   PetscViewerDestroy(viewer);
   *x = petsc_vec_to_adj_vector(vec);
 #else

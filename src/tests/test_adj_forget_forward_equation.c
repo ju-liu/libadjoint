@@ -36,6 +36,7 @@ void test_adj_forget_forward_equation(void)
   adj_storage_data storage;
   char filename_fwd[ADJ_NAME_LEN];
   int checkpoint_strategy[steps];
+  adj_variable_hash *varhash;
   adj_variable_data *var_data;
 
   ierr = adj_create_adjointer(&adjointer);
@@ -144,13 +145,11 @@ void test_adj_forget_forward_equation(void)
   }
 
   /* Besides checkpoints, no variables should be stored anymore ... */
-  var_data=adjointer.vardata.firstnode;
-  while(var_data!=NULL)
+  for(varhash=adjointer.varhash; varhash != NULL; varhash=varhash->hh.next)
   {
+  	 var_data = varhash->data;
      adj_test_assert(var_data->storage.storage_memory_has_value==var_data->storage.storage_memory_is_checkpoint, "Should have worked");
      adj_test_assert(var_data->storage.storage_disk_has_value==var_data->storage.storage_disk_is_checkpoint, "Should have worked");
-
-     var_data=var_data->next;
   }
 
 }

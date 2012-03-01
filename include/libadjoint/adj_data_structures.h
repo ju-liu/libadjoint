@@ -77,6 +77,8 @@ typedef struct
   void (*rhs_callback)(void* adjointer, adj_variable variable, int ndepends, adj_variable* variables, adj_vector* dependencies, void* context, adj_vector* output, int* has_output);
   void (*rhs_deriv_action_callback)(void* adjointer, adj_variable variable, int ndepends, adj_variable* variables, adj_vector* dependencies, \
                                     adj_variable d_variable, adj_vector contraction, int hermitian, void* context, adj_vector* output, int* has_output);
+  void (*rhs_deriv_assembly_callback)(void* adjointer, adj_variable variable, int ndepends, adj_variable* variables, adj_vector* dependencies, \
+                                    int hermitian, void* context, adj_matrix* output);
   int memory_checkpoint; /* Can we restart the computation from this equation using variables in memory? */
   int disk_checkpoint; /* Can we restart the computation from this equation using variables on disk? */
 } adj_equation;
@@ -94,12 +96,11 @@ typedef struct
   /* for ADJ_STORAGE_MEMORY */
   int storage_memory_type; /* ADJ_STORAGE_MEMORY_COPY or ADJ_STORAGE_MEMORY_INCREF */
   int storage_memory_has_value;
-  int storage_memory_is_checkpoint; /* checkpoints are not deleted by adj_forget_forward_equation */
+  int storage_memory_is_checkpoint; /* memory checkpoints are not deleted by adj_forget_forward_equation */
 
   /* for ADJ_STORAGE_DISK */
   int storage_disk_has_value;
-  int storage_disk_is_checkpoint; /* checkpoints are not deleted by adj_forget_forward_equation */
-  char storage_disk_filename[ADJ_NAME_LEN];
+  int storage_disk_is_checkpoint; /* disk checkpoints are not deleted by adj_forget_forward_equation */
 
   /* POD, temporal interpolation, ... */
 } adj_storage_data;
@@ -107,6 +108,7 @@ typedef struct
 typedef struct adj_variable_data
 {
   int equation; /* the equation that solves for this variable. If the data belongs to a adjoint variable, this will be set to -1 */
+  int type; /* is it ADJ_FORWARD, ADJ_ADJOINT or ADJ_TLM? */
 
   int ntargeting_equations; /* any equations that target this variable */
   int* targeting_equations;
@@ -122,15 +124,10 @@ typedef struct adj_variable_data
 
   int nadjoint_equations; /* computed: the adjoint equations that need this variable */
   int* adjoint_equations;
+
   adj_storage_data storage; /* its storage record */
   struct adj_variable_data* next; /* a pointer to the next one, so we can walk the list */
 } adj_variable_data;
-
-typedef struct
-{
-  adj_variable_data* firstnode;
-  adj_variable_data* lastnode;
-} adj_variable_data_list;
 
 typedef struct
 {
@@ -143,8 +140,9 @@ typedef struct
   void (*vec_get_norm)(adj_vector x, adj_scalar* norm);
   void (*vec_dot_product)(adj_vector x, adj_vector y, adj_scalar* val);
   void (*vec_set_random)(adj_vector* x);
-  void (*vec_to_file)(adj_vector x, char* filename);
-  void (*vec_from_file)(adj_vector* x, char *filename);
+  void (*vec_write)(adj_variable var, adj_vector x);
+  void (*vec_read)(adj_variable var, adj_vector* x);
+  void (*vec_delete)(adj_variable var);
 
   void (*mat_duplicate)(adj_matrix matin, adj_matrix *matout);
   void (*mat_axpy)(adj_matrix *Y, adj_scalar alpha, adj_matrix X);
@@ -178,9 +176,17 @@ typedef struct adj_func_deriv_callback
 {
   char name[ADJ_NAME_LEN];
   /* we want this to be adj_adjointer* adjointer, but we haven't defined adj_adjointer yet */
-  void (*callback)(void* adjointer, adj_variable variable, int ndepends, adj_variable* variables, adj_vector* dependencies, char* name, adj_vector* output);
+  void (*callback)(void* adjointer, adj_variable variable, int ndepends, adj_variable* variables, adj_vector* dependencies, char* functional, adj_vector* output);
   struct adj_func_deriv_callback* next;
 } adj_func_deriv_callback;
+
+typedef struct adj_parameter_source_callback
+{
+  char name[ADJ_NAME_LEN];
+  /* we want this to be adj_adjointer* adjointer, but we haven't defined adj_adjointer yet */
+  void (*callback)(void* adjointer, adj_variable variable, int ndepends, adj_variable* variables, adj_vector* dependencies, char* parameter, adj_vector* output, int* has_output);
+  struct adj_parameter_source_callback* next;
+} adj_parameter_source_callback;
 
 typedef struct
 {
@@ -193,6 +199,12 @@ typedef struct
   adj_func_deriv_callback* firstnode;
   adj_func_deriv_callback* lastnode;
 } adj_func_deriv_callback_list;
+
+typedef struct
+{
+  adj_parameter_source_callback* firstnode;
+  adj_parameter_source_callback* lastnode;
+} adj_parameter_source_callback_list;
 
 typedef struct
 {
@@ -268,7 +280,6 @@ typedef struct adj_adjointer
   adj_revolve_data revolve_data; /* A data struct for revolve related information */
 
   adj_variable_hash* varhash; /* The hash table for looking up information about variables */
-  adj_variable_data_list vardata; /* We also store a linked list so we can walk all our variable data */
 
   int options[ADJ_NO_OPTIONS]; /* Pretty obvious */
 
@@ -281,6 +292,7 @@ typedef struct adj_adjointer
   adj_op_callback_list block_assembly_list;
   adj_func_callback_list functional_list;
   adj_func_deriv_callback_list functional_derivative_list;
+  adj_parameter_source_callback_list parameter_source_list;
 } adj_adjointer;
 
 int adj_create_variable(char* name, int timestep, int iteration, int auxiliary, adj_variable* var);
@@ -310,6 +322,8 @@ int adj_add_term_to_equation(adj_term term, adj_equation* equation);
 int adj_equation_set_rhs_callback(adj_equation* equation, void (*fn)(adj_adjointer* adjointer, adj_variable variable, int ndepends, adj_variable* variables, adj_vector* dependencies, void* context, adj_vector* output, int* has_output));
 int adj_equation_set_rhs_derivative_action_callback(adj_equation* equation, void (*fn)(adj_adjointer* adjointer, adj_variable variable, int ndepends, adj_variable* variables, adj_vector* dependencies, \
                                     adj_variable d_variable, adj_vector contraction, int hermitian, void* context, adj_vector* output, int* has_output));
+int adj_equation_set_rhs_derivative_assembly_callback(adj_equation* equation, void (*fn)(adj_adjointer* adjointer, adj_variable variable, int ndepends, adj_variable* variables, adj_vector* dependencies, \
+                                    int hermitian, void* context, adj_matrix* output));
 int adj_variable_equal(adj_variable* var1, adj_variable* var2, int nvars);
 
 

@@ -56,6 +56,7 @@ module libadjoint_data_structures
     type(c_ptr) :: rhs_context
     type(c_funptr) :: rhs_callback
     type(c_funptr) :: rhs_deriv_action_callback
+    type(c_funptr) :: rhs_deriv_assembly_callback
     integer(kind=c_int) :: memory_checkpoint
     integer(kind=c_int) :: disk_checkpoint
   end type adj_equation
@@ -70,8 +71,9 @@ module libadjoint_data_structures
     type(c_funptr) :: vec_get_norm
     type(c_funptr) :: vec_dot_product
     type(c_funptr) :: vec_set_random
-    type(c_funptr) :: vec_to_file
-    type(c_funptr) :: vec_from_file
+    type(c_funptr) :: vec_write
+    type(c_funptr) :: vec_read
+    type(c_funptr) :: vec_delete
 
     type(c_funptr) :: mat_duplicate
     type(c_funptr) :: mat_axpy
@@ -79,11 +81,6 @@ module libadjoint_data_structures
 
     type(c_funptr) :: solve
   end type adj_data_callbacks
-
-  type, bind(c) :: adj_variable_data_list
-    type(c_ptr) :: firstnode
-    type(c_ptr) :: lastnode
-  end type adj_variable_data_list
 
   type, bind(c) :: adj_op_callback_list
     type(c_ptr) :: firstnode
@@ -99,6 +96,11 @@ module libadjoint_data_structures
     type(c_ptr) :: firstnode
     type(c_ptr) :: lastnode
   end type adj_func_deriv_callback_list
+
+  type, bind(c) :: adj_parameter_source_callback_list
+    type(c_ptr) :: firstnode
+    type(c_ptr) :: lastnode
+  end type adj_parameter_source_callback_list
 
   type, bind(c) :: CRevolve
     type(c_ptr) :: revolve
@@ -129,7 +131,6 @@ module libadjoint_data_structures
     type(adj_revolve_data) :: revolve_data
 
     type(c_ptr) :: varhash
-    type(adj_variable_data_list) :: vardata
 
     integer(kind=c_int), dimension(ADJ_NO_OPTIONS) :: options
 
@@ -142,6 +143,7 @@ module libadjoint_data_structures
     type(adj_op_callback_list) :: block_assembly_list
     type(adj_func_callback_list) :: functional_list
     type(adj_func_deriv_callback_list) :: functional_derivative_list
+    type(adj_parameter_source_callback_list) :: parameter_source_list
   end type adj_adjointer
 
   type, bind(c) :: adj_vector
@@ -169,7 +171,6 @@ module libadjoint_data_structures
 
     integer(kind=c_int) :: storage_disk_has_value
     integer(kind=c_int) :: storage_disk_is_checkpoint
-    character(kind=c_char), dimension(ADJ_NAME_LEN) :: storage_disk_filename
   end type adj_storage_data
 
   type, bind(c) :: adj_dictionary
@@ -238,17 +239,22 @@ module libadjoint
       type(adj_vector), intent(inout) :: x
     end subroutine adj_vec_set_random
 
-    subroutine adj_vec_to_file(x, filename) bind(c)
+    subroutine adj_vec_write(var, x) bind(c)
       use libadjoint_data_structures
+      type(adj_variable), intent(in), value :: var
       type(adj_vector), intent(in), value :: x
-      character(kind=c_char), dimension(ADJ_NAME_LEN), intent(in) :: filename
-    end subroutine adj_vec_to_file
+    end subroutine adj_vec_write
 
-    subroutine adj_vec_from_file(x, filename) bind(c)
+    subroutine adj_vec_read(var, x) bind(c)
       use libadjoint_data_structures
+      type(adj_variable), intent(in), value :: var
       type(adj_vector), intent(out) :: x
-      character(kind=c_char), dimension(ADJ_NAME_LEN), intent(in) :: filename
-    end subroutine adj_vec_from_file
+    end subroutine adj_vec_read
+
+    subroutine adj_vec_delete(var) bind(c)
+      use libadjoint_data_structures
+      type(adj_variable), intent(in), value :: var
+    end subroutine adj_vec_delete
 
     subroutine adj_mat_duplicate_proc(matin, matout) bind(c)
       ! Allocate a new matrix, using a given matrix as the model
@@ -755,6 +761,14 @@ module libadjoint
       integer(kind=c_int) :: ierr
     end function adj_forget_adjoint_equation
 
+    function adj_forget_tlm_equation(adjointer, equation) result(ierr) bind(c, name='adj_forget_tlm_equation')
+      use libadjoint_data_structures
+      use iso_c_binding
+      type(adj_adjointer), intent(inout) :: adjointer
+      integer(kind=c_int), intent(in), value :: equation
+      integer(kind=c_int) :: ierr
+    end function adj_forget_tlm_equation
+
     function adj_timestep_count(adjointer, count) result(ierr) bind(c, name='adj_timestep_count')
       use libadjoint_data_structures
       use iso_c_binding
@@ -979,6 +993,31 @@ module libadjoint
       integer(kind=c_int) :: ierr
     end function adj_get_forward_solution
     
+    function adj_get_tlm_equation_c(adjointer, equation, parameter, lhs, rhs, variable) result(ierr) &
+            & bind(c, name='adj_get_tlm_equation')
+      use libadjoint_data_structures
+      use iso_c_binding
+      type(adj_adjointer), intent(inout) :: adjointer
+      integer(kind=c_int), intent(in), value :: equation
+      character(kind=c_char), dimension(ADJ_NAME_LEN), intent(in) :: parameter
+      type(adj_matrix), intent(out) :: lhs
+      type(adj_vector), intent(out) :: rhs
+      type(adj_variable), intent(out) :: variable
+      integer(kind=c_int) :: ierr
+    end function adj_get_tlm_equation_c
+    
+    function adj_get_tlm_solution_c(adjointer, equation, parameter, soln, variable) result(ierr) &
+            & bind(c, name='adj_get_tlm_solution')
+      use libadjoint_data_structures
+      use iso_c_binding
+      type(adj_adjointer), intent(inout) :: adjointer
+      integer(kind=c_int), intent(in), value :: equation
+      character(kind=c_char), dimension(ADJ_NAME_LEN), intent(in) :: parameter
+      type(adj_vector), intent(out) :: soln
+      type(adj_variable), intent(out) :: variable
+      integer(kind=c_int) :: ierr
+    end function adj_get_tlm_solution_c
+
     function adj_adjointer_to_html_c(adjointer, filename, type) result(ierr) &
             & bind(c, name='adj_adjointer_to_html')
       use libadjoint_data_structures
@@ -1120,6 +1159,56 @@ module libadjoint
 
     ierr = adj_get_adjoint_solution_c(adjointer, equation, functional_c, soln, variable)
   end function adj_get_adjoint_solution
+
+  function adj_get_tlm_equation(adjointer, equation, parameter, lhs, rhs, adj_var) result(ierr)
+    type(adj_adjointer), intent(inout) :: adjointer
+    integer(kind=c_int), intent(in), value :: equation
+    character(len=*), intent(in) :: parameter
+    type(adj_matrix), intent(out) :: lhs
+    type(adj_vector), intent(out) :: rhs
+    type(adj_variable), intent(out) :: adj_var
+    integer(kind=c_int) :: ierr
+    
+    character(kind=c_char), dimension(ADJ_NAME_LEN) :: parameter_c
+    integer :: j
+
+    if (len_trim(parameter) .ge. ADJ_NAME_LEN - 1) then
+      ! Can't set the error message from Fortran, I think?
+      ierr = ADJ_ERR_INVALID_INPUTS
+    end if
+
+    do j=1,len_trim(parameter)
+      parameter_c(j) = parameter(j:j)
+    end do
+    do j=len_trim(parameter)+1,ADJ_NAME_LEN
+      parameter_c(j) = c_null_char
+    end do
+    parameter_c(ADJ_NAME_LEN) = c_null_char
+
+    ierr = adj_get_tlm_equation_c(adjointer, equation, parameter_c, lhs, rhs, adj_var)
+  end function adj_get_tlm_equation
+
+  function adj_get_tlm_solution(adjointer, equation, parameter, soln, variable) result(ierr)
+    type(adj_adjointer), intent(inout) :: adjointer
+    integer(kind=c_int), intent(in), value :: equation
+    character(len=*), intent(in) :: parameter
+    type(adj_vector), intent(out) :: soln
+    type(adj_variable), intent(out) :: variable
+    integer(kind=c_int) :: ierr
+    
+    character(kind=c_char), dimension(ADJ_NAME_LEN) :: parameter_c
+    integer :: j
+
+    do j=1,len_trim(parameter)
+      parameter_c(j) = parameter(j:j)
+    end do
+    do j=len_trim(parameter)+1,ADJ_NAME_LEN
+      parameter_c(j) = c_null_char
+    end do
+    parameter_c(ADJ_NAME_LEN) = c_null_char
+
+    ierr = adj_get_tlm_solution_c(adjointer, equation, parameter_c, soln, variable)
+  end function adj_get_tlm_solution
 
   function adj_create_variable(name, timestep, iteration, auxiliary, variable) result(ierr)
     character(len=*), intent(in) :: name

@@ -22,7 +22,11 @@ int adj_register_operator_callback(adj_adjointer* adjointer, int type, char* nam
 int adj_register_data_callback(adj_adjointer* adjointer, int type, void (*fn)(void));
 int adj_register_functional_callback(adj_adjointer* adjointer, char* name, void (*fn)(adj_adjointer* adjointer, int timestep, int ndepends, adj_variable* variables, adj_vector* dependencies, char* name, adj_scalar* output));
 int adj_register_functional_derivative_callback(adj_adjointer* adjointer, char* name, void (*fn)(adj_adjointer* adjointer, adj_variable derivative, int ndepends, adj_variable* variables, adj_vector* dependencies, char* name, adj_vector* output));
+int adj_register_parameter_source_callback(adj_adjointer* adjointer, char* name, void (*fn)(adj_adjointer* adjointer, adj_variable derivative, int ndepends, adj_variable* variables, adj_vector* dependencies, char* name, adj_vector* output, int* has_output));
+
 int adj_forget_adjoint_equation(adj_adjointer* adjointer, int equation);
+int adj_forget_forward_equation(adj_adjointer* adjointer, int equation);
+int adj_forget_tlm_equation(adj_adjointer* adjointer, int equation);
 
 int adj_timestep_count(adj_adjointer* adjointer, int* count);
 int adj_iteration_count(adj_adjointer* adjointer, adj_variable variable, int* count);
@@ -47,25 +51,25 @@ int adj_set_storage_memory_incref(adj_adjointer* adjointer, adj_variable* var);
 int adj_set_option(adj_adjointer* adjointer, int option, int choice);
 int adj_variable_get_ndepending_timesteps(adj_adjointer* adjointer, adj_variable variable, char* functional, int* ntimesteps);
 int adj_variable_get_depending_timestep(adj_adjointer* adjointer, adj_variable variable, char* functional, int k, int* timestep);
-int adj_forget_forward_equation(adj_adjointer* adjointer, int equation);
 int adj_forget_forward_equation_until(adj_adjointer* adjointer, int equation, int last_equation);
 int adj_get_checkpoint_strategy(adj_adjointer* adjointer, int* strategy);
 
 int adj_find_operator_callback(adj_adjointer* adjointer, int type, char* name, void (**fn)(void));
 int adj_find_functional_callback(adj_adjointer* adjointer, char* name, void (**fn)(adj_adjointer* adjointer, int timestep, int ndepends, adj_variable* variables, adj_vector* dependencies, char* name, adj_scalar* output));
-int adj_find_functional_derivative_callback(adj_adjointer* adjointer, char* name, void (**fn)(adj_adjointer* adjointer, adj_variable variable, int ndepends, adj_variable* variables, adj_vector* dependencies, char* name, adj_vector* output));
+int adj_find_functional_derivative_callback(adj_adjointer* adjointer, char* functional, void (**fn)(adj_adjointer* adjointer, adj_variable variable, int ndepends, adj_variable* variables, adj_vector* dependencies, char* name, adj_vector* output));
+int adj_find_parameter_source_callback(adj_adjointer* adjointer, char* parameter, void (**fn)(adj_adjointer* adjointer, adj_variable variable, int ndepends, adj_variable* variables, adj_vector* dependencies, char* name, adj_vector* output, int* has_output));
 int adj_get_variable_value(adj_adjointer* adjointer, adj_variable var, adj_vector* value);
 int adj_has_variable_value(adj_adjointer* adjointer, adj_variable var);
 int adj_has_variable_value_memory(adj_adjointer* adjointer, adj_variable var);
 int adj_has_variable_value_disk(adj_adjointer* adjointer, adj_variable var);
 int adj_is_variable_memory_checkpoint(adj_adjointer* adjointer, adj_variable var);
 int adj_is_variable_disk_checkpoint(adj_adjointer* adjointer, adj_variable var);
-int adj_forget_variable_value(adj_adjointer* adjointer, adj_variable_data* data);
+int adj_forget_variable_value(adj_adjointer* adjointer, adj_variable var, adj_variable_data* data);
 int adj_forget_variable_value_from_memory(adj_adjointer* adjointer, adj_variable_data* data);
-int adj_forget_variable_value_from_disk(adj_adjointer* adjointer, adj_variable_data* data);
-int adj_destroy_variable_data(adj_adjointer* adjointer, adj_variable_data* data);
+int adj_forget_variable_value_from_disk(adj_adjointer* adjointer, adj_variable var, adj_variable_data* data);
+int adj_destroy_variable_data(adj_adjointer* adjointer, adj_variable var, adj_variable_data* data);
 int adj_add_new_hash_entry(adj_adjointer* adjointer, adj_variable* var, adj_variable_data** data);
-int adj_record_variable_core_disk(adj_adjointer* adjointer, adj_variable_data* data_ptr, adj_storage_data storage);
+int adj_record_variable_core_disk(adj_adjointer* adjointer, adj_variable var, adj_variable_data* data_ptr, adj_storage_data storage);
 int adj_record_variable_core_memory(adj_adjointer* adjointer, adj_variable_data* data_ptr, adj_storage_data storage);
 int adj_record_variable_compare(adj_adjointer* adjointer, adj_variable_data* data_ptr, adj_variable var, adj_storage_data storage);
 
