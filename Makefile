@@ -122,7 +122,7 @@ AR = ar
 ARFLAGS = cr
 
 LD := $(FC)
-LDFLAGS := -shared -Wl,-soname,libadjoint.so
+LDFLAGS := -lstdc++ -shared -Wl,-soname,libadjoint.so
 
 ###############################################################################
 # Variables for the python bindings                                           #
