@@ -36,6 +36,7 @@ int adj_set_petsc_data_callbacks(adj_adjointer* adjointer)
   ierr = adj_register_data_callback(adjointer, ADJ_SOLVE_CB,(void (*)(void)) petsc_solve_proc);
   adj_chkierr(ierr);
 #else
+  (void) adjointer;
   ierr = ADJ_ERR_INVALID_INPUTS;
   snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Sorry, libadjoint was compiled without PETSc support.");
 #endif
@@ -85,13 +86,15 @@ void petsc_vec_delete_proc(adj_variable var)
   adj_variable_str(var, filename, ADJ_NAME_LEN);
   strncat(filename, ".dat", 4);
 
-	if (access(filename, W_OK) == -1) {
-		char buf[ADJ_NAME_LEN];
-		adj_variable_str(var, buf, ADJ_NAME_LEN);
+  if (access(filename, W_OK) == -1) {
+    char buf[ADJ_NAME_LEN];
+    adj_variable_str(var, buf, ADJ_NAME_LEN);
     fprintf(stderr, "Can remove variable %s in file '%s'. File does not exist.", buf, filename);
   }
 
   remove(filename);
+#else
+  (void) var;
 #endif
 }
 
@@ -139,7 +142,7 @@ void petsc_vec_write_proc(adj_variable var, adj_vector x)
   PetscViewerDestroy(viewer);
 #else
     (void) x;
-    (void) filename;
+    (void) var;
 #endif
 }
 
@@ -151,11 +154,12 @@ void petsc_vec_read_proc(adj_variable var, adj_vector *x)
   adj_variable_str(var, filename, ADJ_NAME_LEN);
   strncat(filename, ".dat", 4);
 
-	if (access(filename, W_OK) == -1) {
-		char buf[ADJ_NAME_LEN];
-		adj_variable_str(var, buf, ADJ_NAME_LEN);
+  if (access(filename, W_OK) == -1) 
+  {
+    char buf[ADJ_NAME_LEN];
+    adj_variable_str(var, buf, ADJ_NAME_LEN);
 
-		fprintf(stderr, "Can not access variable %s in file '%s'.", buf, filename);
+    fprintf(stderr, "Can not access variable %s in file '%s'.", buf, filename);
   }
 
   Vec *vec=(Vec*) malloc(sizeof(Vec));
@@ -166,7 +170,7 @@ void petsc_vec_read_proc(adj_variable var, adj_vector *x)
   *x = petsc_vec_to_adj_vector(vec);
 #else
     (void) x;
-    (void) filename;
+    (void) var;
 #endif
 }
 
