@@ -625,6 +625,7 @@ class Adjointer(object):
     self.vec_dot_product_type = ctypes.CFUNCTYPE(None, clib.adj_vector, clib.adj_vector, ctypes.POINTER(adj_scalar))
     self.vec_set_random_type = ctypes.CFUNCTYPE(None, ctypes.POINTER(clib.adj_vector))
     self.vec_set_values_type = ctypes.CFUNCTYPE(None, ctypes.POINTER(clib.adj_vector), ctypes.POINTER(adj_scalar))
+    self.vec_get_values_type = ctypes.CFUNCTYPE(None, clib.adj_vector, ctypes.POINTER(ctypes.POINTER(adj_scalar)))
     self.vec_get_size_type = ctypes.CFUNCTYPE(None, clib.adj_vector, ctypes.POINTER(ctypes.c_int))
     self.vec_write_type = ctypes.CFUNCTYPE(None, clib.adj_variable, clib.adj_vector)
     self.vec_read_type = ctypes.CFUNCTYPE(None, clib.adj_variable, ctypes.POINTER(clib.adj_vector))
@@ -899,6 +900,7 @@ class Adjointer(object):
     self.__register_data_callback__('ADJ_VEC_DOT_PRODUCT_CB', self.__vec_dot_callback__)
     self.__register_data_callback__('ADJ_VEC_SET_RANDOM_CB', self.__vec_set_random_callback__)
     self.__register_data_callback__('ADJ_VEC_SET_VALUES_CB', self.__vec_set_values_callback__)
+    self.__register_data_callback__('ADJ_VEC_GET_VALUES_CB', self.__vec_get_values_callback__)
     self.__register_data_callback__('ADJ_VEC_GET_SIZE_CB', self.__vec_get_size_callback__)
     self.__register_data_callback__('ADJ_VEC_WRITE_CB', self.__vec_write_callback__)
     self.__register_data_callback__('ADJ_VEC_READ_CB', self.__vec_read_callback__)
@@ -944,6 +946,7 @@ class Adjointer(object):
                    'ADJ_VEC_DOT_PRODUCT_CB': self.vec_dot_product_type,
                    'ADJ_VEC_SET_RANDOM_CB': self.vec_set_random_type,
                    'ADJ_VEC_SET_VALUES_CB': self.vec_set_values_type,
+                   'ADJ_VEC_GET_VALUES_CB': self.vec_get_values_type,
                    'ADJ_VEC_GET_SIZE_CB': self.vec_get_size_type,
                    'ADJ_VEC_WRITE_CB': self.vec_write_type,
                    'ADJ_VEC_READ_CB': self.vec_read_type,
@@ -1150,6 +1153,18 @@ class Adjointer(object):
     y.set_values(numpy.array(nparray))
 
   @staticmethod
+  def __vec_get_values_callback__(adj_vec, values_ptr):
+    import numpy
+    y = vector(adj_vec)
+
+    sz = y.size()
+    nparray = numpy.zeros(sz)
+    y.get_values(nparray)
+
+    for i in range(sz):
+      values_ptr[0][i] = nparray[i]
+
+  @staticmethod
   def __vec_get_size_callback__(adj_vec, sz):
     y = vector(adj_vec)
     sz[0] = y.size()
@@ -1262,6 +1277,15 @@ class Vector(LinAlg):
 
     raise exceptions.LibadjointErrorNeedCallback(
       'Class '+self.__class__.__name__+' has no set_values(scalars) method')
+
+  def set_values(self, scalars):
+    '''set_values(self, scalars)
+
+    This method must set the value of scalars to that given by the local degrees of freedom
+    of the Vector.'''
+
+    raise exceptions.LibadjointErrorNeedCallback(
+      'Class '+self.__class__.__name__+' has no get_values(scalars) method')
 
   def size(self):
     '''size(self)
