@@ -177,6 +177,11 @@ module libadjoint_data_structures
   type, bind(c) :: adj_dictionary
     type(c_ptr) :: dict = c_null_ptr
   end type adj_dictionary
+
+  type, bind(c) :: adj_svd
+    type(c_ptr) :: svd_handle
+  end type adj_svd
+
 end module libadjoint_data_structures
 
 module libadjoint
@@ -1117,6 +1122,37 @@ module libadjoint
       integer(kind=c_int), intent(out) :: known
       integer(kind=c_int) :: ierr
     end function adj_variable_known_c
+
+    function adj_compute_tlm_svd(adjointer, ic, final, nsv, svd_handle, ncv) result(ierr) bind(c, name='adj_compute_tlm_svd')
+      use libadjoint_data_structures
+      use iso_c_binding
+      type(adj_adjointer), intent(inout) :: adjointer
+      type(adj_variable), intent(in), value :: ic
+      type(adj_variable), intent(in), value :: final
+      integer(kind=c_int), intent(in), value :: nsv
+      type(adj_svd), intent(out) :: svd_handle
+      integer(kind=c_int), intent(out) :: ncv
+      integer(kind=c_int) :: ierr
+    end function adj_compute_tlm_svd
+
+    function adj_get_svd_c(svd_handle, i, sigma, u, v, error) result(ierr) bind(c, name='adj_get_svd')
+      use libadjoint_data_structures
+      use iso_c_binding
+      type(adj_svd), intent(in) :: svd_handle
+      integer(kind=c_int), intent(in), value :: i
+      adj_scalar_f, intent(out) :: sigma
+      type(adj_vector), intent(out) :: u
+      type(adj_vector), intent(out) :: v
+      adj_scalar_f, intent(out) :: error
+      integer(kind=c_int) :: ierr
+    end function adj_get_svd_c
+
+    function adj_destroy_svd(svd_handle) result(ierr) bind(c, name='adj_destroy_svd')
+      use libadjoint_data_structures
+      use iso_c_binding
+      type(adj_svd), intent(inout) :: svd_handle
+      integer(kind=c_int) :: ierr
+    end function adj_destroy_svd
 
   end interface
 
