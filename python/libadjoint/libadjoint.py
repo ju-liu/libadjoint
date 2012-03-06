@@ -1218,6 +1218,12 @@ class Adjointer(object):
     adj_soln_ptr[0].klass = 0
     adj_soln_ptr[0].flags = 0
 
+  def compute_tlm_svd(self, ic, final, nsv):
+    handle = clib.adj_svd()
+    ncv = ctypes.c_int()
+    clib.adj_compute_tlm_svd(self.adjointer, ic.var, final.var, nsv, handle, ncv)
+    return SVDHandle(handle, ncv)
+
 class LinAlg(object):
   '''Base class for adjoint vector or matrix objects. In libadjoint,
   the operations performed on these are quite similar, so the common ones
@@ -1349,20 +1355,44 @@ def matrix(adj_matrix):
 
   return python_utils.c_deref(adj_matrix.ptr)
 
-# class Time(object):
-#   def __init__(self, time=0.0, timestep=0, iteration=0):
+class SVDHandle(object):
+  def __init__(self, handle, ncv):
+    self.handle = handle
+    self.ncv = ncv
+    self.allocated = True
 
-#     '''Time at the start of each timestep.'''
-#     self.times=[time]
+  def __del__(self):
+    self.destroy()
 
-#     self.timestep=timestep
-#     self.iteration=iteration
+  def get_svd(self, i, return_vectors=False, return_error=False):
+    if return_vectors:
+      u = clib.adj_vector()
+      v = clib.adj_vector()
+    else:
+      u = None
+      v = None
 
-#   def new_timestep(time=None, timestep=None, iteration=None):
-#     '''Update time object for a new timestep.'''
+    if return_error:
+      error = adj_scalar()
+    else:
+      error = None
 
-# class TimeStep(object):
-#     def __init__(self, time, time_offset, iteration_offset):
+    sigma = adj_scalar()
 
-#       if not isinstance(time, Time):
-#         raise TypeError("time must be an instance of class Time")
+    clib.adj_get_svd(self.handle, i, sigma, u, v, error)
+
+    retval = [sigma]
+    if return_vectors:
+      retval += [u, v]
+    if return_error:
+      retval += [error]
+
+    if len(retval) == 1:
+      retval = retval[0]
+
+    return retval
+
+  def destroy(self):
+    if self.allocated:
+      clib.adj_destroy_svd(self.handle)
+      self.allocated = False
