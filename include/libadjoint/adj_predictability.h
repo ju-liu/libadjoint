@@ -24,5 +24,10 @@ int adj_compute_tlm_svd(adj_adjointer* adjointer, adj_variable ic, adj_variable 
 int adj_get_svd(adj_svd* svd_handle, int i, adj_scalar* sigma, adj_vector* u, adj_vector* v, adj_scalar* error);
 int adj_destroy_svd(adj_svd* svd_handle);
 
+#ifdef HAVE_SLEPC
+PetscErrorCode tlm_solve(Mat A, Vec x, Vec y);
+PetscErrorCode adj_solve(Mat A, Vec x, Vec y);
+#endif
+
 #endif
 
