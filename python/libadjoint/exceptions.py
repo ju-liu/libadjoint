@@ -59,7 +59,7 @@ ierr_to_exception = {
     7: LibadjointErrorToleranceExceeded,
     8: LibadjointErrorMallocFailed,
     9: LibadjointErrorRevolveError,
-    10: LibadjointErrorSlepcError
+    10: LibadjointErrorSlepcError,
    -1: LibadjointWarnAlreadyRecorded,
    -2: LibadjointWarnComparisonFailed,
    -3: LibadjointWarnUninitialisedValue,
