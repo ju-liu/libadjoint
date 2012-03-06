@@ -885,6 +885,12 @@ class Adjointer(object):
   def forget_tlm_equation(self, equation):
     clib.adj_forget_tlm_equation(self.adjointer, equation)
 
+  def forget_adjoint_values(self, equation):
+    clib.adj_forget_adjoint_values(self.adjointer, equation)
+
+  def forget_tlm_values(self, equation):
+    clib.adj_forget_tlm_values(self.adjointer, equation)
+
   def __register_data_callbacks__(self):
     self.__register_data_callback__('ADJ_VEC_DUPLICATE_CB', self.__vec_duplicate_callback__)
     self.__register_data_callback__('ADJ_VEC_DESTROY_CB', self.__vec_destroy_callback__)
