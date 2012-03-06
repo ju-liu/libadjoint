@@ -15,8 +15,6 @@ typedef struct
   adj_adjointer* adjointer;
   adj_variable ic;
   adj_variable final;
-  adj_vector ic_val;
-  adj_vector final_val;
 } adj_svd_data;
 
 typedef struct

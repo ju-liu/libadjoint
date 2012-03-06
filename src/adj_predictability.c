@@ -62,12 +62,9 @@ int adj_compute_tlm_svd(adj_adjointer* adjointer, adj_variable ic, adj_variable 
   if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
   adjointer->callbacks.vec_get_size(final_val, &final_dof);
 
-  svd_data.ic_val = ic_val;
-  svd_data.final_val = final_val;
-
   ierr = MatCreateShell(PETSC_COMM_WORLD, final_dof, ic_dof, PETSC_DETERMINE, PETSC_DETERMINE, (void*) &svd_data, &tlm_mat);
   ierr = MatShellSetOperation(tlm_mat, MATOP_MULT, (void(*)(void)) tlm_solve);
-  /* ierr = MatShellSetOperation(tlm_mat, MATOP_MULT_TRANSPOSE, (void(*)()) adj_solve); */
+  ierr = MatShellSetOperation(tlm_mat, MATOP_MULT_TRANSPOSE, (void(*)(void)) adj_solve);
 
   SVDCreate(PETSC_COMM_WORLD, &svd);
   SVDSetOperator(svd, tlm_mat);
@@ -202,7 +199,7 @@ PetscErrorCode tlm_solve(Mat A, Vec x, Vec y)
     if (adj_variable_equal(&svd_data->ic, &fwd_var, 1))
     {
       /* fetch the vector from our input PETSc Vec, stuff it into rhs_tmp */
-      adjointer->callbacks.vec_duplicate(svd_data->ic_val, &rhs_tmp);
+      adjointer->callbacks.vec_duplicate(rhs, &rhs_tmp);
 
       ierr = VecGetArray(x, &px); CHKERRQ(ierr);
       adjointer->callbacks.vec_set_values(&rhs_tmp, px);
@@ -220,7 +217,7 @@ PetscErrorCode tlm_solve(Mat A, Vec x, Vec y)
     ierr = adj_storage_set_overwrite(&storage, ADJ_TRUE);
     ierr = adj_record_variable(adjointer, tlm_var, storage);
 
-    ierr = adj_forget_tlm_equation(adjointer, equation);
+    ierr = adj_forget_tlm_values(adjointer, equation);
 
     if (adj_variable_equal(&svd_data->final, &fwd_var, 1))
     {
@@ -241,7 +238,79 @@ PetscErrorCode tlm_solve(Mat A, Vec x, Vec y)
   PetscFunctionReturn(1);
 }
 
-PetscErrorCode adj_solve(Mat A, Vec x, Vec y);
+PetscErrorCode adj_solve(Mat A, Vec x, Vec y)
+{
+  adj_svd_data* svd_data;
+  adj_matrix lhs;
+  adj_vector rhs;
+  adj_vector rhs_tmp;
+  adj_vector soln;
+  adj_variable adj_var;
+  adj_variable fwd_var;
+  adj_storage_data storage;
+  int equation;
+  int equation_count;
+  int return_flag;
+  adj_adjointer* adjointer;
+  adj_scalar* px;
+  adj_scalar* py;
+  int ierr;
+
+  PetscFunctionBegin;
+
+  ierr = MatShellGetContext(A, (void**) &svd_data); CHKERRQ(ierr);
+  adjointer = svd_data->adjointer;
+  ierr = adj_equation_count(adjointer, &equation_count);
+
+  return_flag = ADJ_FALSE;
+
+  for (equation = equation_count - 1; equation >= 0; equation--)
+  {
+    ierr = adj_get_adjoint_equation(adjointer, equation, "SVDNullADM", &lhs, &rhs, &adj_var);
+    if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
+
+    ierr = adj_create_variable(adj_var.name, adj_var.timestep, adj_var.iteration, ADJ_FALSE, &fwd_var);
+    if (adj_variable_equal(&svd_data->final, &fwd_var, 1))
+    {
+      /* fetch the vector from our input PETSc Vec, stuff it into rhs_tmp */
+      adjointer->callbacks.vec_duplicate(rhs, &rhs_tmp);
+
+      ierr = VecGetArray(x, &px); CHKERRQ(ierr);
+      adjointer->callbacks.vec_set_values(&rhs_tmp, px);
+      ierr = VecRestoreArray(x, &px); CHKERRQ(ierr);
+
+      adjointer->callbacks.vec_axpy(&rhs, (adj_scalar) 1.0, rhs_tmp);
+      adjointer->callbacks.vec_destroy(&rhs_tmp);
+    }
+
+    adjointer->callbacks.solve(adj_var, lhs, rhs, &soln);
+    adjointer->callbacks.vec_destroy(&rhs);
+    adjointer->callbacks.mat_destroy(&lhs);
+
+    ierr = adj_storage_memory_copy(soln, &storage);
+    ierr = adj_storage_set_overwrite(&storage, ADJ_TRUE);
+    ierr = adj_record_variable(adjointer, adj_var, storage);
+
+    ierr = adj_forget_adjoint_values(adjointer, equation);
+
+    if (adj_variable_equal(&svd_data->ic, &fwd_var, 1))
+    {
+      /* fetch the value of soln, stuff it into our output PETSc Vec */
+      ierr = VecGetArray(y, &py); CHKERRQ(ierr);
+      adjointer->callbacks.vec_get_values(soln, &py);
+      ierr = VecRestoreArray(y, &py); CHKERRQ(ierr);
+
+      return_flag = ADJ_TRUE;
+    }
+
+    adjointer->callbacks.vec_destroy(&soln);
+
+    if (return_flag) 
+      PetscFunctionReturn(0);
+  }
+
+  PetscFunctionReturn(1);
+}
 
 void null_tlm_source(adj_adjointer* adjointer, adj_variable derivative, int ndepends, adj_variable* variables, adj_vector* dependencies, char* name, adj_vector* output, int* has_output)
 {
