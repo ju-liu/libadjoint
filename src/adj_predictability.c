@@ -53,6 +53,7 @@ int adj_compute_tlm_svd(adj_adjointer* adjointer, adj_variable ic, adj_variable 
 
   /* Register the dummy parameter sources/functionals -- we're going to be in charge of the RHS terms here */
   adj_register_parameter_source_callback(adjointer, "SVDNullTLM", null_tlm_source);
+  adj_register_functional_derivative_callback(adjointer, "SVDNullADM", null_adj_source);
 
   ierr = adj_get_variable_value(adjointer, ic, &ic_val);
   if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
@@ -331,5 +332,16 @@ void null_tlm_source(adj_adjointer* adjointer, adj_variable derivative, int ndep
   (void) name;
   (void) output;
   *has_output = ADJ_FALSE;
+}
+
+void null_adj_source(adj_adjointer* adjointer, adj_variable derivative, int ndepends, adj_variable* variables, adj_vector* dependencies, char* name, adj_vector* output)
+{
+  (void) adjointer;
+  (void) derivative;
+  (void) ndepends;
+  (void) variables;
+  (void) dependencies;
+  (void) name;
+  (void) output;
 }
 #endif
