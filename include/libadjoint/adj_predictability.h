@@ -3,6 +3,7 @@
 
 #include "adj_data_structures.h"
 #include "adj_error_handling.h"
+#include "adj_adjointer_routines.h"
 
 #ifdef HAVE_SLEPC
 #include "slepcsvd.h"

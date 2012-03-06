@@ -11,15 +11,23 @@ int adj_compute_tlm_svd(adj_adjointer* adjointer, adj_variable ic, adj_variable 
   Mat tlm_mat;
   adj_svd_data svd_data;
   int ierr;
-  int N;
+  adj_vector ic_val;
+  adj_vector final_val;
+  int ic_dof, final_dof;
 
   svd_data.adjointer = adjointer;
   svd_data.ic = ic;
   svd_data.final = final;
 
-  N = 10;
+  ierr = adj_get_variable_value(adjointer, ic, &ic_val);
+  if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
+  adjointer->callbacks.vec_get_size(ic_val, &ic_dof);
 
-  ierr = MatCreateShell(PETSC_COMM_WORLD, N, N, PETSC_DETERMINE, PETSC_DETERMINE, (void*) &svd_data, &tlm_mat);
+  ierr = adj_get_variable_value(adjointer, final, &final_val);
+  if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
+  adjointer->callbacks.vec_get_size(final_val, &final_dof);
+
+  ierr = MatCreateShell(PETSC_COMM_WORLD, final_dof, ic_dof, PETSC_DETERMINE, PETSC_DETERMINE, (void*) &svd_data, &tlm_mat);
 /*  ierr = MatShellSetOperation(tlm_mat, MATOP_MULT,(void(*)()) tlm_solve);
   ierr = MatShellSetOperation(tlm_mat, MATOP_MULT_TRANSPOSE, (void(*)()) adj_solve); */
 
