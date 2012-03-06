@@ -79,10 +79,11 @@ int adj_compute_tlm_svd(adj_adjointer* adjointer, adj_variable ic, adj_variable 
   svd_handle->svd_handle = &svd;
   SVDGetConverged(svd, ncv);
 
-  if (ierr != 0)
+  if (ierr == 0)
     return ADJ_OK;
   else
   {
+    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "SLEPc error from SVDSolve.");
     return adj_chkierr_auto(ADJ_ERR_SLEPC_ERROR);
   }
 
