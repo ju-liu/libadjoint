@@ -66,6 +66,7 @@ module libadjoint_data_structures
     type(c_funptr) :: vec_axpy
     type(c_funptr) :: vec_destroy
     type(c_funptr) :: vec_set_values
+    type(c_funptr) :: vec_get_values
     type(c_funptr) :: vec_get_size
     type(c_funptr) :: vec_divide
     type(c_funptr) :: vec_get_norm

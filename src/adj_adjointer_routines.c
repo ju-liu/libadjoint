@@ -17,6 +17,7 @@ int adj_create_adjointer(adj_adjointer* adjointer)
   adjointer->callbacks.vec_axpy = NULL;
   adjointer->callbacks.vec_destroy = NULL;
   adjointer->callbacks.vec_set_values = NULL;
+  adjointer->callbacks.vec_get_values = NULL;
   adjointer->callbacks.vec_get_size = NULL;
   adjointer->callbacks.vec_divide = NULL;
   adjointer->callbacks.vec_get_norm = NULL;
@@ -1289,6 +1290,9 @@ int adj_register_data_callback(adj_adjointer* adjointer, int type, void (*fn)(vo
       break;
     case ADJ_VEC_SET_VALUES_CB:
       adjointer->callbacks.vec_set_values = (void(*)(adj_vector *vec, adj_scalar scalars[])) fn;
+      break;
+    case ADJ_VEC_GET_VALUES_CB:
+      adjointer->callbacks.vec_get_values = (void(*)(adj_vector vec, adj_scalar *scalars[])) fn;
       break;
     case ADJ_VEC_GET_SIZE_CB:
       adjointer->callbacks.vec_get_size = (void(*)(adj_vector vec, int *sz)) fn;

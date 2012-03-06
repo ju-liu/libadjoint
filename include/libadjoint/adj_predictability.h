@@ -4,6 +4,7 @@
 #include "adj_data_structures.h"
 #include "adj_error_handling.h"
 #include "adj_adjointer_routines.h"
+#include "adj_core.h"
 
 #ifdef HAVE_SLEPC
 #include "slepcsvd.h"
@@ -14,6 +15,8 @@ typedef struct
   adj_adjointer* adjointer;
   adj_variable ic;
   adj_variable final;
+  adj_vector ic_val;
+  adj_vector final_val;
 } adj_svd_data;
 
 typedef struct
@@ -28,6 +31,7 @@ int adj_destroy_svd(adj_svd* svd_handle);
 #ifdef HAVE_SLEPC
 PetscErrorCode tlm_solve(Mat A, Vec x, Vec y);
 PetscErrorCode adj_solve(Mat A, Vec x, Vec y);
+void null_tlm_source(adj_adjointer* adjointer, adj_variable derivative, int ndepends, adj_variable* variables, adj_vector* dependencies, char* name, adj_vector* output, int* has_output);
 #endif
 
 #endif
