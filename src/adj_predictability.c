@@ -66,6 +66,8 @@ int adj_compute_tlm_svd(adj_adjointer* adjointer, adj_variable ic, adj_variable 
   ierr = MatShellSetOperation(tlm_mat, MATOP_MULT, (void(*)(void)) tlm_solve);
   ierr = MatShellSetOperation(tlm_mat, MATOP_MULT_TRANSPOSE, (void(*)(void)) adj_solve);
 
+  SlepcInitialize(0, PETSC_NULL, PETSC_NULL, PETSC_NULL);
+
   SVDCreate(PETSC_COMM_WORLD, &svd);
   SVDSetOperator(svd, tlm_mat);
   SVDSetTransposeMode(svd, SVD_TRANSPOSE_IMPLICIT);
