@@ -1385,7 +1385,7 @@ def matrix(adj_matrix):
 class SVDHandle(object):
   def __init__(self, handle, ncv):
     self.handle = handle
-    self.ncv = ncv
+    self.ncv = ncv.value
     self.allocated = True
 
   def __del__(self):
