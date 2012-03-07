@@ -654,6 +654,9 @@ class Adjointer(object):
   def __del__(self):
     if self.adjointer_created:
       clib.adj_destroy_adjointer(self.adjointer)
+      if len(references_taken) != 0:
+        print "Warning: references still exist!"
+        print "References: ", references_taken
       assert len(references_taken) == 0
 
   def __getattr__(self, name):
@@ -1407,7 +1410,11 @@ class SVDHandle(object):
 
     retval = [sigma.value]
     if return_vectors:
-      retval += [u, v]
+      u_vec = vector(u)
+      v_vec = vector(v)
+      references_taken.remove(u_vec)
+      references_taken.remove(v_vec)
+      retval += [u_vec, v_vec]
     if return_error:
       retval += [error.value]
 

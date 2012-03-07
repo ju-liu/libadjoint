@@ -115,6 +115,11 @@ int adj_get_svd(adj_svd* svd_handle, int i, adj_scalar* sigma, adj_vector* u, ad
     Mat A;
     Vec u_vec;
     Vec v_vec;
+    adj_vector ic_val;
+    adj_vector final_val;
+    adj_scalar* u_arr;
+    adj_scalar* v_arr;
+    adj_adjointer* adjointer;
 
     /* Shut the compiler up about uninitialised variables */
     SVDGetOperator(*( (SVD*) svd_handle->svd_handle ), &A);
@@ -128,9 +133,23 @@ int adj_get_svd(adj_svd* svd_handle, int i, adj_scalar* sigma, adj_vector* u, ad
       return adj_chkierr_auto(ADJ_ERR_SLEPC_ERROR);
     }
 
-    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Fetching singular vectors from the SVD not implemented (yet).");
-    return adj_chkierr_auto(ADJ_ERR_NOT_IMPLEMENTED);
+    adjointer = ((adj_svd_data*) svd_handle->svd_data)->adjointer;
 
+    ierr = adj_get_variable_value(adjointer, ((adj_svd_data*) svd_handle->svd_data)->final, &ic_val);
+    if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
+    adjointer->callbacks.vec_duplicate(ic_val, v);
+
+    ierr = VecGetArray(v_vec, &v_arr);
+    adjointer->callbacks.vec_set_values(v, v_arr);
+    ierr = VecRestoreArray(v_vec, &v_arr);
+
+    ierr = adj_get_variable_value(adjointer, ((adj_svd_data*) svd_handle->svd_data)->final, &final_val);
+    if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
+    adjointer->callbacks.vec_duplicate(final_val, u);
+
+    ierr = VecGetArray(u_vec, &u_arr);
+    adjointer->callbacks.vec_set_values(u, u_arr);
+    ierr = VecRestoreArray(u_vec, &u_arr);
   }
   else
   {
