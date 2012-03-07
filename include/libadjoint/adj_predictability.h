@@ -6,6 +6,8 @@
 #include "adj_adjointer_routines.h"
 #include "adj_core.h"
 
+#include <math.h>
+
 #ifdef HAVE_SLEPC
 #include "slepcsvd.h"
 #endif

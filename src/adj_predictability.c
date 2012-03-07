@@ -132,6 +132,11 @@ int adj_get_svd(adj_svd* svd_handle, int i, adj_scalar* sigma, adj_vector* u, ad
       snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "SLEPc error from SVDGetSingularTriplet.");
       return adj_chkierr_auto(ADJ_ERR_SLEPC_ERROR);
     }
+    if (isnan(*sigma))
+    {
+      snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "SLEPc returned NaN as a singular value.");
+      return adj_chkierr_auto(ADJ_ERR_SLEPC_ERROR);
+    }
 
     adjointer = ((adj_svd_data*) svd_handle->svd_data)->adjointer;
 
