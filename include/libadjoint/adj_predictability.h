@@ -13,6 +13,7 @@
 typedef struct
 {
   void* svd_handle;
+  void* svd_data;
 } adj_svd;
 
 int adj_compute_tlm_svd(adj_adjointer* adjointer, adj_variable ic, adj_variable final, int nsv, adj_svd* svd_handle, int* ncv);

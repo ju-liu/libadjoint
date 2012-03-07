@@ -1405,11 +1405,11 @@ class SVDHandle(object):
 
     clib.adj_get_svd(self.handle, i, sigma, u, v, error)
 
-    retval = [sigma]
+    retval = [sigma.value]
     if return_vectors:
       retval += [u, v]
     if return_error:
-      retval += [error]
+      retval += [error.value]
 
     if len(retval) == 1:
       retval = retval[0]

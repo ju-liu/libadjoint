@@ -7,9 +7,9 @@ int adj_compute_tlm_svd(adj_adjointer* adjointer, adj_variable ic, adj_variable 
   *svd_handle = NULL;
   return ADJ_ERR_INVALID_INPUTS;
 #else
-  SVD svd;
+  SVD *svd;
   Mat tlm_mat;
-  adj_svd_data svd_data;
+  adj_svd_data* svd_data;
   int ierr;
   adj_vector ic_val;
   adj_vector final_val;
@@ -47,9 +47,10 @@ int adj_compute_tlm_svd(adj_adjointer* adjointer, adj_variable ic, adj_variable 
   if (adjointer->callbacks.vec_set_values == NULL) return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
   strncpy(adj_error_msg, "", ADJ_ERROR_MSG_BUF);
 
-  svd_data.adjointer = adjointer;
-  svd_data.ic = ic;
-  svd_data.final = final;
+  svd_data = (adj_svd_data*) malloc(sizeof(adj_svd_data));
+  svd_data->adjointer = adjointer;
+  svd_data->ic = ic;
+  svd_data->final = final;
 
   /* Register the dummy parameter sources/functionals -- we're going to be in charge of the RHS terms here */
   adj_register_parameter_source_callback(adjointer, "SVDNullTLM", null_tlm_source);
@@ -63,21 +64,23 @@ int adj_compute_tlm_svd(adj_adjointer* adjointer, adj_variable ic, adj_variable 
   if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
   adjointer->callbacks.vec_get_size(final_val, &final_dof);
 
-  ierr = MatCreateShell(PETSC_COMM_WORLD, final_dof, ic_dof, PETSC_DETERMINE, PETSC_DETERMINE, (void*) &svd_data, &tlm_mat);
+  ierr = MatCreateShell(PETSC_COMM_WORLD, final_dof, ic_dof, PETSC_DETERMINE, PETSC_DETERMINE, (void*) svd_data, &tlm_mat);
   ierr = MatShellSetOperation(tlm_mat, MATOP_MULT, (void(*)(void)) tlm_solve);
   ierr = MatShellSetOperation(tlm_mat, MATOP_MULT_TRANSPOSE, (void(*)(void)) adj_solve);
 
   SlepcInitialize(0, PETSC_NULL, PETSC_NULL, PETSC_NULL);
 
-  SVDCreate(PETSC_COMM_WORLD, &svd);
-  SVDSetOperator(svd, tlm_mat);
-  SVDSetTransposeMode(svd, SVD_TRANSPOSE_IMPLICIT);
-  SVDSetType(svd, SVDCROSS);
-  SVDSetDimensions(svd, nsv, PETSC_DECIDE, PETSC_DECIDE);
+  svd = (SVD*) malloc(sizeof(SVD));
+  SVDCreate(PETSC_COMM_WORLD, svd);
+  SVDSetOperator(*svd, tlm_mat);
+  SVDSetTransposeMode(*svd, SVD_TRANSPOSE_IMPLICIT);
+  SVDSetType(*svd, SVDCROSS);
+  SVDSetDimensions(*svd, nsv, PETSC_DECIDE, PETSC_DECIDE);
 
-  ierr = SVDSolve(svd);
+  ierr = SVDSolve(*svd);
 
-  svd_handle->svd_handle = &svd;
+  svd_handle->svd_handle = svd;
+  svd_handle->svd_data = svd_data;
 
   if (ierr != 0)
   {
@@ -85,7 +88,7 @@ int adj_compute_tlm_svd(adj_adjointer* adjointer, adj_variable ic, adj_variable 
     return adj_chkierr_auto(ADJ_ERR_SLEPC_ERROR);
   }
 
-  ierr = SVDGetConverged(svd, ncv);
+  ierr = SVDGetConverged(*svd, ncv);
   if (ierr != 0)
   {
     snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "SLEPc error from SVDGetConverged.");
@@ -114,10 +117,10 @@ int adj_get_svd(adj_svd* svd_handle, int i, adj_scalar* sigma, adj_vector* u, ad
     Vec v_vec;
 
     /* Shut the compiler up about uninitialised variables */
-    SVDGetOperator((SVD) svd_handle->svd_handle, &A);
+    SVDGetOperator(*( (SVD*) svd_handle->svd_handle ), &A);
     MatGetVecs(A, &u_vec, &v_vec);
 
-    ierr = SVDGetSingularTriplet((SVD) svd_handle->svd_handle, i, sigma, u_vec, v_vec);
+    ierr = SVDGetSingularTriplet(*( (SVD*) svd_handle->svd_handle ), i, sigma, u_vec, v_vec);
 
     if (ierr != 0)
     {
@@ -131,7 +134,7 @@ int adj_get_svd(adj_svd* svd_handle, int i, adj_scalar* sigma, adj_vector* u, ad
   }
   else
   {
-    ierr = SVDGetSingularTriplet((SVD) svd_handle->svd_handle, i, sigma, PETSC_NULL, PETSC_NULL);
+    ierr = SVDGetSingularTriplet(*( (SVD*) svd_handle->svd_handle ), i, sigma, PETSC_NULL, PETSC_NULL);
     if (ierr != 0)
     {
       snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "SLEPc error from SVDGetSingularTriplet.");
@@ -141,7 +144,7 @@ int adj_get_svd(adj_svd* svd_handle, int i, adj_scalar* sigma, adj_vector* u, ad
 
   if (error != NULL)
   {
-    ierr = SVDComputeRelativeError((SVD) svd_handle->svd_handle, i, error);
+    ierr = SVDComputeRelativeError(*( (SVD*) svd_handle->svd_handle ), i, error);
     if (ierr != 0)
     {
       snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "SLEPc error from SVDComputeRelativeError.");
@@ -162,12 +165,14 @@ int adj_destroy_svd(adj_svd* svd_handle)
   return ADJ_ERR_INVALID_INPUTS;
 #else
   int ierr;
-  ierr = SVDDestroy((SVD) svd_handle->svd_handle);
+  ierr = SVDDestroy(*( (SVD*) svd_handle->svd_handle ));
   if (ierr != 0)
   {
     snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "SLEPc error from SVDDestroy.");
     return adj_chkierr_auto(ADJ_ERR_SLEPC_ERROR);
   }
+  free((SVD*) svd_handle->svd_handle);
+  free((adj_svd_data*) svd_handle->svd_data);
 
   return ADJ_OK;
 #endif
