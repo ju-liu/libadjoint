@@ -64,6 +64,12 @@ int adj_compute_tlm_svd(adj_adjointer* adjointer, adj_variable ic, adj_variable 
   if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
   adjointer->callbacks.vec_get_size(final_val, &final_dof);
 
+  if (nsv > (ic_dof > final_dof ? final_dof : ic_dof)) /* nsv > min(ic_dof, final_dof) */
+  {
+    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Cannot request %d vectors when the matrix is %d x %d.", nsv, final_dof, ic_dof);
+    return adj_chkierr_auto(ADJ_ERR_INVALID_INPUTS);
+  }
+
   ierr = MatCreateShell(PETSC_COMM_WORLD, final_dof, ic_dof, PETSC_DETERMINE, PETSC_DETERMINE, (void*) svd_data, &tlm_mat);
   ierr = MatShellSetOperation(tlm_mat, MATOP_MULT, (void(*)(void)) tlm_solve);
   ierr = MatShellSetOperation(tlm_mat, MATOP_MULT_TRANSPOSE, (void(*)(void)) adj_solve);
@@ -74,7 +80,7 @@ int adj_compute_tlm_svd(adj_adjointer* adjointer, adj_variable ic, adj_variable 
   SVDCreate(PETSC_COMM_WORLD, svd);
   SVDSetOperator(*svd, tlm_mat);
   SVDSetTransposeMode(*svd, SVD_TRANSPOSE_IMPLICIT);
-  SVDSetType(*svd, SVDCROSS);
+  SVDSetType(*svd, SVDLANCZOS);
   SVDSetDimensions(*svd, nsv, PETSC_DECIDE, PETSC_DECIDE);
 
   ierr = SVDSolve(*svd);
