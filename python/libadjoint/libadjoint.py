@@ -1237,6 +1237,23 @@ class Adjointer(object):
     adj_soln_ptr[0].flags = 0
 
   def compute_tlm_svd(self, ic, final, nsv):
+    '''Computes the singular value decomposition of the propagator.
+    The propagator is the operator that maps
+    (perturbations in the initial condition)
+    to
+    (perturbations in the final state)
+    in a linear manner. Essentially, the propagator is the inverse
+    of the tangent linear model.
+
+    The singular value decomposition of the propagator is the basic
+    tool in generalised stability and predictability analysis; see
+    ``Atmospheric Modelling, Data Assimilation and Predictability''
+    by E. Kalnay, chapter 6.
+
+    ic -- an adj_variable corresponding to the initial condition
+    final -- an adj_variable corresponding to the final condition
+    nsv -- number of singular vectors to compute.'''
+
     handle = clib.adj_svd()
     ncv = ctypes.c_int()
     clib.adj_compute_tlm_svd(self.adjointer, ic.var, final.var, nsv, handle, ncv)
@@ -1383,6 +1400,8 @@ def matrix(adj_matrix):
   return python_utils.c_deref(adj_matrix.ptr)
 
 class SVDHandle(object):
+  '''An object that wraps the result of a singular value decomposition.
+     Request the computed singular values with get_svd.'''
   def __init__(self, handle, ncv):
     self.handle = handle
     self.ncv = ncv.value
