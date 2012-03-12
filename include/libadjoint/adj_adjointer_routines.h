@@ -28,6 +28,9 @@ int adj_forget_adjoint_equation(adj_adjointer* adjointer, int equation);
 int adj_forget_forward_equation(adj_adjointer* adjointer, int equation);
 int adj_forget_tlm_equation(adj_adjointer* adjointer, int equation);
 
+int adj_forget_adjoint_values(adj_adjointer* adjointer, int equation);
+int adj_forget_tlm_values(adj_adjointer* adjointer, int equation);
+
 int adj_timestep_count(adj_adjointer* adjointer, int* count);
 int adj_iteration_count(adj_adjointer* adjointer, adj_variable variable, int* count);
 int adj_timestep_start_equation(adj_adjointer* adjointer, int timestep, int* start);

@@ -135,6 +135,7 @@ typedef struct
   void (*vec_axpy)(adj_vector *y, adj_scalar alpha, adj_vector x);
   void (*vec_destroy)(adj_vector *x);
   void (*vec_set_values)(adj_vector *vec, adj_scalar scalars[]);
+  void (*vec_get_values)(adj_vector vec, adj_scalar *scalars[]);
   void (*vec_get_size)(adj_vector vec, int *sz);
   void (*vec_divide)(adj_vector *numerator, adj_vector denominator);
   void (*vec_get_norm)(adj_vector x, adj_scalar* norm);

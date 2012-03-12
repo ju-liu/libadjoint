@@ -17,6 +17,7 @@ int adj_create_adjointer(adj_adjointer* adjointer)
   adjointer->callbacks.vec_axpy = NULL;
   adjointer->callbacks.vec_destroy = NULL;
   adjointer->callbacks.vec_set_values = NULL;
+  adjointer->callbacks.vec_get_values = NULL;
   adjointer->callbacks.vec_get_size = NULL;
   adjointer->callbacks.vec_divide = NULL;
   adjointer->callbacks.vec_get_norm = NULL;
@@ -1290,6 +1291,9 @@ int adj_register_data_callback(adj_adjointer* adjointer, int type, void (*fn)(vo
     case ADJ_VEC_SET_VALUES_CB:
       adjointer->callbacks.vec_set_values = (void(*)(adj_vector *vec, adj_scalar scalars[])) fn;
       break;
+    case ADJ_VEC_GET_VALUES_CB:
+      adjointer->callbacks.vec_get_values = (void(*)(adj_vector vec, adj_scalar *scalars[])) fn;
+      break;
     case ADJ_VEC_GET_SIZE_CB:
       adjointer->callbacks.vec_get_size = (void(*)(adj_vector vec, int *sz)) fn;
       break;
@@ -1442,7 +1446,83 @@ int adj_forget_adjoint_equation(adj_adjointer* adjointer, int equation)
 
   for(varhash = adjointer->varhash; varhash != NULL; varhash = varhash->hh.next)
   {
-  	data = varhash->data;
+    data = varhash->data;
+    if (data->storage.storage_memory_has_value || data->storage.storage_disk_has_value)
+    {
+      should_we_delete = 1;
+      /* Check the adjoint equations we could explicitly compute */
+      for (i = 0; i < data->nadjoint_equations; i++)
+      {
+        if (equation > data->adjoint_equations[i])
+        {
+          should_we_delete = 0;
+          break;
+        }
+      }
+
+      /* Also check that it isn't necessary for any timesteps we still have to compute
+         functional right-hand-sides for */
+      if (data->ndepending_timesteps > 0 && should_we_delete == 1)
+      {
+        int start_equation;
+        min_timestep = adj_minval(data->depending_timesteps, data->ndepending_timesteps);
+        ierr = adj_timestep_start_equation(adjointer, min_timestep, &start_equation);
+        assert(ierr == ADJ_OK);
+
+        if (equation > start_equation)
+        {
+          should_we_delete = 0;
+        }
+      }
+
+      if (should_we_delete)
+      {
+        /* Forget only non-checkpoint variables */
+        if (data->storage.storage_disk_has_value && !data->storage.storage_disk_is_checkpoint)
+        {
+          ierr = adj_forget_variable_value_from_disk(adjointer, varhash->variable, data);
+          if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
+        }
+        if (data->storage.storage_memory_has_value && !data->storage.storage_memory_is_checkpoint)
+        {
+          ierr = adj_forget_variable_value_from_memory(adjointer, data);
+          if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
+        }
+      }
+    }
+
+  }
+
+  return ADJ_OK;
+}
+
+int adj_forget_adjoint_values(adj_adjointer* adjointer, int equation)
+{
+  adj_variable_hash* varhash;
+  adj_variable_data* data;
+  int should_we_delete;
+  int i;
+  int ierr;
+  int min_timestep;
+
+  if (adjointer->options[ADJ_ACTIVITY] == ADJ_ACTIVITY_NOTHING) return ADJ_OK;
+
+  /* Do not delete any variables if we want to compare forward variables with the revolve replay */
+  if (adjointer->revolve_data.overwrite == ADJ_TRUE)
+    return ADJ_OK;
+
+  if (equation >= adjointer->nequations)
+  {
+    strncpy(adj_error_msg, "No such equation.", ADJ_ERROR_MSG_BUF);
+    return adj_chkierr_auto(ADJ_ERR_INVALID_INPUTS);
+  }
+
+  for(varhash = adjointer->varhash; varhash != NULL; varhash = varhash->hh.next)
+  {
+    data = varhash->data;
+    if (data->type != ADJ_ADJOINT)
+      continue;
+
     if (data->storage.storage_memory_has_value || data->storage.storage_disk_has_value)
     {
       should_we_delete = 1;
@@ -1527,7 +1607,7 @@ int adj_forget_forward_equation_until(adj_adjointer* adjointer, int equation, in
 
   for(varhash = adjointer->varhash; varhash != NULL; varhash = varhash->hh.next)
   {
-  	data = varhash->data;
+      data = varhash->data;
     /* Only forget forward variables */
     if (data->type != ADJ_FORWARD) /* Skip adjoint or TLM variables. */
       continue;
@@ -1611,10 +1691,77 @@ int adj_forget_tlm_equation(adj_adjointer* adjointer, int equation)
 
   for(varhash = adjointer->varhash; varhash != NULL; varhash = varhash->hh.next)
   {
-	data = varhash->data;
+    data = varhash->data;
 
-    /* Only forget forward variables */
-    if (data->type != ADJ_TLM) /* Skip anything other than TLM variables.. */
+    if (data->storage.storage_memory_has_value || data->storage.storage_disk_has_value)
+    {
+      should_we_delete = 1;
+      for (i = 0; i < data->ntargeting_equations; i++)
+      {
+        /* If the variable is a target variable for one of the equations
+         * of interest then we keep it.
+         */
+        if (equation < data->targeting_equations[i])
+        {
+          should_we_delete = 0;
+          break;
+        }
+      }
+
+      for (i = 0; i < data->ndepending_equations; i++)
+      {
+        if (equation < data->depending_equations[i])
+        {
+          should_we_delete = 0;
+          break;
+        }
+      }
+
+      for (i = 0; i < data->nrhs_equations; i++)
+      {
+        if (equation < data->rhs_equations[i])
+        {
+          should_we_delete = 0;
+          break;
+        }
+      }
+
+      if (should_we_delete)
+      {
+        if (data->storage.storage_memory_has_value)
+        {
+          ierr = adj_forget_variable_value_from_memory(adjointer, data);
+          if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
+        }
+      }
+    }
+
+  }
+
+  return ADJ_OK;
+}
+
+int adj_forget_tlm_values(adj_adjointer* adjointer, int equation)
+{
+  adj_variable_hash* varhash;
+  adj_variable_data* data;
+  int should_we_delete;
+  int i;
+  int ierr;
+
+  if (adjointer->options[ADJ_ACTIVITY] == ADJ_ACTIVITY_NOTHING) return ADJ_OK;
+
+  if (equation >= adjointer->nequations)
+  {
+    strncpy(adj_error_msg, "No such equation.", ADJ_ERROR_MSG_BUF);
+    return adj_chkierr_auto(ADJ_ERR_INVALID_INPUTS);
+  }
+
+  for(varhash = adjointer->varhash; varhash != NULL; varhash = varhash->hh.next)
+  {
+    data = varhash->data;
+
+    if (data->type != ADJ_TLM)
       continue;
 
     if (data->storage.storage_memory_has_value || data->storage.storage_disk_has_value)
@@ -1664,6 +1811,7 @@ int adj_forget_tlm_equation(adj_adjointer* adjointer, int equation)
 
   return ADJ_OK;
 }
+
 int adj_find_operator_callback(adj_adjointer* adjointer, int type, char* name, void (**fn)(void))
 {
   adj_op_callback_list* cb_list_ptr;

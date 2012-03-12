@@ -36,6 +36,15 @@ else
 	PETSC_CPPFLAGS := $(PETSC_CPPFLAGS) -DHAVE_PETSC
 endif
 
+# Identify if SLEPc is installed
+ifneq (,$(SLEPC_DIR))
+	SLEPC_CPPFLAGS := -I$(SLEPC_DIR)/include -DHAVE_SLEPC
+	SLEPC_LDFLAGS  := -L$(SLEPC_DIR)/$(PETSC_ARCH)/lib -lslepc
+else
+	SLEPC_CPPFLAGS :=
+	SLEPC_LDFLAGS  :=
+endif
+
 DBGFLAGS = -g -O0
 PICFLAG = -fPIC
 
@@ -58,7 +67,7 @@ ifneq (,$(findstring icc, $(CC_VERSION)))
 	COMPILER_CFLAGS := -Wall 
 endif
 
-CFLAGS := $(CFLAGS) $(DBGFLAGS) $(PICFLAG) $(PETSC_CPPFLAGS) -Iinclude/ $(COMPILER_CFLAGS)
+CFLAGS := $(CFLAGS) $(DBGFLAGS) $(PICFLAG) $(SLEPC_CPPFLAGS) $(PETSC_CPPFLAGS) -Iinclude/ $(COMPILER_CFLAGS)
 
 ###############################################################################
 # CXX compiler variables                                                        #
@@ -78,7 +87,7 @@ ifneq (,$(findstring icpc, $(CXX_VERSION)))
 	COMPILER_CXXFLAGS := 
 endif
 
-CXXFLAGS := $(CXXFLAGS) $(DBGFLAGS) $(PICFLAG) $(PETSC_CPPFLAGS) -Iinclude/ $(COMPILER_CXXFLAGS)
+CXXFLAGS := $(CXXFLAGS) $(DBGFLAGS) $(PICFLAG) $(SLEPC_CPPFLAGS) $(PETSC_CPPFLAGS) -Iinclude/ $(COMPILER_CXXFLAGS)
 
 ###############################################################################
 # F90 compiler variables                                                      #
@@ -102,7 +111,7 @@ ifneq (,$(findstring NAG, $(FC_VERSION)))
 	COMPILER_FFLAGS = -f2003
 endif
 
-FFLAGS := $(FFLAGS) $(DBGFLAGS) $(PICFLAG) $(PETSC_CPPFLAGS) -Iinclude/ -Iinclude/libadjoint $(COMPILER_FFLAGS)
+FFLAGS := $(FFLAGS) $(DBGFLAGS) $(PICFLAG) $(SLEPC_CPPFLAGS) $(PETSC_CPPFLAGS) -Iinclude/ -Iinclude/libadjoint $(COMPILER_FFLAGS)
 
 ###############################################################################
 # Variables for make install                                                  #
@@ -138,11 +147,11 @@ all: lib/libadjoint.a lib/libadjoint.so
 
 bin/tests/%: src/tests/%.c src/tests/test_main.c lib/libadjoint.a
 	@echo "  CC $@"
-	@$(CC) $(CFLAGS) -DTESTNAME=$(notdir $@) -o $@ $< src/tests/test_main.c lib/libadjoint.a $(PETSC_LDFLAGS) $(LIBS)
+	@$(CC) $(CFLAGS) -DTESTNAME=$(notdir $@) -o $@ $< src/tests/test_main.c lib/libadjoint.a $(SLEPC_LDFLAGS) $(PETSC_LDFLAGS) $(LIBS)
 
 bin/tests/%: src/tests/%.F90 src/tests/test_main.F90 lib/libadjoint.a
 	@echo "  FC $@"
-	@$(FC) $(FFLAGS) -DTESTNAME=$(notdir $@) -o $@ $< src/tests/test_main.F90 lib/libadjoint.a $(PETSC_LDFLAGS) $(LIBS)
+	@$(FC) $(FFLAGS) -DTESTNAME=$(notdir $@) -o $@ $< src/tests/test_main.F90 lib/libadjoint.a $(SLEPC_LDFLAGS) $(PETSC_LDFLAGS) $(LIBS)
 
 bin/tests/%: src/tests/%.py pybuild
 	@echo "  PY $@"
@@ -167,7 +176,7 @@ lib/libadjoint.a: $(COBJ) $(FOBJ) $(CXXOBJ)
 
 lib/libadjoint.so: $(COBJ) $(FOBJ) $(CXXOBJ) 
 	@echo "  LD $@"
-	@$(LD) $(LDFLAGS) -o $@ $(FOBJ) $(COBJ) $(CXXOBJ) $(PETSC_LDFLAGS) $(LIBS)
+	@$(LD) $(LDFLAGS) -o $@ $(FOBJ) $(COBJ) $(CXXOBJ) $(SLEPC_LDFLAGS) $(PETSC_LDFLAGS) $(LIBS)
 
 clean:
 	@rm -f obj/*.o

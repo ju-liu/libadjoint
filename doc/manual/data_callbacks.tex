@@ -247,7 +247,7 @@ When necessary: always.
 \end{fortrancode}
 \end{minipage}
 \end{boxwithtitle}
-This data callback sets a given \refapi{adj_vector} from an array
+This data callback sets the local degrees of freedom of an \refapi{adj_vector} from an array
 of \texttt{adj_scalar}s. The length of the array is the output of
 the \refapi{ADJ_VEC_GET_SIZE_CB} data callback.
 
@@ -267,9 +267,7 @@ is activated on an \refapi{adj_nonlinear_block} with \refapi{adj_nonlinear_block
 \end{fortrancode}
 \end{minipage}
 \end{boxwithtitle}
-This data callback returns the number of degrees of freedom in a given \refapi{adj_vector}. The
-vector space of all such \refapi{adj_vector}s should be isomorphic to $\mathbb{R}^n$ for some $n$;
-this callback returns $n$.
+This data callback returns the (local) number of degrees of freedom in a given \refapi{adj_vector}.
 
 When necessary: this data callback is necessary when the derivative test flag
 is activated on an \refapi{adj_nonlinear_block} with \refapi{adj_nonlinear_block_set_test_derivative}.

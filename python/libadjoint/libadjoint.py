@@ -625,6 +625,7 @@ class Adjointer(object):
     self.vec_dot_product_type = ctypes.CFUNCTYPE(None, clib.adj_vector, clib.adj_vector, ctypes.POINTER(adj_scalar))
     self.vec_set_random_type = ctypes.CFUNCTYPE(None, ctypes.POINTER(clib.adj_vector))
     self.vec_set_values_type = ctypes.CFUNCTYPE(None, ctypes.POINTER(clib.adj_vector), ctypes.POINTER(adj_scalar))
+    self.vec_get_values_type = ctypes.CFUNCTYPE(None, clib.adj_vector, ctypes.POINTER(ctypes.POINTER(adj_scalar)))
     self.vec_get_size_type = ctypes.CFUNCTYPE(None, clib.adj_vector, ctypes.POINTER(ctypes.c_int))
     self.vec_write_type = ctypes.CFUNCTYPE(None, clib.adj_variable, clib.adj_vector)
     self.vec_read_type = ctypes.CFUNCTYPE(None, clib.adj_variable, ctypes.POINTER(clib.adj_vector))
@@ -653,6 +654,9 @@ class Adjointer(object):
   def __del__(self):
     if self.adjointer_created:
       clib.adj_destroy_adjointer(self.adjointer)
+      if len(references_taken) != 0:
+        print "Warning: references still exist!"
+        print "References: ", references_taken
       assert len(references_taken) == 0
 
   def __getattr__(self, name):
@@ -885,6 +889,12 @@ class Adjointer(object):
   def forget_tlm_equation(self, equation):
     clib.adj_forget_tlm_equation(self.adjointer, equation)
 
+  def forget_adjoint_values(self, equation):
+    clib.adj_forget_adjoint_values(self.adjointer, equation)
+
+  def forget_tlm_values(self, equation):
+    clib.adj_forget_tlm_values(self.adjointer, equation)
+
   def __register_data_callbacks__(self):
     self.__register_data_callback__('ADJ_VEC_DUPLICATE_CB', self.__vec_duplicate_callback__)
     self.__register_data_callback__('ADJ_VEC_DESTROY_CB', self.__vec_destroy_callback__)
@@ -893,6 +903,7 @@ class Adjointer(object):
     self.__register_data_callback__('ADJ_VEC_DOT_PRODUCT_CB', self.__vec_dot_callback__)
     self.__register_data_callback__('ADJ_VEC_SET_RANDOM_CB', self.__vec_set_random_callback__)
     self.__register_data_callback__('ADJ_VEC_SET_VALUES_CB', self.__vec_set_values_callback__)
+    self.__register_data_callback__('ADJ_VEC_GET_VALUES_CB', self.__vec_get_values_callback__)
     self.__register_data_callback__('ADJ_VEC_GET_SIZE_CB', self.__vec_get_size_callback__)
     self.__register_data_callback__('ADJ_VEC_WRITE_CB', self.__vec_write_callback__)
     self.__register_data_callback__('ADJ_VEC_READ_CB', self.__vec_read_callback__)
@@ -938,6 +949,7 @@ class Adjointer(object):
                    'ADJ_VEC_DOT_PRODUCT_CB': self.vec_dot_product_type,
                    'ADJ_VEC_SET_RANDOM_CB': self.vec_set_random_type,
                    'ADJ_VEC_SET_VALUES_CB': self.vec_set_values_type,
+                   'ADJ_VEC_GET_VALUES_CB': self.vec_get_values_type,
                    'ADJ_VEC_GET_SIZE_CB': self.vec_get_size_type,
                    'ADJ_VEC_WRITE_CB': self.vec_write_type,
                    'ADJ_VEC_READ_CB': self.vec_read_type,
@@ -1144,6 +1156,18 @@ class Adjointer(object):
     y.set_values(numpy.array(nparray))
 
   @staticmethod
+  def __vec_get_values_callback__(adj_vec, values_ptr):
+    import numpy
+    y = vector(adj_vec)
+
+    sz = y.size()
+    nparray = numpy.zeros(sz)
+    y.get_values(nparray)
+
+    for i in range(sz):
+      values_ptr[0][i] = nparray[i]
+
+  @staticmethod
   def __vec_get_size_callback__(adj_vec, sz):
     y = vector(adj_vec)
     sz[0] = y.size()
@@ -1212,6 +1236,29 @@ class Adjointer(object):
     adj_soln_ptr[0].klass = 0
     adj_soln_ptr[0].flags = 0
 
+  def compute_tlm_svd(self, ic, final, nsv):
+    '''Computes the singular value decomposition of the propagator.
+    The propagator is the operator that maps
+    (perturbations in the initial condition)
+    to
+    (perturbations in the final state)
+    in a linear manner. Essentially, the propagator is the inverse
+    of the tangent linear model.
+
+    The singular value decomposition of the propagator is the basic
+    tool in generalised stability and predictability analysis; see
+    ``Atmospheric Modelling, Data Assimilation and Predictability''
+    by E. Kalnay, chapter 6.
+
+    ic -- an adj_variable corresponding to the initial condition
+    final -- an adj_variable corresponding to the final condition
+    nsv -- number of singular vectors to compute.'''
+
+    handle = clib.adj_svd()
+    ncv = ctypes.c_int()
+    clib.adj_compute_tlm_svd(self.adjointer, ic.var, final.var, nsv, handle, ncv)
+    return SVDHandle(handle, ncv)
+
 class LinAlg(object):
   '''Base class for adjoint vector or matrix objects. In libadjoint,
   the operations performed on these are quite similar, so the common ones
@@ -1250,6 +1297,15 @@ class Vector(LinAlg):
 
     raise exceptions.LibadjointErrorNeedCallback(
       'Class '+self.__class__.__name__+' has no set_values(scalars) method')
+
+  def set_values(self, scalars):
+    '''set_values(self, scalars)
+
+    This method must set the value of scalars to that given by the local degrees of freedom
+    of the Vector.'''
+
+    raise exceptions.LibadjointErrorNeedCallback(
+      'Class '+self.__class__.__name__+' has no get_values(scalars) method')
 
   def size(self):
     '''size(self)
@@ -1343,20 +1399,50 @@ def matrix(adj_matrix):
 
   return python_utils.c_deref(adj_matrix.ptr)
 
-# class Time(object):
-#   def __init__(self, time=0.0, timestep=0, iteration=0):
+class SVDHandle(object):
+  '''An object that wraps the result of a singular value decomposition.
+     Request the computed singular values with get_svd.'''
+  def __init__(self, handle, ncv):
+    self.handle = handle
+    self.ncv = ncv.value
+    self.allocated = True
 
-#     '''Time at the start of each timestep.'''
-#     self.times=[time]
+  def __del__(self):
+    self.destroy()
 
-#     self.timestep=timestep
-#     self.iteration=iteration
+  def get_svd(self, i, return_vectors=False, return_error=False):
+    if return_vectors:
+      u = clib.adj_vector()
+      v = clib.adj_vector()
+    else:
+      u = None
+      v = None
 
-#   def new_timestep(time=None, timestep=None, iteration=None):
-#     '''Update time object for a new timestep.'''
+    if return_error:
+      error = adj_scalar()
+    else:
+      error = None
 
-# class TimeStep(object):
-#     def __init__(self, time, time_offset, iteration_offset):
+    sigma = adj_scalar()
 
-#       if not isinstance(time, Time):
-#         raise TypeError("time must be an instance of class Time")
+    clib.adj_get_svd(self.handle, i, sigma, u, v, error)
+
+    retval = [sigma.value]
+    if return_vectors:
+      u_vec = vector(u)
+      v_vec = vector(v)
+      references_taken.remove(u_vec)
+      references_taken.remove(v_vec)
+      retval += [u_vec, v_vec]
+    if return_error:
+      retval += [error.value]
+
+    if len(retval) == 1:
+      retval = retval[0]
+
+    return retval
+
+  def destroy(self):
+    if self.allocated:
+      clib.adj_destroy_svd(self.handle)
+      self.allocated = False

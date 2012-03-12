@@ -274,7 +274,7 @@ void petsc_mat_destroy_proc(adj_matrix *mat)
 void petsc_vec_getsize_proc(adj_vector vec, int *sz)
 {
 #ifdef HAVE_PETSC
-  VecGetSize(*(Vec*) vec.ptr, sz);
+  VecGetLocalSize(*(Vec*) vec.ptr, sz);
 #else
   (void) vec;
   (void) sz;
