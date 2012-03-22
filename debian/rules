@@ -13,7 +13,7 @@ export PETSC_ARCH=linux-gnu-c-opt
 export SLEPC_DIR=/usr/lib/slepc
 export prefix=/usr
 export DEB_BUILD_OPTIONS=nostrip
-export PERL5LIB=`pwd`/debian/perl
+export PERL5LIB=$(shell pwd)/debian/perl
 
 export PYTHONPATH=
 export LIBADJOINT_PYTHON_INSTALL_ARGS=--install-layout=deb
