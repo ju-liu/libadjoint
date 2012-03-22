@@ -155,8 +155,8 @@ LDFLAGS := -lstdc++ -shared -Wl,-soname,libadjoint.so
 ###############################################################################
 # Variables for the python bindings                                           #
 ###############################################################################
-H2XML = $(shell which h2xml 2>/dev/null)
-XML2PY = $(shell which xml2py 2>/dev/null)
+H2XML = python/ctypeslib/scripts/h2xml.py
+XML2PY = python/ctypeslib/scripts/xml2py.py
 PYDIR = $(shell python -c  "import distutils.sysconfig; print distutils.sysconfig.get_python_lib().replace('/usr/', '$(DESTDIR)/$(prefix)/')")
 
 ###############################################################################
