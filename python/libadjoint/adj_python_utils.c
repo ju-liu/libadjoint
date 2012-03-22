@@ -1,4 +1,4 @@
-#include <python2.7/Python.h>
+#include <Python.h>
 
 //static PyObject * incref(PyObject *self, PyObject *args)
 //{
