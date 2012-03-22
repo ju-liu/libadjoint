@@ -5,7 +5,7 @@ python_utils=Extension("libadjoint.python_utils",
                        )
 
 setup (name = 'libadjoint',
-       version = '0.1',
+       version = '0.9',
        description = 'libadjoint python bindings',
        author = 'The libadjoint team',
        author_email = 'patrick.farrell06@imperial.ac.uk',
