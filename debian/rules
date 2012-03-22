@@ -26,8 +26,13 @@ ifeq ($(shell lsb_release -c | awk '{print $$NF}'),maverick)
 export FC=gfortran-4.5
 endif
 
+PYSUPPORT := python2
+ifneq (,$(findstring lucid, $(shell lsb_release -c)))
+	PYSUPPORT := python_central
+endif
+
 %:
-	dh --with=python_central $@ 
+	dh --with=$(PYSUPPORT) $@ 
 
 override_dh_auto_test:
 	true
