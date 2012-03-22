@@ -3,8 +3,15 @@
 int adj_compute_tlm_svd(adj_adjointer* adjointer, adj_variable ic, adj_variable final, int nsv, adj_svd* svd_handle, int* ncv)
 {
 #ifndef HAVE_SLEPC
+  (void) adjointer;
+  (void) ic;
+  (void) final;
+  (void) nsv;
+  (void) svd_handle;
+  (void) ncv;
+
   snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "In order to compute the SVD of your TLM, you need to compile with SLEPc support.");
-  *svd_handle = NULL;
+  svd_handle = (adj_svd*) NULL;
   return ADJ_ERR_INVALID_INPUTS;
 #else
   SVD *svd;
@@ -109,8 +116,14 @@ int adj_compute_tlm_svd(adj_adjointer* adjointer, adj_variable ic, adj_variable 
 int adj_get_svd(adj_svd* svd_handle, int i, adj_scalar* sigma, adj_vector* u, adj_vector* v, adj_scalar* error)
 {
 #ifndef HAVE_SLEPC
+  (void) i;
+  (void) sigma;
+  (void) u;
+  (void) v;
+  (void) error;
+
   snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "In order to fetch SVDs, you need to compile with SLEPc support.");
-  *svd_handle = NULL;
+  svd_handle = (adj_svd*) NULL;
   return ADJ_ERR_INVALID_INPUTS;
 #else
 
@@ -191,7 +204,7 @@ int adj_destroy_svd(adj_svd* svd_handle)
 {
 #ifndef HAVE_SLEPC
   snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "In order to destroy SVD objects, you need to compile with SLEPc support.");
-  *svd_handle = NULL;
+  svd_handle = (adj_svd*) NULL;
   return ADJ_ERR_INVALID_INPUTS;
 #else
   int ierr;
