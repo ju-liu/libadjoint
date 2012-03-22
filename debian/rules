@@ -17,8 +17,6 @@ export PETSC_ARCH=linux-gnu-c-opt
 export SLEPC_DIR=/usr/lib/slepc
 export prefix=/usr
 export DEB_BUILD_OPTIONS=nostrip
-export PERL5LIB=$(shell pwd)/debian/perl
-export PATH:=$(PATH):$(shell pwd)/debian/perl
 
 export PYTHONPATH=
 export LIBADJOINT_PYTHON_INSTALL_ARGS=--install-layout=deb
@@ -29,7 +27,7 @@ export FC=gfortran-4.5
 endif
 
 %:
-	dh --with=python2 $@ 
+	dh --with=python_central $@ 
 
 override_dh_auto_test:
 	true
