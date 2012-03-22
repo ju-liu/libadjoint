@@ -8,7 +8,11 @@
 
 # Uncomment this to turn on verbose mode.
 export DH_VERBOSE=1
+ifneq (,$(findstring lucid, $(shell lsb_release -c)))
+export PETSC_DIR=/usr/lib/petscdir/3.0.0
+else
 export PETSC_DIR=/usr/lib/petscdir/3.1
+endif
 export PETSC_ARCH=linux-gnu-c-opt
 export SLEPC_DIR=/usr/lib/slepc
 export prefix=/usr
@@ -23,7 +27,7 @@ export FC=gfortran-4.5
 endif
 
 %:
-	dh --with=python2 $@ 
+	dh --with=python_central $@ 
 
 override_dh_auto_test:
 	true

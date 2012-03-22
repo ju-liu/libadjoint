@@ -155,6 +155,7 @@ LDFLAGS := -lstdc++ -shared -Wl,-soname,libadjoint.so
 ###############################################################################
 # Variables for the python bindings                                           #
 ###############################################################################
+GCCXML = $(shell which gccxml)
 H2XML = python/ctypeslib/scripts/h2xml.py
 XML2PY = python/ctypeslib/scripts/xml2py.py
 PYDIR = $(shell python -c  "import distutils.sysconfig; print distutils.sysconfig.get_python_lib().replace('/usr/', '$(DESTDIR)/$(prefix)/')")
@@ -239,7 +240,7 @@ else
 compiled_tests: $(CTEST)
 endif
 
-ifneq (,$(H2XML))
+ifneq (,$(GCCXML))
 test: compiled_tests $(PTEST) pybuild
 else
 test: compiled_tests
@@ -275,7 +276,7 @@ tags: $(FSRC) $(CSRC)
 	@$(CTAGS) src/*.c src/*.F90
 endif
 
-ifneq (,$(H2XML))
+ifneq (,$(GCCXML))
 python: python/libadjoint/clibadjoint.py python/libadjoint/clibadjoint_constants.py
 all: python
 test: python
@@ -300,7 +301,7 @@ install: lib/libadjoint.a lib/libadjoint.so
 	@install -d $(DESTDIR)/$(prefix)/lib
 	@install lib/libadjoint.a $(DESTDIR)/$(prefix)/lib
 	@install lib/libadjoint.so $(DESTDIR)/$(prefix)/lib
-ifneq (,$(H2XML))
+ifneq (,$(GCCXML))
 	@echo "  INSTALL $(PYDIR)"
 ifeq ($(LIBADJOINT_BUILDING_DEBIAN),yes)
 	@cd python; for PYTHON in $(shell pyversions -r); do echo $$PYTHON; $$PYTHON setup.py install --prefix=$(DESTDIR)/$(prefix) $(LIBADJOINT_PYTHON_INSTALL_ARGS); done
