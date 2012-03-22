@@ -60,7 +60,7 @@ endif
 CC_VERSION = $(shell $(CC) --version 2>&1) $(shell $(CC) -V 2>&1)
 ifneq (,$(findstring gcc, $(CC_VERSION)))
 	# gcc-specific settings here
-	COMPILER_CFLAGS := -Wall -Wextra -Wunused-parameter -Wunused-result -Wunsafe-loop-optimizations -Wpointer-arith -Wstrict-prototypes -ggdb3 -fstack-protector-all
+	COMPILER_CFLAGS := -Wall -Wextra -Wunused-parameter -Wunused-result -Wunsafe-loop-optimizations -Wpointer-arith -Wstrict-prototypes -ggdb3 -fstack-protector-all -lstdc++
 endif
 ifneq (,$(findstring icc, $(CC_VERSION)))
 	# icc-specific settings here
@@ -94,21 +94,35 @@ CXXFLAGS := $(CXXFLAGS) $(DBGFLAGS) $(PICFLAG) $(SLEPC_CPPFLAGS) $(PETSC_CPPFLAG
 ###############################################################################
 # Identify Fortran compiler
 ifeq ($(origin FC),default)
+  ifneq ($(shell which mpif90),)
 	FC := mpif90
+  else
+    FC :=
+  endif
 endif
 
 # Compiler-specific stuff here
-FC_VERSION = $(shell $(FC) --version 2>&1) $(shell $(FC) -V 2>&1)
+COMPILER_FFLAGS := 
+ifneq (,$(FC))
+FC_VERSION := $(shell $(FC) --version 2>&1) $(shell $(FC) -V 2>&1)
+else
+FC_VERSION := 
+endif
+
 ifneq (,$(findstring GNU Fortran, $(FC_VERSION)))
 	# gfortran-specific settings here
+        COMPILER_FFLAGS := $(COMPILER_FFLAGS) -lstdc++
+        ifneq (,$(findstring 4.4, $(FC_VERSION)))
+                FC :=
+        endif
 	ifneq (,$(findstring 4.6, $(FC_VERSION)))
-		COMPILER_FFLAGS = -fno-whole-file
+		COMPILER_FFLAGS := $(COMPILER_FFLAGS) -fno-whole-file
 	endif
 endif
 
 ifneq (,$(findstring NAG, $(FC_VERSION)))
 	# nag-specific settings here
-	COMPILER_FFLAGS = -f2003
+	COMPILER_FFLAGS := $(COMPILER_FFLAGS) -f2003
 endif
 
 FFLAGS := $(FFLAGS) $(DBGFLAGS) $(PICFLAG) $(SLEPC_CPPFLAGS) $(PETSC_CPPFLAGS) -Iinclude/ -Iinclude/libadjoint $(COMPILER_FFLAGS)
@@ -130,7 +144,12 @@ endif
 AR = ar
 ARFLAGS = cr
 
+ifneq (,$(FC))
 LD := $(FC)
+else
+LD := $(CXX)
+endif
+
 LDFLAGS := -lstdc++ -shared -Wl,-soname,libadjoint.so
 
 ###############################################################################
@@ -147,20 +166,24 @@ all: lib/libadjoint.a lib/libadjoint.so
 
 bin/tests/%: src/tests/%.c src/tests/test_main.c lib/libadjoint.a
 	@echo "  CC $@"
-	@$(CC) $(CFLAGS) -DTESTNAME=$(notdir $@) -o $@ $< src/tests/test_main.c lib/libadjoint.a $(SLEPC_LDFLAGS) $(PETSC_LDFLAGS) $(LIBS)
+	$(CC) $(CFLAGS) -DTESTNAME=$(notdir $@) -o $@ $< src/tests/test_main.c lib/libadjoint.a $(SLEPC_LDFLAGS) $(PETSC_LDFLAGS) $(LIBS)
 
+ifneq ($(FC),)
 bin/tests/%: src/tests/%.F90 src/tests/test_main.F90 lib/libadjoint.a
 	@echo "  FC $@"
-	@$(FC) $(FFLAGS) -DTESTNAME=$(notdir $@) -o $@ $< src/tests/test_main.F90 lib/libadjoint.a $(SLEPC_LDFLAGS) $(PETSC_LDFLAGS) $(LIBS)
+	$(FC) $(FFLAGS) -DTESTNAME=$(notdir $@) -o $@ $< src/tests/test_main.F90 lib/libadjoint.a $(SLEPC_LDFLAGS) $(PETSC_LDFLAGS) $(LIBS)
+endif
 
 bin/tests/%: src/tests/%.py pybuild
 	@echo "  PY $@"
 	@cp src/tests/$(notdir $@).py bin/tests
 
+ifneq ($(FC),)
 obj/%.o: src/%.F90
 	@echo "  FC $<"
 	@$(FC) $(FFLAGS) -c -o $@ $<
 	@mv *.mod include/libadjoint 2>/dev/null || true
+endif
 
 obj/%.o: src/%.c
 	@echo "  CC $<"
@@ -170,13 +193,19 @@ obj/%.o: src/%.cpp
 	@echo "  C++ $<"
 	@$(CXX) $(CXXFLAGS) -c -o $@ $<
 
-lib/libadjoint.a: $(COBJ) $(FOBJ) $(CXXOBJ)
-	@echo "  AR $@"
-	@$(AR) $(ARFLAGS) $@ $(FOBJ) $(COBJ) $(CXXOBJ)
+ifneq (,$(FC))
+objects: $(COBJ) $(FOBJ) $(CXXOBJ)
+else
+objects: $(COBJ) $(CXXOBJ)
+endif
 
-lib/libadjoint.so: $(COBJ) $(FOBJ) $(CXXOBJ) 
+lib/libadjoint.a: objects
+	@echo "  AR $@"
+	@$(AR) $(ARFLAGS) $@ obj/*.o
+
+lib/libadjoint.so: objects
 	@echo "  LD $@"
-	@$(LD) $(LDFLAGS) -o $@ $(FOBJ) $(COBJ) $(CXXOBJ) $(SLEPC_LDFLAGS) $(PETSC_LDFLAGS) $(LIBS)
+	@$(LD) $(LDFLAGS) -o $@ obj/*.o $(SLEPC_LDFLAGS) $(PETSC_LDFLAGS) $(LIBS)
 
 clean:
 	@rm -f obj/*.o
@@ -204,10 +233,16 @@ clean:
 	@rm -f tags
 	@rm -f include/libadjoint/adj_constants_f.h include/libadjoint/adj_error_handling_f.h
 
-ifneq (,$(H2XML))
-test: $(FTEST) $(CTEST) $(PTEST) pybuild
+ifneq (,$(FC))
+compiled_tests: $(FTEST) $(CTEST)
 else
-test: $(FTEST) $(CTEST)
+compiled_tests: $(CTEST)
+endif
+
+ifneq (,$(H2XML))
+test: compiled_tests $(PTEST) pybuild
+else
+test: compiled_tests
 endif
 	@export PYTHONPATH=$(PWD)/python
 	@echo "  TEST bin/tests"

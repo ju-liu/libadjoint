@@ -5,7 +5,7 @@
 #include <string.h>
 
 #ifndef HAVE_PETSC
-void test_adj_evaluate_block_action(void)
+void test_adj_test_action_transpose(void)
 {
   adj_test_assert(1 == 1, "Don't have PETSc so can't run this test.");
 }

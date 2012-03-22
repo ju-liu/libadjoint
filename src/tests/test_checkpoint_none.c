@@ -5,7 +5,7 @@
 #include "libadjoint/adj_core.h"
 
 #ifndef HAVE_PETSC
-void test_adj_forget_adjoint_equation(void)
+void test_checkpoint_none(void)
 {
   adj_test_assert(1 == 1, "Don't have PETSc so can't run this test.");
 }
