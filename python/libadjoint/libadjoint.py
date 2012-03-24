@@ -749,8 +749,10 @@ class Adjointer(object):
 
     try:
       clib.adj_record_variable(self.adjointer, var.var, storage.storage_data)
+      return True
     except exceptions.LibadjointWarnException, err:
       print err
+      return False
 
     # At this point we should also reregister the read and the delete callbacks.
     # Note that the initial callback implementation could not access
