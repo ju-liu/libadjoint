@@ -747,12 +747,12 @@ class Adjointer(object):
 
     This method records the provided variable according to the settings in storage.'''
 
+    raised_exception = False
     try:
       clib.adj_record_variable(self.adjointer, var.var, storage.storage_data)
-      return True
     except exceptions.LibadjointWarnException, err:
       print err
-      return False
+      raised_exception = True
 
     # At this point we should also reregister the read and the delete callbacks.
     # Note that the initial callback implementation could not access
@@ -772,6 +772,8 @@ class Adjointer(object):
 
     self.__register_data_callback__('ADJ_VEC_DELETE_CB', __vec_delete_callback__)
     self.__register_data_callback__('ADJ_VEC_READ_CB', __vec_read_callback__)
+
+    return not raised_exception
 
   def evaluate_functional(self, functional, timestep):
     '''evaluate_functional(self, functional, timestep)
