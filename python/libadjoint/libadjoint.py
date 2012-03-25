@@ -810,7 +810,7 @@ class Adjointer(object):
     rhs_py = python_utils.c_deref(rhs.ptr)
     references_taken.remove(rhs_py)
 
-    return (lhs_py, rhs_py)
+    return (Variable(var=fwd_var), lhs_py, rhs_py)
 
   def get_forward_solution(self, equation):
     output = clib.adj_vector()
@@ -835,7 +835,7 @@ class Adjointer(object):
     rhs_py = python_utils.c_deref(rhs.ptr)
     references_taken.remove(rhs_py)
 
-    return (lhs_py, rhs_py)
+    return (Variable(var=adj_var), lhs_py, rhs_py)
 
   def get_adjoint_solution(self, equation, functional):
 
@@ -857,14 +857,14 @@ class Adjointer(object):
 
     lhs = clib.adj_matrix()
     rhs = clib.adj_vector()
-    adj_var = clib.adj_variable()
-    clib.adj_get_tlm_equation(self.adjointer, equation, str(parameter), lhs, rhs, adj_var)
+    tlm_var = clib.adj_variable()
+    clib.adj_get_tlm_equation(self.adjointer, equation, str(parameter), lhs, rhs, tlm_var)
     lhs_py = python_utils.c_deref(lhs.ptr)
     references_taken.remove(lhs_py)
     rhs_py = python_utils.c_deref(rhs.ptr)
     references_taken.remove(rhs_py)
 
-    return (lhs_py, rhs_py)
+    return (Variable(var=tlm_var), lhs_py, rhs_py)
 
   def get_tlm_solution(self, equation, parameter):
 
