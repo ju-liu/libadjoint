@@ -463,6 +463,7 @@ int adj_html_eqn(FILE* fp, adj_adjointer* adjointer, adj_equation adj_eqn, int d
   char* row_rhs[1];
   char* desc_rhs[1];
   int col, ierr;
+  unsigned int max_desc_size = 32*ADJ_NAME_LEN; // The descriptions can become very long
 
   /* Allocate the strings for this row */
   for (i = 0; i < nb_vars; ++i)
@@ -470,13 +471,13 @@ int adj_html_eqn(FILE* fp, adj_adjointer* adjointer, adj_equation adj_eqn, int d
     row[i] = malloc(ADJ_NAME_LEN*sizeof(char));
     ADJ_CHKMALLOC(row[i]);
     row[i][0]='\0';
-    desc[i] = malloc(32*ADJ_NAME_LEN*sizeof(char));  // The description can become very long
+    desc[i] = malloc(max_desc_size*sizeof(char));  
     ADJ_CHKMALLOC(desc[i]);
     desc[i][0]='\0';
   }
   /* Allocate the strings for the rhs */
   row_rhs[0] = malloc(ADJ_NAME_LEN*sizeof(char));
-  desc_rhs[0] = malloc(32*ADJ_NAME_LEN*sizeof(char));
+  desc_rhs[0] = malloc(max_desc_size*sizeof(char));
 
   for (i = 0; i < adj_eqn.nblocks; i++)
   {
@@ -489,45 +490,45 @@ int adj_html_eqn(FILE* fp, adj_adjointer* adjointer, adj_equation adj_eqn, int d
     row[col][5]='\0';
 
     /* Fill in the description */
-    strncpy(desc[col], "Targets: ", ADJ_NAME_LEN);
-    strncat(desc[col], adj_eqn.targets[i].name, ADJ_NAME_LEN);
-    strncat(desc[col], "\nTimestep:", ADJ_NAME_LEN);
+    if (strlen(desc[col]) < max_desc_size - ADJ_NAME_LEN) strncpy(desc[col], "Targets: ", ADJ_NAME_LEN);
+    if (strlen(desc[col]) < max_desc_size - ADJ_NAME_LEN) strncat(desc[col], adj_eqn.targets[i].name, ADJ_NAME_LEN);
+    if (strlen(desc[col]) < max_desc_size - ADJ_NAME_LEN) strncat(desc[col], "\nTimestep:", ADJ_NAME_LEN);
     snprintf(buf, ADJ_NAME_LEN, "%d", adj_eqn.targets[i].timestep);
-    strncat(desc[col], buf, ADJ_NAME_LEN);
-    strncat(desc[col], "\nIteration:", ADJ_NAME_LEN);
+    if (strlen(desc[col]) < max_desc_size - ADJ_NAME_LEN) strncat(desc[col], buf, ADJ_NAME_LEN);
+    if (strlen(desc[col]) < max_desc_size - ADJ_NAME_LEN) strncat(desc[col], "\nIteration:", ADJ_NAME_LEN);
     snprintf(buf, ADJ_NAME_LEN, "%d", adj_eqn.targets[i].iteration);
-    strncat(desc[col], buf, ADJ_NAME_LEN);
+    if (strlen(desc[col]) < max_desc_size - ADJ_NAME_LEN) strncat(desc[col], buf, ADJ_NAME_LEN);
 
-    strncat(desc[col], "\n\n===== Block description =====\n\n", ADJ_NAME_LEN);
-    strncat(desc[col], adj_eqn.blocks[i].name, ADJ_NAME_LEN);
-    strncat(desc[col], "\n------------------", ADJ_NAME_LEN);
+    if (strlen(desc[col]) < max_desc_size - ADJ_NAME_LEN) strncat(desc[col], "\n\n===== Block description =====\n\n", ADJ_NAME_LEN);
+    if (strlen(desc[col]) < max_desc_size - ADJ_NAME_LEN) strncat(desc[col], adj_eqn.blocks[i].name, ADJ_NAME_LEN);
+    if (strlen(desc[col]) < max_desc_size - ADJ_NAME_LEN) strncat(desc[col], "\n------------------", ADJ_NAME_LEN);
 
-    strncat(desc[col], "\nCoefficient: ", ADJ_NAME_LEN);
+    if (strlen(desc[col]) < max_desc_size - ADJ_NAME_LEN) strncat(desc[col], "\nCoefficient: ", ADJ_NAME_LEN);
     snprintf(buf, ADJ_NAME_LEN, "%f", adj_eqn.blocks[i].coefficient);
-    strncat(desc[col], buf, ADJ_NAME_LEN);
-    strncat(desc[col], "\nHermitian: ", ADJ_NAME_LEN);
+    if (strlen(desc[col]) < max_desc_size - ADJ_NAME_LEN) strncat(desc[col], buf, ADJ_NAME_LEN);
+    if (strlen(desc[col]) < max_desc_size - ADJ_NAME_LEN) strncat(desc[col], "\nHermitian: ", ADJ_NAME_LEN);
     if (adj_eqn.blocks[i].hermitian==ADJ_TRUE)
       snprintf(buf, ADJ_NAME_LEN, "true");
     else
       snprintf(buf, ADJ_NAME_LEN, "false");
-    strncat(desc[col], buf, ADJ_NAME_LEN);
+    if (strlen(desc[col]) < max_desc_size - ADJ_NAME_LEN) strncat(desc[col], buf, ADJ_NAME_LEN);
 
     if (adj_eqn.blocks[i].has_nonlinear_block)
     {
-      strncat(desc[col], "\nNonlinear Block: ", ADJ_NAME_LEN);
-      strncat(desc[col], adj_eqn.blocks[i].nonlinear_block.name, ADJ_NAME_LEN);
-      strncat(desc[col], " Dependencies: ", ADJ_NAME_LEN);
+      if (strlen(desc[col]) < max_desc_size - ADJ_NAME_LEN) strncat(desc[col], "\nNonlinear Block: ", ADJ_NAME_LEN);
+      if (strlen(desc[col]) < max_desc_size - ADJ_NAME_LEN) strncat(desc[col], adj_eqn.blocks[i].nonlinear_block.name, ADJ_NAME_LEN);
+      if (strlen(desc[col]) < max_desc_size - ADJ_NAME_LEN) strncat(desc[col], " Dependencies: ", ADJ_NAME_LEN);
       for (k=0; k<adj_eqn.blocks[i].nonlinear_block.ndepends; k++)
       {
-        strncat(desc[col], adj_eqn.blocks[i].nonlinear_block.depends[k].name, ADJ_NAME_LEN);
-        strncat(desc[col], ":", ADJ_NAME_LEN);
+        if (strlen(desc[col]) < max_desc_size - ADJ_NAME_LEN) strncat(desc[col], adj_eqn.blocks[i].nonlinear_block.depends[k].name, ADJ_NAME_LEN);
+        if (strlen(desc[col]) < max_desc_size - ADJ_NAME_LEN) strncat(desc[col], ":", ADJ_NAME_LEN);
         snprintf(buf, ADJ_NAME_LEN, "%d", adj_eqn.blocks[i].nonlinear_block.depends[k].timestep);
-        strncat(desc[col], buf, ADJ_NAME_LEN);
-        strncat(desc[col], ":", ADJ_NAME_LEN);
+        if (strlen(desc[col]) < max_desc_size - ADJ_NAME_LEN) strncat(desc[col], buf, ADJ_NAME_LEN);
+        if (strlen(desc[col]) < max_desc_size - ADJ_NAME_LEN) strncat(desc[col], ":", ADJ_NAME_LEN);
         snprintf(buf, ADJ_NAME_LEN, "%d", adj_eqn.blocks[i].nonlinear_block.depends[k].iteration);
-        strncat(desc[col], buf, ADJ_NAME_LEN);
+        if (strlen(desc[col]) < max_desc_size - ADJ_NAME_LEN) strncat(desc[col], buf, ADJ_NAME_LEN);
         if (k!=adj_eqn.blocks[i].nonlinear_block.ndepends-1)
-          strncat(desc[col], ", ", ADJ_NAME_LEN);
+          if (strlen(desc[col]) < max_desc_size - ADJ_NAME_LEN) strncat(desc[col], ", ", ADJ_NAME_LEN);
       }
 
     }
@@ -544,15 +545,15 @@ int adj_html_eqn(FILE* fp, adj_adjointer* adjointer, adj_equation adj_eqn, int d
     strncpy(desc_rhs[0], "Dependencies: ", ADJ_NAME_LEN);
     for (i=0; i<adj_eqn.nrhsdeps; i++)
     {
-      strncat(desc_rhs[0], adj_eqn.rhsdeps[i].name, ADJ_NAME_LEN);
-      strncat(desc_rhs[0], ":", ADJ_NAME_LEN);
+      if (strlen(desc_rhs[0]) < max_desc_size - ADJ_NAME_LEN) strncat(desc_rhs[0], adj_eqn.rhsdeps[i].name, ADJ_NAME_LEN);
+      if (strlen(desc_rhs[0]) < max_desc_size - ADJ_NAME_LEN) strncat(desc_rhs[0], ":", ADJ_NAME_LEN);
       snprintf(buf, ADJ_NAME_LEN, "%d", adj_eqn.rhsdeps[i].timestep);
-      strncat(desc_rhs[0], buf, ADJ_NAME_LEN);
-      strncat(desc_rhs[0], ":", ADJ_NAME_LEN);
+      if (strlen(desc_rhs[0]) < max_desc_size - ADJ_NAME_LEN) strncat(desc_rhs[0], buf, ADJ_NAME_LEN);
+      if (strlen(desc_rhs[0]) < max_desc_size - ADJ_NAME_LEN) strncat(desc_rhs[0], ":", ADJ_NAME_LEN);
       snprintf(buf, ADJ_NAME_LEN, "%d", adj_eqn.rhsdeps[i].iteration);
-      strncat(desc_rhs[0], buf, ADJ_NAME_LEN);
+      if (strlen(desc_rhs[0]) < max_desc_size - ADJ_NAME_LEN) strncat(desc_rhs[0], buf, ADJ_NAME_LEN);
       if (i!=adj_eqn.nrhsdeps-1)
-       strncat(desc_rhs[0], ", ", ADJ_NAME_LEN);
+       if (strlen(desc_rhs[0]) < max_desc_size - ADJ_NAME_LEN) strncat(desc_rhs[0], ", ", ADJ_NAME_LEN);
     }
 
     strncpy(buf, "rhs\0", ADJ_NAME_LEN);
@@ -582,6 +583,7 @@ int adj_html_adjoint_eqn(FILE* fp, adj_adjointer* adjointer, adj_equation fwd_eq
   int col, ierr;
   adj_variable fwd_var;
   adj_variable_data *fwd_data;
+  unsigned int max_desc_size = 32*ADJ_NAME_LEN; // The descriptions can become very long
 
   /* Allocate the strings for this row */
   for (i = 0; i < nb_vars; ++i)
@@ -589,7 +591,7 @@ int adj_html_adjoint_eqn(FILE* fp, adj_adjointer* adjointer, adj_equation fwd_eq
     row[i] = malloc(ADJ_NAME_LEN*sizeof(char));
     ADJ_CHKMALLOC(row[i]);
     row[i][0]='\0';
-    desc[i] = malloc(32*ADJ_NAME_LEN*sizeof(char)); // The description can become very long
+    desc[i] = malloc(max_desc_size*sizeof(char)); // The description can become very long
     ADJ_CHKMALLOC(desc[i]);
     desc[i][0]='\0';
   }
@@ -632,47 +634,47 @@ int adj_html_adjoint_eqn(FILE* fp, adj_adjointer* adjointer, adj_equation fwd_eq
       row[col][5]='\0';
 
       /* Write the information that is displayed when hovering over the block */
-      strncpy(desc[col], "Targets: ", ADJ_NAME_LEN);
+      if (strlen(desc[col]) < max_desc_size - ADJ_NAME_LEN) strncpy(desc[col], "Targets: ", ADJ_NAME_LEN);
       adj_variable_str(other_adj_var, buf, ADJ_NAME_LEN);
-      strncat(desc[col], buf, ADJ_NAME_LEN);
-      strncat(desc[col], "\nTimestep:", ADJ_NAME_LEN);
+      if (strlen(desc[col]) < max_desc_size - ADJ_NAME_LEN) strncat(desc[col], buf, ADJ_NAME_LEN);
+      if (strlen(desc[col]) < max_desc_size - ADJ_NAME_LEN) strncat(desc[col], "\nTimestep:", ADJ_NAME_LEN);
       snprintf(buf, ADJ_NAME_LEN, "%d", other_adj_var.timestep);
-      strncat(desc[col], buf, ADJ_NAME_LEN);
-      strncat(desc[col], "\nIteration:", ADJ_NAME_LEN);
+      if (strlen(desc[col]) < max_desc_size - ADJ_NAME_LEN) strncat(desc[col], buf, ADJ_NAME_LEN);
+      if (strlen(desc[col]) < max_desc_size - ADJ_NAME_LEN) strncat(desc[col], "\nIteration:", ADJ_NAME_LEN);
       snprintf(buf, ADJ_NAME_LEN, "%d", other_adj_var.iteration);
-      strncat(desc[col], buf, ADJ_NAME_LEN);
-      strncat(desc[col], "\n\n===== Block description =====\n\n", ADJ_NAME_LEN);
+      if (strlen(desc[col]) < max_desc_size - ADJ_NAME_LEN) strncat(desc[col], buf, ADJ_NAME_LEN);
+      if (strlen(desc[col]) < max_desc_size - ADJ_NAME_LEN) strncat(desc[col], "\n\n===== Block description =====\n\n", ADJ_NAME_LEN);
 
-      strncat(desc[col], other_fwd_eqn.blocks[j].name, ADJ_NAME_LEN);
-      strncat(desc[col], "\n------------------", ADJ_NAME_LEN);
-      strncat(desc[col], "\nCoefficient: ", ADJ_NAME_LEN);
+      if (strlen(desc[col]) < max_desc_size - ADJ_NAME_LEN) strncat(desc[col], other_fwd_eqn.blocks[j].name, ADJ_NAME_LEN);
+      if (strlen(desc[col]) < max_desc_size - ADJ_NAME_LEN) strncat(desc[col], "\n------------------", ADJ_NAME_LEN);
+      if (strlen(desc[col]) < max_desc_size - ADJ_NAME_LEN) strncat(desc[col], "\nCoefficient: ", ADJ_NAME_LEN);
       snprintf(buf, ADJ_NAME_LEN, "%f", other_fwd_eqn.blocks[j].coefficient);
-      strncat(desc[col], buf, ADJ_NAME_LEN);
-      strncat(desc[col], "\nHermitian: ", ADJ_NAME_LEN);
+      if (strlen(desc[col]) < max_desc_size - ADJ_NAME_LEN) strncat(desc[col], buf, ADJ_NAME_LEN);
+      if (strlen(desc[col]) < max_desc_size - ADJ_NAME_LEN) strncat(desc[col], "\nHermitian: ", ADJ_NAME_LEN);
 
       /* We are printing the adjoint equation, therefore hermitian has to be NOT'ed */
       if (other_fwd_eqn.blocks[j].hermitian==ADJ_TRUE)
         snprintf(buf, ADJ_NAME_LEN, "false");
       else
         snprintf(buf, ADJ_NAME_LEN, "true");
-      strncat(desc[col], buf, ADJ_NAME_LEN);
+      if (strlen(desc[col]) < max_desc_size - ADJ_NAME_LEN) strncat(desc[col], buf, ADJ_NAME_LEN);
 
       if (other_fwd_eqn.blocks[j].has_nonlinear_block)
       {
-        strncat(desc[col], "\nNonlinear Block: ", ADJ_NAME_LEN);
-        strncat(desc[col], other_fwd_eqn.blocks[j].nonlinear_block.name, ADJ_NAME_LEN);
-        strncat(desc[col], " Dependencies: ", ADJ_NAME_LEN);
+        if (strlen(desc[col]) < max_desc_size - ADJ_NAME_LEN) strncat(desc[col], "\nNonlinear Block: ", ADJ_NAME_LEN);
+        if (strlen(desc[col]) < max_desc_size - ADJ_NAME_LEN) strncat(desc[col], other_fwd_eqn.blocks[j].nonlinear_block.name, ADJ_NAME_LEN);
+        if (strlen(desc[col]) < max_desc_size - ADJ_NAME_LEN) strncat(desc[col], " Dependencies: ", ADJ_NAME_LEN);
         for (k=0; k<other_fwd_eqn.blocks[j].nonlinear_block.ndepends; k++)
         {
-          strncat(desc[col], other_fwd_eqn.blocks[j].nonlinear_block.depends[k].name, ADJ_NAME_LEN);
-          strncat(desc[col], ":", ADJ_NAME_LEN);
+          if (strlen(desc[col]) < max_desc_size - ADJ_NAME_LEN) strncat(desc[col], other_fwd_eqn.blocks[j].nonlinear_block.depends[k].name, ADJ_NAME_LEN);
+          if (strlen(desc[col]) < max_desc_size - ADJ_NAME_LEN) strncat(desc[col], ":", ADJ_NAME_LEN);
           snprintf(buf, ADJ_NAME_LEN, "%d", other_fwd_eqn.blocks[j].nonlinear_block.depends[k].timestep);
-          strncat(desc[col], buf, ADJ_NAME_LEN);
-          strncat(desc[col], ":", ADJ_NAME_LEN);
+          if (strlen(desc[col]) < max_desc_size - ADJ_NAME_LEN) strncat(desc[col], buf, ADJ_NAME_LEN);
+          if (strlen(desc[col]) < max_desc_size - ADJ_NAME_LEN) strncat(desc[col], ":", ADJ_NAME_LEN);
           snprintf(buf, ADJ_NAME_LEN, "%d", other_fwd_eqn.blocks[j].nonlinear_block.depends[k].iteration);
-          strncat(desc[col], buf, ADJ_NAME_LEN);
+          if (strlen(desc[col]) < max_desc_size - ADJ_NAME_LEN) strncat(desc[col], buf, ADJ_NAME_LEN);
           if (k!=other_fwd_eqn.blocks[j].nonlinear_block.ndepends-1)
-            strncat(desc[col], ", ", ADJ_NAME_LEN);
+            if (strlen(desc[col]) < max_desc_size - ADJ_NAME_LEN) strncat(desc[col], ", ", ADJ_NAME_LEN);
         }
       }
     }
@@ -725,36 +727,36 @@ int adj_html_adjoint_eqn(FILE* fp, adj_adjointer* adjointer, adj_equation fwd_eq
                 /* ... otherwise this block contains of a sum, so lets add a plus sign
                  * to the description text
                  */
-                strncat(desc[col], "\n\n+\n\n", ADJ_NAME_LEN);
+                if (strlen(desc[col]) < max_desc_size - ADJ_NAME_LEN) strncat(desc[col], "\n\n+\n\n", ADJ_NAME_LEN);
               }
 
               /* Write the information that is displayed when hovering over the block */
-              strncat(desc[col], "Derivative of ", ADJ_NAME_LEN);
-              strncat(desc[col], depending_eqn.blocks[j].nonlinear_block.name, ADJ_NAME_LEN);
-              strncat(desc[col], "\nwith respect to ", ADJ_NAME_LEN);
+              if (strlen(desc[col]) < max_desc_size - ADJ_NAME_LEN) strncat(desc[col], "Derivative of ", ADJ_NAME_LEN);
+              if (strlen(desc[col]) < max_desc_size - ADJ_NAME_LEN) strncat(desc[col], depending_eqn.blocks[j].nonlinear_block.name, ADJ_NAME_LEN);
+              if (strlen(desc[col]) < max_desc_size - ADJ_NAME_LEN) strncat(desc[col], "\nwith respect to ", ADJ_NAME_LEN);
               adj_variable_str(fwd_var, buf, ADJ_NAME_LEN);
-              strncat(desc[col], buf, ADJ_NAME_LEN);
-              strncat(desc[col], "\ncontracted with ", ADJ_NAME_LEN);
+              if (strlen(desc[col]) < max_desc_size - ADJ_NAME_LEN) strncat(desc[col], buf, ADJ_NAME_LEN);
+              if (strlen(desc[col]) < max_desc_size - ADJ_NAME_LEN) strncat(desc[col], "\ncontracted with ", ADJ_NAME_LEN);
               adj_variable_str(depending_eqn.targets[j], buf, ADJ_NAME_LEN);
-              strncat(desc[col], buf, ADJ_NAME_LEN);
-              strncat(desc[col], "\n------------------", ADJ_NAME_LEN);
-              strncat(desc[col], "\nCoefficient: ", ADJ_NAME_LEN);
+              if (strlen(desc[col]) < max_desc_size - ADJ_NAME_LEN) strncat(desc[col], buf, ADJ_NAME_LEN);
+              if (strlen(desc[col]) < max_desc_size - ADJ_NAME_LEN) strncat(desc[col], "\n------------------", ADJ_NAME_LEN);
+              if (strlen(desc[col]) < max_desc_size - ADJ_NAME_LEN) strncat(desc[col], "\nCoefficient: ", ADJ_NAME_LEN);
               snprintf(buf, ADJ_NAME_LEN, "%f", depending_eqn.blocks[j].nonlinear_block.coefficient);
-              strncat(desc[col], buf, ADJ_NAME_LEN);
-              strncat(desc[col], "\nHermitian: true", ADJ_NAME_LEN);
-              strncat(desc[col], "\nDependencies: ", ADJ_NAME_LEN);
-             for (l=0; l<depending_eqn.blocks[j].nonlinear_block.ndepends; l++)
-             {
-               strncat(desc[col], depending_eqn.blocks[j].nonlinear_block.depends[l].name, ADJ_NAME_LEN);
-               strncat(desc[col], ":", ADJ_NAME_LEN);
-               snprintf(buf, ADJ_NAME_LEN, "%d", depending_eqn.blocks[j].nonlinear_block.depends[l].timestep);
-               strncat(desc[col], buf, ADJ_NAME_LEN);
-               strncat(desc[col], ":", ADJ_NAME_LEN);
-               snprintf(buf, ADJ_NAME_LEN, "%d", depending_eqn.blocks[j].nonlinear_block.depends[l].iteration);
-               strncat(desc[col], buf, ADJ_NAME_LEN);
-               if (l!=depending_eqn.blocks[j].nonlinear_block.ndepends-1)
-                 strncat(desc[col], ", ", ADJ_NAME_LEN);
-             }
+              if (strlen(desc[col]) < max_desc_size - ADJ_NAME_LEN) strncat(desc[col], buf, ADJ_NAME_LEN);
+              if (strlen(desc[col]) < max_desc_size - ADJ_NAME_LEN) strncat(desc[col], "\nHermitian: true", ADJ_NAME_LEN);
+              if (strlen(desc[col]) < max_desc_size - ADJ_NAME_LEN) strncat(desc[col], "\nDependencies: ", ADJ_NAME_LEN);
+              for (l=0; l<depending_eqn.blocks[j].nonlinear_block.ndepends; l++)
+              {
+                if (strlen(desc[col]) < max_desc_size - ADJ_NAME_LEN) strncat(desc[col], depending_eqn.blocks[j].nonlinear_block.depends[l].name, ADJ_NAME_LEN);
+                if (strlen(desc[col]) < max_desc_size - ADJ_NAME_LEN) strncat(desc[col], ":", ADJ_NAME_LEN);
+                snprintf(buf, ADJ_NAME_LEN, "%d", depending_eqn.blocks[j].nonlinear_block.depends[l].timestep);
+                if (strlen(desc[col]) < max_desc_size - ADJ_NAME_LEN) strncat(desc[col], buf, ADJ_NAME_LEN);
+                if (strlen(desc[col]) < max_desc_size - ADJ_NAME_LEN) strncat(desc[col], ":", ADJ_NAME_LEN);
+                snprintf(buf, ADJ_NAME_LEN, "%d", depending_eqn.blocks[j].nonlinear_block.depends[l].iteration);
+                if (strlen(desc[col]) < max_desc_size - ADJ_NAME_LEN) strncat(desc[col], buf, ADJ_NAME_LEN);
+                if (l!=depending_eqn.blocks[j].nonlinear_block.ndepends-1)
+                  if (strlen(desc[col]) < max_desc_size - ADJ_NAME_LEN) strncat(desc[col], ", ", ADJ_NAME_LEN);
+              }
             }
           }
         }
@@ -790,33 +792,33 @@ int adj_html_adjoint_eqn(FILE* fp, adj_adjointer* adjointer, adj_equation fwd_eq
           /* ... otherwise this block contains of a sum, so lets add a plus sign
            * to the description text
            */
-          strncat(desc[col], "\n\n+\n\n", ADJ_NAME_LEN);
+          if (strlen(desc[col]) < max_desc_size - ADJ_NAME_LEN) strncat(desc[col], "\n\n+\n\n", ADJ_NAME_LEN);
         }
 
         /* Write the information that is displayed when hovering over the block */
-        strncat(desc[col], "Derivative of rhs of equation targeting variable ", ADJ_NAME_LEN);
+        if (strlen(desc[col]) < max_desc_size - ADJ_NAME_LEN) strncat(desc[col], "Derivative of rhs of equation targeting variable ", ADJ_NAME_LEN);
         adj_variable_str(adjointer->equations[rhs_equation].variable, buf, ADJ_NAME_LEN);
-        strncat(desc[col], buf, ADJ_NAME_LEN);
-        strncat(desc[col], "\nwith respect to ", ADJ_NAME_LEN);
+        if (strlen(desc[col]) < max_desc_size - ADJ_NAME_LEN) strncat(desc[col], buf, ADJ_NAME_LEN);
+        if (strlen(desc[col]) < max_desc_size - ADJ_NAME_LEN) strncat(desc[col], "\nwith respect to ", ADJ_NAME_LEN);
         adj_variable_str(fwd_var, buf, ADJ_NAME_LEN);
-        strncat(desc[col], buf, ADJ_NAME_LEN);
-        strncat(desc[col], "\n------------------", ADJ_NAME_LEN);
-        strncat(desc[col], "\nCoefficient: ", ADJ_NAME_LEN);
+        if (strlen(desc[col]) < max_desc_size - ADJ_NAME_LEN) strncat(desc[col], buf, ADJ_NAME_LEN);
+        if (strlen(desc[col]) < max_desc_size - ADJ_NAME_LEN) strncat(desc[col], "\n------------------", ADJ_NAME_LEN);
+        if (strlen(desc[col]) < max_desc_size - ADJ_NAME_LEN) strncat(desc[col], "\nCoefficient: ", ADJ_NAME_LEN);
         snprintf(buf, ADJ_NAME_LEN, "%f", -1.0); /* The coefficient is always 1.0 */
-        strncat(desc[col], buf, ADJ_NAME_LEN);
-        strncat(desc[col], "\nHermitian: true", ADJ_NAME_LEN); /* The rhs contribution is always hermitian */
-        strncat(desc[col], "\nDependencies: ", ADJ_NAME_LEN);
+        if (strlen(desc[col]) < max_desc_size - ADJ_NAME_LEN) strncat(desc[col], buf, ADJ_NAME_LEN);
+        if (strlen(desc[col]) < max_desc_size - ADJ_NAME_LEN) strncat(desc[col], "\nHermitian: true", ADJ_NAME_LEN); /* The rhs contribution is always hermitian */
+        if (strlen(desc[col]) < max_desc_size - ADJ_NAME_LEN) strncat(desc[col], "\nDependencies: ", ADJ_NAME_LEN);
         for (l=0; l<adjointer->equations[rhs_equation].nrhsdeps; l++)
         {
-          strncat(desc[col], adjointer->equations[rhs_equation].rhsdeps[l].name, ADJ_NAME_LEN);
-          strncat(desc[col], ":", ADJ_NAME_LEN);
+          if (strlen(desc[col]) < max_desc_size - ADJ_NAME_LEN) strncat(desc[col], adjointer->equations[rhs_equation].rhsdeps[l].name, ADJ_NAME_LEN);
+          if (strlen(desc[col]) < max_desc_size - ADJ_NAME_LEN) strncat(desc[col], ":", ADJ_NAME_LEN);
           snprintf(buf, ADJ_NAME_LEN, "%d", adjointer->equations[rhs_equation].rhsdeps[l].timestep);
-          strncat(desc[col], buf, ADJ_NAME_LEN);
-          strncat(desc[col], ":", ADJ_NAME_LEN);
+          if (strlen(desc[col]) < max_desc_size - ADJ_NAME_LEN) strncat(desc[col], buf, ADJ_NAME_LEN);
+          if (strlen(desc[col]) < max_desc_size - ADJ_NAME_LEN) strncat(desc[col], ":", ADJ_NAME_LEN);
           snprintf(buf, ADJ_NAME_LEN, "%d", adjointer->equations[rhs_equation].rhsdeps[l].iteration);
-          strncat(desc[col], buf, ADJ_NAME_LEN);
+          if (strlen(desc[col]) < max_desc_size - ADJ_NAME_LEN) strncat(desc[col], buf, ADJ_NAME_LEN);
           if (l!=adjointer->equations[rhs_equation].nrhsdeps-1)
-            strncat(desc[col], ", ", ADJ_NAME_LEN);
+            if (strlen(desc[col]) < max_desc_size - ADJ_NAME_LEN) strncat(desc[col], ", ", ADJ_NAME_LEN);
         }
       }
     }
