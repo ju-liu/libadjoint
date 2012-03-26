@@ -1264,6 +1264,11 @@ class Adjointer(object):
     clib.adj_compute_tlm_svd(self.adjointer, ic.var, final.var, nsv, handle, ncv)
     return SVDHandle(handle, ncv)
 
+  def get_variable_value(self, var):
+    vec = clib.adj_vector()
+    clib.adj_get_variable_value(self.adjointer, var.var, vec)
+    return vector(vec)
+
 class LinAlg(object):
   '''Base class for adjoint vector or matrix objects. In libadjoint,
   the operations performed on these are quite similar, so the common ones

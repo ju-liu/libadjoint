@@ -47,6 +47,7 @@ int adj_storage_set_overwrite(adj_storage_data* data, int overwrite);
 int adj_storage_set_checkpoint(adj_storage_data* data, int checkpoint);
 
 int adj_variable_known(adj_adjointer* adjointer, adj_variable var, int* known);
+int adj_get_variable_value(adj_adjointer* adjointer, adj_variable var, adj_vector* value);
 
 #ifndef ADJ_HIDE_FROM_USER
 int adj_set_storage_memory_copy(adj_adjointer* adjointer, adj_variable* var);
@@ -61,7 +62,6 @@ int adj_find_operator_callback(adj_adjointer* adjointer, int type, char* name, v
 int adj_find_functional_callback(adj_adjointer* adjointer, char* name, void (**fn)(adj_adjointer* adjointer, int timestep, int ndepends, adj_variable* variables, adj_vector* dependencies, char* name, adj_scalar* output));
 int adj_find_functional_derivative_callback(adj_adjointer* adjointer, char* functional, void (**fn)(adj_adjointer* adjointer, adj_variable variable, int ndepends, adj_variable* variables, adj_vector* dependencies, char* name, adj_vector* output));
 int adj_find_parameter_source_callback(adj_adjointer* adjointer, char* parameter, void (**fn)(adj_adjointer* adjointer, int equation, adj_variable variable, int ndepends, adj_variable* variables, adj_vector* dependencies, char* name, adj_vector* output, int* has_output));
-int adj_get_variable_value(adj_adjointer* adjointer, adj_variable var, adj_vector* value);
 int adj_has_variable_value(adj_adjointer* adjointer, adj_variable var);
 int adj_has_variable_value_memory(adj_adjointer* adjointer, adj_variable var);
 int adj_has_variable_value_disk(adj_adjointer* adjointer, adj_variable var);
