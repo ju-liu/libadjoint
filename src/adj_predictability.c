@@ -370,9 +370,10 @@ PetscErrorCode adj_solve(Mat A, Vec x, Vec y)
   PetscFunctionReturn(1);
 }
 
-void null_tlm_source(adj_adjointer* adjointer, adj_variable derivative, int ndepends, adj_variable* variables, adj_vector* dependencies, char* name, adj_vector* output, int* has_output)
+void null_tlm_source(adj_adjointer* adjointer, int equation, adj_variable derivative, int ndepends, adj_variable* variables, adj_vector* dependencies, char* name, adj_vector* output, int* has_output)
 {
   (void) adjointer;
+  (void) equation;
   (void) derivative;
   (void) ndepends;
   (void) variables;

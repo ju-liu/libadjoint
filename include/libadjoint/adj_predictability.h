@@ -33,7 +33,7 @@ typedef struct
 #ifdef HAVE_SLEPC
 PetscErrorCode tlm_solve(Mat A, Vec x, Vec y);
 PetscErrorCode adj_solve(Mat A, Vec x, Vec y);
-void null_tlm_source(adj_adjointer* adjointer, adj_variable derivative, int ndepends, adj_variable* variables, adj_vector* dependencies, char* name, adj_vector* output, int* has_output);
+void null_tlm_source(adj_adjointer* adjointer, int equation, adj_variable derivative, int ndepends, adj_variable* variables, adj_vector* dependencies, char* name, adj_vector* output, int* has_output);
 void null_adj_source(adj_adjointer* adjointer, adj_variable derivative, int ndepends, adj_variable* variables, adj_vector* dependencies, char* name, adj_vector* output);
 #endif
 #endif

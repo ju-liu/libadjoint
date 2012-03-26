@@ -413,7 +413,7 @@ class Parameter(object):
     def cfunc(adjointer_c, equation_c, variable_c, ndepends_c, dependencies_c, values_c, name_c, output_c, has_output_c):
       # build the Python objects from the C objects
       adjointer = Adjointer(adjointer_c)
-      equation = equation_c.value
+      equation = equation_c
       variable  = Variable(var=variable_c)
       dependencies = [Variable(var=dependencies_c[i]) for i in range(ndepends_c)]
       values = [vector(values_c[i]) for i in range(ndepends_c)]
