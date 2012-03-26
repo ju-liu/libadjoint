@@ -1185,7 +1185,7 @@ int adj_get_tlm_equation(adj_adjointer* adjointer, int equation, char* parameter
     adj_vector rhs_tmp;
     int has_psrc;
     has_psrc = -666;
-    ierr = adj_evaluate_parameter_source(adjointer, fwd_var, parameter, &rhs_tmp, &has_psrc);
+    ierr = adj_evaluate_parameter_source(adjointer, equation, fwd_var, parameter, &rhs_tmp, &has_psrc);
     if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
     if (has_psrc)
     {

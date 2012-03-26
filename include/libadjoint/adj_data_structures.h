@@ -185,7 +185,7 @@ typedef struct adj_parameter_source_callback
 {
   char name[ADJ_NAME_LEN];
   /* we want this to be adj_adjointer* adjointer, but we haven't defined adj_adjointer yet */
-  void (*callback)(void* adjointer, adj_variable variable, int ndepends, adj_variable* variables, adj_vector* dependencies, char* parameter, adj_vector* output, int* has_output);
+  void (*callback)(void* adjointer, int equation, adj_variable variable, int ndepends, adj_variable* variables, adj_vector* dependencies, char* parameter, adj_vector* output, int* has_output);
   struct adj_parameter_source_callback* next;
 } adj_parameter_source_callback;
 

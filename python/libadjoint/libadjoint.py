@@ -388,7 +388,7 @@ class Parameter(object):
   def __init__(self):
     pass
 
-  def __call__(self, dependencies, values, variable):
+  def __call__(self, adjointer, equation, dependencies, values, variable):
     '''__call__(self, dependencies, values)
 
     Evaluate dF/dm associated with the equation for variable, given dependencies with values. The result must be a Vector.
@@ -410,15 +410,16 @@ class Parameter(object):
   def __cfunc_from_parameter_source__(self):
     '''Return a c-callable function wrapping the parameter source method.'''
 
-    def cfunc(adjointer_c, variable_c, ndepends_c, dependencies_c, values_c, name_c, output_c, has_output_c):
+    def cfunc(adjointer_c, equation_c, variable_c, ndepends_c, dependencies_c, values_c, name_c, output_c, has_output_c):
       # build the Python objects from the C objects
       adjointer = Adjointer(adjointer_c)
+      equation = equation_c.value
       variable  = Variable(var=variable_c)
       dependencies = [Variable(var=dependencies_c[i]) for i in range(ndepends_c)]
       values = [vector(values_c[i]) for i in range(ndepends_c)]
 
       # Now call the callback we've been given
-      output = self(dependencies, values, variable)
+      output = self(adjointer, equation, dependencies, values, variable)
 
       has_output_c[0] = (output is not None)
       output_c[0].klass = 0
@@ -430,7 +431,7 @@ class Parameter(object):
         output_c[0].ptr = python_utils.c_ptr(output)
         references_taken.append(output)
 
-    parameter_type = ctypes.CFUNCTYPE(None, ctypes.POINTER(clib.adj_adjointer), clib.adj_variable, ctypes.c_int, ctypes.POINTER(clib.adj_variable), ctypes.POINTER(clib.adj_vector), ctypes.c_char_p, ctypes.POINTER(clib.adj_vector), ctypes.POINTER(ctypes.c_int))
+    parameter_type = ctypes.CFUNCTYPE(None, ctypes.POINTER(clib.adj_adjointer), ctypes.c_int, clib.adj_variable, ctypes.c_int, ctypes.POINTER(clib.adj_variable), ctypes.POINTER(clib.adj_vector), ctypes.c_char_p, ctypes.POINTER(clib.adj_vector), ctypes.POINTER(ctypes.c_int))
     return parameter_type(cfunc)
 
 class RHS(object):

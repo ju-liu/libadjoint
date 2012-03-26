@@ -2649,7 +2649,7 @@ int adj_variable_known(adj_adjointer* adjointer, adj_variable var, int* known)
   return ADJ_OK;
 }
 
-int adj_find_parameter_source_callback(adj_adjointer* adjointer, char* parameter, void (**fn)(adj_adjointer* adjointer, adj_variable derivative, int ndepends, adj_variable* variables, adj_vector* dependencies, char* name, adj_vector* output, int* has_output))
+int adj_find_parameter_source_callback(adj_adjointer* adjointer, char* parameter, void (**fn)(adj_adjointer* adjointer, int equation, adj_variable derivative, int ndepends, adj_variable* variables, adj_vector* dependencies, char* name, adj_vector* output, int* has_output))
 {
   adj_parameter_source_callback_list* cb_list_ptr;
   adj_parameter_source_callback* cb_ptr;
@@ -2661,7 +2661,7 @@ int adj_find_parameter_source_callback(adj_adjointer* adjointer, char* parameter
   {
     if (strncmp(cb_ptr->name, parameter, ADJ_NAME_LEN) == 0)
     {
-      *fn = (void (*)(adj_adjointer* adjointer, adj_variable derivative, int ndepends, adj_variable* variables, adj_vector* dependencies, char* name, adj_vector* output, int* has_output)) cb_ptr->callback;
+      *fn = (void (*)(adj_adjointer* adjointer, int equation, adj_variable derivative, int ndepends, adj_variable* variables, adj_vector* dependencies, char* name, adj_vector* output, int* has_output)) cb_ptr->callback;
       return ADJ_OK;
     }
     cb_ptr = cb_ptr->next;
@@ -2671,7 +2671,7 @@ int adj_find_parameter_source_callback(adj_adjointer* adjointer, char* parameter
   return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
 }
 
-int adj_register_parameter_source_callback(adj_adjointer* adjointer, char* name, void (*fn)(adj_adjointer* adjointer, adj_variable variable, int ndepends, adj_variable* variables, adj_vector* dependencies, char* name, adj_vector* output, int* has_output))
+int adj_register_parameter_source_callback(adj_adjointer* adjointer, char* name, void (*fn)(adj_adjointer* adjointer, int equation, adj_variable variable, int ndepends, adj_variable* variables, adj_vector* dependencies, char* name, adj_vector* output, int* has_output))
 {
   adj_parameter_source_callback_list* cb_list_ptr;
   adj_parameter_source_callback* cb_ptr;
@@ -2686,7 +2686,7 @@ int adj_register_parameter_source_callback(adj_adjointer* adjointer, char* name,
   {
     if (strncmp(cb_ptr->name, name, ADJ_NAME_LEN) == 0)
     {
-      cb_ptr->callback = (void (*)(void* adjointer, adj_variable variable, int ndepends, adj_variable* variables, adj_vector* dependencies, char* name, adj_vector* output, int* has_output)) fn;
+      cb_ptr->callback = (void (*)(void* adjointer, int equation, adj_variable variable, int ndepends, adj_variable* variables, adj_vector* dependencies, char* name, adj_vector* output, int* has_output)) fn;
       return ADJ_OK;
     }
     cb_ptr = cb_ptr->next;
@@ -2696,7 +2696,7 @@ int adj_register_parameter_source_callback(adj_adjointer* adjointer, char* name,
   cb_ptr = (adj_parameter_source_callback*) malloc(sizeof(adj_parameter_source_callback));
   ADJ_CHKMALLOC(cb_ptr);
   strncpy(cb_ptr->name, name, ADJ_NAME_LEN);
-  cb_ptr->callback = (void (*)(void* adjointer, adj_variable variable, int ndepends, adj_variable* variables, adj_vector* dependencies, char* name, adj_vector* output, int* has_output)) fn;
+  cb_ptr->callback = (void (*)(void* adjointer, int equation, adj_variable variable, int ndepends, adj_variable* variables, adj_vector* dependencies, char* name, adj_vector* output, int* has_output)) fn;
   cb_ptr->next = NULL;
 
   /* Special case for the first callback */

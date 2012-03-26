@@ -675,11 +675,11 @@ int adj_evaluate_rhs_deriv_assembly(adj_adjointer* adjointer, adj_equation sourc
   return ADJ_OK;
 }
 
-int adj_evaluate_parameter_source(adj_adjointer* adjointer, adj_variable variable, char* parameter, adj_vector* output, int* has_output)
+int adj_evaluate_parameter_source(adj_adjointer* adjointer, int equation, adj_variable variable, char* parameter, adj_vector* output, int* has_output)
 {
   int ierr;
   int ndepends = 0;
-  void (*parameter_source_func)(adj_adjointer* adjointer, adj_variable variable, int ndepends, adj_variable* variables, adj_vector* dependencies, char* parameter, adj_vector* output, int* has_output) = NULL;
+  void (*parameter_source_func)(adj_adjointer* adjointer, int equation, adj_variable variable, int ndepends, adj_variable* variables, adj_vector* dependencies, char* parameter, adj_vector* output, int* has_output) = NULL;
   adj_vector* dependencies = NULL;
   adj_variable* variables = NULL;
 
@@ -690,7 +690,7 @@ int adj_evaluate_parameter_source(adj_adjointer* adjointer, adj_variable variabl
   /* at the moment, we assume that the parameter source has no dependencies */
 
   /* We have the right callback, so let's call it already */ 
-  parameter_source_func(adjointer, variable, ndepends, variables, dependencies, parameter, output, has_output);
+  parameter_source_func(adjointer, equation, variable, ndepends, variables, dependencies, parameter, output, has_output);
 
   return ADJ_OK;
 }

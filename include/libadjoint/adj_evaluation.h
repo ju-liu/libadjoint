@@ -23,7 +23,7 @@ int adj_evaluate_nonlinear_colouring(adj_adjointer* adjointer, adj_nonlinear_blo
     void (*nonlinear_colouring_func)(int ndepends, adj_variable* variables, adj_vector* dependencies, adj_variable derivative, void* context, int sz, int* colouring),
     int sz, int* colouring);
 int adj_evaluate_functional_derivative(adj_adjointer* adjointer, adj_variable variable, char* functional, adj_vector* output, int* has_output);
-int adj_evaluate_parameter_source(adj_adjointer* adjointer, adj_variable variable, char* parameter, adj_vector* output, int* has_output);
+int adj_evaluate_parameter_source(adj_adjointer* adjointer, int equation, adj_variable variable, char* parameter, adj_vector* output, int* has_output);
 int adj_evaluate_forward_source(adj_adjointer* adjointer, int equation, adj_vector* output, int* has_output);
 int adj_evaluate_rhs_deriv_action(adj_adjointer* adjointer, adj_equation source_eqn, adj_variable diff_var, adj_vector contraction, int hermitian, adj_vector* output, int* has_output);
 int adj_evaluate_rhs_deriv_assembly(adj_adjointer* adjointer, adj_equation source_eqn, int hermitian, adj_matrix* output);
