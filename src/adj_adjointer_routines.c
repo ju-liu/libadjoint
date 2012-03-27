@@ -1622,6 +1622,7 @@ int adj_forget_forward_equation_until(adj_adjointer* adjointer, int equation, in
       /* Check the forward equations we could explicitly compute */
       for (i = 0; i < data->ntargeting_equations; i++)
       {
+
         /* If the variable is a target variable for one of the equations
          * of interest then we keep it.
          */
@@ -1635,6 +1636,28 @@ int adj_forget_forward_equation_until(adj_adjointer* adjointer, int equation, in
       for (i = 0; i < data->ndepending_equations; i++)
       {
         if (equation < data->depending_equations[i] && data->depending_equations[i] <= last_equation)
+        {
+          should_we_delete = 0;
+          break;
+        }
+      }
+
+      for (i = 0; i < data->ndepending_timesteps; i++)
+      {
+        int timestep = data->depending_timesteps[i];
+        int max_eqn;
+        int min_eqn = adjointer->timestep_data[timestep].start_equation;
+
+        if (timestep == adjointer->ntimesteps - 1)
+        {
+          max_eqn = adjointer->nequations;
+        }
+        else
+        {
+          max_eqn  = adjointer->timestep_data[timestep+1].start_equation - 1;
+        }
+
+        if (equation <= max_eqn && min_eqn <= last_equation )
         {
           should_we_delete = 0;
           break;
@@ -2355,7 +2378,7 @@ int adj_timestep_set_times(adj_adjointer* adjointer, int timestep, adj_scalar st
     return adj_chkierr_auto(ADJ_ERR_INVALID_INPUTS);
   }
 
-  if (end <= start)
+  if (end < start)
   {
     strncpy(adj_error_msg, "End time cannot be less than start time.", ADJ_ERROR_MSG_BUF);
     return adj_chkierr_auto(ADJ_ERR_INVALID_INPUTS);
