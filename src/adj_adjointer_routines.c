@@ -1609,7 +1609,8 @@ int adj_forget_forward_equation_until(adj_adjointer* adjointer, int equation, in
   {
       data = varhash->data;
     /* Only forget forward variables */
-    if (data->type != ADJ_FORWARD) /* Skip adjoint or TLM variables. */
+    /* FIXME: should this forget auxiliary forward variables too? */
+    if (data->type != ADJ_FORWARD || data->equation < 0) /* Skip adjoint or TLM variables. */
       continue;
 
     /* Only forget forward variables that are computed at equations <= equation */
