@@ -317,7 +317,7 @@ class Functional(object):
   def __init__(self):
     pass
 
-  def __call__(self, dependencies, values):
+  def __call__(self, adjointer, dependencies, values):
     '''__call__(self, dependencies, values)
 
     Evaluate functional given dependencies with values. The result must be a scalar.
@@ -329,7 +329,7 @@ class Functional(object):
 
     return hex(id(self))
 
-  def derivative(self, variable, dependencies, values):
+  def derivative(self, adjointer, variable, dependencies, values):
     '''derivative(self, variable, dependencies, values)
 
     Evaluate the derivative of the functional with respect to variable given dependencies with values. The result will be a Vector.
@@ -355,7 +355,7 @@ class Functional(object):
       values = [vector(values_c[i]) for i in range(ndepends_c)]
 
       # Now call the callback we've been given
-      output = self.derivative(variable, dependencies, values)
+      output = self.derivative(adjointer, variable, dependencies, values)
 
       # Now cast the outputs back to C
       output_c[0].klass = 0
