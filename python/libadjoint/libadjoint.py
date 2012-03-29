@@ -374,6 +374,7 @@ class Functional(object):
 
     def cfunc(adjointer_c, timestep, ndepends_c, dependencies_c, values_c, name_c, output_c):
       # build the Python objects from the C objects
+      adjointer = Adjointer(adjointer_c)
       dependencies = [Variable(var=dependencies_c[i]) for i in range(ndepends_c)]
       values = [vector(values_c[i]) for i in range(ndepends_c)]
 
