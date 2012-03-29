@@ -378,7 +378,7 @@ class Functional(object):
       values = [vector(values_c[i]) for i in range(ndepends_c)]
 
       # Now call the callback we've been given
-      output_c[0] = self(dependencies, values)
+      output_c[0] = self(adjointer, dependencies, values)
 
     functional_type = ctypes.CFUNCTYPE(None, ctypes.POINTER(clib.adj_adjointer), ctypes.c_int, ctypes.c_int, ctypes.POINTER(clib.adj_variable), ctypes.POINTER(clib.adj_vector), ctypes.c_char_p, ctypes.POINTER(ctypes.c_double))
     return functional_type(cfunc)
