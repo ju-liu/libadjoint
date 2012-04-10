@@ -114,6 +114,8 @@ class NonlinearBlock(object):
     clib.adj_nonlinear_block_set_test_hermitian(self.nblock, 1, number_of_tests, tolerance)
 
   def set_test_derivative(self, number_of_rounds):
+    if number_of_rounds is True:
+      number_of_rounds = 5 # default
     clib.adj_nonlinear_block_set_test_derivative(self.nblock, 1, number_of_rounds)
 
 class Block(object):
