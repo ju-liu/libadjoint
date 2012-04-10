@@ -461,6 +461,11 @@ int adj_test_nonlinear_derivative_action_consistency(adj_adjointer* adjointer, a
 
     adjointer->callbacks.vec_axpy(&perturbed_output, (adj_scalar) -1.0, original_output);
     adjointer->callbacks.vec_get_norm(perturbed_output, &fd_errors[i]);
+    if (isnan(fd_errors[i]))
+    {
+      snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "A norm during the derivative test returned NaN.");
+      return adj_chkierr_auto(ADJ_ERR_INVALID_INPUTS);
+    }
 
     adjointer->callbacks.vec_duplicate(original_output, &gradient);
     ierr = adj_evaluate_nonlinear_derivative_action(adjointer, 1, &nonlinear_block_derivative, dependency_perturbation, &gradient);
@@ -468,6 +473,11 @@ int adj_test_nonlinear_derivative_action_consistency(adj_adjointer* adjointer, a
     adjointer->callbacks.vec_destroy(&gradient);
 
     adjointer->callbacks.vec_get_norm(perturbed_output, &grad_errors[i]);
+    if (isnan(grad_errors[i]))
+    {
+      snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "A norm during the derivative test returned NaN.");
+      return adj_chkierr_auto(ADJ_ERR_INVALID_INPUTS);
+    }
     adjointer->callbacks.vec_destroy(&perturbed_output);
   }
 
