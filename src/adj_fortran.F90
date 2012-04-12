@@ -1123,7 +1123,7 @@ module libadjoint
       integer(kind=c_int) :: ierr
     end function adj_variable_known_c
 
-    function adj_compute_tlm_svd(adjointer, ic, final, nsv, svd_handle, ncv) result(ierr) bind(c, name='adj_compute_tlm_svd')
+    function adj_compute_propagator_svd(adjointer, ic, final, nsv, svd_handle, ncv) result(ierr) bind(c, name='adj_compute_propagator_svd')
       use libadjoint_data_structures
       use iso_c_binding
       type(adj_adjointer), intent(inout) :: adjointer
@@ -1133,7 +1133,7 @@ module libadjoint
       type(adj_svd), intent(out) :: svd_handle
       integer(kind=c_int), intent(out) :: ncv
       integer(kind=c_int) :: ierr
-    end function adj_compute_tlm_svd
+    end function adj_compute_propagator_svd
 
     function adj_get_svd_c(svd_handle, i, sigma, u, v, error) result(ierr) bind(c, name='adj_get_svd')
       use libadjoint_data_structures

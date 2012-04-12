@@ -1,6 +1,6 @@
 #include "libadjoint/adj_predictability.h"
 
-int adj_compute_tlm_svd(adj_adjointer* adjointer, adj_variable ic, adj_variable final, int nsv, adj_svd* svd_handle, int* ncv)
+int adj_compute_propagator_svd(adj_adjointer* adjointer, adj_variable ic, adj_variable final, int nsv, adj_svd* svd_handle, int* ncv)
 {
 #ifndef HAVE_SLEPC
   (void) adjointer;
@@ -10,7 +10,7 @@ int adj_compute_tlm_svd(adj_adjointer* adjointer, adj_variable ic, adj_variable 
   (void) svd_handle;
   (void) ncv;
 
-  snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "In order to compute the SVD of your TLM, you need to compile with SLEPc support.");
+  snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "In order to compute an SVD, you need to compile with SLEPc support.");
   svd_handle = (adj_svd*) NULL;
   return ADJ_ERR_INVALID_INPUTS;
 #else

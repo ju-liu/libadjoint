@@ -1244,7 +1244,7 @@ class Adjointer(object):
     adj_soln_ptr[0].klass = 0
     adj_soln_ptr[0].flags = 0
 
-  def compute_tlm_svd(self, ic, final, nsv):
+  def compute_propagator_svd(self, ic, final, nsv):
     '''Computes the singular value decomposition of the propagator.
     The propagator is the operator that maps
     (perturbations in the initial condition)
@@ -1264,7 +1264,7 @@ class Adjointer(object):
 
     handle = clib.adj_svd()
     ncv = ctypes.c_int()
-    clib.adj_compute_tlm_svd(self.adjointer, ic.var, final.var, nsv, handle, ncv)
+    clib.adj_compute_propagator_svd(self.adjointer, ic.var, final.var, nsv, handle, ncv)
     return SVDHandle(handle, ncv)
 
   def get_variable_value(self, var):

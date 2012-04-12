@@ -18,7 +18,7 @@ typedef struct
   void* svd_data;
 } adj_svd;
 
-int adj_compute_tlm_svd(adj_adjointer* adjointer, adj_variable ic, adj_variable final, int nsv, adj_svd* svd_handle, int* ncv);
+int adj_compute_propagator_svd(adj_adjointer* adjointer, adj_variable ic, adj_variable final, int nsv, adj_svd* svd_handle, int* ncv);
 int adj_get_svd(adj_svd* svd_handle, int i, adj_scalar* sigma, adj_vector* u, adj_vector* v, adj_scalar* error);
 int adj_destroy_svd(adj_svd* svd_handle);
 
