@@ -81,6 +81,22 @@ class Variable(object):
     else:
       return (clib.adj_variable_equal(self.var, other.var, 1)==1)
 
+  def to_adjoint(self, functional):
+    adj_var = Variable(self.name, self.timestep, self.iteration)
+    adj_var.c_object.type = int(constants.adj_constants['ADJ_ADJOINT'])
+    adj_var.c_object.functional = str(functional)
+    return adj_var
+
+  def to_tlm(self, parameter):
+    tlm_var = Variable(self.name, self.timestep, self.iteration)
+    tlm_var.c_object.type = int(constants.adj_constants['ADJ_TLM'])
+    tlm_var.c_object.functional = str(parameter)
+    return tlm_var
+
+  def to_forward(self):
+    fwd_var = Variable(self.name, self.timestep, self.iteration)
+    return fwd_var
+
 class NonlinearBlock(object):
   def __init__(self, name, dependencies, context=None, coefficient=None, test_hermitian=None, test_derivative=None):
     self.name = name
