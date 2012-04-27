@@ -1,3 +1,9 @@
+libadjoint (0.9.1) unstable; urgency=low
+
+  * If the user passes True for test_hermitian and test_derivative, do something sensible.
+
+ -- Patrick Farrell <patrick.farrell06@imperial.ac.uk>  Fri, 27 Apr 2012 10:25:44 +0100
+
 libadjoint (0.9) unstable; urgency=low
 
   * Initial release

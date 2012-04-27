@@ -111,13 +111,20 @@ class NonlinearBlock(object):
     if coefficient is not None:
       self.set_coefficient(coefficient)
 
-    if test_hermitian is not None:
-      number_of_tests = test_hermitian[0]
-      tolerance = test_hermitian[1]
+    if test_hermitian is not None and test_hermitian is not False:
+      if test_hermitian is True:
+        number_of_tests = 10
+        tolerance = 1.0e-14
+      else:
+        number_of_tests = test_hermitian[0]
+        tolerance = test_hermitian[1]
       self.set_test_hermitian(number_of_tests, tolerance)
 
-    if test_derivative is not None:
-      number_of_rounds = test_derivative
+    if test_derivative is not None and test_derivative is not False:
+      if test_derivative is True:
+        number_of_rounds = 6
+      else:
+        number_of_rounds = test_derivative
       self.set_test_derivative(number_of_rounds)
 
   def __del__(self):
@@ -165,9 +172,13 @@ class Block(object):
     if hermitian:
       self.set_hermitian(hermitian)
 
-    if test_hermitian is not None:
-      number_of_tests = test_hermitian[0]
-      tolerance = test_hermitian[1]
+    if test_hermitian is not None and test_hermitian is not False:
+      if test_hermitian is True:
+        number_of_tests = 10
+        tolerance = 1.0e-14
+      else:
+        number_of_tests = test_hermitian[0]
+        tolerance = test_hermitian[1]
       self.set_test_hermitian(number_of_tests, tolerance)
 
   def __del__(self):
