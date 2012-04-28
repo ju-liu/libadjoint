@@ -118,17 +118,47 @@ int adj_adjointer_check_checkpoints(adj_adjointer* adjointer)
       if (eqn.memory_checkpoint == ADJ_TRUE)
         if ((adj_has_variable_value_memory(adjointer, fwd_var) != ADJ_OK) || (adj_is_variable_memory_checkpoint(adjointer, fwd_var) != ADJ_TRUE))
         {
-          char buf[255];
-          adj_variable_str(fwd_var, buf, 255);
-          snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Need a memory checkpoint of variable %s, but don't have one.", buf);
+          char buf[255], varbuf[255];
+          adj_variable_str(eqn.rhsdeps[i], buf, 255);
+          adj_variable_str(eqn.variable, varbuf, 255);
+          snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Need a memory checkpoint of variable %s for the equation for %s, but don't have one.", buf, varbuf);
           return adj_chkierr_auto(ADJ_ERR_NEED_VALUE);
         }
       if (eqn.disk_checkpoint == ADJ_TRUE)
         if ((adj_has_variable_value_disk(adjointer, fwd_var) != ADJ_OK) || (adj_is_variable_disk_checkpoint(adjointer, fwd_var) != ADJ_TRUE))
         {
-          char buf[255];
-          adj_variable_str(fwd_var, buf, 255);
-          snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Need a disk checkpoint of variable %s, but don't have one.", buf);
+          char buf[255], varbuf[255];
+          adj_variable_str(eqn.rhsdeps[i], buf, 255);
+          adj_variable_str(eqn.variable, varbuf, 255);
+          snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Need a disk checkpoint of variable %s for the equation for %s, but don't have one.", buf, varbuf);
+          return adj_chkierr_auto(ADJ_ERR_NEED_VALUE);
+        }
+    }
+
+    for (i = 0; i < eqn.nrhsdeps; i++)
+    {
+      /* Ignore self-dependency of nonlinear equations */
+      if (adj_variable_equal(&eqn.rhsdeps[i], &eqn.variable, 1))
+      {
+        continue;
+      }
+
+      if (eqn.memory_checkpoint == ADJ_TRUE)
+        if ((adj_has_variable_value_memory(adjointer, eqn.rhsdeps[i]) != ADJ_OK) || (adj_is_variable_memory_checkpoint(adjointer, eqn.rhsdeps[i]) != ADJ_TRUE))
+        {
+          char buf[255], varbuf[255];
+          adj_variable_str(eqn.rhsdeps[i], buf, 255);
+          adj_variable_str(eqn.variable, varbuf, 255);
+          snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Need a memory checkpoint of variable %s for the equation for %s, but don't have one.", buf, varbuf);
+          return adj_chkierr_auto(ADJ_ERR_NEED_VALUE);
+        }
+      if (eqn.disk_checkpoint == ADJ_TRUE)
+        if ((adj_has_variable_value_disk(adjointer, eqn.rhsdeps[i]) != ADJ_OK) || (adj_is_variable_disk_checkpoint(adjointer, eqn.rhsdeps[i]) != ADJ_TRUE))
+        {
+          char buf[255], varbuf[255];
+          adj_variable_str(eqn.rhsdeps[i], buf, 255);
+          adj_variable_str(eqn.variable, varbuf, 255);
+          snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Need a disk checkpoint of variable %s for the equation for %s, but don't have one.", buf, varbuf);
           return adj_chkierr_auto(ADJ_ERR_NEED_VALUE);
         }
     }
