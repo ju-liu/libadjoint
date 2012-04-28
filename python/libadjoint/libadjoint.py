@@ -641,6 +641,9 @@ class Adjointer(object):
   def set_revolve_debug_options(self, overwrite, comparison_tolerance):
       clib.adj_set_revolve_debug_options(self.adjointer, overwrite, comparison_tolerance)
 
+  def check_checkpoints(self):
+      clib.adj_adjointer_check_checkpoints(self.adjointer)
+
   def set_function_apis(self):
     self.block_assembly_type = ctypes.CFUNCTYPE(None, ctypes.c_int, ctypes.POINTER(clib.adj_variable), ctypes.POINTER(clib.adj_vector), ctypes.c_int, adj_scalar, ctypes.POINTER(None),
                                                 ctypes.POINTER(clib.adj_matrix), ctypes.POINTER(clib.adj_vector))
