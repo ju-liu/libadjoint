@@ -89,6 +89,7 @@ int adj_compute_propagator_svd(adj_adjointer* adjointer, adj_variable ic, adj_va
   SVDSetTransposeMode(*svd, SVD_TRANSPOSE_IMPLICIT);
   SVDSetType(*svd, SVDLANCZOS);
   SVDSetDimensions(*svd, nsv, PETSC_DECIDE, PETSC_DECIDE);
+  SVDMonitorSet(*svd, SVDMonitorAll, PETSC_NULL, PETSC_NULL);
 
   ierr = SVDSolve(*svd);
 
@@ -242,6 +243,8 @@ PetscErrorCode tlm_solve(Mat A, Vec x, Vec y)
 
   PetscFunctionBegin;
 
+  printf("Beginning tlm_solve\n");
+
   ierr = MatShellGetContext(A, (void**) &svd_data); CHKERRQ(ierr);
   adjointer = svd_data->adjointer;
   ierr = adj_equation_count(adjointer, &equation_count);
@@ -290,9 +293,13 @@ PetscErrorCode tlm_solve(Mat A, Vec x, Vec y)
     adjointer->callbacks.vec_destroy(&soln);
 
     if (return_flag) 
+    {
+      printf("Ending tlm_solve\n");
       PetscFunctionReturn(0);
+    }
   }
 
+  printf("Ending tlm_solve\n");
   PetscFunctionReturn(1);
 }
 
@@ -315,6 +322,8 @@ PetscErrorCode adj_solve(Mat A, Vec x, Vec y)
   int ierr;
 
   PetscFunctionBegin;
+
+  printf("Beginning adj_solve\n");
 
   ierr = MatShellGetContext(A, (void**) &svd_data); CHKERRQ(ierr);
   adjointer = svd_data->adjointer;
@@ -364,9 +373,13 @@ PetscErrorCode adj_solve(Mat A, Vec x, Vec y)
     adjointer->callbacks.vec_destroy(&soln);
 
     if (return_flag) 
+    {
+      printf("Ending adj_solve\n");
       PetscFunctionReturn(0);
+    }
   }
 
+  printf("Ending adj_solve\n");
   PetscFunctionReturn(1);
 }
 
