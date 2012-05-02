@@ -48,6 +48,11 @@ class Variable(object):
       self.c_object = self.var
       self.name = var.name
 
+  def copy(self):
+     ''' Creates a deep copy of the variable. '''
+     return Variable(self.var.name, self.var.timestep, self.var.iteration, self.var.auxiliary)
+
+
   def iteration_count(self, adjointer):
     '''Returns the number of iterations at the variables timestep'''
     iteration_count = ctypes.c_int()
