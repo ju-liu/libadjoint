@@ -98,14 +98,14 @@ int adj_compute_propagator_svd(adj_adjointer* adjointer, adj_variable ic, adj_va
 
   if (ierr != 0)
   {
-    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "SLEPc error from SVDSolve.");
+    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "SLEPc error from SVDSolve (ierr == %d).", ierr);
     return adj_chkierr_auto(ADJ_ERR_SLEPC_ERROR);
   }
 
   ierr = SVDGetConverged(*svd, ncv);
   if (ierr != 0)
   {
-    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "SLEPc error from SVDGetConverged.");
+    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "SLEPc error from SVDGetConverged (ierr == %d).", ierr);
     return adj_chkierr_auto(ADJ_ERR_SLEPC_ERROR);
   }
 
@@ -143,13 +143,13 @@ int adj_get_svd(adj_svd* svd_handle, int i, adj_scalar* sigma, adj_vector* u, ad
 
     /* Shut the compiler up about uninitialised variables */
     SVDGetOperator(*( (SVD*) svd_handle->svd_handle ), &A);
-    MatGetVecs(A, &u_vec, &v_vec);
+    MatGetVecs(A, &v_vec, &u_vec);
 
     ierr = SVDGetSingularTriplet(*( (SVD*) svd_handle->svd_handle ), i, sigma, u_vec, v_vec);
 
     if (ierr != 0)
     {
-      snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "SLEPc error from SVDGetSingularTriplet.");
+      snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "SLEPc error from SVDGetSingularTriplet (ierr == %d).", ierr);
       return adj_chkierr_auto(ADJ_ERR_SLEPC_ERROR);
     }
     if (isnan(*sigma))
@@ -160,7 +160,7 @@ int adj_get_svd(adj_svd* svd_handle, int i, adj_scalar* sigma, adj_vector* u, ad
 
     adjointer = ((adj_svd_data*) svd_handle->svd_data)->adjointer;
 
-    ierr = adj_get_variable_value(adjointer, ((adj_svd_data*) svd_handle->svd_data)->final, &ic_val);
+    ierr = adj_get_variable_value(adjointer, ((adj_svd_data*) svd_handle->svd_data)->ic, &ic_val);
     if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
     adjointer->callbacks.vec_duplicate(ic_val, v);
 
