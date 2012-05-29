@@ -87,8 +87,9 @@ int adj_compute_propagator_svd(adj_adjointer* adjointer, adj_variable ic, adj_va
   SVDCreate(PETSC_COMM_WORLD, svd);
   SVDSetOperator(*svd, tlm_mat);
   SVDSetTransposeMode(*svd, SVD_TRANSPOSE_IMPLICIT);
-  SVDSetType(*svd, SVDLANCZOS);
-  SVDSetDimensions(*svd, nsv, PETSC_DECIDE, PETSC_DECIDE);
+  SVDSetType(*svd, SVDTRLANCZOS);
+  SVDTRLanczosSetOneSide(*svd, PETSC_FALSE);
+  SVDSetDimensions(*svd, nsv, 3*nsv, PETSC_DECIDE);
   SVDMonitorSet(*svd, SVDMonitorAll, PETSC_NULL, PETSC_NULL);
 
   ierr = SVDSolve(*svd);
