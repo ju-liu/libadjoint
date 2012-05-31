@@ -1,4 +1,5 @@
 #include "libadjoint/adj_predictability.h"
+#define min(X, Y)  ((X) < (Y) ? (X) : (Y))
 
 int adj_compute_propagator_svd(adj_adjointer* adjointer, adj_variable ic, adj_variable final, int nsv, adj_svd* svd_handle, int* ncv)
 {
@@ -6,9 +7,9 @@ int adj_compute_propagator_svd(adj_adjointer* adjointer, adj_variable ic, adj_va
   (void) adjointer;
   (void) ic;
   (void) final;
-  (void) nsv;
+  (void) nsv; /* number of requested vectors */
   (void) svd_handle;
-  (void) ncv;
+  (void) ncv; /* number of converged vectors */
 
   snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "In order to compute an SVD, you need to compile with SLEPc support.");
   svd_handle = (adj_svd*) NULL;
@@ -21,6 +22,8 @@ int adj_compute_propagator_svd(adj_adjointer* adjointer, adj_variable ic, adj_va
   adj_vector ic_val;
   adj_vector final_val;
   int ic_dof, final_dof;
+  int global_ic_dof, global_final_dof;
+  int nwv; /* number of work vectors */
 
   strncpy(adj_error_msg, "Need the ADJ_SOLVE_CB data callback, but it hasn't been supplied.", ADJ_ERROR_MSG_BUF);
   if (adjointer->callbacks.solve == NULL) return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
@@ -71,15 +74,17 @@ int adj_compute_propagator_svd(adj_adjointer* adjointer, adj_variable ic, adj_va
   if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
   adjointer->callbacks.vec_get_size(final_val, &final_dof);
 
-  if (nsv > (ic_dof > final_dof ? final_dof : ic_dof)) /* nsv > min(ic_dof, final_dof) */
-  {
-    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Cannot request %d vectors when the matrix is %d x %d.", nsv, final_dof, ic_dof);
-    return adj_chkierr_auto(ADJ_ERR_INVALID_INPUTS);
-  }
-
   ierr = MatCreateShell(PETSC_COMM_WORLD, final_dof, ic_dof, PETSC_DETERMINE, PETSC_DETERMINE, (void*) svd_data, &tlm_mat);
   ierr = MatShellSetOperation(tlm_mat, MATOP_MULT, (void(*)(void)) tlm_solve);
   ierr = MatShellSetOperation(tlm_mat, MATOP_MULT_TRANSPOSE, (void(*)(void)) adj_solve);
+
+  MatGetSize(tlm_mat, &global_final_dof, &global_ic_dof);
+
+  if (nsv > min(global_ic_dof, global_final_dof))
+  {
+    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Cannot request %d vectors when the matrix is %d x %d.", nsv, global_final_dof, global_ic_dof);
+    return adj_chkierr_auto(ADJ_ERR_INVALID_INPUTS);
+  }
 
   SlepcInitialize(0, PETSC_NULL, PETSC_NULL, PETSC_NULL);
 
@@ -89,7 +94,12 @@ int adj_compute_propagator_svd(adj_adjointer* adjointer, adj_variable ic, adj_va
   SVDSetTransposeMode(*svd, SVD_TRANSPOSE_IMPLICIT);
   SVDSetType(*svd, SVDTRLANCZOS);
   SVDTRLanczosSetOneSide(*svd, PETSC_FALSE);
-  SVDSetDimensions(*svd, nsv, 3*nsv, PETSC_DECIDE);
+
+  nwv = 3*nsv;
+  if (nwv > min(global_ic_dof, global_final_dof))
+    nwv = PETSC_DECIDE;
+
+  SVDSetDimensions(*svd, nsv, nwv, PETSC_DECIDE);
   SVDMonitorSet(*svd, SVDMonitorAll, PETSC_NULL, PETSC_NULL);
 
   ierr = SVDSolve(*svd);
