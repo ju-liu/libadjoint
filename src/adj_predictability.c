@@ -100,7 +100,9 @@ int adj_compute_propagator_svd(adj_adjointer* adjointer, adj_variable ic, adj_va
     nwv = PETSC_DECIDE;
 
   SVDSetDimensions(*svd, nsv, nwv, PETSC_DECIDE);
+#if SLEPC_VERSION_MAJOR > 3 || (SLEPC_VERSION_MAJOR == 3 && SLEPC_VERSION_MINOR >= 1)
   SVDMonitorSet(*svd, SVDMonitorAll, PETSC_NULL, PETSC_NULL);
+#endif
 
   ierr = SVDSolve(*svd);
 
