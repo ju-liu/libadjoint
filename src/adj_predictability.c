@@ -135,6 +135,7 @@ int adj_get_svd(adj_svd* svd_handle, int i, adj_scalar* sigma, adj_vector* u, ad
   (void) u;
   (void) v;
   (void) error;
+  (void) svd_handle;
 
   snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "In order to fetch SVDs, you need to compile with SLEPc support.");
   svd_handle = (adj_svd*) NULL;
@@ -217,6 +218,8 @@ int adj_get_svd(adj_svd* svd_handle, int i, adj_scalar* sigma, adj_vector* u, ad
 int adj_destroy_svd(adj_svd* svd_handle)
 {
 #ifndef HAVE_SLEPC
+  (void) svd_handle;
+
   snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "In order to destroy SVD objects, you need to compile with SLEPc support.");
   svd_handle = (adj_svd*) NULL;
   return ADJ_ERR_INVALID_INPUTS;
