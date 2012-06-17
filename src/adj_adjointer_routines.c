@@ -686,7 +686,7 @@ int adj_checkpoint_variable(adj_adjointer* adjointer, adj_variable var, int cs)
   {
     char buf[ADJ_NAME_LEN];
     adj_variable_str(var, buf, ADJ_NAME_LEN);
-    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Trying to to checkpoint variable %s, but it is not recorded.", buf);
+    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Trying to checkpoint variable %s, but it is not recorded.", buf);
     return adj_chkierr_auto(ADJ_ERR_NEED_VALUE);
   }
 
