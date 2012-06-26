@@ -614,6 +614,43 @@ class RHS(object):
         ctypes.POINTER(clib.adj_vector), ctypes.c_int, ctypes.POINTER(None), ctypes.POINTER(clib.adj_matrix))
     return rhs_deriv_assembly_type(cfunc)
 
+class AdjointerTime(object):
+  """class to facilitate recording the simulation time at which timesteps occur"""
+  def __init__(self):
+    self.time_levels = []
+    self.finished = False
+
+  def start(self, time):
+    """start(self, time) 
+    Set the start time of the simulation."""
+    
+    if len(self.time_levels!=0):
+      raise exceptions.LibadjointErrorInvalidInputs(
+        "time.start() called after simulation started!")
+
+    self.time_levels = [time]
+    
+  def finish(self, time):
+      
+    self.time_levels.append(time)
+    self.finised = True
+    
+  def next(self, time):
+    
+    if self.finished:
+      raise exceptions.LibadjointErrorInvalidInputs(
+        "time.next() called after simulation finished!")
+      
+    if self.time_levels==[]:
+      raise exceptions.LibadjointErrorInvalidInputs(
+        "time.next() called before time started!")
+
+    self.time_levels.append(time)
+
+  def reset(self):
+    self.__init__()
+    
+
 class Adjointer(object):
   def __init__(self, adjointer=None):
     self.functions_registered = []
@@ -621,6 +658,8 @@ class Adjointer(object):
 
     self.equation_timestep=[]
 
+    self.time=AdjointerTime()
+    
     if adjointer is None:
       self.adjointer = clib.adj_adjointer()
       clib.adj_create_adjointer(self.adjointer)
@@ -688,6 +727,7 @@ class Adjointer(object):
     self.adjointer_created = True
     self.c_object = self.adjointer
     self.__register_data_callbacks__()
+    self.time.reset()
 
   def __del__(self):
     if self.adjointer_created:
