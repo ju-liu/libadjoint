@@ -201,6 +201,11 @@ int adj_deactivate_adjointer(adj_adjointer* adjointer)
 
 int adj_set_checkpoint_strategy(adj_adjointer* adjointer, int strategy)
 {
+  if (adjointer->nequations != 0)
+  {
+      snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Must turn on checkpointing before annotating any equations.");
+      return adj_chkierr_auto(ADJ_ERR_INVALID_INPUTS);
+  }
   return adj_set_option(adjointer, ADJ_CHECKPOINT_STRATEGY, strategy);
 }
 
