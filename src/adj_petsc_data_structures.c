@@ -165,7 +165,11 @@ void petsc_vec_read_proc(adj_variable var, adj_vector *x)
   Vec *vec=(Vec*) malloc(sizeof(Vec));
   PetscViewer viewer;
   PetscViewerBinaryOpen(PETSC_COMM_WORLD, filename, FILE_MODE_READ, &viewer);
+#if PETSC_VERSION_MINOR <= 1
   VecLoad(viewer, PETSC_NULL, vec);
+#else
+  VecLoad(viewer, vec);
+#endif
   PetscViewerDestroy(viewer);
   *x = petsc_vec_to_adj_vector(vec);
 #else
@@ -220,7 +224,11 @@ void petsc_solve_proc(adj_variable var, adj_matrix mat, adj_vector rhs, adj_vect
 #ifdef HAVE_PETSC
     KSP            ksp; /* linear solver context */ 
     PC             pc;  /* preconditioner context */
+#if PETSC_VERSION_MINOR <= 1
     PetscTruth assembled;
+#else
+    PetscBool assembled;
+#endif
    
     MatAssembled(*(Mat*) &mat, &assembled);
     if (!assembled)
