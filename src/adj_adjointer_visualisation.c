@@ -464,6 +464,12 @@ int adj_html_eqn(FILE* fp, adj_adjointer* adjointer, adj_equation adj_eqn, int d
   char* desc_rhs[1];
   int col, ierr;
   unsigned int max_desc_size = 32*ADJ_NAME_LEN; // The descriptions can become very long
+  adj_variable_data* var_data_ptr;
+  int eqn_num;
+
+  /* Work out the equation number */
+  ierr = adj_find_variable_data(&(adjointer->varhash), &adj_eqn.variable, &var_data_ptr);
+  eqn_num = var_data_ptr->equation;
 
   /* Allocate the strings for this row */
   for (i = 0; i < nb_vars; ++i)
@@ -490,7 +496,8 @@ int adj_html_eqn(FILE* fp, adj_adjointer* adjointer, adj_equation adj_eqn, int d
     row[col][5]='\0';
 
     /* Fill in the description */
-    if (strlen(desc[col]) < max_desc_size - ADJ_NAME_LEN) strncpy(desc[col], "Targets: ", ADJ_NAME_LEN);
+    snprintf(desc[col], ADJ_NAME_LEN, "Equation number: %i\n", eqn_num);
+    if (strlen(desc[col]) < max_desc_size - ADJ_NAME_LEN) strncat(desc[col], "Targets: ", ADJ_NAME_LEN);
     if (strlen(desc[col]) < max_desc_size - ADJ_NAME_LEN) strncat(desc[col], adj_eqn.targets[i].name, ADJ_NAME_LEN);
     if (strlen(desc[col]) < max_desc_size - ADJ_NAME_LEN) strncat(desc[col], "\nTimestep:", ADJ_NAME_LEN);
     snprintf(buf, ADJ_NAME_LEN, "%d", adj_eqn.targets[i].timestep);
