@@ -624,7 +624,7 @@ class AdjointerTime(object):
     """start(self, time) 
     Set the start time of the simulation."""
     
-    if len(self.time_levels!=0):
+    if len(self.time_levels)!=0:
       raise exceptions.LibadjointErrorInvalidInputs(
         "time.start() called after simulation started!")
 
@@ -633,7 +633,7 @@ class AdjointerTime(object):
   def finish(self, time):
       
     self.time_levels.append(time)
-    self.finised = True
+    self.finished = True
     
   def next(self, time):
     
