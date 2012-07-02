@@ -78,6 +78,17 @@ class Variable(object):
     else:
       raise AttributeError
 
+  def __setattr__(self, key, val):
+    if key == "timestep":
+      self.var.timestep = val
+    elif key == "iteration":
+      self.var.iteration = val
+    elif key == "type":
+      type_map = {'ADJ_FORWARD': 1, 'ADJ_ADJOINT': 2, 'ADJ_TLM': 3}
+      self.var.type = type_map[val]
+    else:
+      object.__setattr__(self, key, val)
+
   def __eq__(self, other):
 
     if not isinstance(other, Variable): 
