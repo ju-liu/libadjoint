@@ -616,9 +616,10 @@ class RHS(object):
 
 class AdjointerTime(object):
   """class to facilitate recording the simulation time at which timesteps occur"""
-  def __init__(self):
+  def __init__(self, adjointer):
     self.time_levels = []
     self.finished = False
+    self.adjointer = adjointer
 
   def start(self, time):
     """start(self, time) 
@@ -649,6 +650,8 @@ class AdjointerTime(object):
         "time.next() called before time started!")
 
     self.time_levels.append(time)
+    timestep = len(self.time_levels) - 2
+    self.adjointer.set_times(timestep, self.time_levels[-2], self.time_levels[-1])
 
   def reset(self):
     self.__init__()
@@ -659,10 +662,10 @@ class Adjointer(object):
     self.functions_registered = []
     self.set_function_apis()
 
-    self.equation_timestep=[]
+    self.equation_timestep = []
 
     # This gets clobbered during casting.
-    self.time=AdjointerTime()
+    self.time = AdjointerTime(self)
     
     if adjointer is None:
       self.adjointer = clib.adj_adjointer()
@@ -990,6 +993,16 @@ class Adjointer(object):
 
   def forget_tlm_values(self, equation):
     clib.adj_forget_tlm_values(self.adjointer, equation)
+
+  def set_times(self, timestep, start, end):
+    clib.adj_timestep_set_times(self.adjointer, timestep, start, end)
+
+  def get_times(self, timestep):
+    start = adj_scalar()
+    end = adj_scalar()
+
+    clib.adj_timestep_get_times(self.adjointer, timestep, start, end)
+    return (start.value, end.value)
 
   def __register_data_callbacks__(self):
     self.__register_data_callback__('ADJ_VEC_DUPLICATE_CB', self.__vec_duplicate_callback__)
