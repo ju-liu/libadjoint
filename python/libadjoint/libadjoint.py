@@ -350,7 +350,7 @@ class Functional(object):
   def __init__(self):
     pass
 
-  def __call__(self, adjointer, dependencies, values):
+  def __call__(self, adjointer, timestep, dependencies, values):
     '''__call__(self, dependencies, values)
 
     Evaluate functional given dependencies with values. The result must be a scalar.
@@ -412,7 +412,7 @@ class Functional(object):
       values = [vector(values_c[i]) for i in range(ndepends_c)]
 
       # Now call the callback we've been given
-      output_c[0] = self(adjointer, dependencies, values)
+      output_c[0] = self(adjointer, timestep, dependencies, values)
 
     functional_type = ctypes.CFUNCTYPE(None, ctypes.POINTER(clib.adj_adjointer), ctypes.c_int, ctypes.c_int, ctypes.POINTER(clib.adj_variable), ctypes.POINTER(clib.adj_vector), ctypes.c_char_p, ctypes.POINTER(ctypes.c_double))
     return functional_type(cfunc)
@@ -631,8 +631,11 @@ class AdjointerTime(object):
     self.time_levels = [time]
     
   def finish(self, time):
-      
-    self.time_levels.append(time)
+    
+    if self.time_levels[-1]!=time:
+      raise exceptions.LibadjointErrorInvalidInputs(
+        "Finish time does not match time at end of final timestep")
+
     self.finished = True
     
   def next(self, time):
@@ -658,6 +661,7 @@ class Adjointer(object):
 
     self.equation_timestep=[]
 
+    # This gets clobbered during casting.
     self.time=AdjointerTime()
     
     if adjointer is None:
