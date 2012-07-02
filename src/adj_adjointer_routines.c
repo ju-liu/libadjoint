@@ -62,6 +62,8 @@ int adj_create_adjointer(adj_adjointer* adjointer)
   adjointer->parameter_source_list.firstnode = NULL;
   adjointer->parameter_source_list.lastnode = NULL;
 
+  adjointer->finished = ADJ_FALSE;
+
   for (i = 0; i < ADJ_NO_OPTIONS; i++)
     adjointer->options[i] = 0; /* 0 is the default for all options */
 
@@ -2738,3 +2740,14 @@ int adj_register_parameter_source_callback(adj_adjointer* adjointer, char* name,
   return ADJ_OK;
 }
 
+int adj_set_finished(adj_adjointer* adjointer, int  finished)
+{
+  adjointer->finished = finished;
+  return ADJ_OK;
+}
+
+int adj_get_finished(adj_adjointer* adjointer, int* finished)
+{
+  *finished = adjointer->finished;
+  return ADJ_OK;
+}

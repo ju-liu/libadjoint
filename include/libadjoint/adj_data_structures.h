@@ -294,6 +294,8 @@ typedef struct adj_adjointer
   adj_func_callback_list functional_list;
   adj_func_deriv_callback_list functional_derivative_list;
   adj_parameter_source_callback_list parameter_source_list;
+
+  int finished; /* Is the annotation finished? */
 } adj_adjointer;
 
 int adj_create_variable(char* name, int timestep, int iteration, int auxiliary, adj_variable* var);

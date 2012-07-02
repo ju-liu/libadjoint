@@ -642,13 +642,9 @@ class AdjointerTime(object):
 
     self.time_levels = [time]
     
-  def finish(self, time):
-    
-    if self.time_levels[-1]!=time:
-      raise exceptions.LibadjointErrorInvalidInputs(
-        "Finish time does not match time at end of final timestep")
-
+  def finish(self):
     self.finished = True
+    clib.adj_set_finished(self.adjointer.adjointer, 1)
     
   def next(self, time):
     
@@ -764,6 +760,10 @@ class Adjointer(object):
       timestep_count = ctypes.c_int()
       clib.adj_timestep_count(self.adjointer, timestep_count)
       return timestep_count.value
+    if name == "finished":
+      finished = ctypes.c_int()
+      clib.adj_get_finished(self.adjointer, finished)
+      return finished.value
     else:
       raise AttributeError(name)
 
