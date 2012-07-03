@@ -643,10 +643,13 @@ class AdjointerTime(object):
     self.time_levels = [time]
     
   def finish(self):
+    """finish()
+    Record that the annotation has finished."""
     self.finished = True
     clib.adj_set_finished(self.adjointer.adjointer, 1)
     
   def next(self, time):
+    """Increment the timestep counter, and mark the end of the timestep."""
     
     if self.finished:
       raise exceptions.LibadjointErrorInvalidInputs(
