@@ -661,7 +661,7 @@ class AdjointerTime(object):
     self.adjointer.set_times(timestep, self.time_levels[-2], self.time_levels[-1])
 
   def reset(self):
-    self.__init__()
+    self.__init__(self.adjointer)
     
 
 class Adjointer(object):
@@ -825,7 +825,7 @@ class Adjointer(object):
 
     clib.adj_register_parameter_source_callback(self.adjointer, str(parameter), cfunc)
 
-  def __set_functional_dependencies__(self, functional, timestep):
+  def set_functional_dependencies(self, functional, timestep):
 
     dependencies = functional.dependencies(self,timestep)
 
@@ -877,7 +877,7 @@ class Adjointer(object):
     Evaluate the functional provided at t=timestep.'''
 
     self.__register_functional__(functional)
-    self.__set_functional_dependencies__(functional, timestep)
+    self.set_functional_dependencies(functional, timestep)
 
     output=clib.c_double()
 
@@ -920,7 +920,7 @@ class Adjointer(object):
   def get_adjoint_equation(self, equation, functional):
 
     self.__register_functional__(functional)
-    self.__set_functional_dependencies__(functional, self.equation_timestep[equation])
+    self.set_functional_dependencies(functional, self.equation_timestep[equation])
 
     lhs = clib.adj_matrix()
     rhs = clib.adj_vector()
@@ -936,7 +936,7 @@ class Adjointer(object):
   def get_adjoint_solution(self, equation, functional):
 
     self.__register_functional__(functional)
-    self.__set_functional_dependencies__(functional, self.equation_timestep[equation])
+    self.set_functional_dependencies(functional, self.equation_timestep[equation])
 
     output = clib.adj_vector()
     adj_var = clib.adj_variable()
