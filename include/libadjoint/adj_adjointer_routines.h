@@ -49,6 +49,9 @@ int adj_storage_set_checkpoint(adj_storage_data* data, int checkpoint);
 int adj_variable_known(adj_adjointer* adjointer, adj_variable var, int* known);
 int adj_get_variable_value(adj_adjointer* adjointer, adj_variable var, adj_vector* value);
 
+int adj_set_finished(adj_adjointer* adjointer, int  finished);
+int adj_get_finished(adj_adjointer* adjointer, int* finished);
+
 #ifndef ADJ_HIDE_FROM_USER
 int adj_set_storage_memory_copy(adj_adjointer* adjointer, adj_variable* var);
 int adj_set_storage_memory_incref(adj_adjointer* adjointer, adj_variable* var);

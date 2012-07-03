@@ -78,6 +78,17 @@ class Variable(object):
     else:
       raise AttributeError
 
+  def __setattr__(self, key, val):
+    if key == "timestep":
+      self.var.timestep = val
+    elif key == "iteration":
+      self.var.iteration = val
+    elif key == "type":
+      type_map = {'ADJ_FORWARD': 1, 'ADJ_ADJOINT': 2, 'ADJ_TLM': 3}
+      self.var.type = type_map[val]
+    else:
+      object.__setattr__(self, key, val)
+
   def __eq__(self, other):
 
     if not isinstance(other, Variable): 
@@ -350,7 +361,7 @@ class Functional(object):
   def __init__(self):
     pass
 
-  def __call__(self, adjointer, dependencies, values):
+  def __call__(self, adjointer, timestep, dependencies, values):
     '''__call__(self, dependencies, values)
 
     Evaluate functional given dependencies with values. The result must be a scalar.
@@ -412,7 +423,7 @@ class Functional(object):
       values = [vector(values_c[i]) for i in range(ndepends_c)]
 
       # Now call the callback we've been given
-      output_c[0] = self(adjointer, dependencies, values)
+      output_c[0] = self(adjointer, timestep, dependencies, values)
 
     functional_type = ctypes.CFUNCTYPE(None, ctypes.POINTER(clib.adj_adjointer), ctypes.c_int, ctypes.c_int, ctypes.POINTER(clib.adj_variable), ctypes.POINTER(clib.adj_vector), ctypes.c_char_p, ctypes.POINTER(ctypes.c_double))
     return functional_type(cfunc)
@@ -614,13 +625,58 @@ class RHS(object):
         ctypes.POINTER(clib.adj_vector), ctypes.c_int, ctypes.POINTER(None), ctypes.POINTER(clib.adj_matrix))
     return rhs_deriv_assembly_type(cfunc)
 
+class AdjointerTime(object):
+  """class to facilitate recording the simulation time at which timesteps occur"""
+  def __init__(self, adjointer):
+    self.time_levels = []
+    self.finished = False
+    self.adjointer = adjointer
+
+  def start(self, time):
+    """start(self, time) 
+    Set the start time of the simulation."""
+    
+    if len(self.time_levels)!=0:
+      raise exceptions.LibadjointErrorInvalidInputs(
+        "time.start() called after simulation started!")
+
+    self.time_levels = [time]
+    
+  def finish(self):
+    """finish()
+    Record that the annotation has finished."""
+    self.finished = True
+    clib.adj_set_finished(self.adjointer.adjointer, 1)
+    
+  def next(self, time):
+    """Increment the timestep counter, and mark the end of the timestep."""
+    
+    if self.finished:
+      raise exceptions.LibadjointErrorInvalidInputs(
+        "time.next() called after simulation finished!")
+      
+    if self.time_levels==[]:
+      raise exceptions.LibadjointErrorInvalidInputs(
+        "time.next() called before time started!")
+
+    self.time_levels.append(time)
+    timestep = len(self.time_levels) - 2
+    self.adjointer.set_times(timestep, self.time_levels[-2], self.time_levels[-1])
+
+  def reset(self):
+    self.__init__(self.adjointer)
+    
+
 class Adjointer(object):
   def __init__(self, adjointer=None):
     self.functions_registered = []
     self.set_function_apis()
 
-    self.equation_timestep=[]
+    self.equation_timestep = []
 
+    # This gets clobbered during casting.
+    self.time = AdjointerTime(self)
+    
     if adjointer is None:
       self.adjointer = clib.adj_adjointer()
       clib.adj_create_adjointer(self.adjointer)
@@ -688,6 +744,7 @@ class Adjointer(object):
     self.adjointer_created = True
     self.c_object = self.adjointer
     self.__register_data_callbacks__()
+    self.time.reset()
 
   def __del__(self):
     if self.adjointer_created:
@@ -706,6 +763,10 @@ class Adjointer(object):
       timestep_count = ctypes.c_int()
       clib.adj_timestep_count(self.adjointer, timestep_count)
       return timestep_count.value
+    if name == "finished":
+      finished = ctypes.c_int()
+      clib.adj_get_finished(self.adjointer, finished)
+      return finished.value
     else:
       raise AttributeError(name)
 
@@ -767,7 +828,7 @@ class Adjointer(object):
 
     clib.adj_register_parameter_source_callback(self.adjointer, str(parameter), cfunc)
 
-  def __set_functional_dependencies__(self, functional, timestep):
+  def set_functional_dependencies(self, functional, timestep):
 
     dependencies = functional.dependencies(self,timestep)
 
@@ -819,7 +880,7 @@ class Adjointer(object):
     Evaluate the functional provided at t=timestep.'''
 
     self.__register_functional__(functional)
-    self.__set_functional_dependencies__(functional, timestep)
+    self.set_functional_dependencies(functional, timestep)
 
     output=clib.c_double()
 
@@ -862,7 +923,7 @@ class Adjointer(object):
   def get_adjoint_equation(self, equation, functional):
 
     self.__register_functional__(functional)
-    self.__set_functional_dependencies__(functional, self.equation_timestep[equation])
+    self.set_functional_dependencies(functional, self.equation_timestep[equation])
 
     lhs = clib.adj_matrix()
     rhs = clib.adj_vector()
@@ -878,7 +939,7 @@ class Adjointer(object):
   def get_adjoint_solution(self, equation, functional):
 
     self.__register_functional__(functional)
-    self.__set_functional_dependencies__(functional, self.equation_timestep[equation])
+    self.set_functional_dependencies(functional, self.equation_timestep[equation])
 
     output = clib.adj_vector()
     adj_var = clib.adj_variable()
@@ -946,6 +1007,16 @@ class Adjointer(object):
 
   def forget_tlm_values(self, equation):
     clib.adj_forget_tlm_values(self.adjointer, equation)
+
+  def set_times(self, timestep, start, end):
+    clib.adj_timestep_set_times(self.adjointer, timestep, start, end)
+
+  def get_times(self, timestep):
+    start = adj_scalar()
+    end = adj_scalar()
+
+    clib.adj_timestep_get_times(self.adjointer, timestep, start, end)
+    return (start.value, end.value)
 
   def __register_data_callbacks__(self):
     self.__register_data_callback__('ADJ_VEC_DUPLICATE_CB', self.__vec_duplicate_callback__)
