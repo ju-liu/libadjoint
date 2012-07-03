@@ -2434,6 +2434,7 @@ int adj_timestep_get_times(adj_adjointer* adjointer, int timestep, adj_scalar* s
 int adj_timestep_set_functional_dependencies(adj_adjointer* adjointer, int timestep, char* functional, int ndepends, adj_variable* dependencies)
 {
   int i;
+  int j;
   int ierr;
 
   adj_functional_data* functional_data_ptr = NULL;
@@ -2508,6 +2509,21 @@ int adj_timestep_set_functional_dependencies(adj_adjointer* adjointer, int times
     /* Record that this variable is necessary for the functional evaluation at this point in time */
     ierr = adj_append_unique(&(data_ptr->depending_timesteps), &(data_ptr->ndepending_timesteps), timestep);
     if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
+
+    /* Set that the j'th dependency is necessary for this guy's adjoint equation */
+    for (j = 0; j < ndepends; j++)
+    {
+      adj_variable_data* other_data_ptr;
+      ierr = adj_find_variable_data(&(adjointer->varhash), &(dependencies[j]), &other_data_ptr);
+      if (ierr == ADJ_ERR_HASH_FAILED)
+        continue;
+
+      if (other_data_ptr->equation >= 0)
+      {
+        ierr = adj_append_unique(&(data_ptr->adjoint_equations), &(data_ptr->nadjoint_equations), other_data_ptr->equation);
+        if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
+      }
+    }
   }
   /* We are done */
   return ADJ_OK;
