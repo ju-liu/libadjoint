@@ -841,10 +841,18 @@ int adj_get_revolve_checkpoint_storage(adj_adjointer* adjointer, adj_equation eq
 
         if (adjointer->revolve_data.verbose)
         {
+          int start_equation;
+          ierr = adj_timestep_start_equation(adjointer, adjointer->revolve_data.current_timestep, &start_equation);
+          assert(ierr == ADJ_OK);
+
           if (*checkpoint_storage == ADJ_CHECKPOINT_STORAGE_MEMORY)
-            printf("Revolve: Checkpoint timestep %i in memory.\n", adjointer->revolve_data.current_timestep);
+          {
+            printf("Revolve: Checkpoint timestep %i (equation %i) in memory.\n", adjointer->revolve_data.current_timestep, start_equation);
+          }
           else
-            printf("Revolve: Checkpoint timestep %i on disk.\n", adjointer->revolve_data.current_timestep);
+          {
+            printf("Revolve: Checkpoint timestep %i (equation %i) on disk.\n", adjointer->revolve_data.current_timestep, start_equation);
+          }
         }
 
         /* Check what revolve wants to do next */
