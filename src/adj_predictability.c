@@ -271,7 +271,16 @@ int adj_get_gst(adj_gst* gst_handle, int i, adj_scalar* sigma, adj_vector* u, ad
 
   if (sigma != NULL)
   {
-    *sigma = sqrt(ssigma);
+    if (abs(ssigma) < DBL_EPSILON && ssigma < 0.0)
+      *sigma = 0.0;
+    else
+      *sigma = sqrt(ssigma);
+
+    if (isnan(*sigma))
+    {
+      snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "SLEPc returned NaN as a growth rate.");
+      return adj_chkierr_auto(ADJ_ERR_SLEPC_ERROR);
+    }
   }
 
   if (v != NULL) /* this is the input perturbation, which we already have, handily */

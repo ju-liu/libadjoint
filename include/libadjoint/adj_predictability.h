@@ -7,6 +7,7 @@
 #include "adj_core.h"
 
 #include <math.h>
+#include <float.h>
 
 #ifdef HAVE_SLEPC
 #include "slepcsvd.h"
