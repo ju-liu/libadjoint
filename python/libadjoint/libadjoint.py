@@ -1386,6 +1386,29 @@ class Adjointer(object):
     clib.adj_compute_gst(self.adjointer, ic.var, ic_norm, final.var, final_norm, nrv, handle, ncv)
     return GSTHandle(handle, ncv)
 
+  def compute_propagator_svd(self, ic, final, nsv):
+    '''Computes the singular value decomposition of the propagator.
+    The propagator is the operator that maps
+    (perturbations in the initial condition)
+    to
+    (perturbations in the final state)
+    in a linear manner. Essentially, the propagator is the inverse
+    of the tangent linear model.
+
+    The singular value decomposition of the propagator is the basic
+    tool in generalised stability and predictability analysis; see
+    ``Atmospheric Modelling, Data Assimilation and Predictability''
+    by E. Kalnay, chapter 6.
+
+    ic -- an adj_variable corresponding to the initial condition
+    final -- an adj_variable corresponding to the final condition
+    nsv -- number of singular vectors to compute.'''
+
+    handle = clib.adj_svd()
+    ncv = ctypes.c_int()
+    clib.adj_compute_propagator_svd(self.adjointer, ic.var, final.var, nsv, handle, ncv)
+    return SVDHandle(handle, ncv)
+
   def get_variable_value(self, var):
     vec = clib.adj_vector()
     clib.adj_get_variable_value(self.adjointer, var.var, vec)
@@ -1577,4 +1600,52 @@ class GSTHandle(object):
   def destroy(self):
     if self.allocated:
       clib.adj_destroy_gst(self.handle)
+      self.allocated = False
+
+class SVDHandle(object):
+  '''An object that wraps the result of a singular value decomposition.
+     Request the computed singular values with get_svd.'''
+  def __init__(self, handle, ncv):
+    self.handle = handle
+    self.ncv = ncv.value
+    self.allocated = True
+
+  def __del__(self):
+    self.destroy()
+
+  def get_svd(self, i, return_vectors=False, return_error=False):
+    if return_vectors:
+      u = clib.adj_vector()
+      v = clib.adj_vector()
+    else:
+      u = None
+      v = None
+
+    if return_error:
+      error = adj_scalar()
+    else:
+      error = None
+
+    sigma = adj_scalar()
+
+    clib.adj_get_svd(self.handle, i, sigma, u, v, error)
+
+    retval = [sigma.value]
+    if return_vectors:
+      u_vec = vector(u)
+      v_vec = vector(v)
+      references_taken.remove(u_vec)
+      references_taken.remove(v_vec)
+      retval += [u_vec, v_vec]
+    if return_error:
+      retval += [error.value]
+
+    if len(retval) == 1:
+      retval = retval[0]
+
+    return retval
+
+  def destroy(self):
+    if self.allocated:
+      clib.adj_destroy_svd(self.handle)
       self.allocated = False

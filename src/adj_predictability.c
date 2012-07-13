@@ -271,7 +271,7 @@ int adj_get_gst(adj_gst* gst_handle, int i, adj_scalar* sigma, adj_vector* u, ad
 
   if (sigma != NULL)
   {
-    *sigma = ssigma;
+    *sigma = sqrt(ssigma);
   }
 
   if (v != NULL) /* this is the input perturbation, which we already have, handily */
@@ -296,6 +296,7 @@ int adj_get_gst(adj_gst* gst_handle, int i, adj_scalar* sigma, adj_vector* u, ad
 
     MatGetVecs(((adj_gst_data*) gst_handle->gst_data)->tlm_mat, PETSC_NULL, &u_vec);
     MatMult(((adj_gst_data*) gst_handle->gst_data)->tlm_mat, v_vec, u_vec); /* do the TLM solve */
+    VecNormalize(u_vec, PETSC_NULL); /* FIXME: is this the right normalisation? */
 
     ierr = adj_get_variable_value(adjointer, ((adj_gst_data*) gst_handle->gst_data)->final, &final_val);
     if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
