@@ -248,8 +248,6 @@ int adj_get_gst(adj_gst* gst_handle, int i, adj_scalar* sigma, adj_vector* u, ad
     /* Shut the compiler up about uninitialised variables */
     EPSGetOperators(*( (EPS*) gst_handle->eps_handle ), &A, PETSC_NULL);
     MatGetVecs(A, &v_vec, &dummy);
-    VecDestroy(v_vec);
-    VecDestroy(dummy);
 
     ierr = EPSGetEigenpair(*eps, i, &ssigma, &ssigma_complex, v_vec, dummy);
     if (ierr != 0)
@@ -500,7 +498,6 @@ int adj_destroy_gst(adj_gst* gst_handle)
   }
   free((EPS*) gst_handle->eps_handle);
   gst_data = (adj_gst_data*) gst_handle->gst_data;
-  MatDestroy(gst_data->gst_mat);
   MatDestroy(gst_data->tlm_mat);
   free((adj_gst_data*) gst_handle->gst_data);
 
