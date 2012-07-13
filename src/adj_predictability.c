@@ -63,8 +63,8 @@ int adj_compute_propagator_svd(adj_adjointer* adjointer, adj_variable ic, adj_va
   svd_data->final = final;
 
   /* Register the dummy parameter sources/functionals -- we're going to be in charge of the RHS terms here */
-  adj_register_parameter_source_callback(adjointer, "SVDNullTLM", null_tlm_source);
-  adj_register_functional_derivative_callback(adjointer, "SVDNullADM", null_adj_source);
+  adj_register_parameter_source_callback(adjointer, "GSTNullTLM", null_tlm_source);
+  adj_register_functional_derivative_callback(adjointer, "GSTNullADM", null_adj_source);
 
   ierr = adj_get_variable_value(adjointer, ic, &ic_val);
   if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
@@ -539,7 +539,7 @@ PetscErrorCode tlm_solve(Mat A, Vec x, Vec y)
 
   for (equation = 0; equation < equation_count; equation++)
   {
-    ierr = adj_get_tlm_equation(adjointer, equation, "SVDNullTLM", &lhs, &rhs, &tlm_var);
+    ierr = adj_get_tlm_equation(adjointer, equation, "GSTNullTLM", &lhs, &rhs, &tlm_var);
     if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
 
     ierr = adj_create_variable(tlm_var.name, tlm_var.timestep, tlm_var.iteration, ADJ_FALSE, &fwd_var);
@@ -619,7 +619,7 @@ PetscErrorCode adj_solve(Mat A, Vec x, Vec y)
 
   for (equation = equation_count - 1; equation >= 0; equation--)
   {
-    ierr = adj_get_adjoint_equation(adjointer, equation, "SVDNullADM", &lhs, &rhs, &adj_var);
+    ierr = adj_get_adjoint_equation(adjointer, equation, "GSTNullADM", &lhs, &rhs, &adj_var);
     if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
 
     ierr = adj_create_variable(adj_var.name, adj_var.timestep, adj_var.iteration, ADJ_FALSE, &fwd_var);
