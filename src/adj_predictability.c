@@ -247,7 +247,7 @@ int adj_get_gst(adj_gst* gst_handle, int i, adj_scalar* sigma, adj_vector* u, ad
 
     /* Shut the compiler up about uninitialised variables */
     EPSGetOperators(*( (EPS*) gst_handle->eps_handle ), &A, PETSC_NULL);
-    MatGetVecs(A, &v_vec, dummy);
+    MatGetVecs(A, &v_vec, &dummy);
     VecDestroy(v_vec);
     VecDestroy(dummy);
 
@@ -671,7 +671,43 @@ PetscErrorCode adj_solve(Mat A, Vec x, Vec y)
 
 PetscErrorCode gst_mult(Mat A, Vec x, Vec y)
 {
-  PetscFunctionReturn(1);
+  adj_gst_data* gst_data;
+  adj_adjointer* adjointer;
+  
+  Mat tlm_mat;
+  Vec Lx;
+  Vec XLx;
+  Vec LXLx;
+
+  int ierr;
+
+  PetscFunctionBegin;
+
+  ierr = MatShellGetContext(A, (void**) &gst_data); CHKERRQ(ierr);
+  adjointer = gst_data->adjointer;
+  tlm_mat = gst_data->tlm_mat;
+
+  /* Multiply by L .. */
+  ierr = MatGetVecs(tlm_mat, PETSC_NULL, &Lx);   CHKERRQ(ierr);
+  ierr = MatMult(tlm_mat, x, Lx);                CHKERRQ(ierr);
+
+  /* Then take the final norm */
+  assert(gst_data->final_norm == NULL); /* for now */
+  ierr = VecDuplicate(Lx, &XLx);                 CHKERRQ(ierr);
+  ierr = VecCopy(Lx, XLx);                       CHKERRQ(ierr);
+  ierr = VecDestroy(Lx);                         CHKERRQ(ierr);
+
+  /* Now multiply by L^* .. */
+  ierr = MatGetVecs(tlm_mat, &LXLx, PETSC_NULL); CHKERRQ(ierr);
+  ierr = MatMultTranspose(tlm_mat, XLx, LXLx);   CHKERRQ(ierr);
+  ierr = VecDestroy(XLx);
+
+  /* Now take the initial norm */
+  assert(gst_data->ic_norm == NULL); /* for now */
+  ierr = VecCopy(LXLx, y);                       CHKERRQ(ierr);
+  ierr = VecDestroy(LXLx);
+
+  PetscFunctionReturn(0);
 }
 
 void null_tlm_source(adj_adjointer* adjointer, int equation, adj_variable derivative, int ndepends, adj_variable* variables, adj_vector* dependencies, char* name, adj_vector* output, int* has_output)

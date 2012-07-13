@@ -1359,8 +1359,10 @@ class Adjointer(object):
     adj_soln_ptr[0].klass = 0
     adj_soln_ptr[0].flags = 0
 
-  def compute_propagator_svd(self, ic, final, nsv):
-    '''Computes the singular value decomposition of the propagator.
+  def compute_gst(self, ic, ic_norm, final, final_norm, nrv):
+    '''Computes the singular value decomposition of the propagator,
+    possibly with some norms for the initial and final condition spaces..
+
     The propagator is the operator that maps
     (perturbations in the initial condition)
     to
@@ -1374,13 +1376,15 @@ class Adjointer(object):
     by E. Kalnay, chapter 6.
 
     ic -- an adj_variable corresponding to the initial condition
+    ic_norm -- an adj_matrix with a norm for the initial condition
     final -- an adj_variable corresponding to the final condition
-    nsv -- number of singular vectors to compute.'''
+    final_norm -- an adj_matrix with a norm for the final condition
+    nrv -- number of requested singular vectors.'''
 
-    handle = clib.adj_svd()
+    handle = clib.adj_gst()
     ncv = ctypes.c_int()
-    clib.adj_compute_propagator_svd(self.adjointer, ic.var, final.var, nsv, handle, ncv)
-    return SVDHandle(handle, ncv)
+    clib.adj_compute_gst(self.adjointer, ic.var, ic_norm, final.var, final_norm, nrv, handle, ncv)
+    return GSTHandle(handle, ncv)
 
   def get_variable_value(self, var):
     vec = clib.adj_vector()
@@ -1527,9 +1531,9 @@ def matrix(adj_matrix):
 
   return python_utils.c_deref(adj_matrix.ptr)
 
-class SVDHandle(object):
-  '''An object that wraps the result of a singular value decomposition.
-     Request the computed singular values with get_svd.'''
+class GSTHandle(object):
+  '''An object that wraps the result of a generalised stability theory computation.
+     Request the computed results with get_gst.'''
   def __init__(self, handle, ncv):
     self.handle = handle
     self.ncv = ncv.value
@@ -1538,7 +1542,7 @@ class SVDHandle(object):
   def __del__(self):
     self.destroy()
 
-  def get_svd(self, i, return_vectors=False, return_error=False):
+  def get_gst(self, i, return_vectors=False, return_error=False):
     if return_vectors:
       u = clib.adj_vector()
       v = clib.adj_vector()
@@ -1553,7 +1557,7 @@ class SVDHandle(object):
 
     sigma = adj_scalar()
 
-    clib.adj_get_svd(self.handle, i, sigma, u, v, error)
+    clib.adj_get_gst(self.handle, i, sigma, u, v, error)
 
     retval = [sigma.value]
     if return_vectors:
@@ -1572,5 +1576,5 @@ class SVDHandle(object):
 
   def destroy(self):
     if self.allocated:
-      clib.adj_destroy_svd(self.handle)
+      clib.adj_destroy_gst(self.handle)
       self.allocated = False
