@@ -10,6 +10,7 @@
 
 #ifdef HAVE_SLEPC
 #include "slepcsvd.h"
+#include "slepceps.h"
 #endif
 
 typedef struct
@@ -29,9 +30,11 @@ int adj_get_svd(adj_svd* svd_handle, int i, adj_scalar* sigma, adj_vector* u, ad
 int adj_destroy_svd(adj_svd* svd_handle);
 
 int adj_compute_gst(adj_adjointer* adjointer, adj_variable ic, adj_matrix* ic_norm, adj_variable final, adj_matrix* final_norm, int nrv, adj_gst* gst_handle, int* ncv);
+int adj_get_gst(adj_gst* gst_handle, int i, adj_scalar* sigma, adj_vector* u, adj_vector* v, adj_scalar* error);
 int adj_destroy_gst(adj_gst* gst_handle);
 
 #ifndef ADJ_HIDE_FROM_USER
+#ifdef HAVE_SLEPC
 typedef struct
 {
   adj_adjointer* adjointer;
@@ -39,11 +42,12 @@ typedef struct
   adj_matrix* ic_norm;
   adj_variable final;
   adj_matrix* final_norm;
+  Mat tlm_mat;
 } adj_gst_data;
 
-#ifdef HAVE_SLEPC
 PetscErrorCode tlm_solve(Mat A, Vec x, Vec y);
 PetscErrorCode adj_solve(Mat A, Vec x, Vec y);
+PetscErrorCode gst_mult(Mat A, Vec x, Vec y);
 void null_tlm_source(adj_adjointer* adjointer, int equation, adj_variable derivative, int ndepends, adj_variable* variables, adj_vector* dependencies, char* name, adj_vector* output, int* has_output);
 void null_adj_source(adj_adjointer* adjointer, adj_variable derivative, int ndepends, adj_variable* variables, adj_vector* dependencies, char* name, adj_vector* output);
 #endif

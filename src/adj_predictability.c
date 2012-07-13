@@ -215,6 +215,107 @@ int adj_get_svd(adj_svd* svd_handle, int i, adj_scalar* sigma, adj_vector* u, ad
 #endif
 }
 
+int adj_get_gst(adj_gst* gst_handle, int i, adj_scalar* sigma, adj_vector* u, adj_vector* v, adj_scalar* error)
+{
+#ifndef HAVE_SLEPC
+  (void) i;
+  (void) sigma;
+  (void) u;
+  (void) v;
+  (void) error;
+  (void) gst_handle;
+
+  snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "In order to fetch the GST analysis, you need to compile with SLEPc support.");
+  gst_handle = (adj_gst*) NULL;
+  return ADJ_ERR_INVALID_INPUTS;
+#else
+
+  int ierr;
+  EPS* eps;
+  adj_scalar ssigma;
+  adj_scalar ssigma_complex;
+  Vec v_vec;
+  adj_adjointer* adjointer;
+  
+  eps = (EPS*) gst_handle->eps_handle;
+  adjointer = ((adj_gst_data*) gst_handle->gst_data)->adjointer;
+
+  if (u != NULL || v != NULL || sigma != NULL) /* we need to pull the eigenfunction */
+  {
+    Vec dummy;
+
+    ierr = EPSGetEigenpair(*eps, i, &ssigma, &ssigma_complex, v_vec, dummy);
+    if (ierr != 0)
+    {
+      snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "SLEPc error from EPSGetEigenpair (ierr == %d).", ierr);
+      return adj_chkierr_auto(ADJ_ERR_SLEPC_ERROR);
+    }
+
+    if (ssigma_complex != 0)
+    {
+      snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "SLEPc returned a complex eigenvalue in EPSGetEigenpair.");
+      return adj_chkierr_auto(ADJ_ERR_SLEPC_ERROR);
+    }
+
+    if (isnan(ssigma))
+    {
+      snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "SLEPc returned NaN as an eigenvalue.");
+      return adj_chkierr_auto(ADJ_ERR_SLEPC_ERROR);
+    }
+  }
+
+  if (sigma != NULL)
+  {
+    *sigma = ssigma;
+  }
+
+  if (v != NULL) /* this is the input perturbation, which we already have, handily */
+  {
+    adj_vector ic_val;
+    adj_scalar* v_arr;
+
+    ierr = adj_get_variable_value(adjointer, ((adj_gst_data*) gst_handle->gst_data)->ic, &ic_val);
+    if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
+    adjointer->callbacks.vec_duplicate(ic_val, v);
+
+    ierr = VecGetArray(v_vec, &v_arr);
+    adjointer->callbacks.vec_set_values(v, v_arr);
+    ierr = VecRestoreArray(v_vec, &v_arr);
+  }
+
+  if (u != NULL) /* this is the output perturbation, which we need to compute, alas */
+  {
+    adj_vector final_val;
+    Vec u_vec; /* the vector that contains the tlm output */
+    adj_scalar* u_arr;
+
+    MatGetVecs(((adj_gst_data*) gst_handle->gst_data)->tlm_mat, PETSC_NULL, &u_vec);
+    MatMult(((adj_gst_data*) gst_handle->gst_data)->tlm_mat, v_vec, u_vec); /* do the TLM solve */
+
+    ierr = adj_get_variable_value(adjointer, ((adj_gst_data*) gst_handle->gst_data)->final, &final_val);
+    if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
+    adjointer->callbacks.vec_duplicate(final_val, u);
+
+    ierr = VecGetArray(u_vec, &u_arr);
+    adjointer->callbacks.vec_set_values(u, u_arr);
+    ierr = VecRestoreArray(u_vec, &u_arr);
+  }
+
+  if (error != NULL)
+  {
+    ierr = EPSComputeRelativeError(*eps, i, error);
+    if (ierr != 0)
+    {
+      snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "SLEPc error from EPSComputeRelativeError (ierr == %d).", ierr);
+      return adj_chkierr_auto(ADJ_ERR_SLEPC_ERROR);
+    }
+  }
+
+  return ADJ_OK;
+
+#endif
+}
+
 int adj_destroy_svd(adj_svd* svd_handle)
 {
 #ifndef HAVE_SLEPC
@@ -256,6 +357,7 @@ int adj_compute_gst(adj_adjointer* adjointer, adj_variable ic, adj_matrix* ic_no
 #else
   EPS *eps;
   Mat gst_mat;
+  Mat tlm_mat;
   adj_gst_data* gst_data;
 
   int ierr;
@@ -320,11 +422,16 @@ int adj_compute_gst(adj_adjointer* adjointer, adj_variable ic, adj_matrix* ic_no
   ierr = MatCreateShell(PETSC_COMM_WORLD, ic_dof, ic_dof, PETSC_DETERMINE, PETSC_DETERMINE, (void*) gst_data, &gst_mat);
   ierr = MatShellSetOperation(gst_mat, MATOP_MULT, (void(*)(void)) gst_mult);
 
-  MatGetSize(tlm_mat, NULL, &global_ic_dof);
+  ierr = MatCreateShell(PETSC_COMM_WORLD, final_dof, ic_dof, PETSC_DETERMINE, PETSC_DETERMINE, (void*) gst_data, &tlm_mat);
+  ierr = MatShellSetOperation(tlm_mat, MATOP_MULT, (void(*)(void)) tlm_solve);
+  ierr = MatShellSetOperation(tlm_mat, MATOP_MULT_TRANSPOSE, (void(*)(void)) adj_solve);
+  gst_data->tlm_mat = tlm_mat;
 
-  if (nrv > global_ic_dof)
+  MatGetSize(tlm_mat, &global_final_dof, &global_ic_dof);
+
+  if (nrv > min(global_ic_dof, global_final_dof))
   {
-    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Cannot request %d vectors when the matrix is %d x %d.", nrv, global_ic, global_ic_dof);
+    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Cannot request %d vectors when the matrix is %d x %d.", nrv, global_final_dof, global_ic_dof);
     return adj_chkierr_auto(ADJ_ERR_INVALID_INPUTS);
   }
 
