@@ -17,7 +17,7 @@ int adj_compute_propagator_svd(adj_adjointer* adjointer, adj_variable ic, adj_va
 #else
   SVD *svd;
   Mat tlm_mat;
-  adj_svd_data* svd_data;
+  adj_gst_data* svd_data;
   int ierr;
   adj_vector ic_val;
   adj_vector final_val;
@@ -57,7 +57,7 @@ int adj_compute_propagator_svd(adj_adjointer* adjointer, adj_variable ic, adj_va
   if (adjointer->callbacks.vec_set_values == NULL) return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
   strncpy(adj_error_msg, "", ADJ_ERROR_MSG_BUF);
 
-  svd_data = (adj_svd_data*) malloc(sizeof(adj_svd_data));
+  svd_data = (adj_gst_data*) malloc(sizeof(adj_gst_data));
   svd_data->adjointer = adjointer;
   svd_data->ic = ic;
   svd_data->final = final;
@@ -172,9 +172,9 @@ int adj_get_svd(adj_svd* svd_handle, int i, adj_scalar* sigma, adj_vector* u, ad
       return adj_chkierr_auto(ADJ_ERR_SLEPC_ERROR);
     }
 
-    adjointer = ((adj_svd_data*) svd_handle->svd_data)->adjointer;
+    adjointer = ((adj_gst_data*) svd_handle->svd_data)->adjointer;
 
-    ierr = adj_get_variable_value(adjointer, ((adj_svd_data*) svd_handle->svd_data)->ic, &ic_val);
+    ierr = adj_get_variable_value(adjointer, ((adj_gst_data*) svd_handle->svd_data)->ic, &ic_val);
     if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
     adjointer->callbacks.vec_duplicate(ic_val, v);
 
@@ -182,7 +182,7 @@ int adj_get_svd(adj_svd* svd_handle, int i, adj_scalar* sigma, adj_vector* u, ad
     adjointer->callbacks.vec_set_values(v, v_arr);
     ierr = VecRestoreArray(v_vec, &v_arr);
 
-    ierr = adj_get_variable_value(adjointer, ((adj_svd_data*) svd_handle->svd_data)->final, &final_val);
+    ierr = adj_get_variable_value(adjointer, ((adj_gst_data*) svd_handle->svd_data)->final, &final_val);
     if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
     adjointer->callbacks.vec_duplicate(final_val, u);
 
@@ -232,16 +232,147 @@ int adj_destroy_svd(adj_svd* svd_handle)
     return adj_chkierr_auto(ADJ_ERR_SLEPC_ERROR);
   }
   free((SVD*) svd_handle->svd_handle);
-  free((adj_svd_data*) svd_handle->svd_data);
+  free((adj_gst_data*) svd_handle->svd_data);
 
   return ADJ_OK;
 #endif
 }
 
+int adj_compute_gst(adj_adjointer* adjointer, adj_variable ic, adj_matrix* ic_norm, adj_variable final, adj_matrix* final_norm, int nrv, adj_gst* gst_handle, int* ncv)
+{
+#ifndef HAVE_SLEPC
+  (void) adjointer;
+  (void) ic;
+  (void) ic_norm;
+  (void) final;
+  (void) final_norm;
+  (void) nrv; /* number of requested vectors */
+  (void) gst_handle;
+  (void) ncv; /* number of converged vectors */
+
+  snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "In order to perform generalised stability analysis, you need to compile with SLEPc support.");
+  gst_handle = (adj_gst*) NULL;
+  return ADJ_ERR_INVALID_INPUTS;
+#else
+  EPS *eps;
+  Mat gst_mat;
+  adj_gst_data* gst_data;
+
+  int ierr;
+  adj_vector ic_val;
+  adj_vector final_val;
+  int ic_dof, final_dof;
+  int global_ic_dof, global_final_dof;
+  int nwv; /* number of work vectors */
+
+  /* Check for the required callbacks */
+  strncpy(adj_error_msg, "Need the ADJ_SOLVE_CB data callback, but it hasn't been supplied.", ADJ_ERROR_MSG_BUF);
+  if (adjointer->callbacks.solve == NULL) return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
+  strncpy(adj_error_msg, "", ADJ_ERROR_MSG_BUF);
+
+  strncpy(adj_error_msg, "Need the ADJ_VEC_AXPY_CB data callback, but it hasn't been supplied.", ADJ_ERROR_MSG_BUF);
+  if (adjointer->callbacks.vec_axpy == NULL) return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
+  strncpy(adj_error_msg, "", ADJ_ERROR_MSG_BUF);
+
+  strncpy(adj_error_msg, "Need the ADJ_VEC_DUPLICATE_CB data callback, but it hasn't been supplied.", ADJ_ERROR_MSG_BUF);
+  if (adjointer->callbacks.vec_duplicate == NULL) return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
+  strncpy(adj_error_msg, "", ADJ_ERROR_MSG_BUF);
+
+  strncpy(adj_error_msg, "Need the ADJ_VEC_DESTROY_CB data callback, but it hasn't been supplied.", ADJ_ERROR_MSG_BUF);
+  if (adjointer->callbacks.vec_destroy == NULL) return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
+  strncpy(adj_error_msg, "", ADJ_ERROR_MSG_BUF);
+
+  strncpy(adj_error_msg, "Need the ADJ_MAT_DESTROY_CB data callback, but it hasn't been supplied.", ADJ_ERROR_MSG_BUF);
+  if (adjointer->callbacks.mat_destroy == NULL) return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
+  strncpy(adj_error_msg, "", ADJ_ERROR_MSG_BUF);
+
+  strncpy(adj_error_msg, "Need the ADJ_VEC_GET_SIZE_CB data callback, but it hasn't been supplied.", ADJ_ERROR_MSG_BUF);
+  if (adjointer->callbacks.vec_get_size == NULL) return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
+  strncpy(adj_error_msg, "", ADJ_ERROR_MSG_BUF);
+
+  strncpy(adj_error_msg, "Need the ADJ_VEC_GET_VALUES_CB data callback, but it hasn't been supplied.", ADJ_ERROR_MSG_BUF);
+  if (adjointer->callbacks.vec_get_values == NULL) return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
+  strncpy(adj_error_msg, "", ADJ_ERROR_MSG_BUF);
+
+  strncpy(adj_error_msg, "Need the ADJ_VEC_SET_VALUES_CB data callback, but it hasn't been supplied.", ADJ_ERROR_MSG_BUF);
+  if (adjointer->callbacks.vec_set_values == NULL) return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
+  strncpy(adj_error_msg, "", ADJ_ERROR_MSG_BUF);
+
+  gst_data = (adj_gst_data*) malloc(sizeof(adj_gst_data));
+  gst_data->adjointer = adjointer;
+  gst_data->ic = ic;
+  gst_data->ic_norm = ic_norm;
+  gst_data->final = final;
+  gst_data->final_norm = final_norm;
+
+  /* Register the dummy parameter sources/functionals -- we're going to be in charge of the RHS terms here */
+  adj_register_parameter_source_callback(adjointer, "GSTNullTLM", null_tlm_source);
+  adj_register_functional_derivative_callback(adjointer, "GSTNullADM", null_adj_source);
+
+  ierr = adj_get_variable_value(adjointer, ic, &ic_val);
+  if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
+  adjointer->callbacks.vec_get_size(ic_val, &ic_dof);
+
+  ierr = adj_get_variable_value(adjointer, final, &final_val);
+  if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
+  adjointer->callbacks.vec_get_size(final_val, &final_dof);
+
+  ierr = MatCreateShell(PETSC_COMM_WORLD, ic_dof, ic_dof, PETSC_DETERMINE, PETSC_DETERMINE, (void*) gst_data, &gst_mat);
+  ierr = MatShellSetOperation(gst_mat, MATOP_MULT, (void(*)(void)) gst_mult);
+
+  MatGetSize(tlm_mat, NULL, &global_ic_dof);
+
+  if (nrv > global_ic_dof)
+  {
+    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Cannot request %d vectors when the matrix is %d x %d.", nrv, global_ic, global_ic_dof);
+    return adj_chkierr_auto(ADJ_ERR_INVALID_INPUTS);
+  }
+
+  SlepcInitialize(0, PETSC_NULL, PETSC_NULL, PETSC_NULL);
+
+  eps = (EPS*) malloc(sizeof(EPS));
+  EPSCreate(PETSC_COMM_WORLD, eps);
+  EPSSetOperators(*eps, gst_mat, PETSC_NULL);
+  EPSSetProblemType(*eps, EPS_HEP);
+
+  nwv = 3*nrv;
+  if (nwv > global_ic_dof)
+    nwv = PETSC_DECIDE;
+
+  EPSSetDimensions(*eps, nrv, nwv, PETSC_DECIDE);
+#if SLEPC_VERSION_MAJOR > 3 || (SLEPC_VERSION_MAJOR == 3 && SLEPC_VERSION_MINOR >= 1)
+  EPSMonitorSet(*eps, EPSMonitorAll, PETSC_NULL, PETSC_NULL);
+#endif
+
+  ierr = EPSSolve(*eps);
+
+  gst_handle->eps_handle = eps;
+  gst_handle->gst_data = gst_data;
+
+  if (ierr != 0)
+  {
+    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "SLEPc error from EPSSolve (ierr == %d).", ierr);
+    return adj_chkierr_auto(ADJ_ERR_SLEPC_ERROR);
+  }
+
+  ierr = EPSGetConverged(*eps, ncv);
+  if (ierr != 0)
+  {
+    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "SLEPc error from EPSGetConverged (ierr == %d).", ierr);
+    return adj_chkierr_auto(ADJ_ERR_SLEPC_ERROR);
+  }
+
+  return ADJ_OK;
+
+#endif
+}
+
+int adj_destroy_gst(adj_gst* gst_handle);
+
 #ifdef HAVE_SLEPC
 PetscErrorCode tlm_solve(Mat A, Vec x, Vec y)
 {
-  adj_svd_data* svd_data;
+  adj_gst_data* svd_data;
   adj_matrix lhs;
   adj_vector rhs;
   adj_vector rhs_tmp;
@@ -321,7 +452,7 @@ PetscErrorCode tlm_solve(Mat A, Vec x, Vec y)
 
 PetscErrorCode adj_solve(Mat A, Vec x, Vec y)
 {
-  adj_svd_data* svd_data;
+  adj_gst_data* svd_data;
   adj_matrix lhs;
   adj_vector rhs;
   adj_vector rhs_tmp;
@@ -396,6 +527,11 @@ PetscErrorCode adj_solve(Mat A, Vec x, Vec y)
   }
 
   printf("Ending adj_solve\n");
+  PetscFunctionReturn(1);
+}
+
+PetscErrorCode gst_mult(Mat A, Vec x, Vec y)
+{
   PetscFunctionReturn(1);
 }
 
