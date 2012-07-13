@@ -42,6 +42,7 @@ typedef struct
   adj_matrix* ic_norm;
   adj_variable final;
   adj_matrix* final_norm;
+  Mat gst_mat;
   Mat tlm_mat;
 } adj_gst_data;
 

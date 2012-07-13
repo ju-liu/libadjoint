@@ -243,6 +243,13 @@ int adj_get_gst(adj_gst* gst_handle, int i, adj_scalar* sigma, adj_vector* u, ad
   if (u != NULL || v != NULL || sigma != NULL) /* we need to pull the eigenfunction */
   {
     Vec dummy;
+    Mat A;
+
+    /* Shut the compiler up about uninitialised variables */
+    EPSGetOperators(*( (EPS*) gst_handle->eps_handle ), &A, PETSC_NULL);
+    MatGetVecs(A, &v_vec, dummy);
+    VecDestroy(v_vec);
+    VecDestroy(dummy);
 
     ierr = EPSGetEigenpair(*eps, i, &ssigma, &ssigma_complex, v_vec, dummy);
     if (ierr != 0)
@@ -474,7 +481,32 @@ int adj_compute_gst(adj_adjointer* adjointer, adj_variable ic, adj_matrix* ic_no
 #endif
 }
 
-int adj_destroy_gst(adj_gst* gst_handle);
+int adj_destroy_gst(adj_gst* gst_handle)
+{
+#ifndef HAVE_SLEPC
+  (void) gst_handle;
+
+  snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "In order to destroy EPS objects, you need to compile with SLEPc support.");
+  gst_handle = (adj_gst*) NULL;
+  return ADJ_ERR_INVALID_INPUTS;
+#else
+  int ierr;
+  adj_gst_data* gst_data;
+  ierr = EPSDestroy(*( (EPS*) gst_handle->eps_handle ));
+  if (ierr != 0)
+  {
+    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "SLEPc error from EPSDestroy (ierr == %d).", ierr);
+    return adj_chkierr_auto(ADJ_ERR_SLEPC_ERROR);
+  }
+  free((EPS*) gst_handle->eps_handle);
+  gst_data = (adj_gst_data*) gst_handle->gst_data;
+  MatDestroy(gst_data->gst_mat);
+  MatDestroy(gst_data->tlm_mat);
+  free((adj_gst_data*) gst_handle->gst_data);
+
+  return ADJ_OK;
+#endif
+}
 
 #ifdef HAVE_SLEPC
 PetscErrorCode tlm_solve(Mat A, Vec x, Vec y)
