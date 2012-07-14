@@ -1034,7 +1034,7 @@ class Adjointer(object):
     self.__register_data_callback__('ADJ_VEC_DELETE_CB', self.__vec_delete_callback__)
     self.__register_data_callback__('ADJ_MAT_DUPLICATE_CB', self.__mat_duplicate_callback__)
     self.__register_data_callback__('ADJ_MAT_DESTROY_CB', self.__mat_destroy_callback__)
-    self.__register_data_callback__('ADJ_MAT_ACTION_CB', self.__mat_action_callback)
+    self.__register_data_callback__('ADJ_MAT_ACTION_CB', self.__mat_action_callback__)
     self.__register_data_callback__('ADJ_MAT_AXPY_CB', self.__mat_axpy_callback__)
     self.__register_data_callback__('ADJ_SOLVE_CB', self.__mat_solve_callback__)
 
@@ -1393,8 +1393,26 @@ class Adjointer(object):
 
     handle = clib.adj_gst()
     ncv = ctypes.c_int()
+
+    # Some hideous hackery to keep references around
+    orig_final_norm = final_norm
+    if final_norm is not None:
+      final_norm = final_norm.as_adj_matrix()
+
+    orig_ic_norm = ic_norm
+    if ic_norm is not None:
+      ic_norm = ic_norm.as_adj_matrix()
+
     clib.adj_compute_gst(self.adjointer, ic.var, ic_norm, final.var, final_norm, nrv, handle, ncv)
-    return GSTHandle(handle, ncv)
+
+    gst = GSTHandle(handle, ncv)
+
+    # We need to keep a reference to the adj_matrix, in case it gets deallocated
+    gst.final_norm = final_norm
+    gst.orig_final_norm = orig_final_norm
+    gst_ic_norm = ic_norm
+    gst.orig_ic_norm = orig_ic_norm
+    return gst
 
   def compute_propagator_svd(self, ic, final, nsv):
     '''Computes the singular value decomposition of the propagator.

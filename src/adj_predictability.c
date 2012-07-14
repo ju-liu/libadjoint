@@ -707,10 +707,48 @@ PetscErrorCode gst_mult(Mat A, Vec x, Vec y)
   ierr = MatMult(tlm_mat, x, Lx);                CHKERRQ(ierr);
 
   /* Then take the final norm */
-  assert(gst_data->final_norm == NULL); /* for now */
-  ierr = VecDuplicate(Lx, &XLx);                 CHKERRQ(ierr);
-  ierr = VecCopy(Lx, XLx);                       CHKERRQ(ierr);
-  ierr = VecDestroy(Lx);                         CHKERRQ(ierr);
+  if (gst_data->final_norm != NULL)
+  {
+    adj_scalar* Lx_array; /* to do some annoying shuffling from PETSc Vecs -> adj_vectors */
+    adj_scalar* XLx_array;
+    adj_vector Lx_vector;
+    adj_vector XLx_vector;
+    adj_vector final_val;
+
+    /* Do the necessary allocations */
+    ierr = VecDuplicate(Lx, &XLx);                 CHKERRQ(ierr);
+    ierr = VecGetArray(Lx, &Lx_array);             CHKERRQ(ierr);
+    ierr = VecGetArray(XLx, &XLx_array);           CHKERRQ(ierr)
+
+    ierr = adj_get_variable_value(adjointer, gst_data->final, &final_val);
+    adjointer->callbacks.vec_duplicate(final_val, &Lx_vector);
+    adjointer->callbacks.vec_duplicate(final_val, &XLx_vector);
+
+    /* OK. Stuff the values from Lx into Lx_vector. */
+    adjointer->callbacks.vec_set_values(&Lx_vector, Lx_array);
+    /* Now compute the action of the matrix. (Sets XLx_vector)*/
+    adjointer->callbacks.mat_action(*gst_data->final_norm, Lx_vector, &XLx_vector);
+    /* Now fetch the values from XLx_vector into XLx_array. */
+    adjointer->callbacks.vec_get_values(XLx_vector, &XLx_array);
+
+    /* Now clean up */
+    ierr = VecRestoreArray(Lx, &Lx_array);         CHKERRQ(ierr);
+    ierr = VecRestoreArray(XLx, &XLx_array);       CHKERRQ(ierr);
+
+    adjointer->callbacks.vec_destroy(&Lx_vector);
+    adjointer->callbacks.vec_destroy(&XLx_vector);
+
+    ierr = VecDestroy(Lx);                         CHKERRQ(ierr);
+
+    /* Now XLx contains the action of the norm matrix, and everything
+       else is destroyed. */
+  }
+  else
+  {
+    ierr = VecDuplicate(Lx, &XLx);                 CHKERRQ(ierr);
+    ierr = VecCopy(Lx, XLx);                       CHKERRQ(ierr);
+    ierr = VecDestroy(Lx);                         CHKERRQ(ierr);
+  }
 
   /* Now multiply by L^* .. */
   ierr = MatGetVecs(tlm_mat, &LXLx, PETSC_NULL); CHKERRQ(ierr);
