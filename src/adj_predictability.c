@@ -236,9 +236,10 @@ int adj_get_gst(adj_gst* gst_handle, int i, adj_scalar* sigma, adj_vector* u, ad
   adj_scalar ssigma_complex;
   Vec v_vec;
   adj_adjointer* adjointer;
-  
+
   eps = (EPS*) gst_handle->eps_handle;
-  adjointer = ((adj_gst_data*) gst_handle->gst_data)->adjointer;
+  adj_gst_data* gst_data = (adj_gst_data*) gst_handle->gst_data;
+  adjointer = gst_data->adjointer;
 
   if (u != NULL || v != NULL || sigma != NULL) /* we need to pull the eigenfunction */
   {
@@ -288,7 +289,7 @@ int adj_get_gst(adj_gst* gst_handle, int i, adj_scalar* sigma, adj_vector* u, ad
     adj_vector ic_val;
     adj_scalar* v_arr;
 
-    ierr = adj_get_variable_value(adjointer, ((adj_gst_data*) gst_handle->gst_data)->ic, &ic_val);
+    ierr = adj_get_variable_value(adjointer, gst_data->ic, &ic_val);
     if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
     adjointer->callbacks.vec_duplicate(ic_val, v);
 
@@ -303,13 +304,39 @@ int adj_get_gst(adj_gst* gst_handle, int i, adj_scalar* sigma, adj_vector* u, ad
     Vec u_vec; /* the vector that contains the tlm output */
     adj_scalar* u_arr;
 
-    MatGetVecs(((adj_gst_data*) gst_handle->gst_data)->tlm_mat, PETSC_NULL, &u_vec);
-    MatMult(((adj_gst_data*) gst_handle->gst_data)->tlm_mat, v_vec, u_vec); /* do the TLM solve */
-    VecNormalize(u_vec, PETSC_NULL); /* FIXME: is this the right normalisation? */
+    MatGetVecs(gst_data->tlm_mat, PETSC_NULL, &u_vec);
+    MatMult(gst_data->tlm_mat, v_vec, u_vec); /* do the TLM solve */
 
-    ierr = adj_get_variable_value(adjointer, ((adj_gst_data*) gst_handle->gst_data)->final, &final_val);
+    ierr = adj_get_variable_value(adjointer, gst_data->final, &final_val);
     if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
     adjointer->callbacks.vec_duplicate(final_val, u);
+
+    if (gst_data->final_norm == NULL)
+    {
+      VecNormalize(u_vec, PETSC_NULL);
+    }
+    else
+    {
+      /* Get its norm wrt final_norm, then call VecScale. */
+      /* we'll use u as a temporary storage variable here. */
+      adj_vector Xu;
+      adj_scalar inner;
+
+      ierr = VecGetArray(u_vec, &u_arr);
+      adjointer->callbacks.vec_set_values(u, u_arr);
+      ierr = VecRestoreArray(u_vec, &u_arr);
+
+      /* Now u is an adj_vector containing the unnormalized values */
+      adjointer->callbacks.vec_duplicate(*u, &Xu);
+      adjointer->callbacks.mat_action(*gst_data->final_norm, *u, &Xu);
+
+      /* Now Xu contains the product X.u. We want to inner that with u
+         to get the actual norm */
+      adjointer->callbacks.vec_dot_product(*u, Xu, &inner);
+
+      /* Now finally scale u_vec by the norm */
+      VecScale(u_vec, 1.0/sqrt(inner));
+    }
 
     ierr = VecGetArray(u_vec, &u_arr);
     adjointer->callbacks.vec_set_values(u, u_arr);
@@ -419,8 +446,8 @@ int adj_compute_gst(adj_adjointer* adjointer, adj_variable ic, adj_matrix* ic_no
   if (final_norm != NULL && adjointer->callbacks.mat_action == NULL) return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
   strncpy(adj_error_msg, "", ADJ_ERROR_MSG_BUF);
 
-  strncpy(adj_error_msg, "Need the ADJ_SOLVE_CB data callback, but it hasn't been supplied.", ADJ_ERROR_MSG_BUF);
-  if (ic_norm != NULL && adjointer->callbacks.solve == NULL) return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
+  strncpy(adj_error_msg, "Need the ADJ_VEC_DOT_PRODUCT_CB callback, but it hasn't been supplied.", ADJ_ERROR_MSG_BUF);
+  if (final_norm != NULL && adjointer->callbacks.vec_dot_product == NULL) return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
   strncpy(adj_error_msg, "", ADJ_ERROR_MSG_BUF);
 
   gst_data = (adj_gst_data*) malloc(sizeof(adj_gst_data));
