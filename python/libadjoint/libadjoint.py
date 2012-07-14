@@ -1410,7 +1410,7 @@ class Adjointer(object):
     # We need to keep a reference to the adj_matrix, in case it gets deallocated
     gst.final_norm = final_norm
     gst.orig_final_norm = orig_final_norm
-    gst_ic_norm = ic_norm
+    gst.ic_norm = ic_norm
     gst.orig_ic_norm = orig_ic_norm
     return gst
 

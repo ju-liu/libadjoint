@@ -783,9 +783,37 @@ PetscErrorCode gst_mult(Mat A, Vec x, Vec y)
   ierr = VecDestroy(XLx);
 
   /* Now take the initial norm */
-  assert(gst_data->ic_norm == NULL); /* for now */
-  ierr = VecCopy(LXLx, y);                       CHKERRQ(ierr);
-  ierr = VecDestroy(LXLx);
+  if (gst_data->ic_norm == NULL)
+  {
+    ierr = VecCopy(LXLx, y);                       CHKERRQ(ierr);
+    ierr = VecDestroy(LXLx);
+  }
+  else
+  {
+    /* We need to do y = ic_norm^{-1} . LXLx */
+    adj_vector y_vec;
+    adj_vector LXLx_vec;
+    adj_vector ic_val;
+    adj_scalar* LXLx_array;
+    adj_scalar* y_array;
+
+    ierr = adj_get_variable_value(adjointer, gst_data->ic, &ic_val);
+    adjointer->callbacks.vec_duplicate(ic_val, &y_vec);
+    adjointer->callbacks.vec_duplicate(ic_val, &LXLx_vec);
+
+    /* Set LXLx_vec from the PETSc array */
+    ierr = VecGetArray(LXLx, &LXLx_array);         CHKERRQ(ierr);
+    adjointer->callbacks.vec_set_values(&LXLx_vec, LXLx_array);
+    ierr = VecRestoreArray(LXLx, &LXLx_array);     CHKERRQ(ierr);
+
+    /* Now do the solve */
+    adjointer->callbacks.solve(gst_data->ic, *gst_data->ic_norm, LXLx_vec, &y_vec);
+
+    /* Now set the values of y */
+    ierr = VecGetArray(y, &y_array);               CHKERRQ(ierr);
+    adjointer->callbacks.vec_get_values(y_vec, &y_array);
+    ierr = VecRestoreArray(y, &y_array);           CHKERRQ(ierr);
+  }
 
   PetscFunctionReturn(0);
 }
