@@ -148,6 +148,7 @@ typedef struct
   void (*mat_duplicate)(adj_matrix matin, adj_matrix *matout);
   void (*mat_axpy)(adj_matrix *Y, adj_scalar alpha, adj_matrix X);
   void (*mat_destroy)(adj_matrix *mat);
+  void (*mat_action)(adj_matrix mat, adj_vector x, adj_vector* y);
 
   void (*solve)(adj_variable var, adj_matrix mat, adj_vector rhs, adj_vector *soln);
 } adj_data_callbacks;

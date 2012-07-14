@@ -415,6 +415,14 @@ int adj_compute_gst(adj_adjointer* adjointer, adj_variable ic, adj_matrix* ic_no
   if (adjointer->callbacks.vec_set_values == NULL) return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
   strncpy(adj_error_msg, "", ADJ_ERROR_MSG_BUF);
 
+  strncpy(adj_error_msg, "Need the ADJ_MAT_ACTION_CB data callback, but it hasn't been supplied.", ADJ_ERROR_MSG_BUF);
+  if (final_norm != NULL && adjointer->callbacks.mat_action == NULL) return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
+  strncpy(adj_error_msg, "", ADJ_ERROR_MSG_BUF);
+
+  strncpy(adj_error_msg, "Need the ADJ_SOLVE_CB data callback, but it hasn't been supplied.", ADJ_ERROR_MSG_BUF);
+  if (ic_norm != NULL && adjointer->callbacks.solve == NULL) return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
+  strncpy(adj_error_msg, "", ADJ_ERROR_MSG_BUF);
+
   gst_data = (adj_gst_data*) malloc(sizeof(adj_gst_data));
   gst_data->adjointer = adjointer;
   gst_data->ic = ic;
