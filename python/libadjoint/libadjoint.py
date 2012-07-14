@@ -726,6 +726,7 @@ class Adjointer(object):
     self.vec_delete_type = ctypes.CFUNCTYPE(None, clib.adj_variable)
     self.mat_duplicate_type = ctypes.CFUNCTYPE(None, clib.adj_matrix, ctypes.POINTER(clib.adj_matrix))
     self.mat_destroy_type = ctypes.CFUNCTYPE(None, ctypes.POINTER(clib.adj_matrix))
+    self.mat_action_type = ctypes.CFUNCTYPE(None, clib.adj_matrix, clib.adj_vector, ctypes.POINTER(clib.adj_vector))
     self.mat_axpy_type = ctypes.CFUNCTYPE(None, ctypes.POINTER(clib.adj_matrix), adj_scalar, clib.adj_matrix)
     self.solve_type = ctypes.CFUNCTYPE(None, clib.adj_variable, clib.adj_matrix, clib.adj_vector, ctypes.POINTER(clib.adj_vector))
     self.functional_type = ctypes.CFUNCTYPE(None, ctypes.POINTER(clib.adj_adjointer), ctypes.c_int, ctypes.c_int, ctypes.POINTER(clib.adj_variable), ctypes.POINTER(clib.adj_vector), 
@@ -1033,6 +1034,7 @@ class Adjointer(object):
     self.__register_data_callback__('ADJ_VEC_DELETE_CB', self.__vec_delete_callback__)
     self.__register_data_callback__('ADJ_MAT_DUPLICATE_CB', self.__mat_duplicate_callback__)
     self.__register_data_callback__('ADJ_MAT_DESTROY_CB', self.__mat_destroy_callback__)
+    self.__register_data_callback__('ADJ_MAT_ACTION_CB', self.__mat_action_callback__)
     self.__register_data_callback__('ADJ_MAT_AXPY_CB', self.__mat_axpy_callback__)
     self.__register_data_callback__('ADJ_SOLVE_CB', self.__mat_solve_callback__)
 
@@ -1079,6 +1081,7 @@ class Adjointer(object):
                    "ADJ_VEC_DELETE_CB": self.vec_delete_type,
                    "ADJ_MAT_DUPLICATE_CB": self.mat_duplicate_type,
                    "ADJ_MAT_DESTROY_CB": self.mat_destroy_type,
+                   "ADJ_MAT_ACTION_CB": self.mat_action_type,
                    "ADJ_MAT_AXPY_CB": self.mat_axpy_type,
                    "ADJ_SOLVE_CB": self.solve_type}
     if type_name in type_to_api:
@@ -1342,6 +1345,13 @@ class Adjointer(object):
     references_taken.remove(mat)
 
   @staticmethod
+  def __mat_action_callback__(adj_mat, x_vec, y_ptr):
+    y = vector(y_ptr[0])
+    x = vector(x_vec)
+    mat = matrix(adj_mat)
+    mat.action(x, y)
+
+  @staticmethod
   def __mat_axpy_callback__(adj_mat_ptr, alpha, adj_mat):
     y = matrix(adj_mat_ptr[0])
     x = matrix(adj_mat)
@@ -1359,8 +1369,11 @@ class Adjointer(object):
     adj_soln_ptr[0].klass = 0
     adj_soln_ptr[0].flags = 0
 
-  def compute_propagator_svd(self, ic, final, nsv):
-    '''Computes the singular value decomposition of the propagator.
+  def compute_gst(self, ic, ic_norm, final, final_norm, nrv):
+    '''Computes the singular value decomposition of the propagator,
+    possibly with some norms for the initial and final condition spaces.
+    Pass ic_norm=None and final_norm=None to use the vector l2 norm.
+
     The propagator is the operator that maps
     (perturbations in the initial condition)
     to
@@ -1374,13 +1387,35 @@ class Adjointer(object):
     by E. Kalnay, chapter 6.
 
     ic -- an adj_variable corresponding to the initial condition
+    ic_norm -- an adj_matrix with a norm for the initial condition.
+               must be symmetric positive-definite
     final -- an adj_variable corresponding to the final condition
-    nsv -- number of singular vectors to compute.'''
+    final_norm -- an adj_matrix with a norm for the final condition.
+                  must be symmetric positive-definite
+    nrv -- number of requested singular vectors.'''
 
-    handle = clib.adj_svd()
+    handle = clib.adj_gst()
     ncv = ctypes.c_int()
-    clib.adj_compute_propagator_svd(self.adjointer, ic.var, final.var, nsv, handle, ncv)
-    return SVDHandle(handle, ncv)
+
+    # Some hideous hackery to keep references around
+    orig_final_norm = final_norm
+    if final_norm is not None:
+      final_norm = final_norm.as_adj_matrix()
+
+    orig_ic_norm = ic_norm
+    if ic_norm is not None:
+      ic_norm = ic_norm.as_adj_matrix()
+
+    clib.adj_compute_gst(self.adjointer, ic.var, ic_norm, final.var, final_norm, nrv, handle, ncv)
+
+    gst = GSTHandle(handle, ncv)
+
+    # We need to keep a reference to the adj_matrix, in case it gets deallocated
+    gst.final_norm = final_norm
+    gst.orig_final_norm = orig_final_norm
+    gst.ic_norm = ic_norm
+    gst.orig_ic_norm = orig_ic_norm
+    return gst
 
   def get_variable_value(self, var):
     vec = clib.adj_vector()
@@ -1504,6 +1539,13 @@ class Matrix(LinAlg):
     raise exceptions.LibadjointErrorNeedCallback(
       'Class '+self.__class__.__name__+' has no solve() method')        
 
+  def action(self, x, y):
+    '''action(self, x, y)
+
+    This method must compute the action y = self*x.'''
+
+    raise exceptions.LibadjointErrorNeedCallback(
+      'Class '+self.__class__.__name__+' has no action() method')        
 
   def as_adj_matrix(self):
     '''as_adj_matrix(self)
@@ -1527,9 +1569,9 @@ def matrix(adj_matrix):
 
   return python_utils.c_deref(adj_matrix.ptr)
 
-class SVDHandle(object):
-  '''An object that wraps the result of a singular value decomposition.
-     Request the computed singular values with get_svd.'''
+class GSTHandle(object):
+  '''An object that wraps the result of a generalised stability theory computation.
+     Request the computed results with get_gst.'''
   def __init__(self, handle, ncv):
     self.handle = handle
     self.ncv = ncv.value
@@ -1538,7 +1580,7 @@ class SVDHandle(object):
   def __del__(self):
     self.destroy()
 
-  def get_svd(self, i, return_vectors=False, return_error=False):
+  def get_gst(self, i, return_vectors=False, return_error=False):
     if return_vectors:
       u = clib.adj_vector()
       v = clib.adj_vector()
@@ -1553,7 +1595,7 @@ class SVDHandle(object):
 
     sigma = adj_scalar()
 
-    clib.adj_get_svd(self.handle, i, sigma, u, v, error)
+    clib.adj_get_gst(self.handle, i, sigma, u, v, error)
 
     retval = [sigma.value]
     if return_vectors:
@@ -1572,5 +1614,5 @@ class SVDHandle(object):
 
   def destroy(self):
     if self.allocated:
-      clib.adj_destroy_svd(self.handle)
+      clib.adj_destroy_gst(self.handle)
       self.allocated = False

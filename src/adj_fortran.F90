@@ -79,6 +79,7 @@ module libadjoint_data_structures
     type(c_funptr) :: mat_duplicate
     type(c_funptr) :: mat_axpy
     type(c_funptr) :: mat_destroy
+    type(c_funptr) :: mat_action
 
     type(c_funptr) :: solve
   end type adj_data_callbacks

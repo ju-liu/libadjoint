@@ -77,6 +77,7 @@
 #define ADJ_MAT_DUPLICATE_CB 30
 #define ADJ_MAT_AXPY_CB 31
 #define ADJ_MAT_DESTROY_CB 32
+#define ADJ_MAT_ACTION_CB 33
 
 #define ADJ_SOLVE_CB 40
 

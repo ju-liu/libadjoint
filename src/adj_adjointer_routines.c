@@ -1340,6 +1340,9 @@ int adj_register_data_callback(adj_adjointer* adjointer, int type, void (*fn)(vo
     case ADJ_MAT_DESTROY_CB:
       adjointer->callbacks.mat_destroy = (void(*)(adj_matrix *mat)) fn;
       break;
+    case ADJ_MAT_ACTION_CB:
+      adjointer->callbacks.mat_action = (void(*)(adj_matrix mat, adj_vector x, adj_vector* y)) fn;
+      break;
     case ADJ_SOLVE_CB:
       adjointer->callbacks.solve = (void(*)(adj_variable var, adj_matrix mat, adj_vector rhs, adj_vector *soln)) fn;
       break;
