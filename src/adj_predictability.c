@@ -296,6 +296,25 @@ int adj_get_gst(adj_gst* gst_handle, int i, adj_scalar* sigma, adj_vector* u, ad
     ierr = VecGetArray(v_vec, &v_arr);
     adjointer->callbacks.vec_set_values(v, v_arr);
     ierr = VecRestoreArray(v_vec, &v_arr);
+
+    if (gst_data->ic_norm != NULL) /* need to normalise */
+    {
+      adj_vector Xv;
+      adj_scalar inner;
+
+      adjointer->callbacks.vec_duplicate(*v, &Xv);
+      adjointer->callbacks.mat_action(*gst_data->ic_norm, *v, &Xv);
+      adjointer->callbacks.vec_dot_product(*v, Xv, &inner);
+      adjointer->callbacks.vec_destroy(&Xv);
+
+      /* Now finally scale v_vec by the norm */
+      VecScale(v_vec, 1.0/sqrt(inner));
+
+      ierr = VecGetArray(v_vec, &v_arr);
+      adjointer->callbacks.vec_set_values(v, v_arr);
+      ierr = VecRestoreArray(v_vec, &v_arr);
+    }
+
   }
 
   if (u != NULL) /* this is the output perturbation, which we need to compute, alas */
@@ -333,6 +352,7 @@ int adj_get_gst(adj_gst* gst_handle, int i, adj_scalar* sigma, adj_vector* u, ad
       /* Now Xu contains the product X.u. We want to inner that with u
          to get the actual norm */
       adjointer->callbacks.vec_dot_product(*u, Xu, &inner);
+      adjointer->callbacks.vec_destroy(&Xu);
 
       /* Now finally scale u_vec by the norm */
       VecScale(u_vec, 1.0/sqrt(inner));
