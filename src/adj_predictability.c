@@ -111,6 +111,7 @@ int adj_compute_gst(adj_adjointer* adjointer, adj_variable ic, adj_matrix* ic_no
   EPSCreate(PETSC_COMM_WORLD, eps);
   EPSSetOperators(*eps, gst_mat, PETSC_NULL);
   EPSSetProblemType(*eps, EPS_HEP);
+  EPSSetType(*eps, EPSKRYLOVSCHUR);
 
   nwv = 3*nrv;
   if (nwv > global_ic_dof)
