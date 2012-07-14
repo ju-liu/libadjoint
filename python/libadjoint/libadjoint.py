@@ -726,6 +726,7 @@ class Adjointer(object):
     self.vec_delete_type = ctypes.CFUNCTYPE(None, clib.adj_variable)
     self.mat_duplicate_type = ctypes.CFUNCTYPE(None, clib.adj_matrix, ctypes.POINTER(clib.adj_matrix))
     self.mat_destroy_type = ctypes.CFUNCTYPE(None, ctypes.POINTER(clib.adj_matrix))
+    self.mat_action_type = ctypes.CFUNCTYPE(None, clib.adj_matrix, clib.adj_vector, ctypes.POINTER(clib.adj_vector))
     self.mat_axpy_type = ctypes.CFUNCTYPE(None, ctypes.POINTER(clib.adj_matrix), adj_scalar, clib.adj_matrix)
     self.solve_type = ctypes.CFUNCTYPE(None, clib.adj_variable, clib.adj_matrix, clib.adj_vector, ctypes.POINTER(clib.adj_vector))
     self.functional_type = ctypes.CFUNCTYPE(None, ctypes.POINTER(clib.adj_adjointer), ctypes.c_int, ctypes.c_int, ctypes.POINTER(clib.adj_variable), ctypes.POINTER(clib.adj_vector), 
@@ -1033,6 +1034,7 @@ class Adjointer(object):
     self.__register_data_callback__('ADJ_VEC_DELETE_CB', self.__vec_delete_callback__)
     self.__register_data_callback__('ADJ_MAT_DUPLICATE_CB', self.__mat_duplicate_callback__)
     self.__register_data_callback__('ADJ_MAT_DESTROY_CB', self.__mat_destroy_callback__)
+    self.__register_data_callback__('ADJ_MAT_ACTION_CB', self.__mat_action_callback)
     self.__register_data_callback__('ADJ_MAT_AXPY_CB', self.__mat_axpy_callback__)
     self.__register_data_callback__('ADJ_SOLVE_CB', self.__mat_solve_callback__)
 
@@ -1079,6 +1081,7 @@ class Adjointer(object):
                    "ADJ_VEC_DELETE_CB": self.vec_delete_type,
                    "ADJ_MAT_DUPLICATE_CB": self.mat_duplicate_type,
                    "ADJ_MAT_DESTROY_CB": self.mat_destroy_type,
+                   "ADJ_MAT_ACTION_CB": self.mat_action_type,
                    "ADJ_MAT_AXPY_CB": self.mat_axpy_type,
                    "ADJ_SOLVE_CB": self.solve_type}
     if type_name in type_to_api:
@@ -1342,6 +1345,13 @@ class Adjointer(object):
     references_taken.remove(mat)
 
   @staticmethod
+  def __mat_action_callback__(adj_mat, x_vec, y_ptr):
+    y = vector(y_ptr[0])
+    x = vector(x_vec)
+    mat = matrix(adj_mat)
+    mat.action(x, y)
+
+  @staticmethod
   def __mat_axpy_callback__(adj_mat_ptr, alpha, adj_mat):
     y = matrix(adj_mat_ptr[0])
     x = matrix(adj_mat)
@@ -1531,6 +1541,13 @@ class Matrix(LinAlg):
     raise exceptions.LibadjointErrorNeedCallback(
       'Class '+self.__class__.__name__+' has no solve() method')        
 
+  def action(self, x, y):
+    '''action(self, x, y)
+
+    This method must compute the action y = self*x.'''
+
+    raise exceptions.LibadjointErrorNeedCallback(
+      'Class '+self.__class__.__name__+' has no action() method')        
 
   def as_adj_matrix(self):
     '''as_adj_matrix(self)
