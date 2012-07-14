@@ -200,53 +200,6 @@ int adj_get_gst(adj_gst* gst_handle, int i, adj_scalar* sigma, adj_vector* u, ad
     }
   }
 
-  if (sigma != NULL)
-  {
-    if (abs(ssigma) < DBL_EPSILON && ssigma < 0.0)
-      *sigma = 0.0;
-    else
-      *sigma = sqrt(ssigma);
-
-    if (isnan(*sigma))
-    {
-      snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "SLEPc returned NaN as a growth rate.");
-      return adj_chkierr_auto(ADJ_ERR_SLEPC_ERROR);
-    }
-  }
-
-  if (v != NULL) /* this is the input perturbation, which we already have, handily */
-  {
-    adj_vector ic_val;
-    adj_scalar* v_arr;
-
-    ierr = adj_get_variable_value(adjointer, gst_data->ic, &ic_val);
-    if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
-    adjointer->callbacks.vec_duplicate(ic_val, v);
-
-    ierr = VecGetArray(v_vec, &v_arr);
-    adjointer->callbacks.vec_set_values(v, v_arr);
-    ierr = VecRestoreArray(v_vec, &v_arr);
-
-    if (gst_data->ic_norm != NULL) /* need to normalise */
-    {
-      adj_vector Xv;
-      adj_scalar inner;
-
-      adjointer->callbacks.vec_duplicate(*v, &Xv);
-      adjointer->callbacks.mat_action(*gst_data->ic_norm, *v, &Xv);
-      adjointer->callbacks.vec_dot_product(*v, Xv, &inner);
-      adjointer->callbacks.vec_destroy(&Xv);
-
-      /* Now finally scale v_vec by the norm */
-      VecScale(v_vec, 1.0/sqrt(inner));
-
-      ierr = VecGetArray(v_vec, &v_arr);
-      adjointer->callbacks.vec_set_values(v, v_arr);
-      ierr = VecRestoreArray(v_vec, &v_arr);
-    }
-
-  }
-
   if (u != NULL) /* this is the output perturbation, which we need to compute, alas */
   {
     adj_vector final_val;
@@ -270,6 +223,7 @@ int adj_get_gst(adj_gst* gst_handle, int i, adj_scalar* sigma, adj_vector* u, ad
       /* we'll use u as a temporary storage variable here. */
       adj_vector Xu;
       adj_scalar inner;
+      adj_scalar norm;
 
       ierr = VecGetArray(u_vec, &u_arr);
       adjointer->callbacks.vec_set_values(u, u_arr);
@@ -285,6 +239,7 @@ int adj_get_gst(adj_gst* gst_handle, int i, adj_scalar* sigma, adj_vector* u, ad
       adjointer->callbacks.vec_destroy(&Xu);
 
       /* Now finally scale u_vec by the norm */
+      norm = sqrt(inner);
       VecScale(u_vec, 1.0/sqrt(inner));
     }
 
@@ -293,12 +248,63 @@ int adj_get_gst(adj_gst* gst_handle, int i, adj_scalar* sigma, adj_vector* u, ad
     ierr = VecRestoreArray(u_vec, &u_arr);
   }
 
+  if (v != NULL) /* this is the input perturbation, which we already have, handily */
+  {
+    adj_vector ic_val;
+    adj_scalar* v_arr;
+
+    ierr = adj_get_variable_value(adjointer, gst_data->ic, &ic_val);
+    if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
+    adjointer->callbacks.vec_duplicate(ic_val, v);
+
+    ierr = VecGetArray(v_vec, &v_arr);
+    adjointer->callbacks.vec_set_values(v, v_arr);
+    ierr = VecRestoreArray(v_vec, &v_arr);
+
+    if (gst_data->ic_norm != NULL) /* need to normalise */
+    {
+      adj_vector Xv;
+      adj_scalar inner;
+      adj_scalar norm;
+
+      adjointer->callbacks.vec_duplicate(*v, &Xv);
+      adjointer->callbacks.mat_action(*gst_data->ic_norm, *v, &Xv);
+      adjointer->callbacks.vec_dot_product(*v, Xv, &inner);
+      adjointer->callbacks.vec_destroy(&Xv);
+
+      /* Now finally scale v_vec by the norm */
+      norm = sqrt(inner);
+      VecScale(v_vec, 1.0/norm);
+
+      ierr = VecGetArray(v_vec, &v_arr);
+      adjointer->callbacks.vec_set_values(v, v_arr);
+      ierr = VecRestoreArray(v_vec, &v_arr);
+    }
+
+  }
+
   if (error != NULL)
   {
     ierr = EPSComputeRelativeError(*eps, i, error);
     if (ierr != 0)
     {
       snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "SLEPc error from EPSComputeRelativeError (ierr == %d).", ierr);
+      return adj_chkierr_auto(ADJ_ERR_SLEPC_ERROR);
+    }
+  }
+
+  if (sigma != NULL)
+  {
+    if (abs(ssigma) < DBL_EPSILON && ssigma < 0.0)
+      *sigma = 0.0;
+    else
+    {
+      *sigma = sqrt(ssigma);
+    }
+
+    if (isnan(*sigma))
+    {
+      snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "SLEPc returned NaN as a growth rate.");
       return adj_chkierr_auto(ADJ_ERR_SLEPC_ERROR);
     }
   }
