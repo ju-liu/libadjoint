@@ -1,6 +1,24 @@
 #include "libadjoint/adj_variable_lookup.h"
 #include "libadjoint/adj_error_handling.h"
 
+
+int adj_find_variable_equation_nb(adj_adjointer* adjointer, adj_variable* var, int* equation_nb) 
+{
+  int ierr;  
+  adj_variable_data* variable_data;
+
+  ierr = adj_find_variable_data(&(adjointer->varhash), var, &variable_data);
+  if (ierr != ADJ_OK)
+  {
+    char buf[ADJ_NAME_LEN];
+    adj_variable_str(*var, buf, ADJ_NAME_LEN);
+    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "The queried variable %s is not known to the adjointer.", buf);
+    return adj_chkierr_auto(ierr);
+  }
+  *equation_nb = variable_data->equation;
+  return ADJ_OK;
+}
+
 int adj_add_variable_data(adj_variable_hash** hash, adj_variable* var, adj_variable_data* data)
 {
   adj_variable_hash* entry;

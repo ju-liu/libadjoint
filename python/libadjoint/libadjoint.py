@@ -112,6 +112,12 @@ class Variable(object):
     fwd_var = Variable(self.name, self.timestep, self.iteration)
     return fwd_var
 
+  def equation_nb(self, adjointer):
+    ''' Returns the number of the foward equation that solves for this variable '''
+    equation_nb = ctypes.c_int()
+    clib.adj_find_variable_equation_nb(adjointer.adjointer, self.var, equation_nb)
+    return equation_nb.value
+
 class NonlinearBlock(object):
   def __init__(self, name, dependencies, context=None, coefficient=None, test_hermitian=None, test_derivative=None):
     self.name = name
