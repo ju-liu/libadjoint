@@ -530,7 +530,7 @@ class RHS(object):
 
     Register this RHS as the RHS of equation.'''
 
-    rhs_deps=self.dependencies()
+    rhs_deps = self.dependencies()
     if rhs_deps is not None and len(rhs_deps) > 0:
       clib.adj_equation_set_rhs_dependencies(equation.equation, len(rhs_deps), list_to_carray(rhs_deps, clib.adj_variable), None)
 
@@ -853,6 +853,7 @@ class Adjointer(object):
 
     This method records the provided variable according to the settings in storage.'''
 
+    storage_class = storage.vec.__class__
     raised_exception = False
     try:
       clib.adj_record_variable(self.adjointer, var.var, storage.storage_data)
@@ -865,7 +866,7 @@ class Adjointer(object):
     # the user implementation of the read() and delete() functions, and but here we can.
     def __vec_read_callback__(adj_var, adj_vec_ptr):
         var = Variable(var=adj_var)
-        y = storage.vec.__class__.read(var)
+        y = storage_class.read(var)
         # Increase the reference counter of the new object to protect it from deallocation at the end of the callback
         references_taken.append(y)
         adj_vec_ptr[0].ptr = python_utils.c_ptr(y)
@@ -874,7 +875,7 @@ class Adjointer(object):
 
     def __vec_delete_callback__(adj_var):
         var = Variable(var=adj_var)
-        storage.vec.__class__.delete(var)
+        storage_class.delete(var)
 
     self.__register_data_callback__('ADJ_VEC_DELETE_CB', __vec_delete_callback__)
     self.__register_data_callback__('ADJ_VEC_READ_CB', __vec_read_callback__)
