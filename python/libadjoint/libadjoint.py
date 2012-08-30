@@ -1587,7 +1587,7 @@ class GSTHandle(object):
   def __del__(self):
     self.destroy()
 
-  def get_gst(self, i, return_vectors=False, return_error=False):
+  def get_gst(self, i, return_vectors=False, return_residual=False):
     if return_vectors:
       u = clib.adj_vector()
       v = clib.adj_vector()
@@ -1595,7 +1595,7 @@ class GSTHandle(object):
       u = None
       v = None
 
-    if return_error:
+    if return_residual:
       error = adj_scalar()
     else:
       error = None
@@ -1611,7 +1611,7 @@ class GSTHandle(object):
       references_taken.remove(u_vec)
       references_taken.remove(v_vec)
       retval += [u_vec, v_vec]
-    if return_error:
+    if return_residual:
       retval += [error.value]
 
     if len(retval) == 1:
