@@ -240,7 +240,7 @@ int adj_get_gst(adj_gst* gst_handle, int i, adj_scalar* sigma, adj_vector* u, ad
 
       /* Now finally scale u_vec by the norm */
       norm = sqrt(inner);
-      VecScale(u_vec, 1.0/sqrt(inner));
+      VecScale(u_vec, 1.0/norm);
     }
 
     ierr = VecGetArray(u_vec, &u_arr);
@@ -535,7 +535,7 @@ PetscErrorCode gst_mult(Mat A, Vec x, Vec y)
     /* Do the necessary allocations */
     ierr = VecDuplicate(Lx, &XLx);                 CHKERRQ(ierr);
     ierr = VecGetArray(Lx, &Lx_array);             CHKERRQ(ierr);
-    ierr = VecGetArray(XLx, &XLx_array);           CHKERRQ(ierr)
+    ierr = VecGetArray(XLx, &XLx_array);           CHKERRQ(ierr);
 
     ierr = adj_get_variable_value(adjointer, gst_data->final, &final_val);
     adjointer->callbacks.vec_duplicate(final_val, &Lx_vector);
