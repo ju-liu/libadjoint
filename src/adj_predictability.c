@@ -330,7 +330,11 @@ int adj_destroy_gst(adj_gst* gst_handle)
 #else
   int ierr;
   adj_gst_data* gst_data;
+#if PETSC_VERSION_MINOR > 1
+  ierr = EPSDestroy(( (EPS*) gst_handle->eps_handle ));
+#else
   ierr = EPSDestroy(*( (EPS*) gst_handle->eps_handle ));
+#endif
   if (ierr != 0)
   {
     snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "SLEPc error from EPSDestroy (ierr == %d).", ierr);
@@ -338,7 +342,11 @@ int adj_destroy_gst(adj_gst* gst_handle)
   }
   free((EPS*) gst_handle->eps_handle);
   gst_data = (adj_gst_data*) gst_handle->gst_data;
+#if PETSC_VERSION_MINOR > 1
+  MatDestroy(&gst_data->tlm_mat);
+#else
   MatDestroy(gst_data->tlm_mat);
+#endif
   free((adj_gst_data*) gst_handle->gst_data);
 
   return ADJ_OK;
@@ -561,7 +569,11 @@ PetscErrorCode gst_mult(Mat A, Vec x, Vec y)
     adjointer->callbacks.vec_destroy(&Lx_vector);
     adjointer->callbacks.vec_destroy(&XLx_vector);
 
+#if PETSC_VERSION_MINOR > 1
+    ierr = VecDestroy(&Lx);                         CHKERRQ(ierr);
+#else
     ierr = VecDestroy(Lx);                         CHKERRQ(ierr);
+#endif
 
     /* Now XLx contains the action of the norm matrix, and everything
        else is destroyed. */
@@ -570,19 +582,31 @@ PetscErrorCode gst_mult(Mat A, Vec x, Vec y)
   {
     ierr = VecDuplicate(Lx, &XLx);                 CHKERRQ(ierr);
     ierr = VecCopy(Lx, XLx);                       CHKERRQ(ierr);
+#if PETSC_VERSION_MINOR > 1
+    ierr = VecDestroy(&Lx);                         CHKERRQ(ierr);
+#else
     ierr = VecDestroy(Lx);                         CHKERRQ(ierr);
+#endif
   }
 
   /* Now multiply by L^* .. */
   ierr = MatGetVecs(tlm_mat, &LXLx, PETSC_NULL); CHKERRQ(ierr);
   ierr = MatMultTranspose(tlm_mat, XLx, LXLx);   CHKERRQ(ierr);
+#if PETSC_VERSION_MINOR > 1
+  ierr = VecDestroy(&XLx);
+#else
   ierr = VecDestroy(XLx);
+#endif
 
   /* Now take the initial norm */
   if (gst_data->ic_norm == NULL)
   {
     ierr = VecCopy(LXLx, y);                       CHKERRQ(ierr);
+#if PETSC_VERSION_MINOR > 1
+    ierr = VecDestroy(&LXLx);
+#else
     ierr = VecDestroy(LXLx);
+#endif
   }
   else
   {
