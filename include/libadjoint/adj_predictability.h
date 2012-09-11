@@ -34,6 +34,7 @@ typedef struct
   adj_matrix* final_norm;
   Mat gst_mat;
   Mat tlm_mat;
+  int multiplications; /* how many matrix multiplications of A^*A we've done */
 } adj_gst_data;
 
 PetscErrorCode tlm_solve(Mat A, Vec x, Vec y);

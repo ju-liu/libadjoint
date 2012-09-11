@@ -76,6 +76,7 @@ int adj_compute_gst(adj_adjointer* adjointer, adj_variable ic, adj_matrix* ic_no
   gst_data->ic_norm = ic_norm;
   gst_data->final = final;
   gst_data->final_norm = final_norm;
+  gst_data->multiplications = 0;
 
   /* Register the dummy parameter sources/functionals -- we're going to be in charge of the RHS terms here */
   adj_register_parameter_source_callback(adjointer, "GSTNullTLM", null_tlm_source);
@@ -117,12 +118,16 @@ int adj_compute_gst(adj_adjointer* adjointer, adj_variable ic, adj_matrix* ic_no
   if (nwv > global_ic_dof)
     nwv = PETSC_DECIDE;
 
-  EPSSetDimensions(*eps, nrv, nwv, PETSC_DECIDE);
+  EPSSetDimensions(*eps, nrv, PETSC_DECIDE, PETSC_DECIDE);
 #if SLEPC_VERSION_MAJOR > 3 || (SLEPC_VERSION_MAJOR == 3 && SLEPC_VERSION_MINOR >= 1)
   EPSMonitorSet(*eps, EPSMonitorAll, PETSC_NULL, PETSC_NULL);
 #endif
+  EPSSetWhichEigenpairs(*eps, EPS_LARGEST_REAL);
 
+  ierr = EPSView(*eps, PETSC_VIEWER_STDOUT_WORLD);
   ierr = EPSSolve(*eps);
+
+  printf("GST calculation took %d multiplications of L^*L.\n", gst_data->multiplications);
 
   gst_handle->eps_handle = eps;
   gst_handle->gst_data = gst_data;
@@ -518,6 +523,7 @@ PetscErrorCode gst_mult(Mat A, Vec x, Vec y)
   ierr = MatShellGetContext(A, (void**) &gst_data); CHKERRQ(ierr);
   adjointer = gst_data->adjointer;
   tlm_mat = gst_data->tlm_mat;
+  gst_data->multiplications++;
 
   /* Multiply by L .. */
   ierr = MatGetVecs(tlm_mat, PETSC_NULL, &Lx);   CHKERRQ(ierr);
