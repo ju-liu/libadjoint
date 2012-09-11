@@ -71,7 +71,12 @@ void petsc_vec_axpy_proc(adj_vector *y, adj_scalar alpha, adj_vector x)
 void petsc_vec_destroy_proc(adj_vector *x)
 {
 #ifdef HAVE_PETSC
+#if PETSC_VERSION_MINOR > 1
+    /* Bloody PETSc always changing their damn interfaces!! */
+    VecDestroy((Vec*) x->ptr);
+#else
     VecDestroy(*(Vec*) x->ptr);
+#endif
     free(x->ptr);
 #else
     (void) x;
@@ -139,7 +144,12 @@ void petsc_vec_write_proc(adj_variable var, adj_vector x)
   PetscViewer viewer;
   PetscViewerBinaryOpen(PETSC_COMM_WORLD, filename, FILE_MODE_WRITE, &viewer);
   VecView(petsc_vec_from_adj_vector(x), viewer);
+
+#if PETSC_VERSION_MINOR > 1
+  PetscViewerDestroy(&viewer);
+#else
   PetscViewerDestroy(viewer);
+#endif
 #else
     (void) x;
     (void) var;
@@ -167,10 +177,11 @@ void petsc_vec_read_proc(adj_variable var, adj_vector *x)
   PetscViewerBinaryOpen(PETSC_COMM_WORLD, filename, FILE_MODE_READ, &viewer);
 #if PETSC_VERSION_MINOR <= 1
   VecLoad(viewer, PETSC_NULL, vec);
-#else
-  VecLoad(viewer, vec);
-#endif
   PetscViewerDestroy(viewer);
+#else
+  VecLoad(*vec, viewer);
+  PetscViewerDestroy(&viewer);
+#endif
   *x = petsc_vec_to_adj_vector(vec);
 #else
     (void) x;
@@ -194,7 +205,11 @@ void petsc_vec_set_random_proc(adj_vector* x)
     PetscRandomSeed(rctx);
 
     VecSetRandom(*(Vec*) x->ptr, rctx);
+#if PETSC_VERSION_MINOR <= 1
     PetscRandomDestroy(rctx);
+#else
+    PetscRandomDestroy(&rctx);
+#endif
 #else
     (void) x;
 #endif
@@ -272,7 +287,11 @@ void petsc_mat_destroy_proc(adj_matrix *mat)
 {
     /* Frees space taken by a matrix. */
 #ifdef HAVE_PETSC
+#if PETSC_VERSION_MINOR > 1
+    MatDestroy((Mat*) mat->ptr);
+#else
     MatDestroy(*(Mat*) mat->ptr);
+#endif
     free(mat->ptr);
 #else
     (void) mat;

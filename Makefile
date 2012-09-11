@@ -38,7 +38,7 @@ endif
 
 # Identify if SLEPc is installed
 ifneq (,$(SLEPC_DIR))
-	SLEPC_CPPFLAGS := -I$(SLEPC_DIR)/include -DHAVE_SLEPC
+	SLEPC_CPPFLAGS := -I$(SLEPC_DIR)/include -I$(SLEPC_DIR)/$(PETSC_ARCH)/include -DHAVE_SLEPC
 	SLEPC_LDFLAGS  := -L$(SLEPC_DIR)/$(PETSC_ARCH)/lib -lslepc
 else
 	SLEPC_CPPFLAGS :=
