@@ -11,7 +11,7 @@ export DH_VERBOSE=1
 ifneq (,$(findstring lucid, $(shell lsb_release -c)))
 export PETSC_DIR=/usr/lib/petscdir/3.0.0
 else
-ifneq (,$(findstring quetzal, $(shell lsb_release -c)))
+ifneq (,$(findstring quantal, $(shell lsb_release -c)))
 export PETSC_DIR=/usr/lib/petscdir/3.2
 else
 export PETSC_DIR=/usr/lib/petscdir/3.1
