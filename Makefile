@@ -150,7 +150,8 @@ else
 LD := $(CXX)
 endif
 
-LDFLAGS := -lstdc++ -shared -Wl,-soname,libadjoint.so
+CXXLIBS := -lstdc++ -lsupc++
+LDFLAGS := $(CXXLIBS) -shared -Wl,-soname,libadjoint.so
 
 ###############################################################################
 # Variables for the python bindings                                           #
@@ -167,12 +168,12 @@ all: lib/libadjoint.a lib/libadjoint.so
 
 bin/tests/%: src/tests/%.c src/tests/test_main.c lib/libadjoint.a
 	@echo "  CC $@"
-	@$(CC) $(CFLAGS) -DTESTNAME=$(notdir $@) -o $@ $< src/tests/test_main.c lib/libadjoint.a $(SLEPC_LDFLAGS) $(PETSC_LDFLAGS) $(LIBS)
+	@$(CC) $(CFLAGS) -DTESTNAME=$(notdir $@) -o $@ $< src/tests/test_main.c lib/libadjoint.a $(SLEPC_LDFLAGS) $(PETSC_LDFLAGS) $(LIBS) $(CXXLIBS)
 
 ifneq ($(FC),)
 bin/tests/%: src/tests/%.F90 src/tests/test_main.F90 lib/libadjoint.a
 	@echo "  FC $@"
-	@$(FC) $(FFLAGS) -DTESTNAME=$(notdir $@) -o $@ $< src/tests/test_main.F90 lib/libadjoint.a $(SLEPC_LDFLAGS) $(PETSC_LDFLAGS) $(LIBS)
+	@$(FC) $(FFLAGS) -DTESTNAME=$(notdir $@) -o $@ $< src/tests/test_main.F90 lib/libadjoint.a $(SLEPC_LDFLAGS) $(PETSC_LDFLAGS) $(LIBS) $(CXXLIBS)
 endif
 
 bin/tests/%: src/tests/%.py pybuild
@@ -206,7 +207,7 @@ lib/libadjoint.a: objects
 
 lib/libadjoint.so: objects
 	@echo "  LD $@"
-	@$(LD) $(LDFLAGS) -o $@ obj/*.o $(SLEPC_LDFLAGS) $(PETSC_LDFLAGS) $(LIBS)
+	@$(LD) -o $@ obj/*.o $(SLEPC_LDFLAGS) $(PETSC_LDFLAGS) $(LIBS) $(LDFLAGS)
 
 clean:
 	@rm -f obj/*.o
