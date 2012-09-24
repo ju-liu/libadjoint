@@ -15,7 +15,7 @@ int adj_compute_gst(adj_adjointer* adjointer, adj_variable ic, adj_matrix* ic_no
 
   snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "In order to perform generalised stability analysis, you need to compile with SLEPc support.");
   gst_handle = (adj_gst*) NULL;
-  return ADJ_ERR_INVALID_INPUTS;
+  return ADJ_ERR_SLEPC_ERROR;
 #else
   EPS *eps;
   Mat gst_mat;
@@ -162,7 +162,7 @@ int adj_get_gst(adj_gst* gst_handle, int i, adj_scalar* sigma, adj_vector* u, ad
 
   snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "In order to fetch the GST analysis, you need to compile with SLEPc support.");
   gst_handle = (adj_gst*) NULL;
-  return ADJ_ERR_INVALID_INPUTS;
+  return ADJ_ERR_SLEPC_ERROR;
 #else
 
   int ierr;
@@ -326,7 +326,7 @@ int adj_destroy_gst(adj_gst* gst_handle)
 
   snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "In order to destroy EPS objects, you need to compile with SLEPc support.");
   gst_handle = (adj_gst*) NULL;
-  return ADJ_ERR_INVALID_INPUTS;
+  return ADJ_ERR_SLEPC_ERROR;
 #else
   int ierr;
   adj_gst_data* gst_data;
