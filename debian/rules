@@ -10,15 +10,17 @@
 export DH_VERBOSE=1
 ifneq (,$(findstring lucid, $(shell lsb_release -c)))
 export PETSC_DIR=/usr/lib/petscdir/3.0.0
+export SLEPC_DIR=/usr/lib/slepcdir/3.0.0
 else
 ifneq (,$(findstring quantal, $(shell lsb_release -c)))
 export PETSC_DIR=/usr/lib/petscdir/3.2
+export SLEPC_DIR=/usr/lib/slepcdir/3.2
 else
 export PETSC_DIR=/usr/lib/petscdir/3.1
+export SLEPC_DIR=/usr/lib/slepcdir/3.1
 endif
 endif
 export PETSC_ARCH=linux-gnu-c-opt
-export SLEPC_DIR=/usr/lib/slepc
 export prefix=/usr
 export DEB_BUILD_OPTIONS=nostrip
 
