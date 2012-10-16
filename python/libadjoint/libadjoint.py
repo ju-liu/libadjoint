@@ -986,6 +986,11 @@ class Adjointer(object):
 
     return (Variable(var=adj_var), output_py)
 
+  def get_forward_variable(self, equation):
+    fwd_var = clib.adj_variable()
+    clib.adj_get_forward_variable(self.adjointer, equation, fwd_var)
+    return Variable(var=fwd_var)
+
   def timestep_start_equation(self, timestep):
     timestep_start = ctypes.c_int()
     clib.adj_timestep_start_equation(self.adjointer, timestep, timestep_start)

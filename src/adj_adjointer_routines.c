@@ -2783,3 +2783,14 @@ int adj_get_finished(adj_adjointer* adjointer, int* finished)
   *finished = adjointer->finished;
   return ADJ_OK;
 }
+
+int adj_get_forward_variable(adj_adjointer* adjointer, int i, adj_variable* fwd_var)
+{
+  if (i >= adjointer->nequations)
+  {
+    strncpy(adj_error_msg, "No such equation.", ADJ_ERROR_MSG_BUF);
+    return adj_chkierr_auto(ADJ_ERR_INVALID_INPUTS);
+  }
+  memcpy(fwd_var, &adjointer->equations[i].variable, sizeof(adj_variable));
+  return ADJ_OK;
+}
