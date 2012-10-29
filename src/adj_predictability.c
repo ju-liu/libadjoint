@@ -354,6 +354,9 @@ int adj_destroy_gst(adj_gst* gst_handle)
 }
 
 #ifdef HAVE_SLEPC
+
+#undef __FUNCT__
+#define __FUNCT__ "tlm_solve"
 PetscErrorCode tlm_solve(Mat A, Vec x, Vec y)
 {
   adj_gst_data* gst_data;
@@ -434,6 +437,8 @@ PetscErrorCode tlm_solve(Mat A, Vec x, Vec y)
   PetscFunctionReturn(1);
 }
 
+#undef __FUNCT__
+#define __FUNCT__ "adj_solve"
 PetscErrorCode adj_solve(Mat A, Vec x, Vec y)
 {
   adj_gst_data* gst_data;
@@ -514,11 +519,13 @@ PetscErrorCode adj_solve(Mat A, Vec x, Vec y)
   PetscFunctionReturn(1);
 }
 
+#undef __FUNCT__
+#define __FUNCT__ "gst_mult"
 PetscErrorCode gst_mult(Mat A, Vec x, Vec y)
 {
   adj_gst_data* gst_data;
   adj_adjointer* adjointer;
-  
+
   Mat tlm_mat;
   Vec Lx;
   Vec XLx;
