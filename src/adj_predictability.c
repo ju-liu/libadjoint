@@ -375,9 +375,16 @@ PetscErrorCode tlm_solve(Mat A, Vec x, Vec y)
   adj_scalar* py;
   int ierr;
 
+  // Benchmark variables
+  clock_t start, end;
+  double cpu_time_used;
+  static double total_time = 0;
+  static int nb_tlm_solves = 0;
+
   PetscFunctionBegin;
 
   printf("Beginning tlm_solve\n");
+  start = clock();
 
   ierr = MatShellGetContext(A, (void**) &gst_data); CHKERRQ(ierr);
   adjointer = gst_data->adjointer;
@@ -428,12 +435,20 @@ PetscErrorCode tlm_solve(Mat A, Vec x, Vec y)
 
     if (return_flag) 
     {
-      printf("Ending tlm_solve\n");
+      end = clock();
+      cpu_time_used =  ((double) (end - start)) / CLOCKS_PER_SEC;
+      total_time += cpu_time_used;
+      nb_tlm_solves += 1;
+      printf("Ending tlm_solve. Run time: %f s. Average run time: %f (averaged over %i tlm_solve's)\n", cpu_time_used, total_time/nb_tlm_solves, nb_tlm_solves);
       PetscFunctionReturn(0);
     }
   }
 
-  printf("Ending tlm_solve\n");
+  end = clock();
+  cpu_time_used =  ((double) (end - start)) / CLOCKS_PER_SEC;
+  total_time += cpu_time_used;
+  nb_tlm_solves += 1;
+  printf("Ending tlm_solve. Run time: %f s. Average run time: %f (averaged over %i tlm_solve's)\n", cpu_time_used, total_time/nb_tlm_solves, nb_tlm_solves);
   PetscFunctionReturn(1);
 }
 
@@ -457,9 +472,16 @@ PetscErrorCode adj_solve(Mat A, Vec x, Vec y)
   adj_scalar* py;
   int ierr;
 
+  // Benchmark variables
+  clock_t start, end;
+  double cpu_time_used;
+  static double total_time = 0;
+  static int nb_tlm_solves = 0;
+
   PetscFunctionBegin;
 
   printf("Beginning adj_solve\n");
+  start = clock();
 
   ierr = MatShellGetContext(A, (void**) &gst_data); CHKERRQ(ierr);
   adjointer = gst_data->adjointer;
@@ -510,12 +532,20 @@ PetscErrorCode adj_solve(Mat A, Vec x, Vec y)
 
     if (return_flag) 
     {
-      printf("Ending adj_solve\n");
+      end = clock();
+      cpu_time_used =  ((double) (end - start)) / CLOCKS_PER_SEC;
+      total_time += cpu_time_used;
+      nb_tlm_solves += 1;
+      printf("Ending adj_solve. Run time: %f s. Average run time: %f (averaged over %i adj_solve's)\n", cpu_time_used, total_time/nb_tlm_solves, nb_tlm_solves);
       PetscFunctionReturn(0);
     }
   }
 
-  printf("Ending adj_solve\n");
+  end = clock();
+  cpu_time_used =  ((double) (end - start)) / CLOCKS_PER_SEC;
+  total_time += cpu_time_used;
+  nb_tlm_solves += 1;
+  printf("Ending adj_solve. Run time: %f s. Average run time: %f (averaged over %i adj_solve's)\n", cpu_time_used, total_time/nb_tlm_solves, nb_tlm_solves);
   PetscFunctionReturn(1);
 }
 

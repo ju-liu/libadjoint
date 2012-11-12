@@ -8,6 +8,7 @@
 
 #include <math.h>
 #include <float.h>
+#include <time.h>
 
 #ifdef HAVE_SLEPC
 #include "slepceps.h"
