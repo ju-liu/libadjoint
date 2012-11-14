@@ -289,7 +289,7 @@ python/libadjoint/clibadjoint.py: lib/libadjoint.so
 	@$(H2XML) -q -I. include/libadjoint/pylibadjoint.h -o python/libadjoint/libadjoint.xml
 	@rm -f include/libadjoint/pylibadjoint.h
 	@echo "  XML2PY python/libadjoint/clibadjoint.py"
-	@$(XML2PY) -r '^adj.*' -l $(shell readlink -f lib/libadjoint.so) python/libadjoint/libadjoint.xml -o python/libadjoint/clibadjoint.py
+	@$(XML2PY) -r '^adj.*' -l $(shell python bin/realpath lib/libadjoint.so) python/libadjoint/libadjoint.xml -o python/libadjoint/clibadjoint.py
 	@rm -f python/libadjoint/libadjoint.xml
 	@chmod a-x python/libadjoint/clibadjoint.py
 python/libadjoint/clibadjoint_constants.py:
@@ -309,7 +309,7 @@ ifeq ($(LIBADJOINT_BUILDING_DEBIAN),yes)
 else
 	@cd python; python setup.py install --prefix=$(DESTDIR)/$(prefix) $(LIBADJOINT_PYTHON_INSTALL_ARGS)
 endif
-	@find $(DESTDIR)/$(prefix) -name clibadjoint.py | xargs sed -i "s@CDLL('$(shell readlink -f lib/libadjoint.so)')@CDLL('/$(prefix)/lib/libadjoint.so')@"
+	@find $(DESTDIR)/$(prefix) -name clibadjoint.py | xargs sed -i "s@CDLL('$(shell python bin/realpath lib/libadjoint.so)')@CDLL('/$(prefix)/lib/libadjoint.so')@"
 endif
 	@echo "  INSTALL $(DESTDIR)/$(prefix)/include/libadjoint"
 	@install -d $(DESTDIR)/$(prefix)/include/libadjoint
