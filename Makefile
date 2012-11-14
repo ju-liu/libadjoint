@@ -150,12 +150,26 @@ else
 LD := $(CXX)
 endif
 
+OSX := $(findstring Darwin, $(shell uname -a)))
+
+ifeq (,$(findstring Darwin, $(shell uname -a)))
+SLIB := libadjoint.so
 CXXLIBS := -lstdc++ -lsupc++
-LDFLAGS := $(CXXLIBS) -shared -Wl,-soname,libadjoint.so
+LDFLAGS := $(CXXLIBS) -shared -Wl,-soname,$(SLIB)
+else
+SLIB := libadjoint.dylib
+CXXLIBS := -lstdc++ -lsupc++
+LDFLAGS := $(CXXLIBS) -shared -Wl,-install_name,$(SLIB)
+endif
 
 ###############################################################################
 # Variables for the python bindings                                           #
 ###############################################################################
+ifeq (,$(findstring Darwin, $(shell uname -a)))
+CPP := cpp
+else
+CPP := gcc
+endif
 GCCXML = $(shell which gccxml)
 H2XML = python/ctypeslib/scripts/h2xml.py
 XML2PY = python/ctypeslib/scripts/xml2py.py
@@ -164,7 +178,7 @@ PYDIR = $(shell python -c  "import distutils.sysconfig; print distutils.sysconfi
 ###############################################################################
 # The targets                                                                 #
 ###############################################################################
-all: lib/libadjoint.a lib/libadjoint.so 
+all: lib/libadjoint.a $(SLIB)
 
 bin/tests/%: src/tests/%.c src/tests/test_main.c lib/libadjoint.a
 	@echo "  CC $@"
@@ -205,7 +219,7 @@ lib/libadjoint.a: objects
 	@echo "  AR $@"
 	@$(AR) $(ARFLAGS) $@ obj/*.o
 
-lib/libadjoint.so: objects
+$(SLIB): objects
 	@echo "  LD $@"
 	@$(LD) -o $@ obj/*.o $(SLEPC_LDFLAGS) $(PETSC_LDFLAGS) $(LIBS) $(LDFLAGS)
 
@@ -222,11 +236,11 @@ clean:
 	@echo "  RM doc/*/*.pdf"
 	@rm -f lib/*.a
 	@echo "  RM lib/*.a"
-	@rm -f lib/*.so
+	@rm -f lib/*.so lib/*.dylib
 	@echo "  RM lib/*.so"
 	@rm -f python/libadjoint/clibadjoint.py
 	@echo "  RM python/libadjoint/clibadjoint.py"
-	@rm -f python/libadjoint/python_utils.so
+	@rm -f python/libadjoint/python_utils.so python/libadjoint/python_utils.dylib
 	@echo "  RM python/libadjoint/python_utils.so"
 	@rm -f python/libadjoint/clibadjoint_constants.py
 	@echo "  RM python/libadjoint/clibadjoint_constants.py"
@@ -283,13 +297,13 @@ all: python
 test: python
 install: python
 
-python/libadjoint/clibadjoint.py: lib/libadjoint.so
+python/libadjoint/clibadjoint.py: $(SLIB)
 	@echo "  H2XML  include/libadjoint/libadjoint.h"
-	@cpp -DPYTHON_BINDINGS include/libadjoint/libadjoint.h > include/libadjoint/pylibadjoint.h
+	@$(CPP) -DPYTHON_BINDINGS include/libadjoint/libadjoint.h > include/libadjoint/pylibadjoint.h
 	@$(H2XML) -q -I. include/libadjoint/pylibadjoint.h -o python/libadjoint/libadjoint.xml
 	@rm -f include/libadjoint/pylibadjoint.h
 	@echo "  XML2PY python/libadjoint/clibadjoint.py"
-	@$(XML2PY) -r '^adj.*' -l $(shell python bin/realpath lib/libadjoint.so) python/libadjoint/libadjoint.xml -o python/libadjoint/clibadjoint.py
+	@$(XML2PY) -r '^adj.*' -l $(shell python bin/realpath $(SLIB)) python/libadjoint/libadjoint.xml -o python/libadjoint/clibadjoint.py
 	@rm -f python/libadjoint/libadjoint.xml
 	@chmod a-x python/libadjoint/clibadjoint.py
 python/libadjoint/clibadjoint_constants.py:
@@ -297,11 +311,11 @@ python/libadjoint/clibadjoint_constants.py:
 	@python ./tools/create_python_constants.py
 endif
 
-install: lib/libadjoint.a lib/libadjoint.so
+install: lib/libadjoint.a $(SLIB)
 	@echo "  INSTALL $(DESTDIR)/$(prefix)/lib"
 	@install -d $(DESTDIR)/$(prefix)/lib
 	@install lib/libadjoint.a $(DESTDIR)/$(prefix)/lib
-	@install lib/libadjoint.so $(DESTDIR)/$(prefix)/lib
+	@install $(SLIB) $(DESTDIR)/$(prefix)/lib
 ifneq (,$(GCCXML))
 	@echo "  INSTALL $(PYDIR)"
 ifeq ($(LIBADJOINT_BUILDING_DEBIAN),yes)
@@ -309,7 +323,7 @@ ifeq ($(LIBADJOINT_BUILDING_DEBIAN),yes)
 else
 	@cd python; python setup.py install --prefix=$(DESTDIR)/$(prefix) $(LIBADJOINT_PYTHON_INSTALL_ARGS)
 endif
-	@find $(DESTDIR)/$(prefix) -name clibadjoint.py | xargs sed -i "s@CDLL('$(shell python bin/realpath lib/libadjoint.so)')@CDLL('/$(prefix)/lib/libadjoint.so')@"
+	@find $(DESTDIR)/$(prefix) -name clibadjoint.py | xargs sed -i "s@CDLL('$(shell python bin/realpath $(SLIB))')@CDLL('/$(prefix)/lib/$(SLIB)')@"
 endif
 	@echo "  INSTALL $(DESTDIR)/$(prefix)/include/libadjoint"
 	@install -d $(DESTDIR)/$(prefix)/include/libadjoint
