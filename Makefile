@@ -150,16 +150,16 @@ else
 LD := $(CXX)
 endif
 
-OSX := $(findstring Darwin, $(shell uname -a)))
-
 ifeq (,$(findstring Darwin, $(shell uname -a)))
 SLIB := libadjoint.so
 CXXLIBS := -lstdc++ -lsupc++
 LDFLAGS := $(CXXLIBS) -shared -Wl,-soname,$(SLIB)
+SEDFLG  := 
 else
 SLIB := libadjoint.dylib
 CXXLIBS := -lstdc++ -lsupc++
 LDFLAGS := $(CXXLIBS) -shared -Wl,-install_name,$(SLIB)
+SEDFLG  := ""
 endif
 
 ###############################################################################
@@ -323,7 +323,7 @@ ifeq ($(LIBADJOINT_BUILDING_DEBIAN),yes)
 else
 	@cd python; python setup.py install --prefix=$(DESTDIR)/$(prefix) $(LIBADJOINT_PYTHON_INSTALL_ARGS)
 endif
-	@find $(DESTDIR)/$(prefix) -name clibadjoint.py | xargs sed -i "s@CDLL('$(shell python bin/realpath $(SLIB))')@CDLL('/$(prefix)/lib/$(SLIB)')@"
+	@find $(DESTDIR)/$(prefix) -name clibadjoint.py | xargs sed -i $(SEDFLG) "s@CDLL('$(shell python bin/realpath $(SLIB))')@CDLL('/$(prefix)/lib/$(SLIB)')@"
 endif
 	@echo "  INSTALL $(DESTDIR)/$(prefix)/include/libadjoint"
 	@install -d $(DESTDIR)/$(prefix)/include/libadjoint
