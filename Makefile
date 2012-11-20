@@ -133,6 +133,7 @@ FFLAGS := $(FFLAGS) $(DBGFLAGS) $(PICFLAG) $(SLEPC_CPPFLAGS) $(PETSC_CPPFLAGS) -
 ifeq ($(origin DESTDIR),undefined)
 	DESTDIR := /
 endif
+ABSDESTDIR := $(shell bin/abspath $(DESTDIR))
 
 ifeq ($(origin prefix),undefined)
 	prefix := usr/local
@@ -173,7 +174,7 @@ endif
 GCCXML = $(shell which gccxml)
 H2XML = python/ctypeslib/scripts/h2xml.py
 XML2PY = python/ctypeslib/scripts/xml2py.py
-PYDIR = $(shell python -c  "import distutils.sysconfig; print distutils.sysconfig.get_python_lib().replace('/usr/', '$(DESTDIR)/$(prefix)/')")
+PYDIR = $(shell python -c  "import distutils.sysconfig; print distutils.sysconfig.get_python_lib().replace('/usr/', '$(ABSDESTDIR)/$(prefix)/')")
 
 ###############################################################################
 # The targets                                                                 #
@@ -312,22 +313,22 @@ python/libadjoint/clibadjoint_constants.py:
 endif
 
 install: lib/libadjoint.a $(SLIB)
-	@echo "  INSTALL $(DESTDIR)/$(prefix)/lib"
-	@install -d $(DESTDIR)/$(prefix)/lib
-	@install lib/libadjoint.a $(DESTDIR)/$(prefix)/lib
-	@install $(SLIB) $(DESTDIR)/$(prefix)/lib
+	@echo "  INSTALL $(ABSDESTDIR)/$(prefix)/lib"
+	@install -d $(ABSDESTDIR)/$(prefix)/lib
+	@install lib/libadjoint.a $(ABSDESTDIR)/$(prefix)/lib
+	@install $(SLIB) $(ABSDESTDIR)/$(prefix)/lib
 ifneq (,$(GCCXML))
 	@echo "  INSTALL $(PYDIR)"
 ifeq ($(LIBADJOINT_BUILDING_DEBIAN),yes)
-	@cd python; for PYTHON in $(shell pyversions -r); do echo $$PYTHON; $$PYTHON setup.py install --prefix=$(DESTDIR)/$(prefix) $(LIBADJOINT_PYTHON_INSTALL_ARGS); done
+	@cd python; for PYTHON in $(shell pyversions -r); do echo $$PYTHON; $$PYTHON setup.py install --prefix=$(ABSDESTDIR)/$(prefix) $(LIBADJOINT_PYTHON_INSTALL_ARGS); done
 else
-	@cd python; python setup.py install --prefix=$(DESTDIR)/$(prefix) $(LIBADJOINT_PYTHON_INSTALL_ARGS)
+	@cd python; python setup.py install --prefix=$(ABSDESTDIR)/$(prefix) $(LIBADJOINT_PYTHON_INSTALL_ARGS)
 endif
-	@find $(DESTDIR)/$(prefix) -name clibadjoint.py | xargs sed -i $(SEDFLG) "s@CDLL('$(shell python bin/realpath $(SLIB))')@CDLL('/$(prefix)/lib/$(SLIB)')@"
+	@find $(ABSDESTDIR)/$(prefix) -name clibadjoint.py | xargs sed -i $(SEDFLG) "s@CDLL('$(shell python bin/realpath $(SLIB))')@CDLL('/$(prefix)/lib/$(SLIB)')@"
 endif
-	@echo "  INSTALL $(DESTDIR)/$(prefix)/include/libadjoint"
-	@install -d $(DESTDIR)/$(prefix)/include/libadjoint
-	@install include/libadjoint/* $(DESTDIR)/$(prefix)/include/libadjoint
+	@echo "  INSTALL $(ABSDESTDIR)/$(prefix)/include/libadjoint"
+	@install -d $(ABSDESTDIR)/$(prefix)/include/libadjoint
+	@install include/libadjoint/* $(ABSDESTDIR)/$(prefix)/include/libadjoint
 
 include/libadjoint/adj_fortran.h: include/libadjoint/adj_constants_f.h include/libadjoint/adj_error_handling_f.h
 # replace C comments with F90 comments
