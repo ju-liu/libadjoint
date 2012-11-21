@@ -1,4 +1,9 @@
 ###############################################################################
+# Print out a helpful table of dependencies                                   #
+###############################################################################
+DEPENDENCIES = $(shell bin/checkdeps)
+
+###############################################################################
 # Find all the relevant objects                                               #
 ###############################################################################
 FSRC = $(wildcard src/*.F90)
@@ -127,6 +132,12 @@ endif
 
 FFLAGS := $(FFLAGS) $(DBGFLAGS) $(PICFLAG) $(SLEPC_CPPFLAGS) $(PETSC_CPPFLAGS) -Iinclude/ -Iinclude/libadjoint $(COMPILER_FFLAGS)
 
+ifneq (,$(FC))
+OBJECTS := $(COBJ) $(FOBJ) $(CXXOBJ)
+else
+OBJECTS := $(COBJ) $(CXXOBJ)
+endif
+
 ###############################################################################
 # Variables for make install                                                  #
 ###############################################################################
@@ -176,6 +187,7 @@ H2XML = python/ctypeslib/scripts/h2xml.py
 XML2PY = python/ctypeslib/scripts/xml2py.py
 PYDIR = $(shell python -c  "import distutils.sysconfig; print distutils.sysconfig.get_python_lib().replace('/usr/', '$(ABSDESTDIR)/$(prefix)/')")
 
+
 ###############################################################################
 # The targets                                                                 #
 ###############################################################################
@@ -210,17 +222,15 @@ obj/%.o: src/%.cpp
 	@echo "  C++ $<"
 	@$(CXX) $(CXXFLAGS) -c -o $@ $<
 
-ifneq (,$(FC))
-objects: $(COBJ) $(FOBJ) $(CXXOBJ)
-else
-objects: $(COBJ) $(CXXOBJ)
-endif
+.PHONY: checkdeps
+checkdeps:
+	@echo $(DEPENDENCIES) > /dev/null
 
-lib/libadjoint.a: objects
+lib/libadjoint.a: $(OBJECTS)
 	@echo "  AR $@"
 	@$(AR) $(ARFLAGS) $@ obj/*.o
 
-$(SLIB): objects
+$(SLIB): $(OBJECTS)
 	@echo "  LD $@"
 	@$(LD) -o $@ obj/*.o $(SLEPC_LDFLAGS) $(PETSC_LDFLAGS) $(LIBS) $(LDFLAGS)
 

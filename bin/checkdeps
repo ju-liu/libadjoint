@@ -1,0 +1,47 @@
+#!/usr/bin/env python
+
+import os
+import sys
+sys.stdout = sys.stderr
+
+class bcolors:
+    HEADER = '\033[95m'
+    BLUE = '\033[94m'
+    GREEN = '\033[92m'
+    RED = '\033[91m'
+    ENDC = '\033[0m'
+
+def print_color(s, success):
+  if success:
+    print s + "\t\t " + bcolors.GREEN + "FOUND" + bcolors.ENDC
+  else:
+    print s + "\t\t " + bcolors.RED + "NOT FOUND" + bcolors.ENDC
+
+def which(file):
+  for path in os.environ["PATH"].split(":"):
+    if file in os.listdir(path):
+      return "%s/%s" % (path, file)
+
+def fortran():
+  try:
+    fc = which(os.environ["FC"])
+  except KeyError:
+    fc = which("mpif90")
+
+  return (fc is not None)
+
+def gccxml():
+  return which("gccxml") is not None
+
+def petsc():
+  return "PETSC_ARCH" in os.environ and "PETSC_DIR" in os.environ
+
+def slepc():
+  return "SLEPC_DIR" in os.environ
+
+print "Checking optional dependencies: "
+print "------------------------------------------------------------------"
+print_color("FORTRAN   [Fortran bindings]               ", fortran())
+print_color("GCCXML    [Python bindings]                ", gccxml())
+print_color("PETSC     [Sparse linear algebra]          ", petsc())
+print_color("SLEPC     [Generalised stability analysis] ", slepc())
