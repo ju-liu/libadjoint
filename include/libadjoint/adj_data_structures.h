@@ -303,6 +303,7 @@ typedef struct adj_adjointer
   adj_op_callback_list nonlinear_derivative_assembly_list;
   adj_op_callback_list block_action_list;
   adj_op_callback_list block_assembly_list;
+  adj_op_callback_list nonlinear_second_derivative_action_list;
   adj_func_callback_list functional_list;
   adj_func_deriv_callback_list functional_derivative_list;
   adj_parameter_source_callback_list parameter_source_list;
