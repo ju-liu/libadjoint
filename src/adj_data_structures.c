@@ -563,6 +563,36 @@ int adj_destroy_nonlinear_block_derivative(adj_adjointer* adjointer, adj_nonline
   return ADJ_OK;
 }
 
+int adj_create_nonlinear_block_second_derivative(adj_adjointer* adjointer, adj_nonlinear_block nblock, adj_scalar block_coefficient, 
+                                                 adj_variable inner_var, adj_vector inner_contraction,
+                                                 adj_variable outer_var, adj_vector outer_contraction, 
+                                                 int hermitian, adj_vector action, adj_nonlinear_block_second_derivative* deriv)
+{
+/* We're not going to do simplification of second derivatives, since the main application (dolfin-adjoint)
+doesn't need them. However, I'll retain this create-destroy structure in case this becomes important at some
+indeterminate point in the future. */
+
+  (void) adjointer;
+  deriv->nonlinear_block = nblock;
+  deriv->nonlinear_block.coefficient *= block_coefficient;
+  deriv->inner_variable = inner_var;
+  deriv->inner_contraction = inner_contraction;
+  deriv->outer_variable = outer_var;
+  deriv->outer_contraction = outer_contraction;
+  deriv->hermitian = hermitian;
+  deriv->block_action = action;
+
+  return ADJ_OK;
+}
+
+int adj_destroy_nonlinear_block_second_derivative(adj_adjointer* adjointer, adj_nonlinear_block_second_derivative* deriv)
+{
+  /* c.f. comment above */
+  (void) adjointer;
+  (void) deriv;
+  return ADJ_OK;
+}
+
 int adj_copy_nonlinear_block(adj_nonlinear_block src, adj_nonlinear_block* dest)
 {
   *dest = src; dest->depends = NULL;

@@ -17,8 +17,9 @@
 
 /* values for the .type field of an adj_variable */
 #define ADJ_FORWARD 1
-#define ADJ_ADJOINT 2
-#define ADJ_TLM 3
+#define ADJ_ADJOINT 2 /* adjoint variable */
+#define ADJ_TLM 3 /* tangent linear variable */
+#define ADJ_SOA 4 /* second order adjoint */
 
 /* normal or auxiliary */
 #define ADJ_NORMAL_VARIABLE 0
