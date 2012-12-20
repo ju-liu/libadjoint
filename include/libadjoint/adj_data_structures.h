@@ -210,11 +210,22 @@ typedef struct
 
 typedef struct
 {
-  adj_nonlinear_block nonlinear_block;
-  adj_variable variable;
-  adj_vector contraction;
+  adj_nonlinear_block nonlinear_block; /* nonlinear operator to differentiate */
+  adj_variable variable; /* variable to differentiate with respect to */
+  adj_vector contraction; /* contraction vector to perform rank reduction */
   int hermitian;
 } adj_nonlinear_block_derivative;
+
+typedef struct
+{
+  adj_nonlinear_block nonlinear_block; /*nonlinear operator to differentiate */
+  adj_variable inner_variable; /* the variable for the first derivative */
+  adj_vector inner_contraction; /* the contraction for the first derivative */
+  adj_variable outer_variable; /* the variable for the second derivative */
+  adj_vector outer_contraction; /* the contraction for the second derivative */
+  int hermitian;
+  adj_vector block_action; /* the variable the second derivative acts on */
+} adj_nonlinear_block_second_derivative; /* this structure is needed in the second-order adjoint equation */
 
 typedef struct
 {
