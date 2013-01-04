@@ -279,7 +279,7 @@ pybuild: python/build
 
 python/build: python/libadjoint/*.c
 	@echo "  PYBUILD python/libadjoint"
-	@cd python && python setup.py -q build
+	@(cd python && python setup.py -q build) || (rm -rf python/build && cd python && python setup.py build && rm -rf build && false)
 	@bin/link_python
 
 doc: doc/design/design.pdf doc/manual/manual.pdf
@@ -308,7 +308,7 @@ all: python
 test: python
 install: python
 
-python/libadjoint/clibadjoint.py: $(SLIB)
+python/libadjoint/clibadjoint.py: $(SLIB) pybuild
 	@echo "  H2XML  include/libadjoint/libadjoint.h"
 	@$(CPP) -DPYTHON_BINDINGS include/libadjoint/libadjoint.h > include/libadjoint/pylibadjoint.h
 	@$(H2XML) -q -I. include/libadjoint/pylibadjoint.h -o python/libadjoint/libadjoint.xml
