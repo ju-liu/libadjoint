@@ -694,6 +694,11 @@ class Adjointer(object):
       self.adjointer = adjointer
       self.c_object = self.adjointer
 
+  def get_checkpoint_strategy(self):
+    strategy_id = ctypes.c_int()
+    clib.adj_get_checkpoint_strategy(self.adjointer, strategy_id)
+    return [None, 'offline', 'multistage', 'online'][strategy_id.value]
+
   def set_checkpoint_strategy(self, strategy):
     try:
       strategy_id = int(constants.adj_constants['ADJ_CHECKPOINT_REVOLVE_' + strategy.upper()])
