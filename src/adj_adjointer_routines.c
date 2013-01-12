@@ -1070,7 +1070,10 @@ int adj_record_variable(adj_adjointer* adjointer, adj_variable var, adj_storage_
       {
         ierr = adj_forget_variable_value(adjointer, var, data_ptr);
         if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
-        return adj_record_variable_core_memory(adjointer, data_ptr, storage);
+        if (storage.storage_memory_has_value)
+          return adj_record_variable_core_memory(adjointer, data_ptr, storage);
+        else if (storage.storage_disk_has_value)
+          return adj_record_variable_core_disk(adjointer, var, data_ptr, storage);
       }
       else /* We don't have the overwrite flag */
       {
