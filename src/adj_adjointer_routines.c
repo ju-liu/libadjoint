@@ -739,6 +739,23 @@ int adj_checkpoint_variable(adj_adjointer* adjointer, adj_variable var, int cs)
   return ADJ_OK;
 }
 
+int adj_reset_revolve(adj_adjointer* adjointer)
+{
+  int ierr;
+  adjointer->revolve_data.revolve.ptr = NULL;
+  ierr = adj_initialise_revolve(adjointer);
+  return ierr;
+}
+
+int adj_advance_to_adjoint_run_revolve(adj_adjointer* adjointer)
+{
+  adjointer->revolve_data.current_action = revolve(adjointer->revolve_data.revolve);
+  if (adjointer->revolve_data.current_action != CACTION_FIRSTRUN)
+    adj_advance_to_adjoint_run_revolve(adjointer);
+  adjointer->revolve_data.current_timestep = adjointer->revolve_data.steps-1;
+  return ADJ_OK;
+}
+
 int adj_get_revolve_checkpoint_storage(adj_adjointer* adjointer, adj_equation equation, int *checkpoint_storage)
 {
   int cs, ierr;

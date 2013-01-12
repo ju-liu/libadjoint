@@ -9,6 +9,8 @@
 #include "adj_error_handling.h"
 #include "revolve_c.h"
 
+int adj_reset_revolve(adj_adjointer* adjointer);
+int adj_advance_to_adjoint_run_revolve(adj_adjointer* adjointer);
 int adj_create_adjointer(adj_adjointer* adjointer);
 int adj_destroy_adjointer(adj_adjointer* adjointer);
 int adj_deactivate_adjointer(adj_adjointer* adjointer);

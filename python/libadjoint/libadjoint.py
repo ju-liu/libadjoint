@@ -671,7 +671,6 @@ class AdjointerTime(object):
 
   def reset(self):
     self.__init__(self.adjointer)
-    
 
 class Adjointer(object):
   def __init__(self, adjointer=None):
@@ -757,6 +756,12 @@ class Adjointer(object):
     self.c_object = self.adjointer
     self.__register_data_callbacks__()
     self.time.reset()
+
+  def reset_revolve(self):
+    ''' Resets revolve to the state just before the adjoint computation begins. ''' 
+    if self.get_checkpoint_strategy() != None: 
+      clib.adj_reset_revolve(self.adjointer)
+      clib.adj_advance_to_adjoint_run_revolve(self.adjointer)
 
   def __del__(self):
     if self.adjointer_created:
