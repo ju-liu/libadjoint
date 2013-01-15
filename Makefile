@@ -65,7 +65,7 @@ endif
 CC_VERSION = $(shell $(CC) --version 2>&1) $(shell $(CC) -V 2>&1)
 ifneq (,$(findstring gcc, $(CC_VERSION)))
 	# gcc-specific settings here
-	COMPILER_CFLAGS := -Wall -Wextra -Wunused-parameter -Wunused-result -Wunsafe-loop-optimizations -Wpointer-arith -Wstrict-prototypes -ggdb3 -fstack-protector-all -lstdc++
+	COMPILER_CFLAGS := -Wall -Wextra -Wunused-parameter -Wunsafe-loop-optimizations -Wpointer-arith -Wstrict-prototypes -ggdb3 -fstack-protector-all -lstdc++
 endif
 ifneq (,$(findstring icc, $(CC_VERSION)))
 	# icc-specific settings here
@@ -180,7 +180,7 @@ endif
 ifeq (,$(findstring Darwin, $(shell uname -a)))
 CPP := cpp
 else
-CPP := gcc
+CPP := gcc -U__BLOCKS__
 endif
 GCCXML = $(shell which gccxml)
 H2XML = python/ctypeslib/scripts/h2xml.py
