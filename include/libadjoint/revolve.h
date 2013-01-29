@@ -91,7 +91,7 @@ class Schedule
 	
 	/** This function does not do anything but must be derived
 	*/
-	virtual ACTION::action revolve() {};  
+	virtual ACTION::action revolve() { return ACTION::error; };  
 	/** The necessary number of forward steps without recording is calculated by the function 
                       NUMFORW(STEPS,SNAPS)                          
 	STEPS denotes the total number of time steps, i.e. FINE-CAPO     
@@ -100,11 +100,11 @@ class Schedule
 	
 	int numforw(int steps, int snaps);
 	/** This function is virtual.*/
-	virtual int get_capo(){};	
+	virtual int get_capo(){ return 0; };	
 	/** This function is virtual.*/
-	virtual int get_fine(){};	
+	virtual int get_fine(){ return 0; };	
 	/** This function is virtual.*/
-	virtual int get_check() {};	
+	virtual int get_check() { return 0; };	
 	/** This function is virtual.*/
 	virtual void set_fine(int f){};  
 	/** This function is virtual.*/
@@ -149,11 +149,11 @@ class Online : public Schedule
 	/** This is the Copy Constructor*/
 	Online(Online &o);
 
-	virtual ACTION::action revolve() {};
+	virtual ACTION::action revolve() { return ACTION::error; };
 	/** This function returns the index of the last stored checkpoint.*/
 	int get_check() { return check; }
 	int get_capo()  { return capo; }
-	virtual int get_fine() {};
+	virtual int get_fine() { return 0; };
 	/** This function returns the variable output.*/
 	bool get_output()      { return output; }
 	void set_capo(int c) { capo=c; }
