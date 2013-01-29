@@ -180,7 +180,7 @@ endif
 ifeq (,$(findstring Darwin, $(shell uname -a)))
 CPP := cpp
 else
-CPP := gcc -U__BLOCKS__
+CPP := gcc -E -U__BLOCKS__
 endif
 GCCXML = $(shell which gccxml)
 H2XML = python/ctypeslib/scripts/h2xml.py
@@ -311,6 +311,7 @@ install: python
 python/libadjoint/clibadjoint.py: $(SLIB)
 	@echo "  H2XML  include/libadjoint/libadjoint.h"
 	@$(CPP) -DPYTHON_BINDINGS include/libadjoint/libadjoint.h > include/libadjoint/pylibadjoint.h
+	@sed -i $(SEDFLG) "s/__builtin___stpncpy_chk/__builtin___strncpy_chk/" include/libadjoint/pylibadjoint.h
 	@$(H2XML) -q -I. include/libadjoint/pylibadjoint.h -o python/libadjoint/libadjoint.xml
 	@rm -f include/libadjoint/pylibadjoint.h
 	@echo "  XML2PY python/libadjoint/clibadjoint.py"
@@ -334,7 +335,7 @@ ifeq ($(LIBADJOINT_BUILDING_DEBIAN),yes)
 else
 	@cd python; python setup.py install --prefix=$(ABSDESTDIR)/$(prefix) $(LIBADJOINT_PYTHON_INSTALL_ARGS)
 endif
-	@find $(ABSDESTDIR)/$(prefix) -name clibadjoint.py | xargs sed -i $(SEDFLG) "s@CDLL('$(shell python bin/realpath $(SLIB))')@CDLL('/$(prefix)/lib/$(SLIB)')@"
+	@find $(ABSDESTDIR)/$(prefix) -name clibadjoint.py | xargs sed -i $(SEDFLG) -e "s@CDLL('$(SLIB)')@CDLL('/$(prefix)/lib/$(SLIB)')@" -e "s@CDLL('$(shell python bin/realpath $(SLIB))')@CDLL('/$(prefix)/lib/$(SLIB)')@"
 endif
 	@echo "  INSTALL $(ABSDESTDIR)/$(prefix)/include/libadjoint"
 	@install -d $(ABSDESTDIR)/$(prefix)/include/libadjoint
