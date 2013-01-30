@@ -232,7 +232,7 @@ lib/libadjoint.a: $(OBJECTS)
 
 $(SLIB): $(OBJECTS)
 	@echo "  LD $@"
-	@$(LD) -o $@ obj/*.o $(SLEPC_LDFLAGS) $(PETSC_LDFLAGS) $(LIBS) $(LDFLAGS)
+	@$(LD) $(DBGFLAGS) -o $@ obj/*.o $(SLEPC_LDFLAGS) $(PETSC_LDFLAGS) $(LIBS) $(LDFLAGS)
 
 clean:
 	@rm -f obj/*.o
@@ -316,6 +316,8 @@ python/libadjoint/clibadjoint.py: $(SLIB)
 	@rm -f include/libadjoint/pylibadjoint.h
 	@echo "  XML2PY python/libadjoint/clibadjoint.py"
 	@$(XML2PY) -r '^adj.*' -l $(shell python bin/realpath $(SLIB)) python/libadjoint/libadjoint.xml -o python/libadjoint/clibadjoint.py
+# OSX is such a steaming crock of $#!@
+	@(uname -a | grep -q Darwin) && sed -i $(SEDFLG) "s/._pack_ = 4/._pack_ = 8/" python/libadjoint/clibadjoint.py
 	@rm -f python/libadjoint/libadjoint.xml
 	@chmod a-x python/libadjoint/clibadjoint.py
 python/libadjoint/clibadjoint_constants.py:
