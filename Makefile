@@ -317,7 +317,7 @@ python/libadjoint/clibadjoint.py: $(SLIB)
 	@echo "  XML2PY python/libadjoint/clibadjoint.py"
 	@$(XML2PY) -r '^adj.*' -l $(shell python bin/realpath $(SLIB)) python/libadjoint/libadjoint.xml -o python/libadjoint/clibadjoint.py
 # OSX is such a steaming crock of $#!@
-	@(uname -a | grep -q Darwin) && sed -i $(SEDFLG) "s/._pack_ = 4/._pack_ = 8/" python/libadjoint/clibadjoint.py
+	@((uname -a | grep -q Darwin) && sed -i $(SEDFLG) "s/._pack_ = 4/._pack_ = 8/" python/libadjoint/clibadjoint.py) || true
 	@rm -f python/libadjoint/libadjoint.xml
 	@chmod a-x python/libadjoint/clibadjoint.py
 python/libadjoint/clibadjoint_constants.py:
