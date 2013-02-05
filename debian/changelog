@@ -1,3 +1,9 @@
+libadjoint (0.9.3) unstable; urgency=low
+
+  * Support for Mac OSX; bugfixes in checkpointing with optimisation
+
+ -- Patrick Farrell <patrick.farrell06@imperial.ac.uk>  Tue, 05 Feb 2013 10:07:49 +0000
+
 libadjoint (0.9.2) unstable; urgency=low
 
   * New release.
