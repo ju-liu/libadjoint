@@ -1277,6 +1277,7 @@ int adj_get_soa_equation(adj_adjointer* adjointer, int equation, char* functiona
   if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
   soa_var->type = ADJ_SOA;
   strncpy(soa_var->functional, functional, ADJ_NAME_LEN);
+  strncat(soa_var->functional, ":", 1); /* I hate the string handling in C */
   strncat(soa_var->functional, parameter, ADJ_NAME_LEN);
 
   /* Add an entry in the hash table for this variable */
@@ -1531,6 +1532,7 @@ int adj_get_soa_equation(adj_adjointer* adjointer, int equation, char* functiona
 
   /* Now add the functional source terms to the rhs */
   {
+    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Sorry, the functional SOA source term isn't implemented yet.");
     return adj_chkierr_auto(ADJ_ERR_NOT_IMPLEMENTED);
   }
 
