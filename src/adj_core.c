@@ -1510,6 +1510,7 @@ int adj_get_soa_equation(adj_adjointer* adjointer, int equation, char* functiona
 
         contraction_var = adjointer->equations[rhs_equation].variable; contraction_var.type = ADJ_SOA; 
         strncpy(contraction_var.functional, functional, ADJ_NAME_LEN);
+        strncat(contraction_var.functional, ":", 1);
         strncat(contraction_var.functional, parameter,  ADJ_NAME_LEN);
         ierr = adj_get_variable_value(adjointer, contraction_var, &contraction);
         if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);

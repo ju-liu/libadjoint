@@ -73,7 +73,7 @@ class Variable(object):
       clib.adj_variable_get_iteration(self.var, iteration)
       return iteration.value
     elif name == 'type':
-      int_type_map = {1: 'ADJ_FORWARD', 2: 'ADJ_ADJOINT', 3: 'ADJ_TLM'}
+      int_type_map = {1: 'ADJ_FORWARD', 2: 'ADJ_ADJOINT', 3: 'ADJ_TLM', 4: 'ADJ_SOA'}
       return int_type_map[self.c_object.type]
     else:
       raise AttributeError
@@ -84,7 +84,7 @@ class Variable(object):
     elif key == "iteration":
       self.var.iteration = val
     elif key == "type":
-      type_map = {'ADJ_FORWARD': 1, 'ADJ_ADJOINT': 2, 'ADJ_TLM': 3}
+      type_map = {'ADJ_FORWARD': 1, 'ADJ_ADJOINT': 2, 'ADJ_TLM': 3, 'ADJ_SOA': 4}
       self.var.type = type_map[val]
     else:
       object.__setattr__(self, key, val)
