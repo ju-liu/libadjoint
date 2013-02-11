@@ -188,7 +188,7 @@ void burgers_operator_assembly(int ndepends, adj_variable* variables, adj_vector
   VecZeroEntries(*rhs);
   VecSet(*ones, 1.0);
   MatDiagonalSet(*output, *ones, INSERT_VALUES);
-  VecDestroy(*ones);
+  VecDestroy(ones);
   if (hermitian == ADJ_TRUE) 
     MatHermitianTranspose(*output, MAT_REUSE_MATRIX, output);
   *rhs_vec = petsc_vec_to_adj_vector(rhs);

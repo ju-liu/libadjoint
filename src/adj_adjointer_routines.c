@@ -1464,6 +1464,49 @@ int adj_register_functional_derivative_callback(adj_adjointer* adjointer, char* 
   return ADJ_OK;
 }
 
+int adj_register_functional_second_derivative_callback(adj_adjointer* adjointer, char* name, void (*fn)(adj_adjointer* adjointer, adj_variable variable, int ndepends, adj_variable* variables, adj_vector* dependencies, adj_vector contraction, char* name, adj_vector* output))
+{
+  adj_func_second_deriv_callback_list* cb_list_ptr;
+  adj_func_second_deriv_callback* cb_ptr;
+
+  if (adjointer->options[ADJ_ACTIVITY] == ADJ_ACTIVITY_NOTHING) return ADJ_OK;
+
+  cb_list_ptr = &(adjointer->functional_second_derivative_list);
+
+  /* First, we look for an existing callback data structure that might already exist, to replace the function */
+  cb_ptr = cb_list_ptr->firstnode;
+  while (cb_ptr != NULL)
+  {
+    if (strncmp(cb_ptr->name, name, ADJ_NAME_LEN) == 0)
+    {
+      cb_ptr->callback = (void (*)(void* adjointer, adj_variable variable, int ndepends, adj_variable* variables, adj_vector* dependencies, adj_vector contraction, char* name, adj_vector* output)) fn;
+      return ADJ_OK;
+    }
+    cb_ptr = cb_ptr->next;
+  }
+
+  /* If we got here, that means that we didn't find it. Tack it on to the end of the list. */
+  cb_ptr = (adj_func_second_deriv_callback*) malloc(sizeof(adj_func_second_deriv_callback));
+  ADJ_CHKMALLOC(cb_ptr);
+  strncpy(cb_ptr->name, name, ADJ_NAME_LEN);
+  cb_ptr->callback = (void (*)(void* adjointer, adj_variable variable, int ndepends, adj_variable* variables, adj_vector* dependencies, adj_vector contraction, char* name, adj_vector* output)) fn;
+  cb_ptr->next = NULL;
+
+  /* Special case for the first callback */
+  if (cb_list_ptr->firstnode == NULL)
+  {
+    cb_list_ptr->firstnode = cb_ptr;
+    cb_list_ptr->lastnode = cb_ptr;
+  }
+  else
+  {
+    cb_list_ptr->lastnode->next = cb_ptr;
+    cb_list_ptr->lastnode = cb_ptr;
+  }
+
+  return ADJ_OK;
+}
+
 int adj_forget_adjoint_equation(adj_adjointer* adjointer, int equation)
 {
   adj_variable_hash* varhash;

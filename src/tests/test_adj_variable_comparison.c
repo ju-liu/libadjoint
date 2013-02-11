@@ -49,7 +49,7 @@ void test_adj_variable_comparison(void)
   ierr = adj_record_variable(&adjointer, u_var, storage);
   adj_test_assert(ierr == ADJ_WARN_COMPARISON_FAILED, "Should have failed the comparison");
 
-  VecDestroy(u_petsc);
+  VecDestroy(&u_petsc);
   ierr = adj_destroy_adjointer(&adjointer);
 }
 #endif

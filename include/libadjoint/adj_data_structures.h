@@ -182,6 +182,14 @@ typedef struct adj_func_deriv_callback
   struct adj_func_deriv_callback* next;
 } adj_func_deriv_callback;
 
+typedef struct adj_func_second_deriv_callback
+{
+  char name[ADJ_NAME_LEN];
+  /* we want this to be adj_adjointer* adjointer, but we haven't defined adj_adjointer yet */
+  void (*callback)(void* adjointer, adj_variable variable, int ndepends, adj_variable* variables, adj_vector* dependencies, adj_vector contraction, char* functional, adj_vector* output);
+  struct adj_func_second_deriv_callback* next;
+} adj_func_second_deriv_callback;
+
 typedef struct adj_parameter_source_callback
 {
   char name[ADJ_NAME_LEN];
@@ -201,6 +209,12 @@ typedef struct
   adj_func_deriv_callback* firstnode;
   adj_func_deriv_callback* lastnode;
 } adj_func_deriv_callback_list;
+
+typedef struct
+{
+  adj_func_second_deriv_callback* firstnode;
+  adj_func_second_deriv_callback* lastnode;
+} adj_func_second_deriv_callback_list;
 
 typedef struct
 {
@@ -306,6 +320,7 @@ typedef struct adj_adjointer
   adj_op_callback_list nonlinear_second_derivative_action_list;
   adj_func_callback_list functional_list;
   adj_func_deriv_callback_list functional_derivative_list;
+  adj_func_second_deriv_callback_list functional_second_derivative_list;
   adj_parameter_source_callback_list parameter_source_list;
 
   int finished; /* Is the annotation finished? */

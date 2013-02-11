@@ -393,6 +393,14 @@ class Functional(object):
 
     raise exceptions.LibadjointErrorNotImplemented("No derivative method provided for functional.")
 
+  def second_derivative(self, adjointer, variable, dependencies, values, contraction):
+    '''second_derivative(self, adjointer, variable, dependencies, values, contraction)
+
+    Evaluate the second derivative d^2 J / du^2 . contraction. The result will be a Vector.
+    '''
+
+    raise exceptions.LibadjointErrorNotImplemented("No second_derivative method provided for functional.")
+
   def dependencies(self, adjointer, timestep):
     '''dependencies(self, adjointer, timestep)
 
@@ -424,6 +432,32 @@ class Functional(object):
 
     functional_derivative_type = ctypes.CFUNCTYPE(None, ctypes.POINTER(clib.adj_adjointer), clib.adj_variable, ctypes.c_int, ctypes.POINTER(clib.adj_variable), ctypes.POINTER(clib.adj_vector), ctypes.c_char_p, ctypes.POINTER(clib.adj_vector))
     return functional_derivative_type(cfunc)
+
+  def __cfunc_from_second_derivative__(self):
+    '''Return a c-callable function wrapping the second_derivative method.'''
+
+    def cfunc(adjointer_c, variable_c, ndepends_c, dependencies_c, values_c, contraction_c, name_c, output_c):
+      # build the Python objects from the C objects
+      adjointer = Adjointer(adjointer_c)
+      variable  = Variable(var=variable_c)
+      dependencies = [Variable(var=dependencies_c[i]) for i in range(ndepends_c)]
+      values = [vector(values_c[i]) for i in range(ndepends_c)]
+      contraction = vector(contraction_c)
+
+      # Now call the callback we've been given
+      output = self.second_derivative(adjointer, variable, dependencies, values, contraction)
+
+      # Now cast the outputs back to C
+      output_c[0].klass = 0
+      output_c[0].flags = 0
+      output_c[0].ptr = 0
+      if not isinstance(output, Vector):
+        raise exceptions.LibadjointErrorInvalidInputs("Output from functional second derivative must be a Vector.")
+      output_c[0].ptr = python_utils.c_ptr(output)
+      references_taken.append(output)
+
+    functional_second_derivative_type = ctypes.CFUNCTYPE(None, ctypes.POINTER(clib.adj_adjointer), clib.adj_variable, ctypes.c_int, ctypes.POINTER(clib.adj_variable), ctypes.POINTER(clib.adj_vector), clib.adj_vector, ctypes.c_char_p, ctypes.POINTER(clib.adj_vector))
+    return functional_second_derivative_type(cfunc)
 
   def __cfunc_from_functional__(self):
     '''Return a c-callable function wrapping the derivative method.'''
@@ -835,12 +869,14 @@ class Adjointer(object):
 
     cfunc = functional.__cfunc_from_derivative__()
     self.functions_registered.append(cfunc)
-
     clib.adj_register_functional_derivative_callback(self.adjointer, str(functional), cfunc)
+
+    cfunc = functional.__cfunc_from_second_derivative__()
+    self.functions_registered.append(cfunc)
+    clib.adj_register_functional_second_derivative_callback(self.adjointer, str(functional), cfunc)
 
     cfunc = functional.__cfunc_from_functional__()
     self.functions_registered.append(cfunc)
-
     clib.adj_register_functional_callback(self.adjointer, str(functional), cfunc)
 
   def __register_parameter__(self, parameter):
@@ -848,7 +884,6 @@ class Adjointer(object):
 
     cfunc = parameter.__cfunc_from_parameter_source__()
     self.functions_registered.append(cfunc)
-
     clib.adj_register_parameter_source_callback(self.adjointer, str(parameter), cfunc)
 
   def set_functional_dependencies(self, functional, timestep):

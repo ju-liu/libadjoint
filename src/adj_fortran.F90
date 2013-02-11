@@ -99,6 +99,11 @@ module libadjoint_data_structures
     type(c_ptr) :: lastnode
   end type adj_func_deriv_callback_list
 
+  type, bind(c) :: adj_func_second_deriv_callback_list
+    type(c_ptr) :: firstnode
+    type(c_ptr) :: lastnode
+  end type adj_func_second_deriv_callback_list
+
   type, bind(c) :: adj_parameter_source_callback_list
     type(c_ptr) :: firstnode
     type(c_ptr) :: lastnode
@@ -146,6 +151,7 @@ module libadjoint_data_structures
     type(adj_op_callback_list) :: nonlinear_second_derivative_action_list
     type(adj_func_callback_list) :: functional_list
     type(adj_func_deriv_callback_list) :: functional_derivative_list
+    type(adj_func_second_deriv_callback_list) :: functional_second_derivative_list
     type(adj_parameter_source_callback_list) :: parameter_source_list
 
     integer(kind=c_int) :: finished
