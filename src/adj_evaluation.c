@@ -616,6 +616,134 @@ int adj_evaluate_functional_derivative(adj_adjointer* adjointer, adj_variable va
   return ADJ_OK;
 }
 
+int adj_evaluate_functional_second_derivative(adj_adjointer* adjointer, adj_variable variable, char* functional, adj_vector contraction, adj_vector* output, int* has_output)
+{
+  int i, ierr;
+  void (*functional_second_derivative_func)(adj_adjointer* adjointer, adj_variable variable, int ndepends, adj_variable* variables, adj_vector* dependencies, adj_vector contraction, char* name, adj_vector* output) = NULL;
+  adj_vector* dependencies = NULL;
+  int ndepends = 0;
+  adj_variable* variables = NULL;
+  adj_functional_data* functional_data_ptr = NULL;
+  adj_variable_data* data_ptr = NULL;
+  adj_variable_hash* hash = NULL;
+  int ntimesteps;
+  int ntimesteps_to_consider;
+  int* timesteps_to_consider;
+
+  ierr = adj_variable_get_ndepending_timesteps(adjointer, variable, functional, &ntimesteps);
+  if (ierr != ADJ_OK)
+    return adj_chkierr_auto(ierr);
+  if (ntimesteps == 0)
+  {
+    *has_output = ADJ_FALSE;
+    return ADJ_OK;
+  }
+  else
+  {
+    *has_output = ADJ_TRUE;
+  }
+
+  ierr = adj_find_functional_second_derivative_callback(adjointer, functional, &functional_second_derivative_func);
+  if (ierr != ADJ_OK)
+    return adj_chkierr_auto(ierr);
+
+  if (adjointer->ntimesteps <= variable.timestep) 
+  {
+    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "No data is associated with this timestep %d.", variable.timestep);
+    return adj_chkierr_auto(ADJ_ERR_INVALID_INPUTS);
+  }
+
+  ierr = adj_find_variable_data((&adjointer->varhash), &variable, &data_ptr);
+  if (ierr != ADJ_OK)
+    return adj_chkierr_auto(ierr);
+
+  /* Create the dependency list for the functional derivative evaluation. */
+  /* For that we loop over all timesteps that need 'variable' for the functional evaluation */
+  /* and add its dependency to the dependency list */ 
+  ntimesteps_to_consider = data_ptr->ndepending_timesteps + 1;
+  timesteps_to_consider = (int*) malloc(ntimesteps_to_consider * sizeof(int));
+  ADJ_CHKMALLOC(timesteps_to_consider);
+  for (i = 0; i < data_ptr->ndepending_timesteps; i++)
+    timesteps_to_consider[i] = data_ptr->depending_timesteps[i];
+  timesteps_to_consider[i] = variable.timestep;
+
+  for (i = 0; i < ntimesteps_to_consider; i++)
+  {
+    int timestep = timesteps_to_consider[i];
+    functional_data_ptr = adjointer->timestep_data[timestep].functional_data_start;
+    while (functional_data_ptr != NULL)
+    {
+      if (strncmp(functional_data_ptr->name, functional, ADJ_NAME_LEN) == 0)
+      {
+        int k;
+        for (k = 0; k < functional_data_ptr->ndepends; k++)
+        {
+          adj_variable_data tmp_data;
+          /* We're going to use this hash as a set, to see if we've seen this variable before */
+          /* as we want to not pass any duplicates to the user code */
+          ierr = adj_add_variable_data(&hash, &(functional_data_ptr->dependencies[k]), &tmp_data);
+          if (ierr == ADJ_OK)
+          {
+            /* that means the addition went fine, i.e. we haven't seen it before, so we increment ndepends */
+            ndepends++;
+          }
+        }
+        break;
+      }
+      functional_data_ptr = functional_data_ptr->next;
+    }
+  }
+
+  variables = (adj_variable*) malloc(ndepends * sizeof(adj_variable));
+  ADJ_CHKMALLOC(variables);
+  dependencies = (adj_vector*) malloc(ndepends * sizeof(adj_vector));
+  ADJ_CHKMALLOC(dependencies);
+  ndepends = 0;
+  ierr = adj_destroy_hash(&hash);
+  if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
+
+  for (i = 0; i < ntimesteps_to_consider; i++)
+  {
+    int timestep = timesteps_to_consider[i];
+    functional_data_ptr = adjointer->timestep_data[timestep].functional_data_start;
+    while (functional_data_ptr != NULL)
+    {
+      if (strncmp(functional_data_ptr->name, functional, ADJ_NAME_LEN) == 0)
+      {
+        int k;
+        for (k = 0; k < functional_data_ptr->ndepends; k++)
+        {
+          adj_variable_data tmp_data;
+          ierr = adj_add_variable_data(&hash, &(functional_data_ptr->dependencies[k]), &tmp_data);
+          if (ierr == ADJ_OK)
+          {
+            /* this variable is one we should add */
+            memcpy(&(variables[ndepends]), &(functional_data_ptr->dependencies[k]), sizeof(adj_variable));
+            ierr = adj_get_variable_value(adjointer, variables[ndepends], &(dependencies[ndepends]));
+            if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
+            ndepends++;
+          }
+        }
+        break;
+      }
+      functional_data_ptr = functional_data_ptr->next;
+    }
+  }
+
+  ierr = adj_destroy_hash(&hash);
+  free(timesteps_to_consider);
+  if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
+
+  /* We have the right callback, so let's call it already */ 
+  functional_second_derivative_func(adjointer, variable, ndepends, variables, dependencies, contraction, functional, output);
+
+  free(dependencies);
+  free(variables);
+
+  return ADJ_OK;
+}
+
+
 int adj_evaluate_forward_source(adj_adjointer* adjointer, int equation, adj_vector* output, int* has_output)
 {
   assert(adjointer->equations[equation].rhs_callback != NULL);

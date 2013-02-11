@@ -1532,8 +1532,25 @@ int adj_get_soa_equation(adj_adjointer* adjointer, int equation, char* functiona
 
   /* Now add the functional source terms to the rhs */
   {
-    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Sorry, the functional SOA source term isn't implemented yet.");
-    return adj_chkierr_auto(ADJ_ERR_NOT_IMPLEMENTED);
+    adj_vector rhs_tmp;
+    adj_vector tlm_vec;
+    adj_variable tlm_var;
+    int has_d2jdu2;
+
+    tlm_var = fwd_var;
+    tlm_var.type = ADJ_TLM;
+    strncpy(tlm_var.functional, parameter, ADJ_NAME_LEN);
+    ierr = adj_get_variable_value(adjointer, tlm_var, &tlm_vec);
+    if (ierr != ADJ_OK)
+      return adj_chkierr_auto(ierr);
+
+    ierr = adj_evaluate_functional_second_derivative(adjointer, fwd_var, functional, tlm_vec, &rhs_tmp, &has_d2jdu2);
+    if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
+    if (has_d2jdu2)
+    {
+      adjointer->callbacks.vec_axpy(rhs, (adj_scalar)1.0, rhs_tmp);
+      adjointer->callbacks.vec_destroy(&rhs_tmp);
+    }
   }
 
   return ADJ_OK;

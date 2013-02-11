@@ -69,6 +69,7 @@ int adj_forget_forward_equation_until(adj_adjointer* adjointer, int equation, in
 int adj_find_operator_callback(adj_adjointer* adjointer, int type, char* name, void (**fn)(void));
 int adj_find_functional_callback(adj_adjointer* adjointer, char* name, void (**fn)(adj_adjointer* adjointer, int timestep, int ndepends, adj_variable* variables, adj_vector* dependencies, char* name, adj_scalar* output));
 int adj_find_functional_derivative_callback(adj_adjointer* adjointer, char* functional, void (**fn)(adj_adjointer* adjointer, adj_variable variable, int ndepends, adj_variable* variables, adj_vector* dependencies, char* name, adj_vector* output));
+int adj_find_functional_second_derivative_callback(adj_adjointer* adjointer, char* functional, void (**fn)(adj_adjointer* adjointer, adj_variable variable, int ndepends, adj_variable* variables, adj_vector* dependencies, adj_vector contraction, char* name, adj_vector* output));
 int adj_find_parameter_source_callback(adj_adjointer* adjointer, char* parameter, void (**fn)(adj_adjointer* adjointer, int equation, adj_variable variable, int ndepends, adj_variable* variables, adj_vector* dependencies, char* name, adj_vector* output, int* has_output));
 int adj_has_variable_value(adj_adjointer* adjointer, adj_variable var);
 int adj_has_variable_value_memory(adj_adjointer* adjointer, adj_variable var);
