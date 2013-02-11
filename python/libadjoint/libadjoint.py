@@ -112,6 +112,12 @@ class Variable(object):
     fwd_var = Variable(self.name, self.timestep, self.iteration)
     return fwd_var
 
+  def to_soa(self):
+    soa_var = Variable(self.name, self.timestep, self.iteration)
+    soa_var.c_object.type = int(constants.adj_constants['ADJ_SOA'])
+    soa_var.c_object.functional = str(functional) + ":" + str(parameter)
+    return soa_var
+
   def equation_nb(self, adjointer):
     ''' Returns the number of the foward equation that solves for this variable '''
     equation_nb = ctypes.c_int()
@@ -991,6 +997,37 @@ class Adjointer(object):
     output = clib.adj_vector()
     adj_var = clib.adj_variable()
     clib.adj_get_tlm_solution(self.adjointer, equation, str(parameter), output, adj_var)
+    output_py = python_utils.c_deref(output.ptr)
+    references_taken.remove(output_py)
+
+    return (Variable(var=adj_var), output_py)
+
+  def get_soa_equation(self, equation, functional, parameter):
+
+    self.__register_parameter__(parameter)
+    self.__register_functional__(functional)
+    self.set_functional_dependencies(functional, self.equation_timestep[equation])
+
+    lhs = clib.adj_matrix()
+    rhs = clib.adj_vector()
+    soa_var = clib.adj_variable()
+    clib.adj_get_soa_equation(self.adjointer, equation, str(functional), str(parameter), lhs, rhs, soa_var)
+    lhs_py = python_utils.c_deref(lhs.ptr)
+    references_taken.remove(lhs_py)
+    rhs_py = python_utils.c_deref(rhs.ptr)
+    references_taken.remove(rhs_py)
+
+    return (Variable(var=soa_var), lhs_py, rhs_py)
+
+  def get_soa_solution(self, equation, functional, parameter):
+
+    self.__register_parameter__(parameter)
+    self.__register_functional__(functional)
+    self.set_functional_dependencies(functional, self.equation_timestep[equation])
+
+    output = clib.adj_vector()
+    adj_var = clib.adj_variable()
+    clib.adj_get_soa_solution(self.adjointer, equation, str(functional), str(parameter), output, adj_var)
     output_py = python_utils.c_deref(output.ptr)
     references_taken.remove(output_py)
 

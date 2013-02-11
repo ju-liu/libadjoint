@@ -30,6 +30,8 @@ static PyObject * c_ptr(PyObject *self, PyObject *args)
 {
   /* Return a python integer containing the pointer to the object provided.*/
   PyObject * object;
+
+  (void) self;
   
   if (!PyArg_ParseTuple(args, "O", &object))
     return NULL;
@@ -42,7 +44,8 @@ static PyObject * c_deref(PyObject *self, PyObject *args)
 {
   /* Given a python integer containing the pointer to a python object, return the object*/
   PyObject * pointer;
-  
+
+  (void) self;
   
   if (!PyArg_ParseTuple(args, "O", &pointer))
     return NULL;

@@ -258,6 +258,9 @@ int adj_variable_str(adj_variable var, char* name, size_t namelen)
   case (ADJ_ADJOINT):
     snprintf(buf, 255, ":Adjoint[%s]", var.functional);
     break;
+  case (ADJ_SOA):
+    snprintf(buf, 255, ":SecondOrderAdjoint[%s]", var.functional);
+    break;
   case (ADJ_TLM):
     snprintf(buf, 255, ":Sensitivity[%s]", var.functional);
     break;
