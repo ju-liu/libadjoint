@@ -12,6 +12,8 @@ int adj_get_forward_equation(adj_adjointer* adjointer, int equation, adj_matrix*
 int adj_get_forward_solution(adj_adjointer* adjointer, int equation, adj_vector* soln, adj_variable* fwd_var);
 int adj_get_tlm_equation    (adj_adjointer* adjointer, int equation, char* parameter,  adj_matrix* lhs, adj_vector* rhs, adj_variable* tlm_var);
 int adj_get_tlm_solution    (adj_adjointer* adjointer, int equation, char* parameter,  adj_vector* soln, adj_variable* tlm_var);
+int adj_get_soa_equation    (adj_adjointer* adjointer, int equation, char* functional, char* parameter,  adj_matrix* lhs, adj_vector* rhs, adj_variable* soa_var);
+int adj_get_soa_solution    (adj_adjointer* adjointer, int equation, char* functional, char* parameter,  adj_vector* soln, adj_variable* soa_var);
 
 #ifndef ADJ_HIDE_FROM_USER
 int adj_replay_forward_equations(adj_adjointer* adjointer, int start_equation, int stop_equation, int checkpoint_last_timestep);

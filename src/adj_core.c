@@ -1220,3 +1220,342 @@ int adj_get_tlm_solution(adj_adjointer* adjointer, int equation, char* parameter
 
   return ADJ_OK;
 }
+
+int adj_get_soa_equation(adj_adjointer* adjointer, int equation, char* functional, char* parameter,  adj_matrix* lhs, adj_vector* rhs, adj_variable* soa_var)
+{
+  int ierr;
+  adj_equation fwd_eqn;
+  adj_variable fwd_var;
+  adj_variable_data* fwd_data;
+  adj_variable_data* soa_data;
+  int i;
+  int j;
+
+  if (adjointer->options[ADJ_ACTIVITY] == ADJ_ACTIVITY_NOTHING)
+  {
+    strncpy(adj_error_msg, "You have asked for a second-order adjoint equation, but the adjointer has been deactivated.", ADJ_ERROR_MSG_BUF);
+    return adj_chkierr_auto(ADJ_ERR_INVALID_INPUTS);
+  }
+
+  if (equation < 0 || equation >= adjointer->nequations)
+  {
+    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Invalid equation number %d.", equation);
+    return adj_chkierr_auto(ADJ_ERR_INVALID_INPUTS);
+  }
+
+  if (adjointer->callbacks.vec_destroy == NULL)
+  {
+    strncpy(adj_error_msg, "Need the ADJ_VEC_DESTROY_CB callback, but it hasn't been supplied.", ADJ_ERROR_MSG_BUF);
+    return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
+  }
+  if (adjointer->callbacks.vec_axpy == NULL)
+  {
+    strncpy(adj_error_msg, "Need the ADJ_VEC_AXPY_CB callback, but it hasn't been supplied.", ADJ_ERROR_MSG_BUF);
+    return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
+  }
+  if (adjointer->callbacks.mat_axpy == NULL)
+  {
+    strncpy(adj_error_msg, "Need the ADJ_MAT_AXPY_CB callback, but it hasn't been supplied.", ADJ_ERROR_MSG_BUF);
+    return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
+  }
+  if (adjointer->callbacks.mat_destroy == NULL)
+  {
+    strncpy(adj_error_msg, "Need the ADJ_MAT_DESTROY_CB callback, but it hasn't been supplied.", ADJ_ERROR_MSG_BUF);
+    return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
+  }
+
+  fwd_eqn = adjointer->equations[equation];
+  fwd_var = fwd_eqn.variable;
+
+  /* Check the existence of the necessary functional callbacks here */
+
+  ierr = adj_find_variable_data(&(adjointer->varhash), &fwd_var, &fwd_data);
+  assert(ierr == ADJ_OK);
+
+  /* Create the associated adjoint variable */
+  ierr = adj_create_variable(fwd_var.name, fwd_var.timestep, fwd_var.iteration, fwd_var.auxiliary, soa_var);
+  if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
+  soa_var->type = ADJ_SOA;
+  strncpy(soa_var->functional, functional, ADJ_NAME_LEN);
+  strncat(soa_var->functional, parameter, ADJ_NAME_LEN);
+
+  /* Add an entry in the hash table for this variable */
+  ierr = adj_find_variable_data(&(adjointer->varhash), soa_var, &soa_data);
+  if (ierr == ADJ_ERR_HASH_FAILED)
+  {
+    /* It might not fail, if we have tried to fetch this equation already */
+    ierr = adj_add_new_hash_entry(adjointer, soa_var, &soa_data);
+    if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
+  }
+
+  /* Now let's fill in its data */
+  soa_data->equation = -1; /* it never has a forward equation */
+  /* Let's forget about the dependencies for now */
+
+  /* --------------------------------------------------------------------------
+   * Computation of A* terms                                                  |
+   * -------------------------------------------------------------------------- */
+
+  /* fwd_data->targeting_equations what forward equations have nonzero blocks in the column of A associated with fwd_var. */
+  /* That column of A becomes the current row of A* we want to now compute. */
+
+  /* First we find the diagonal entry and assemble that, to compute the A* of lhs. */
+  /* Find the block in fwd_eqn that targets fwd_var, and assemble that (hermitianed) */
+  {
+    adj_block block;
+    int blockcount = 0;
+    for (i = 0; i < fwd_eqn.nblocks; i++)
+    {
+
+      if (adj_variable_equal(&(fwd_eqn.targets[i]), &fwd_var, 1))
+      {
+        /* this is the right block */
+        block = fwd_eqn.blocks[i];
+        block.hermitian = !block.hermitian;
+        blockcount++;
+        if (blockcount == 1) /* the first one we've found */
+        {
+          ierr = adj_evaluate_block_assembly(adjointer, block, lhs, rhs);
+          if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
+        }
+        else
+        {
+          adj_matrix lhs_tmp;
+          adj_vector rhs_tmp;
+          ierr = adj_evaluate_block_assembly(adjointer, block, &lhs_tmp, &rhs_tmp);
+          if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
+          adjointer->callbacks.vec_destroy(&rhs_tmp); /* we already have rhs from the first block assembly */
+          adjointer->callbacks.mat_axpy(lhs, (adj_scalar) 1.0, lhs_tmp); /* add lhs_tmp to lhs */
+          adjointer->callbacks.mat_destroy(&lhs_tmp);
+        }
+      }
+    }
+  }
+
+  /* Great! Now let's assemble the RHS contributions of A*. */
+
+  /* Now loop through the off-diagonal blocks of A*. */
+  for (i = 0; i < fwd_data->ntargeting_equations; i++)
+  {
+    adj_equation other_fwd_eqn;
+    adj_block block;
+    adj_variable other_soa_var;
+    adj_vector soa_value;
+    adj_vector rhs_tmp;
+
+    if (fwd_data->targeting_equations[i] == equation) continue; /* that term goes in the lhs, and we've already taken care of it */
+    other_fwd_eqn = adjointer->equations[fwd_data->targeting_equations[i]];
+
+    for (j = 0; j < other_fwd_eqn.nblocks; j++)
+    {
+      if (adj_variable_equal(&fwd_var, &(other_fwd_eqn.targets[j]), 1))
+      {
+        block = other_fwd_eqn.blocks[j];
+
+        /* OK. Now we've found the right block ... */
+        block.hermitian = !block.hermitian;
+
+        /* Find the adjoint variable we want this to multiply */
+        other_soa_var = other_fwd_eqn.variable; other_soa_var.type = ADJ_SOA; 
+        strncpy(other_soa_var.functional, functional, ADJ_NAME_LEN);
+        strncat(other_soa_var.functional, parameter,  ADJ_NAME_LEN);
+        /* and now get its value */
+        ierr = adj_get_variable_value(adjointer, other_soa_var, &soa_value);
+        assert(ierr == ADJ_OK); /* we should have them all, we checked for them earlier */
+
+        ierr = adj_evaluate_block_action(adjointer, block, soa_value, &rhs_tmp);
+        if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
+        adjointer->callbacks.vec_axpy(rhs, (adj_scalar)-1.0, rhs_tmp);
+        adjointer->callbacks.vec_destroy(&rhs_tmp);
+      }
+    }
+
+  }
+
+  /* --------------------------------------------------------------------------
+   * Computation of G* terms                                                  |
+   * -------------------------------------------------------------------------- */
+
+  /* We need to loop through the equations that depend on fwd_var; each one of those will produce
+     a term in this row of G*. */
+  {
+    for (i = 0; i < fwd_data->ndepending_equations; i++)
+    {
+      /* We compute the block of G*, either assembling it, or computing its action, as appropriate. */
+      int ndepending_eqn;
+      adj_equation depending_eqn;
+      int nderivs; /* these two are the raw derivatives to compute */
+      adj_nonlinear_block_derivative* derivs;
+
+      int nnew_derivs; /* and these two are after derivative simplification */
+      adj_nonlinear_block_derivative* new_derivs;
+      int l, k;
+
+      ndepending_eqn = fwd_data->depending_equations[i];
+      depending_eqn = adjointer->equations[ndepending_eqn];
+
+      /* Now, we loop through the blocks of this forward equation, finding the ones that depend on the fwd variable.
+         First, let's find out how many blocks depend on this variable; then we'll malloc that many 
+         adj_nonlinear_block_derivatives, and then we'll go about filling them in. */
+      nderivs = 0;
+      for (j = 0; j < depending_eqn.nblocks; j++)
+      {
+        if (depending_eqn.blocks[j].has_nonlinear_block)
+        {
+          for (k = 0; k < depending_eqn.blocks[j].nonlinear_block.ndepends; k++)
+          {
+            if (adj_variable_equal(&fwd_var, &depending_eqn.blocks[j].nonlinear_block.depends[k], 1))
+            {
+              nderivs++;
+            }
+          }
+        }
+      }
+
+      /* Now that we have ndepending_blocks, let's use it */
+      derivs = (adj_nonlinear_block_derivative*) malloc(nderivs * sizeof(adj_nonlinear_block_derivative));
+      ADJ_CHKMALLOC(derivs);
+      l = 0;
+      for (j = 0; j < depending_eqn.nblocks; j++)
+      {
+        if (depending_eqn.blocks[j].has_nonlinear_block)
+        {
+          for (k = 0; k < depending_eqn.blocks[j].nonlinear_block.ndepends; k++)
+          {
+            if (adj_variable_equal(&fwd_var, &depending_eqn.blocks[j].nonlinear_block.depends[k], 1))
+            {
+              adj_vector target;
+              ierr = adj_get_variable_value(adjointer, depending_eqn.targets[j], &target);
+              if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
+
+              ierr = adj_create_nonlinear_block_derivative(adjointer, depending_eqn.blocks[j].nonlinear_block, depending_eqn.blocks[j].coefficient, fwd_var, target, !depending_eqn.blocks[j].hermitian, &derivs[l]);
+              if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
+              l++;
+            }
+          }
+        }
+      }
+
+      /* OK, Here's where we do our simplifications; this can be a significant optimisation */
+      /* .......................................................................................... */
+      ierr = adj_simplify_derivatives(adjointer, nderivs, derivs, &nnew_derivs, &new_derivs);
+      for (l = 0; l < nderivs; l++)
+      {
+        ierr = adj_destroy_nonlinear_block_derivative(adjointer, &derivs[l]);
+        if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
+      }
+      free(derivs);
+
+      /* Now, we go and evaluate each one of the derivatives, assembling or acting as appropriate */
+      if (ndepending_eqn == equation)
+      {
+        /* This G-block is on the diagonal, and so we must assemble it .. later */
+        snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Sorry, we can't handle G-blocks on the diagonal (yet).");
+        return adj_chkierr_auto(ADJ_ERR_NOT_IMPLEMENTED);
+      }
+      else
+      {
+        /* This G-block is NOT on the diagonal, so we only need its action */
+        adj_variable soa_associated;
+        adj_vector soa_value;
+
+        soa_associated = depending_eqn.variable;
+        soa_associated.type = ADJ_SOA;
+        strncpy(soa_associated.functional, functional, ADJ_NAME_LEN);
+        strncat(soa_associated.functional, parameter, ADJ_NAME_LEN);
+        ierr = adj_get_variable_value(adjointer, soa_associated, &soa_value);
+        if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
+
+        /* And now we are ready */
+        ierr = adj_evaluate_nonlinear_derivative_action(adjointer, nnew_derivs, new_derivs, soa_value, rhs);
+        if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
+      }
+
+      for (l = 0; l < nnew_derivs; l++)
+      {
+        ierr = adj_destroy_nonlinear_block_derivative(adjointer, &new_derivs[l]);
+        if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
+      }
+      free(new_derivs);
+    }
+  }
+
+  /* --------------------------------------------------------------------------
+   * Computation of R* terms                                                  |
+   * -------------------------------------------------------------------------- */
+  {
+    for (i = 0; i < fwd_data->nrhs_equations; i++)
+    {
+      int rhs_equation = fwd_data->rhs_equations[i];
+      /* Does this R* contribute to the adjoint matrix ... */
+      if (adj_variable_equal(&(adjointer->equations[rhs_equation].variable), &fwd_var, 1))
+      {
+        adj_matrix rstar;
+        ierr = adj_evaluate_rhs_deriv_assembly(adjointer, adjointer->equations[rhs_equation], ADJ_TRUE, &rstar);
+        if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
+        adjointer->callbacks.mat_axpy(lhs, (adj_scalar) -1.0, rstar); /* Subtract the R* contribution from the adjoint lhs */
+        adjointer->callbacks.mat_destroy(&rstar);
+      }
+      /* ... or to the right-hand side of the adjoint system? */
+      else
+      {
+        /* Get the adj_equation associated with this dependency, so we can pull out the relevant rhs_deriv_action callback */
+        adj_vector deriv_action;
+        adj_variable contraction_var;
+        adj_vector contraction;
+        int has_output;
+
+        has_output = -666;
+
+        contraction_var = adjointer->equations[rhs_equation].variable; contraction_var.type = ADJ_SOA; 
+        strncpy(contraction_var.functional, functional, ADJ_NAME_LEN);
+        strncat(contraction_var.functional, parameter,  ADJ_NAME_LEN);
+        ierr = adj_get_variable_value(adjointer, contraction_var, &contraction);
+        if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
+
+        ierr = adj_evaluate_rhs_deriv_action(adjointer, adjointer->equations[rhs_equation], fwd_var, contraction, ADJ_TRUE, &deriv_action, &has_output);
+        if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
+
+        if (has_output)
+        {
+          /* Now that we have the contribution, we need to add it to the adjoint right hand side */
+          adjointer->callbacks.vec_axpy(rhs, (adj_scalar)1.0, deriv_action);
+          adjointer->callbacks.vec_destroy(&deriv_action);
+        }
+      }
+    }
+  }
+
+  /* OK. That was the (dF/du)^* . (dlambda/dm) term. Now we need to implement all of the other terms in
+  the SOA equation, yay! */
+
+  /* Now add the functional source terms to the rhs */
+  {
+    return adj_chkierr_auto(ADJ_ERR_NOT_IMPLEMENTED);
+  }
+
+  return ADJ_OK;
+}
+
+int adj_get_soa_solution(adj_adjointer* adjointer, int equation, char* functional, char* parameter,  adj_vector* soln, adj_variable* soa_var)
+{
+  int ierr;
+  adj_matrix lhs;
+  adj_vector rhs;
+
+  /* Check for the required callbacks */ 
+  strncpy(adj_error_msg, "Need the solve data callback, but it hasn't been supplied.", ADJ_ERROR_MSG_BUF);
+  if (adjointer->callbacks.solve == NULL) return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
+  strncpy(adj_error_msg, "", ADJ_ERROR_MSG_BUF);
+
+  ierr = adj_get_soa_equation(adjointer, equation, functional, parameter, &lhs, &rhs, soa_var);
+  if (ierr != ADJ_OK)
+    return adj_chkierr_auto(ierr);
+
+  /* Solve the linear system */
+  adjointer->callbacks.solve(*soa_var, lhs, rhs, soln); 
+  adjointer->callbacks.vec_destroy(&rhs);
+  adjointer->callbacks.mat_destroy(&lhs);
+
+  return ADJ_OK;
+}

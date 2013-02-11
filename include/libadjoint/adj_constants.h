@@ -17,8 +17,9 @@
 
 /* values for the .type field of an adj_variable */
 #define ADJ_FORWARD 1
-#define ADJ_ADJOINT 2
-#define ADJ_TLM 3
+#define ADJ_ADJOINT 2 /* adjoint variable */
+#define ADJ_TLM 3 /* tangent linear variable */
+#define ADJ_SOA 4 /* second order adjoint */
 
 /* normal or auxiliary */
 #define ADJ_NORMAL_VARIABLE 0
@@ -58,6 +59,7 @@
 #define ADJ_NBLOCK_DERIVATIVE_ASSEMBLY_CB 4
 #define ADJ_BLOCK_ACTION_CB 5
 #define ADJ_BLOCK_ASSEMBLY_CB 6
+#define ADJ_NBLOCK_SECOND_DERIVATIVE_ACTION_CB 7
 /* if you add a new one, you must update the table in src/adj_adjointer_routines.c */
 
 #define ADJ_VEC_DUPLICATE_CB 10

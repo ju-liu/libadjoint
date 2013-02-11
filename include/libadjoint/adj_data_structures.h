@@ -210,11 +210,22 @@ typedef struct
 
 typedef struct
 {
-  adj_nonlinear_block nonlinear_block;
-  adj_variable variable;
-  adj_vector contraction;
+  adj_nonlinear_block nonlinear_block; /* nonlinear operator to differentiate */
+  adj_variable variable; /* variable to differentiate with respect to */
+  adj_vector contraction; /* contraction vector to perform rank reduction */
   int hermitian;
 } adj_nonlinear_block_derivative;
+
+typedef struct
+{
+  adj_nonlinear_block nonlinear_block; /* nonlinear operator to differentiate */
+  adj_variable inner_variable; /* the variable for the first derivative */
+  adj_vector inner_contraction; /* the contraction for the first derivative */
+  adj_variable outer_variable; /* the variable for the second derivative */
+  adj_vector outer_contraction; /* the contraction for the second derivative */
+  int hermitian;
+  adj_vector block_action; /* the variable the second derivative acts on */
+} adj_nonlinear_block_second_derivative; /* this structure is needed in the second-order adjoint equation */
 
 typedef struct
 {
@@ -292,6 +303,7 @@ typedef struct adj_adjointer
   adj_op_callback_list nonlinear_derivative_assembly_list;
   adj_op_callback_list block_action_list;
   adj_op_callback_list block_assembly_list;
+  adj_op_callback_list nonlinear_second_derivative_action_list;
   adj_func_callback_list functional_list;
   adj_func_deriv_callback_list functional_derivative_list;
   adj_parameter_source_callback_list parameter_source_list;
@@ -334,6 +346,8 @@ int adj_variable_equal(adj_variable* var1, adj_variable* var2, int nvars);
 #ifndef ADJ_HIDE_FROM_USER
 int adj_create_nonlinear_block_derivative(adj_adjointer* adjointer, adj_nonlinear_block nblock, adj_scalar block_coefficient, adj_variable fwd, adj_vector contraction, int hermitian, adj_nonlinear_block_derivative* deriv);
 int adj_destroy_nonlinear_block_derivative(adj_adjointer* adjointer, adj_nonlinear_block_derivative* deriv);
+int adj_create_nonlinear_block_second_derivative(adj_adjointer* adjointer, adj_nonlinear_block nblock, adj_scalar block_coefficient, adj_variable inner_var, adj_vector inner_contraction, adj_variable outer_var, adj_vector outer_contraction, int hermitian, adj_vector action, adj_nonlinear_block_second_derivative* deriv);
+int adj_destroy_nonlinear_block_second_derivative(adj_adjointer* adjointer, adj_nonlinear_block_second_derivative* deriv);
 int adj_copy_nonlinear_block(adj_nonlinear_block src, adj_nonlinear_block* dest);
 int adj_equation_rhs_nonlinear_index(adj_equation eqn);
 #endif

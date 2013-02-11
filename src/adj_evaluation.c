@@ -154,6 +154,65 @@ int adj_evaluate_nonlinear_derivative_action(adj_adjointer* adjointer, int nderi
   return ADJ_OK;
 }
 
+int adj_evaluate_nonlinear_second_derivative_action(adj_adjointer* adjointer, int nderivatives, adj_nonlinear_block_second_derivative* derivatives, adj_vector* rhs)
+{
+  int ierr;
+  int deriv;
+  void (*nonlinear_second_derivative_action_func)(int ndepends, adj_variable* variables, adj_vector* dependencies, adj_variable inner_derivative, adj_vector inner_contraction, adj_variable outer_derivative, adj_vector outer_contraction, int hermitian, adj_vector input, adj_scalar coefficient, void* context, adj_vector* output);
+  adj_vector* dependencies = NULL;
+
+  /* As usual, check as much as we can at the start */
+  strncpy(adj_error_msg, "Need a data callback, but it hasn't been supplied.", ADJ_ERROR_MSG_BUF);
+  if (adjointer->callbacks.vec_destroy == NULL)   return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
+  if (adjointer->callbacks.vec_axpy == NULL)      return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
+  if (adjointer->callbacks.vec_duplicate == NULL) return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
+  strncpy(adj_error_msg, "", ADJ_ERROR_MSG_BUF);
+  assert(nderivatives > 0);
+
+  /* Let's also check we have all of the variables available */
+  for (deriv = 0; deriv < nderivatives; deriv++)
+  {
+    int i;
+    for (i = 0; i < derivatives[deriv].nonlinear_block.ndepends; i++)
+    {
+      ierr = adj_has_variable_value(adjointer, derivatives[deriv].nonlinear_block.depends[i]);
+      if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
+    }
+  }
+
+  for (deriv = 0; deriv < nderivatives; deriv++)
+  {
+    ierr = adj_find_operator_callback(adjointer, ADJ_NBLOCK_SECOND_DERIVATIVE_ACTION_CB, derivatives[deriv].nonlinear_block.name, (void (**)(void)) &nonlinear_second_derivative_action_func);
+    if (ierr == ADJ_OK)
+    {
+      int i;
+      adj_vector rhs_tmp;
+
+      dependencies = (adj_vector*) malloc(derivatives[deriv].nonlinear_block.ndepends * sizeof(adj_vector));
+      ADJ_CHKMALLOC(dependencies);
+      for (i = 0; i < derivatives[deriv].nonlinear_block.ndepends; i++)
+      {
+        ierr = adj_get_variable_value(adjointer, derivatives[deriv].nonlinear_block.depends[i], &(dependencies[i]));
+        assert(ierr == ADJ_OK); /* We checked for them earlier */
+      }
+      nonlinear_second_derivative_action_func(derivatives[deriv].nonlinear_block.ndepends, derivatives[deriv].nonlinear_block.depends, dependencies,
+                                              derivatives[deriv].inner_variable, derivatives[deriv].inner_contraction,
+                                              derivatives[deriv].outer_variable, derivatives[deriv].outer_contraction,
+                                              derivatives[deriv].hermitian, derivatives[deriv].block_action, derivatives[deriv].nonlinear_block.coefficient,
+                                              derivatives[deriv].nonlinear_block.context, &rhs_tmp);
+      free(dependencies);
+      adjointer->callbacks.vec_axpy(rhs, (adj_scalar) -1.0, rhs_tmp);
+      adjointer->callbacks.vec_destroy(&rhs_tmp);
+    }
+    else
+    {
+      return adj_chkierr_auto(ierr);
+    }
+  }
+
+  return ADJ_OK;
+}
+
 int adj_evaluate_nonlinear_derivative_action_supplied(adj_adjointer* adjointer, void (*nonlinear_derivative_action_func)(int ndepends, adj_variable* variables, 
      adj_vector* dependencies, adj_variable derivative, adj_vector contraction, int hermitian, adj_vector input, adj_scalar coefficient, void* context, adj_vector* output),
      adj_nonlinear_block_derivative derivative, adj_vector value, adj_vector* rhs)
