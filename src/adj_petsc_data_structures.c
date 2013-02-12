@@ -179,6 +179,7 @@ void petsc_vec_read_proc(adj_variable var, adj_vector *x)
   VecLoad(viewer, PETSC_NULL, vec);
   PetscViewerDestroy(viewer);
 #else
+  VecCreate(PETSC_COMM_WORLD, vec);
   VecLoad(*vec, viewer);
   PetscViewerDestroy(&viewer);
 #endif
