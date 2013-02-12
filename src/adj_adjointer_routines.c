@@ -49,6 +49,8 @@ int adj_create_adjointer(adj_adjointer* adjointer)
   adjointer->nonlinear_action_list.lastnode = NULL;
   adjointer->nonlinear_derivative_action_list.firstnode = NULL;
   adjointer->nonlinear_derivative_action_list.lastnode = NULL;
+  adjointer->nonlinear_second_derivative_action_list.firstnode = NULL;
+  adjointer->nonlinear_second_derivative_action_list.lastnode = NULL;
   adjointer->nonlinear_derivative_assembly_list.firstnode = NULL;
   adjointer->nonlinear_derivative_assembly_list.lastnode = NULL;
   adjointer->block_action_list.firstnode = NULL;

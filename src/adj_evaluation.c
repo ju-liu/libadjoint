@@ -787,7 +787,7 @@ int adj_evaluate_forward_source(adj_adjointer* adjointer, int equation, adj_vect
   return ADJ_OK;
 }
 
-int adj_evaluate_rhs_deriv_action(adj_adjointer* adjointer, adj_equation source_eqn, adj_variable diff_var, adj_vector contraction, int hermitian, adj_vector* output, int* has_output)
+int adj_evaluate_rhs_derivative_action(adj_adjointer* adjointer, adj_equation source_eqn, adj_variable diff_var, adj_vector contraction, int hermitian, adj_vector* output, int* has_output)
 {
   int nrhsdeps;
   int j;
@@ -825,7 +825,7 @@ int adj_evaluate_rhs_deriv_action(adj_adjointer* adjointer, adj_equation source_
 
 }
 
-int adj_evaluate_rhs_deriv_assembly(adj_adjointer* adjointer, adj_equation source_eqn, int hermitian, adj_matrix* output)
+int adj_evaluate_rhs_derivative_assembly(adj_adjointer* adjointer, adj_equation source_eqn, int hermitian, adj_matrix* output)
 {
   int nrhsdeps;
   int j;

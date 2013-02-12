@@ -320,7 +320,7 @@ int adj_get_adjoint_equation(adj_adjointer* adjointer, int equation, char* funct
       if (adj_variable_equal(&(adjointer->equations[rhs_equation].variable), &fwd_var, 1))
       {
         adj_matrix rstar;
-        ierr = adj_evaluate_rhs_deriv_assembly(adjointer, adjointer->equations[rhs_equation], ADJ_TRUE, &rstar);
+        ierr = adj_evaluate_rhs_derivative_assembly(adjointer, adjointer->equations[rhs_equation], ADJ_TRUE, &rstar);
         if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
         adjointer->callbacks.mat_axpy(lhs, (adj_scalar) -1.0, rstar); /* Subtract the R* contribution from the adjoint lhs */
         adjointer->callbacks.mat_destroy(&rstar);
@@ -340,7 +340,7 @@ int adj_get_adjoint_equation(adj_adjointer* adjointer, int equation, char* funct
         ierr = adj_get_variable_value(adjointer, contraction_var, &contraction);
         if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
 
-        ierr = adj_evaluate_rhs_deriv_action(adjointer, adjointer->equations[rhs_equation], fwd_var, contraction, ADJ_TRUE, &deriv_action, &has_output);
+        ierr = adj_evaluate_rhs_derivative_action(adjointer, adjointer->equations[rhs_equation], fwd_var, contraction, ADJ_TRUE, &deriv_action, &has_output);
         if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
 
         if (has_output)
@@ -1145,7 +1145,7 @@ int adj_get_tlm_equation(adj_adjointer* adjointer, int equation, char* parameter
       if (adj_variable_equal(&fwd_var, &fwd_eqn.rhsdeps[i], 1))
       {
         adj_matrix r;
-        ierr = adj_evaluate_rhs_deriv_assembly(adjointer, fwd_eqn, ADJ_FALSE, &r);
+        ierr = adj_evaluate_rhs_derivative_assembly(adjointer, fwd_eqn, ADJ_FALSE, &r);
         if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
         adjointer->callbacks.mat_axpy(lhs, (adj_scalar) -1.0, r); /* Subtract the R contribution from the adjoint lhs */
         adjointer->callbacks.mat_destroy(&r);
@@ -1167,7 +1167,7 @@ int adj_get_tlm_equation(adj_adjointer* adjointer, int equation, char* parameter
         ierr = adj_get_variable_value(adjointer, contraction_var, &contraction);
         if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
 
-        ierr = adj_evaluate_rhs_deriv_action(adjointer, fwd_eqn, fwd_eqn.rhsdeps[i], contraction, ADJ_FALSE, &deriv_action, &has_output);
+        ierr = adj_evaluate_rhs_derivative_action(adjointer, fwd_eqn, fwd_eqn.rhsdeps[i], contraction, ADJ_FALSE, &deriv_action, &has_output);
         if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
 
         if (has_output)
@@ -1492,7 +1492,7 @@ int adj_get_soa_equation(adj_adjointer* adjointer, int equation, char* functiona
       if (adj_variable_equal(&(adjointer->equations[rhs_equation].variable), &fwd_var, 1))
       {
         adj_matrix rstar;
-        ierr = adj_evaluate_rhs_deriv_assembly(adjointer, adjointer->equations[rhs_equation], ADJ_TRUE, &rstar);
+        ierr = adj_evaluate_rhs_derivative_assembly(adjointer, adjointer->equations[rhs_equation], ADJ_TRUE, &rstar);
         if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
         adjointer->callbacks.mat_axpy(lhs, (adj_scalar) -1.0, rstar); /* Subtract the R* contribution from the adjoint lhs */
         adjointer->callbacks.mat_destroy(&rstar);
@@ -1515,7 +1515,7 @@ int adj_get_soa_equation(adj_adjointer* adjointer, int equation, char* functiona
         ierr = adj_get_variable_value(adjointer, contraction_var, &contraction);
         if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
 
-        ierr = adj_evaluate_rhs_deriv_action(adjointer, adjointer->equations[rhs_equation], fwd_var, contraction, ADJ_TRUE, &deriv_action, &has_output);
+        ierr = adj_evaluate_rhs_derivative_action(adjointer, adjointer->equations[rhs_equation], fwd_var, contraction, ADJ_TRUE, &deriv_action, &has_output);
         if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
 
         if (has_output)
@@ -1535,6 +1535,10 @@ int adj_get_soa_equation(adj_adjointer* adjointer, int equation, char* functiona
                       [ ----- -- \delta m ]  \lambda
                       [ du^2  dm          ]             */
 
+
+  /* Now we implement [ d^2 b du          ] *
+                      [ ----- -- \delta m ]  \lambda
+                      [ du^2  dm          ]             */
 
 
   /* Now add the functional source terms to the rhs */
