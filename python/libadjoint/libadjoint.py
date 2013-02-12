@@ -296,6 +296,39 @@ class Block(object):
     # The registration code will notice unimplemented methods and fail to register them.
     pass
 
+  @staticmethod
+  def second_derivative_action(dependencies, values, inner_variable, inner_contraction_vector, outer_variable, outer_contraction, hermitian, input, coefficient, context):
+    '''def second_derivative_action(dependencies, values, inner_variable, inner_contraction_vector, outer_variable, outer_contraction, hermitian, input, coefficient, context)
+
+    If hermitian is False, this method must return:
+                    coefficient * diff((diff(block, inner_variable).inner_contraction), outer_variable).outer_contraction . input
+    If hermitian is True, this method must return:
+                    coefficient * (diff((diff(block, inner_variable).inner_contraction), outer_variable).outer_contraction)^* . input
+
+      dependencies is a list of Variable objects giving the variables on which the block depends.
+
+      values is a list of Vector objects giving the values of those values.
+
+      inner_variable is the first Variable with respect to which the block must be differentiated.
+
+      inner_contraction_vector is the Vector with which the first derivative operation is to be contracted.
+
+      outer_variable is the second Variable with respect to which the block must be differentiated.
+
+      outer_contraction_vector is the Vector with which the second derivative operation is to be contracted.
+
+      hermitian is a boolean value indicating whether the hermitian of the operator is to be constructed.
+
+      input is a Vector which is is to be the subject of the action.
+
+      coefficient is a coefficient by which the routine must scale the output.
+
+      context is the python object passed to the Block on construction.
+    '''
+
+    # The registration code will notice unimplemented methods and fail to register them.
+    pass
+
 
 class Equation(object):
   def __init__(self, var, blocks, targets, rhs=None):
@@ -761,6 +794,7 @@ class Adjointer(object):
                                               ctypes.POINTER(None),ctypes.POINTER(clib.adj_vector))
     self.nblock_derivative_action_type = ctypes.CFUNCTYPE(None, ctypes.c_int, ctypes.POINTER(clib.adj_variable), ctypes.POINTER(clib.adj_vector), clib.adj_variable, clib.adj_vector, ctypes.c_int, clib.adj_vector,
                                                           adj_scalar, ctypes.POINTER(None), ctypes.POINTER(clib.adj_vector))
+    self.nblock_second_derivative_action_type = ctypes.CFUNCTYPE(None, ctypes.c_int, ctypes.POINTER(clib.adj_variable), ctypes.POINTER(clib.adj_vector), clib.adj_variable, clib.adj_vector, clib.adj_variable, clib.adj_vector, ctypes.c_int, clib.adj_vector, adj_scalar, ctypes.POINTER(None), ctypes.POINTER(clib.adj_vector))
     self.nblock_action_type = ctypes.CFUNCTYPE(None, ctypes.c_int, ctypes.POINTER(clib.adj_variable), ctypes.POINTER(clib.adj_vector), clib.adj_vector, ctypes.POINTER(None), ctypes.POINTER(clib.adj_vector))
     self.vec_duplicate_type = ctypes.CFUNCTYPE(None, clib.adj_vector, ctypes.POINTER(clib.adj_vector))
     self.vec_destroy_type = ctypes.CFUNCTYPE(None, ctypes.POINTER(clib.adj_vector))
@@ -855,6 +889,9 @@ class Adjointer(object):
       if block.block.has_nonlinear_block:
         if not (block.derivative_action is Block.derivative_action):
           self.__register_operator_callback__(block.nblock.name, "ADJ_NBLOCK_DERIVATIVE_ACTION_CB", block.derivative_action)
+
+        if not (block.second_derivative_action is Block.second_derivative_action):
+          self.__register_operator_callback__(block.nblock.name, "ADJ_NBLOCK_SECOND_DERIVATIVE_ACTION_CB", block.second_derivative_action)
 
         if block.action is not Block.action:
           def nblock_action(dependencies, values, input, context):
@@ -1277,6 +1314,36 @@ class Adjointer(object):
 
     return self.nblock_derivative_action_type(cfunc)
 
+  def __cfunc_from_nblock_second_derivative_action__(self, nbaction_cb):
+    '''Given a nonlinear block second derivative action function defined using the Pythonic interface, we want to translate that into a function
+    that can be called from C. This routine does exactly that.'''
+
+    def cfunc(ndepends_c, dependencies_c, values_c, inner_variable_c, inner_contraction_c, outer_variable_c, outer_contraction_c, hermitian_c, input_c, coefficient_c, context_c, output_c):
+      # build the Python objects from the C objects
+      dependencies = [Variable(var=dependencies_c[i]) for i in range(ndepends_c)]
+      values = [vector(values_c[i]) for i in range(ndepends_c)]
+      inner_variable = Variable(var=inner_variable_c)
+      inner_contraction = vector(inner_contraction_c)
+      outer_variable = Variable(var=outer_variable_c)
+      outer_contraction = vector(outer_contraction_c)
+      hermitian = (hermitian_c == 1)
+      input = vector(input_c)
+      coefficient = coefficient_c
+      context = context_c
+
+      # Now call the callback we've been given
+      output = nbaction_cb(dependencies, values, inner_variable, inner_contraction, outer_variable, outer_contraction, hermitian, input, coefficient, context)
+
+      output_c[0].klass = 0
+      output_c[0].flags = 0
+      output_c[0].ptr = 0
+      if not isinstance(output, Vector):
+        raise exceptions.LibadjointErrorInvalidInputs("object returned from nonlinear block derivative action callback must be a subclass of Vector")
+      output_c[0].ptr = python_utils.c_ptr(output)
+      references_taken.append(output)
+
+    return self.nblock_second_derivative_action_type(cfunc)
+
   def __cfunc_from_nblock_action__(self, nbaction_cb):
     '''Given a nonlinear block action function defined using the Pythonic interface, we want to translate that into a function
     that can be called from C. This routine does exactly that.'''
@@ -1305,6 +1372,7 @@ class Adjointer(object):
     type_to_api = {"ADJ_BLOCK_ASSEMBLY_CB": (self.block_assembly_type, self.__cfunc_from_block_assembly__),
                    "ADJ_BLOCK_ACTION_CB": (self.block_action_type, self.__cfunc_from_block_action__),
                    "ADJ_NBLOCK_DERIVATIVE_ACTION_CB": (self.nblock_derivative_action_type, self.__cfunc_from_nblock_derivative_action__),
+                   "ADJ_NBLOCK_SECOND_DERIVATIVE_ACTION_CB": (self.nblock_second_derivative_action_type, self.__cfunc_from_nblock_second_derivative_action__),
                    "ADJ_NBLOCK_ACTION_CB": (self.nblock_action_type, self.__cfunc_from_nblock_action__)}
     if type_name in type_to_api:
       clib.adj_register_operator_callback.argtypes = [ctypes.POINTER(clib.adj_adjointer), ctypes.c_int, ctypes.c_char_p, type_to_api[type_name][0]]

@@ -288,7 +288,7 @@ void adj_html_print_callback_information(FILE* fp, adj_adjointer* adjointer)
   }
   fprintf(fp, "</div>");
 
-  fprintf(fp, "<h2>Nonlinear derivative block action assembly callbacks</h2>");
+  fprintf(fp, "<h2>Nonlinear block derivative action callbacks</h2>");
   cb_ptr= adjointer->nonlinear_derivative_action_list.firstnode;
   fprintf(fp, "<div>");
   while (cb_ptr != NULL) {
@@ -297,7 +297,16 @@ void adj_html_print_callback_information(FILE* fp, adj_adjointer* adjointer)
   }
   fprintf(fp, "</div>");
 
-  fprintf(fp, "<h2>Nonlinear derivative block assembly assembly callbacks</h2>");
+  fprintf(fp, "<h2>Nonlinear block second derivative action callbacks</h2>");
+  cb_ptr= adjointer->nonlinear_second_derivative_action_list.firstnode;
+  fprintf(fp, "<div>");
+  while (cb_ptr != NULL) {
+    fprintf(fp, "%s<br/>\n", encode_html(cb_ptr->name));
+    cb_ptr = cb_ptr->next;
+  }
+  fprintf(fp, "</div>");
+
+  fprintf(fp, "<h2>Nonlinear derivative block assembly callbacks</h2>");
   cb_ptr= adjointer->nonlinear_derivative_assembly_list.firstnode;
   fprintf(fp, "<div>");
   while (cb_ptr != NULL) {

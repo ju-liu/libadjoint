@@ -1531,6 +1531,12 @@ int adj_get_soa_equation(adj_adjointer* adjointer, int equation, char* functiona
   /* OK. That was the (dF/du)^* . (dlambda/dm) term. Now we need to implement all of the other terms in
   the SOA equation, yay! */
 
+  /* Now we implement [ d^2 F du          ] *
+                      [ ----- -- \delta m ]  \lambda
+                      [ du^2  dm          ]             */
+
+
+
   /* Now add the functional source terms to the rhs */
   {
     adj_vector rhs_tmp;
