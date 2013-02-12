@@ -583,6 +583,15 @@ class RHS(object):
 
     raise exceptions.LibadjointErrorNotImplemented("No derivative action method provided for RHS.")
 
+  def second_derivative_action(self, dependencies, values, inner_variable, inner_contraction_vector, outer_variable, hermitian, action):
+    '''second_derivative_action(self, dependencies, values, inner_variable, inner_contraction_vector, outer_variable, hermitian, action)
+
+    Evaluate the action of the second derivative of the RHS with respect to inner_variable (contracted with inner_contraction) and outer_variable,
+    given dependencies with values, on action. The result will be a Vector.
+    '''
+
+    raise exceptions.LibadjointErrorNotImplemented("No second derivative action method provided for RHS.")
+
   def derivative_assembly(self, dependencies, values, variable, hermitian):
     '''derivative_assembly(self, dependencies, values, variable, hermitian):
 
@@ -612,6 +621,9 @@ class RHS(object):
 
     equation.rhs_derivative_action_fn = self.__cfunc_from_derivative_action__()
     clib.adj_equation_set_rhs_derivative_action_callback(equation.equation, equation.rhs_derivative_action_fn)
+
+    equation.rhs_second_derivative_action_fn = self.__cfunc_from_second_derivative_action__()
+    clib.adj_equation_set_rhs_second_derivative_action_callback(equation.equation, equation.rhs_second_derivative_action_fn)
 
     equation.rhs_derivative_assembly_fn = self.__cfunc_from_derivative_assembly__()
     clib.adj_equation_set_rhs_derivative_assembly_callback(equation.equation, equation.rhs_derivative_assembly_fn)
@@ -676,6 +688,38 @@ class RHS(object):
     rhs_deriv_action_type = ctypes.CFUNCTYPE(None, ctypes.POINTER(clib.adj_adjointer), clib.adj_variable, ctypes.c_int, ctypes.POINTER(clib.adj_variable),
         ctypes.POINTER(clib.adj_vector), clib.adj_variable, clib.adj_vector, ctypes.c_int, ctypes.POINTER(None), ctypes.POINTER(clib.adj_vector), ctypes.POINTER(ctypes.c_int))
     return rhs_deriv_action_type(cfunc)
+
+  def __cfunc_from_second_derivative_action__(self):
+    '''Return a c-callable function wrapping the second_derivative_action method.'''
+
+    def cfunc(adjointer_c, source_variable_c, ndepends_c, dependencies_c, values_c, inner_variable_c, inner_contraction_c, outer_variable_c, hermitian_c, action_c, context_c, output_c, has_output_c):
+      # build the Python objects from the C objects
+      inner_variable  = Variable(var=inner_variable_c)
+      outer_variable  = Variable(var=outer_variable_c)
+      dependencies = [Variable(var=dependencies_c[i]) for i in range(ndepends_c)]
+      values = [vector(values_c[i]) for i in range(ndepends_c)]
+      hermitian = (hermitian_c==1)
+      inner_contraction_vector = vector(inner_contraction_c)
+      action_vector = vector(action_c)
+
+      # Now call the callback we've been given
+      output = self.second_derivative_action(dependencies, values, inner_variable, inner_contraction_vector, outer_variable, hermitian, action_vector)
+
+      # Now cast the outputs back to C
+      has_output_c[0] = (output is not None)
+      output_c[0].klass = 0
+      output_c[0].flags = 0
+      output_c[0].ptr = 0
+      if output:
+        if not isinstance(output, Vector):
+          raise exceptions.LibadjointErrorInvalidInputs("Output from RHS second derivative_action callback must be None or a Vector.")
+        output_c[0].ptr = python_utils.c_ptr(output)
+
+      references_taken.append(output)
+
+    rhs_second_deriv_action_type = ctypes.CFUNCTYPE(None, ctypes.POINTER(clib.adj_adjointer), clib.adj_variable, ctypes.c_int, ctypes.POINTER(clib.adj_variable),
+        ctypes.POINTER(clib.adj_vector), clib.adj_variable, clib.adj_vector, clib.adj_variable, ctypes.c_int, clib.adj_vector, ctypes.POINTER(None), ctypes.POINTER(clib.adj_vector), ctypes.POINTER(ctypes.c_int))
+    return rhs_second_deriv_action_type(cfunc)
 
   def __cfunc_from_derivative_assembly__(self):
     '''Return a c-callable function wrapping the derivative_assembly method.'''

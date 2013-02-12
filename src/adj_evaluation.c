@@ -825,6 +825,44 @@ int adj_evaluate_rhs_derivative_action(adj_adjointer* adjointer, adj_equation so
 
 }
 
+int adj_evaluate_rhs_second_derivative_action(adj_adjointer* adjointer, adj_equation source_eqn, adj_variable inner_var, adj_vector inner_contraction, adj_variable outer_var, int hermitian, adj_vector action, adj_vector* output, int* has_output)
+{
+  int nrhsdeps;
+  int j;
+  int ierr;
+  adj_variable* variables;
+  adj_vector* dependencies;
+
+  if (source_eqn.rhs_second_deriv_action_callback == NULL)
+  {
+    char buf[255];
+    adj_variable_str(source_eqn.variable, buf, 255);
+    snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Need the second derivative action callback for the source term associated with the forward equation for %s.", buf);
+    return adj_chkierr_auto(ADJ_ERR_NEED_CALLBACK);
+  }
+
+  nrhsdeps = source_eqn.nrhsdeps;
+
+  variables = (adj_variable*) malloc(nrhsdeps * sizeof(adj_variable));
+  ADJ_CHKMALLOC(variables);
+  dependencies = (adj_vector*) malloc(nrhsdeps * sizeof(adj_vector));
+  ADJ_CHKMALLOC(dependencies);
+
+  for (j=0; j < nrhsdeps; j++)
+  {
+    memcpy(&variables[j], &source_eqn.rhsdeps[j], sizeof(adj_variable));
+    ierr = adj_get_variable_value(adjointer, variables[j], &(dependencies[j]));
+    if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
+  }
+
+  source_eqn.rhs_second_deriv_action_callback((void*) adjointer, source_eqn.variable, nrhsdeps, variables, dependencies, inner_var, inner_contraction, outer_var, hermitian, action, source_eqn.rhs_context, output, has_output);
+
+  free(variables);
+  free(dependencies);
+  return ADJ_OK;
+
+}
+
 int adj_evaluate_rhs_derivative_assembly(adj_adjointer* adjointer, adj_equation source_eqn, int hermitian, adj_matrix* output)
 {
   int nrhsdeps;
