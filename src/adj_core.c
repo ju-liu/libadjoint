@@ -1579,9 +1579,83 @@ int adj_get_soa_equation(adj_adjointer* adjointer, int equation, char* functiona
   /* OK. That was the (dF/du)^* . (dlambda/dm) term. Now we need to implement all of the other terms in
   the SOA equation, yay! */
 
-  /* Now we implement [ d^2 F du          ] *
-                      [ ----- -- \delta m ]  \lambda
-                      [ du^2  dm          ]             */
+  /* Now we implement [ d^2 A   du          ] *
+                      [ ----- u -- \delta m ]  \lambda
+                      [ du^2    dm          ]             */
+
+  for (j = 0; j < fwd_data->ndepending_equations; j++)
+  {
+    int dep_equation = fwd_data->depending_equations[j];
+    int k;
+    adj_variable adj_var;
+    adj_vector adj_value;
+
+    adj_var = adjointer->equations[dep_equation].variable; adj_var.type = ADJ_ADJOINT; strncpy(adj_var.functional, functional, ADJ_NAME_LEN);
+    ierr = adj_get_variable_value(adjointer, adj_var, &adj_value);
+    if (ierr != ADJ_OK)
+      return adj_chkierr_auto(ierr);
+
+    for (k = 0 ; k < adjointer->equations[dep_equation].nblocks; k++)
+    {
+      int l;
+      adj_variable other_fwd_var;
+      adj_vector other_fwd_value;
+
+      other_fwd_var = adjointer->equations[dep_equation].targets[k];
+      ierr = adj_get_variable_value(adjointer, other_fwd_var, &other_fwd_value);
+      if (ierr != ADJ_OK)
+        return adj_chkierr_auto(ierr);
+
+      if (!adjointer->equations[dep_equation].blocks[k].has_nonlinear_block) continue;
+
+      for (l = 0; l < adjointer->equations[dep_equation].blocks[k].nonlinear_block.ndepends; l++)
+      {
+        adj_nonlinear_block_second_derivative deriv;
+        adj_variable tlm_var;
+        adj_variable inner_var;
+        adj_vector tlm_value;
+
+        inner_var = adjointer->equations[dep_equation].blocks[k].nonlinear_block.depends[l];
+        tlm_var = inner_var; tlm_var.type = ADJ_TLM; strncpy(tlm_var.functional, parameter, ADJ_NAME_LEN);
+        ierr = adj_get_variable_value(adjointer, tlm_var, &tlm_value);
+        if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
+
+        ierr = adj_create_nonlinear_block_second_derivative(adjointer, adjointer->equations[dep_equation].blocks[k].nonlinear_block, adjointer->equations[dep_equation].blocks[k].coefficient, \
+                                                            inner_var, other_fwd_value, fwd_var, tlm_value, !adjointer->equations[dep_equation].blocks[k].hermitian, adj_value, &deriv);
+        if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
+
+        ierr = adj_evaluate_nonlinear_second_derivative_action(adjointer, 1, &deriv, rhs);
+        if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
+
+        ierr = adj_destroy_nonlinear_block_second_derivative(adjointer, &deriv);
+      }
+
+      if (k == equation)
+      {
+        for (l = 0; l < adjointer->equations[dep_equation].blocks[k].nonlinear_block.ndepends; l++)
+        {
+          adj_nonlinear_block_derivative deriv;
+          adj_variable tlm_var;
+          adj_variable inner_var;
+          adj_vector tlm_value;
+
+          inner_var = adjointer->equations[dep_equation].blocks[k].nonlinear_block.depends[l];
+          tlm_var = inner_var; tlm_var.type = ADJ_TLM; strncpy(tlm_var.functional, parameter, ADJ_NAME_LEN);
+          ierr = adj_get_variable_value(adjointer, tlm_var, &tlm_value);
+          if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
+
+          ierr = adj_create_nonlinear_block_derivative(adjointer, adjointer->equations[dep_equation].blocks[k].nonlinear_block, adjointer->equations[dep_equation].blocks[k].coefficient, inner_var, \
+                                                       tlm_value, !adjointer->equations[dep_equation].blocks[k].hermitian, &deriv);
+          if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
+
+          ierr = adj_evaluate_nonlinear_derivative_action(adjointer, 1, &deriv, adj_value, rhs);
+          if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
+
+          ierr = adj_destroy_nonlinear_block_derivative(adjointer, &deriv);
+        }
+      }
+    }
+  }
 
 
   /* Now we implement [ d^2 b du          ] *
