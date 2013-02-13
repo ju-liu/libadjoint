@@ -1359,6 +1359,7 @@ int adj_get_soa_equation(adj_adjointer* adjointer, int equation, char* functiona
         /* Find the adjoint variable we want this to multiply */
         other_soa_var = other_fwd_eqn.variable; other_soa_var.type = ADJ_SOA; 
         strncpy(other_soa_var.functional, functional, ADJ_NAME_LEN);
+        strncat(other_soa_var.functional, ":", 1); 
         strncat(other_soa_var.functional, parameter,  ADJ_NAME_LEN);
         /* and now get its value */
         ierr = adj_get_variable_value(adjointer, other_soa_var, &soa_value);
@@ -1463,6 +1464,7 @@ int adj_get_soa_equation(adj_adjointer* adjointer, int equation, char* functiona
         soa_associated = depending_eqn.variable;
         soa_associated.type = ADJ_SOA;
         strncpy(soa_associated.functional, functional, ADJ_NAME_LEN);
+        strncat(soa_associated.functional, ":", 1); 
         strncat(soa_associated.functional, parameter, ADJ_NAME_LEN);
         ierr = adj_get_variable_value(adjointer, soa_associated, &soa_value);
         if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
