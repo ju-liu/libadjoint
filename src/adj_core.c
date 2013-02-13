@@ -1388,9 +1388,11 @@ int adj_get_soa_equation(adj_adjointer* adjointer, int equation, char* functiona
       adj_equation depending_eqn;
       int nderivs; /* these two are the raw derivatives to compute */
       adj_nonlinear_block_derivative* derivs;
+      adj_nonlinear_block_derivative* second_derivs; /* the 2 * (dA/du \dot{u})^* \lambda term in ( d^2 F / du^2 )^* \lambda */
 
       int nnew_derivs; /* and these two are after derivative simplification */
       adj_nonlinear_block_derivative* new_derivs;
+      adj_nonlinear_block_derivative* new_second_derivs;
       int l, k;
 
       ndepending_eqn = fwd_data->depending_equations[i];
@@ -1417,6 +1419,9 @@ int adj_get_soa_equation(adj_adjointer* adjointer, int equation, char* functiona
       /* Now that we have ndepending_blocks, let's use it */
       derivs = (adj_nonlinear_block_derivative*) malloc(nderivs * sizeof(adj_nonlinear_block_derivative));
       ADJ_CHKMALLOC(derivs);
+      second_derivs = (adj_nonlinear_block_derivative*) malloc(nderivs * sizeof(adj_nonlinear_block_derivative));
+      ADJ_CHKMALLOC(second_derivs);
+
       l = 0;
       for (j = 0; j < depending_eqn.nblocks; j++)
       {
@@ -1427,10 +1432,20 @@ int adj_get_soa_equation(adj_adjointer* adjointer, int equation, char* functiona
             if (adj_variable_equal(&fwd_var, &depending_eqn.blocks[j].nonlinear_block.depends[k], 1))
             {
               adj_vector target;
+              adj_variable tlm_target_var;
+              adj_vector tlm_target;
+
               ierr = adj_get_variable_value(adjointer, depending_eqn.targets[j], &target);
               if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
 
+              tlm_target_var = depending_eqn.targets[j]; tlm_target_var.type = ADJ_TLM; strncpy(tlm_target_var.functional, parameter, ADJ_NAME_LEN);
+              ierr = adj_get_variable_value(adjointer, tlm_target_var, &tlm_target);
+              if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
+
               ierr = adj_create_nonlinear_block_derivative(adjointer, depending_eqn.blocks[j].nonlinear_block, depending_eqn.blocks[j].coefficient, fwd_var, target, !depending_eqn.blocks[j].hermitian, &derivs[l]);
+              if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
+
+              ierr = adj_create_nonlinear_block_derivative(adjointer, depending_eqn.blocks[j].nonlinear_block, 2*depending_eqn.blocks[j].coefficient, fwd_var, tlm_target, !depending_eqn.blocks[j].hermitian, &second_derivs[l]);
               if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
               l++;
             }
@@ -1448,6 +1463,14 @@ int adj_get_soa_equation(adj_adjointer* adjointer, int equation, char* functiona
       }
       free(derivs);
 
+      ierr = adj_simplify_derivatives(adjointer, nderivs, second_derivs, &nnew_derivs, &new_second_derivs);
+      for (l = 0; l < nderivs; l++)
+      {
+        ierr = adj_destroy_nonlinear_block_derivative(adjointer, &second_derivs[l]);
+        if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
+      }
+      free(second_derivs);
+
       /* Now, we go and evaluate each one of the derivatives, assembling or acting as appropriate */
       if (ndepending_eqn == equation)
       {
@@ -1460,17 +1483,31 @@ int adj_get_soa_equation(adj_adjointer* adjointer, int equation, char* functiona
         /* This G-block is NOT on the diagonal, so we only need its action */
         adj_variable soa_associated;
         adj_vector soa_value;
+        adj_variable adj_associated;
+        adj_vector adj_value;
 
         soa_associated = depending_eqn.variable;
         soa_associated.type = ADJ_SOA;
         strncpy(soa_associated.functional, functional, ADJ_NAME_LEN);
         strncat(soa_associated.functional, ":", 1); 
         strncat(soa_associated.functional, parameter, ADJ_NAME_LEN);
+
         ierr = adj_get_variable_value(adjointer, soa_associated, &soa_value);
         if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
 
         /* And now we are ready */
         ierr = adj_evaluate_nonlinear_derivative_action(adjointer, nnew_derivs, new_derivs, soa_value, rhs);
+        if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
+
+        adj_associated = depending_eqn.variable;
+        adj_associated.type = ADJ_ADJOINT;
+        strncpy(adj_associated.functional, functional, ADJ_NAME_LEN);
+
+        ierr = adj_get_variable_value(adjointer, adj_associated, &adj_value);
+        if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
+
+        /* And now we are ready */
+        ierr = adj_evaluate_nonlinear_derivative_action(adjointer, nnew_derivs, new_second_derivs, adj_value, rhs);
         if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
       }
 
@@ -1478,8 +1515,11 @@ int adj_get_soa_equation(adj_adjointer* adjointer, int equation, char* functiona
       {
         ierr = adj_destroy_nonlinear_block_derivative(adjointer, &new_derivs[l]);
         if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
+        ierr = adj_destroy_nonlinear_block_derivative(adjointer, &new_second_derivs[l]);
+        if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
       }
       free(new_derivs);
+      free(new_second_derivs);
     }
   }
 
@@ -1519,6 +1559,12 @@ int adj_get_soa_equation(adj_adjointer* adjointer, int equation, char* functiona
 
         ierr = adj_evaluate_rhs_derivative_action(adjointer, adjointer->equations[rhs_equation], fwd_var, contraction, ADJ_TRUE, &deriv_action, &has_output);
         if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
+
+        if (has_output == -666)
+        {
+          snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Your rhs derivative action callback should set has_output!");
+          return adj_chkierr_auto(ierr);
+        }
 
         if (has_output)
         {
