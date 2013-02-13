@@ -719,6 +719,7 @@ class RHS(object):
 
     rhs_second_deriv_action_type = ctypes.CFUNCTYPE(None, ctypes.POINTER(clib.adj_adjointer), clib.adj_variable, ctypes.c_int, ctypes.POINTER(clib.adj_variable),
         ctypes.POINTER(clib.adj_vector), clib.adj_variable, clib.adj_vector, clib.adj_variable, ctypes.c_int, clib.adj_vector, ctypes.POINTER(None), ctypes.POINTER(clib.adj_vector), ctypes.POINTER(ctypes.c_int))
+
     return rhs_second_deriv_action_type(cfunc)
 
   def __cfunc_from_derivative_assembly__(self):
@@ -917,6 +918,9 @@ class Adjointer(object):
 
     if hasattr(equation, 'rhs_derivative_action_fn'):
       self.functions_registered.append(equation.rhs_derivative_action_fn)
+
+    if hasattr(equation, 'rhs_second_derivative_action_fn'):
+      self.functions_registered.append(equation.rhs_second_derivative_action_fn)
 
     if hasattr(equation, 'rhs_derivative_assembly_fn'):
       self.functions_registered.append(equation.rhs_derivative_assembly_fn)

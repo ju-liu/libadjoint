@@ -472,6 +472,10 @@ int adj_create_equation(adj_variable var, int nblocks, adj_block* blocks, adj_va
   equation->nrhsdeps = 0;
   equation->rhsdeps = NULL;
   equation->rhs_context = NULL;
+  equation->rhs_callback = NULL;
+  equation->rhs_deriv_action_callback = NULL;
+  equation->rhs_second_deriv_action_callback = NULL;
+  equation->rhs_deriv_assembly_callback = NULL;
 
   equation->memory_checkpoint = ADJ_FALSE;
   equation->disk_checkpoint = ADJ_FALSE;

@@ -1540,6 +1540,53 @@ int adj_get_soa_equation(adj_adjointer* adjointer, int equation, char* functiona
                       [ ----- -- \delta m ]  \lambda
                       [ du^2  dm          ]             */
 
+  for (j = 0; j < fwd_data->nrhs_equations; j++)
+  {
+    int rhs_equation = fwd_data->rhs_equations[j];
+    adj_vector action;
+    adj_variable adj_var;
+    int l;
+
+    adj_var = adjointer->equations[rhs_equation].variable; adj_var.type = ADJ_ADJOINT; strncpy(adj_var.functional, functional, ADJ_NAME_LEN);
+    ierr = adj_get_variable_value(adjointer, adj_var, &action);
+    if (ierr != ADJ_OK)
+      return adj_chkierr_auto(ierr);
+
+    for (l = 0; l < adjointer->equations[rhs_equation].nrhsdeps; l++)
+    {
+      adj_vector rhs_tmp;
+      int has_output;
+      adj_variable inner_variable;
+      adj_vector inner_contraction;
+      adj_variable tlm_inner_variable;
+
+      has_output = -666;
+
+      inner_variable = adjointer->equations[rhs_equation].rhsdeps[l];
+      tlm_inner_variable = inner_variable; tlm_inner_variable.type = ADJ_TLM; strncpy(tlm_inner_variable.functional, parameter, ADJ_NAME_LEN);
+      ierr = adj_get_variable_value(adjointer, tlm_inner_variable, &inner_contraction);
+      if (ierr != ADJ_OK)
+        return adj_chkierr_auto(ierr);
+
+      ierr = adj_evaluate_rhs_second_derivative_action(adjointer, adjointer->equations[rhs_equation], inner_variable, inner_contraction, fwd_var, ADJ_TRUE, action, &rhs_tmp, &has_output);
+      if (ierr != ADJ_OK)
+        return adj_chkierr_auto(ierr);
+
+      if (has_output == -666)
+      {
+        snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Your second derivative action callback should set has_output!");
+        return adj_chkierr_auto(ierr);
+      }
+
+      if (has_output)
+      {
+        /* Now that we have the contribution, we need to add it to the adjoint right hand side */
+        adjointer->callbacks.vec_axpy(rhs, (adj_scalar)1.0, rhs_tmp);
+        adjointer->callbacks.vec_destroy(&rhs_tmp);
+      }
+    }
+  }
+
 
   /* Now add the functional source terms to the rhs */
   {
