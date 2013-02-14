@@ -109,46 +109,34 @@ int adj_evaluate_nonlinear_derivative_action(adj_adjointer* adjointer, int nderi
   for (deriv = 0; deriv < nderivatives; deriv++)
   {
     /* First, try to find a routine supplied by the user. */
-    ierr = adj_find_operator_callback(adjointer, ADJ_NBLOCK_DERIVATIVE_ACTION_CB, derivatives[deriv].nonlinear_block.name, (void (**)(void)) &nonlinear_derivative_action_func);
-    if (ierr == ADJ_OK)
+    /* Outer refers to the index of contraction: if deriv.outer is FALSE, then we want ADJ_NBLOCK_DERIVATIVE_ACTION_CB; if it is TRUE, we want ADJ_NBLOCK_DERIVATIVE_OUTER_ACTION_CB. */
+
+    if (derivatives[deriv].outer == ADJ_FALSE)
     {
-      if (derivatives[deriv].nonlinear_block.test_deriv_hermitian)
-      {
-        ierr = adj_test_nonlinear_derivative_action_transpose(adjointer, derivatives[deriv], value, *rhs, derivatives[deriv].nonlinear_block.number_of_tests, derivatives[deriv].nonlinear_block.tolerance);
-        if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
-      }
-    if (derivatives[deriv].nonlinear_block.test_derivative)
-      {
-        ierr = adj_test_nonlinear_derivative_action_consistency(adjointer, derivatives[deriv], derivatives[deriv].variable, derivatives[deriv].nonlinear_block.number_of_rounds);
-        if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
-      }
-      adj_vector rhs_tmp;
-      ierr = adj_evaluate_nonlinear_derivative_action_supplied(adjointer, nonlinear_derivative_action_func, derivatives[deriv], value, &rhs_tmp);
-      if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
-      adjointer->callbacks.vec_axpy(rhs, (adj_scalar) -1.0, rhs_tmp);
-      adjointer->callbacks.vec_destroy(&rhs_tmp);
+      ierr = adj_find_operator_callback(adjointer, ADJ_NBLOCK_DERIVATIVE_ACTION_CB, derivatives[deriv].nonlinear_block.name, (void (**)(void)) &nonlinear_derivative_action_func);
     }
     else
     {
-      return adj_chkierr_auto(ierr);
-/*
-      snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Sorry, ISP is not implemented yet.");
-      return adj_chkierr_auto(ADJ_ERR_NOT_IMPLEMENTED);
-
-      void (*nonlinear_action_func)(int ndepends, adj_variable* variables, adj_vector* dependencies, adj_vector input, void* context, adj_vector* output) = NULL;
-      ierr = adj_find_operator_callback(adjointer, ADJ_NBLOCK_ACTION_CB, derivatives[deriv].nonlinear_block.name, (void (**)(void)) &nonlinear_action_func);
-      if (ierr != ADJ_OK)
-      {
-        snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Could not find a nonlinear derivative action callback, nor a nonlinear action callback, for operator %s.", derivatives[deriv].nonlinear_block.name);
-        return adj_chkierr_auto(ierr);
-      }
-      adjointer->callbacks.vec_duplicate(model_rhs, &rhs_tmp);
-      ierr = adj_evaluate_nonlinear_derivative_action_isp(adjointer, nonlinear_action_func, derivatives[deriv], value, &rhs_tmp);
-      if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
-      adjointer->callbacks.vec_axpy(rhs, (adj_scalar) 1.0, rhs_tmp);
-      adjointer->callbacks.vec_destroy(&rhs_tmp);
-*/
+      ierr = adj_find_operator_callback(adjointer, ADJ_NBLOCK_DERIVATIVE_OUTER_ACTION_CB, derivatives[deriv].nonlinear_block.name, (void (**)(void)) &nonlinear_derivative_action_func);
     }
+
+    if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
+
+    if (derivatives[deriv].nonlinear_block.test_deriv_hermitian)
+    {
+      ierr = adj_test_nonlinear_derivative_action_transpose(adjointer, derivatives[deriv], value, *rhs, derivatives[deriv].nonlinear_block.number_of_tests, derivatives[deriv].nonlinear_block.tolerance);
+      if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
+    }
+    if (derivatives[deriv].nonlinear_block.test_derivative)
+    {
+      ierr = adj_test_nonlinear_derivative_action_consistency(adjointer, derivatives[deriv], derivatives[deriv].variable, derivatives[deriv].nonlinear_block.number_of_rounds);
+      if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
+    }
+    adj_vector rhs_tmp;
+    ierr = adj_evaluate_nonlinear_derivative_action_supplied(adjointer, nonlinear_derivative_action_func, derivatives[deriv], value, &rhs_tmp);
+    if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
+    adjointer->callbacks.vec_axpy(rhs, (adj_scalar) -1.0, rhs_tmp);
+    adjointer->callbacks.vec_destroy(&rhs_tmp);
   }
 
   return ADJ_OK;

@@ -231,6 +231,7 @@ typedef struct
   adj_variable variable; /* variable to differentiate with respect to */
   adj_vector contraction; /* contraction vector to perform rank reduction */
   int hermitian;
+  int outer;
 } adj_nonlinear_block_derivative;
 
 typedef struct
@@ -321,6 +322,7 @@ typedef struct adj_adjointer
   adj_op_callback_list block_action_list;
   adj_op_callback_list block_assembly_list;
   adj_op_callback_list nonlinear_second_derivative_action_list;
+  adj_op_callback_list nonlinear_derivative_outer_action_list;
   adj_func_callback_list functional_list;
   adj_func_deriv_callback_list functional_derivative_list;
   adj_func_second_deriv_callback_list functional_second_derivative_list;
@@ -364,7 +366,7 @@ int adj_variable_equal(adj_variable* var1, adj_variable* var2, int nvars);
 
 
 #ifndef ADJ_HIDE_FROM_USER
-int adj_create_nonlinear_block_derivative(adj_adjointer* adjointer, adj_nonlinear_block nblock, adj_scalar block_coefficient, adj_variable fwd, adj_vector contraction, int hermitian, adj_nonlinear_block_derivative* deriv);
+int adj_create_nonlinear_block_derivative(adj_adjointer* adjointer, adj_nonlinear_block nblock, adj_scalar block_coefficient, adj_variable fwd, adj_vector contraction, int hermitian, int outer, adj_nonlinear_block_derivative* deriv);
 int adj_destroy_nonlinear_block_derivative(adj_adjointer* adjointer, adj_nonlinear_block_derivative* deriv);
 int adj_create_nonlinear_block_second_derivative(adj_adjointer* adjointer, adj_nonlinear_block nblock, adj_scalar block_coefficient, adj_variable inner_var, adj_vector inner_contraction, adj_variable outer_var, adj_vector outer_contraction, int hermitian, adj_vector action, adj_nonlinear_block_second_derivative* deriv);
 int adj_destroy_nonlinear_block_second_derivative(adj_adjointer* adjointer, adj_nonlinear_block_second_derivative* deriv);

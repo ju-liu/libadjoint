@@ -1272,6 +1272,9 @@ int adj_register_operator_callback(adj_adjointer* adjointer, int type, char* nam
     case ADJ_NBLOCK_SECOND_DERIVATIVE_ACTION_CB:
       cb_list_ptr = &(adjointer->nonlinear_second_derivative_action_list);
       break;
+    case ADJ_NBLOCK_DERIVATIVE_OUTER_ACTION_CB:
+      cb_list_ptr = &(adjointer->nonlinear_derivative_outer_action_list);
+      break;
     default:
       strncpy(adj_error_msg, "Unknown callback type.", ADJ_ERROR_MSG_BUF);
       return adj_chkierr_auto(ADJ_ERR_INVALID_INPUTS);
@@ -1927,9 +1930,9 @@ int adj_find_operator_callback(adj_adjointer* adjointer, int type, char* name, v
   adj_op_callback_list* cb_list_ptr;
   adj_op_callback* cb_ptr;
 
-  char adj_callback_types[7][ADJ_ERROR_MSG_BUF] = {"ADJ_NBLOCK_COLOURING_CB", "ADJ_NBLOCK_ACTION_CB", "ADJ_NBLOCK_DERIVATIVE_ACTION_CB",
+  char adj_callback_types[8][ADJ_ERROR_MSG_BUF] = {"ADJ_NBLOCK_COLOURING_CB", "ADJ_NBLOCK_ACTION_CB", "ADJ_NBLOCK_DERIVATIVE_ACTION_CB",
                                                    "ADJ_NBLOCK_DERIVATIVE_ASSEMBLY_CB", "ADJ_BLOCK_ACTION_CB", "ADJ_BLOCK_ASSEMBLY_CB",
-                                                   "ADJ_NBLOCK_SECOND_DERIVATIVE_ACTION_CB"};
+                                                   "ADJ_NBLOCK_SECOND_DERIVATIVE_ACTION_CB", "ADJ_NBLOCK_DERIVATIVE_OUTER_ACTION_CB"};
 
   switch(type)
   {
@@ -1953,6 +1956,9 @@ int adj_find_operator_callback(adj_adjointer* adjointer, int type, char* name, v
       break;
     case ADJ_NBLOCK_SECOND_DERIVATIVE_ACTION_CB:
       cb_list_ptr = &(adjointer->nonlinear_second_derivative_action_list);
+      break;
+    case ADJ_NBLOCK_DERIVATIVE_OUTER_ACTION_CB:
+      cb_list_ptr = &(adjointer->nonlinear_derivative_outer_action_list);
       break;
     default:
       strncpy(adj_error_msg, "Unknown callback type.", ADJ_ERROR_MSG_BUF);

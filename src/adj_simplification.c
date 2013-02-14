@@ -86,7 +86,7 @@ int adj_simplify_derivatives(adj_adjointer* adjointer, int ninput, adj_nonlinear
         /* We need to make a fresh copy, because adj_get_adjoint_equation will be deallocating these
            very soon. */
         int ierr;
-        ierr = adj_create_nonlinear_block_derivative(adjointer, copy[i].nonlinear_block, (adj_scalar) 1.0, copy[i].variable, copy[i].contraction, copy[i].hermitian, &(*output)[j]);
+        ierr = adj_create_nonlinear_block_derivative(adjointer, copy[i].nonlinear_block, (adj_scalar) 1.0, copy[i].variable, copy[i].contraction, copy[i].hermitian, copy[i].outer, &(*output)[j]);
         if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
       }
       j++;

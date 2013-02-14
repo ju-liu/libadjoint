@@ -150,6 +150,7 @@ module libadjoint_data_structures
     type(adj_op_callback_list) :: block_action_list
     type(adj_op_callback_list) :: block_assembly_list
     type(adj_op_callback_list) :: nonlinear_second_derivative_action_list
+    type(adj_op_callback_list) :: nonlinear_derivative_outer_action_list
     type(adj_func_callback_list) :: functional_list
     type(adj_func_deriv_callback_list) :: functional_derivative_list
     type(adj_func_second_deriv_callback_list) :: functional_second_derivative_list

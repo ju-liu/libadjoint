@@ -60,6 +60,7 @@
 #define ADJ_BLOCK_ACTION_CB 5
 #define ADJ_BLOCK_ASSEMBLY_CB 6
 #define ADJ_NBLOCK_SECOND_DERIVATIVE_ACTION_CB 7
+#define ADJ_NBLOCK_DERIVATIVE_OUTER_ACTION_CB 8
 /* if you add a new one, you must update the table in src/adj_adjointer_routines.c */
 
 #define ADJ_VEC_DUPLICATE_CB 10

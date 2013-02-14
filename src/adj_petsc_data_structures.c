@@ -246,7 +246,7 @@ void petsc_solve_proc(adj_variable var, adj_matrix mat, adj_vector rhs, adj_vect
     PetscBool assembled;
 #endif
    
-    MatAssembled(*(Mat*) &mat, &assembled);
+    MatAssembled(*(Mat*) mat.ptr, &assembled);
     if (!assembled)
       MatAssemblyEnd(petsc_mat_from_adj_matrix(mat), MAT_FINAL_ASSEMBLY);
 

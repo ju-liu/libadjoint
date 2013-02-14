@@ -260,7 +260,7 @@ int adj_get_adjoint_equation(adj_adjointer* adjointer, int equation, char* funct
               ierr = adj_get_variable_value(adjointer, depending_eqn.targets[j], &target);
               if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
 
-              ierr = adj_create_nonlinear_block_derivative(adjointer, depending_eqn.blocks[j].nonlinear_block, depending_eqn.blocks[j].coefficient, fwd_var, target, !depending_eqn.blocks[j].hermitian, &derivs[l]);
+              ierr = adj_create_nonlinear_block_derivative(adjointer, depending_eqn.blocks[j].nonlinear_block, depending_eqn.blocks[j].coefficient, fwd_var, target, !depending_eqn.blocks[j].hermitian, ADJ_FALSE, &derivs[l]);
               if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
               l++;
             }
@@ -1086,7 +1086,7 @@ int adj_get_tlm_equation(adj_adjointer* adjointer, int equation, char* parameter
             ierr = adj_get_variable_value(adjointer, fwd_eqn.targets[i], &target);
             if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
 
-            ierr = adj_create_nonlinear_block_derivative(adjointer, fwd_eqn.blocks[i].nonlinear_block, fwd_eqn.blocks[i].coefficient, fwd_eqn.blocks[i].nonlinear_block.depends[k], target, fwd_eqn.blocks[i].hermitian, &derivs[l]);
+            ierr = adj_create_nonlinear_block_derivative(adjointer, fwd_eqn.blocks[i].nonlinear_block, fwd_eqn.blocks[i].coefficient, fwd_eqn.blocks[i].nonlinear_block.depends[k], target, fwd_eqn.blocks[i].hermitian, ADJ_FALSE, &derivs[l]);
             l++;
           }
         }
@@ -1448,10 +1448,10 @@ int adj_get_soa_equation(adj_adjointer* adjointer, int equation, char* functiona
               ierr = adj_get_variable_value(adjointer, tlm_target_var, &tlm_target);
               if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
 
-              ierr = adj_create_nonlinear_block_derivative(adjointer, depending_eqn.blocks[j].nonlinear_block, depending_eqn.blocks[j].coefficient, fwd_var, target, !depending_eqn.blocks[j].hermitian, &derivs[l]);
+              ierr = adj_create_nonlinear_block_derivative(adjointer, depending_eqn.blocks[j].nonlinear_block, depending_eqn.blocks[j].coefficient, fwd_var, target, !depending_eqn.blocks[j].hermitian, ADJ_FALSE, &derivs[l]);
               if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
 
-              ierr = adj_create_nonlinear_block_derivative(adjointer, depending_eqn.blocks[j].nonlinear_block, depending_eqn.blocks[j].coefficient, fwd_var, tlm_target, !depending_eqn.blocks[j].hermitian, &second_derivs[l]);
+              ierr = adj_create_nonlinear_block_derivative(adjointer, depending_eqn.blocks[j].nonlinear_block, depending_eqn.blocks[j].coefficient, fwd_var, tlm_target, !depending_eqn.blocks[j].hermitian, ADJ_FALSE, &second_derivs[l]);
               if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
               l++;
             }
