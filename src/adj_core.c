@@ -11,8 +11,6 @@ int adj_get_adjoint_equation(adj_adjointer* adjointer, int equation, char* funct
   int j;
   void (*functional_derivative_func)(adj_adjointer* adjointer, adj_variable variable, int ndepends, adj_variable* variables, adj_vector* dependencies, char* name, adj_vector* output) = NULL;
 
-  printf("Assembling adjoint equation %d\n", equation);
-
   if (adjointer->options[ADJ_ACTIVITY] == ADJ_ACTIVITY_NOTHING)
   {
     strncpy(adj_error_msg, "You have asked for an adjoint equation, but the adjointer has been deactivated.", ADJ_ERROR_MSG_BUF);
@@ -868,8 +866,6 @@ int adj_get_tlm_equation(adj_adjointer* adjointer, int equation, char* parameter
   adj_variable_data* tlm_data;
   adj_variable_data* fwd_data;
 
-  printf("Assembling tlm equation %d\n", equation);
-
   if (adjointer->options[ADJ_ACTIVITY] == ADJ_ACTIVITY_NOTHING)
   {
     strncpy(adj_error_msg, "You have asked for a tangent linear model equation, but the adjointer has been deactivated.", ADJ_ERROR_MSG_BUF);
@@ -1235,8 +1231,6 @@ int adj_get_soa_equation(adj_adjointer* adjointer, int equation, char* functiona
   int i;
   int j;
 
-  printf("Assembling second-order adjoint equation %d\n", equation);
-
   if (adjointer->options[ADJ_ACTIVITY] == ADJ_ACTIVITY_NOTHING)
   {
     strncpy(adj_error_msg, "You have asked for a second-order adjoint equation, but the adjointer has been deactivated.", ADJ_ERROR_MSG_BUF);
@@ -1513,7 +1507,6 @@ int adj_get_soa_equation(adj_adjointer* adjointer, int equation, char* functiona
         if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
 
         /* And now we are ready */
-        printf("Evaluating nonlinear derivative middle action.\n");
         ierr = adj_evaluate_nonlinear_derivative_action(adjointer, nnew_derivs, new_second_derivs, adj_value, rhs);
         if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
       }
@@ -1617,7 +1610,6 @@ int adj_get_soa_equation(adj_adjointer* adjointer, int equation, char* functiona
 
       for (l = 0; l < adjointer->equations[dep_equation].blocks[k].nonlinear_block.ndepends; l++)
       {
-        printf("Evaluating a d^2A/du^2 term\n");
         adj_nonlinear_block_second_derivative deriv;
         adj_variable tlm_var;
         adj_variable inner_var;
@@ -1664,8 +1656,6 @@ int adj_get_soa_equation(adj_adjointer* adjointer, int equation, char* functiona
       adj_variable tlm_var;
       adj_vector   tlm_value;
       adj_nonlinear_block_derivative deriv;
-
-      printf("Evaluating a nonlinear block outer derivative.\n");
 
       fwd_var_for_tlm = fwd_eqn.blocks[k].nonlinear_block.depends[l];
       tlm_var = fwd_var_for_tlm; tlm_var.type = ADJ_TLM; strncpy(tlm_var.functional, parameter, ADJ_NAME_LEN);
