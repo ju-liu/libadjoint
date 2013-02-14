@@ -17,12 +17,6 @@ int adj_evaluate_nonlinear_second_derivative_action(adj_adjointer* adjointer, in
 int adj_evaluate_nonlinear_derivative_action_supplied(adj_adjointer* adjointer, void (*nonlinear_derivative_action_func)(int ndepends, adj_variable* variables, 
      adj_vector* dependencies, adj_variable derivative, adj_vector contraction, int hermitian, adj_vector input, adj_scalar coefficient, void* context, adj_vector* output),
      adj_nonlinear_block_derivative derivative, adj_vector value, adj_vector* rhs);
-int adj_evaluate_nonlinear_derivative_action_isp(adj_adjointer* adjointer, void (*nonlinear_action_func)(int ndepends, adj_variable*
-     variables, adj_vector* dependencies, adj_vector input, void* context, adj_vector* output), adj_nonlinear_block_derivative derivative, 
-     adj_vector value, adj_vector* rhs);
-int adj_evaluate_nonlinear_colouring(adj_adjointer* adjointer, adj_nonlinear_block nonlinear_block, adj_variable derivative,
-    void (*nonlinear_colouring_func)(int ndepends, adj_variable* variables, adj_vector* dependencies, adj_variable derivative, void* context, int sz, int* colouring),
-    int sz, int* colouring);
 int adj_evaluate_functional_derivative(adj_adjointer* adjointer, adj_variable variable, char* functional, adj_vector* output, int* has_output);
 int adj_evaluate_functional_second_derivative(adj_adjointer* adjointer, adj_variable variable, char* functional, adj_vector contraction, adj_vector* output, int* has_output);
 int adj_evaluate_parameter_source(adj_adjointer* adjointer, int equation, adj_variable variable, char* parameter, adj_vector* output, int* has_output);
