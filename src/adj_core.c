@@ -1639,6 +1639,46 @@ int adj_get_soa_equation(adj_adjointer* adjointer, int equation, char* functiona
     }
   }
 
+  /* Now we implement the outer action term */
+
+  {
+  int k;
+  for (k = 0; k < fwd_eqn.nblocks; k++)
+  {
+    int l;
+    adj_variable fwd_var_for_adj;
+    adj_variable adj_var;
+    adj_vector   adj_value;
+
+    if (fwd_eqn.blocks[k].has_nonlinear_block == ADJ_FALSE) continue;
+
+    fwd_var_for_adj = fwd_eqn.targets[k];
+    adj_var = fwd_var_for_adj; adj_var.type = ADJ_ADJOINT; strncpy(adj_var.functional, functional, ADJ_NAME_LEN);
+    ierr = adj_get_variable_value(adjointer, adj_var, &adj_value);
+    if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
+
+    for (l = 0; l < fwd_eqn.blocks[k].nonlinear_block.ndepends ; l++)
+    {
+      adj_variable fwd_var_for_tlm;
+      adj_variable tlm_var;
+      adj_vector   tlm_value;
+      adj_nonlinear_block_derivative deriv;
+
+      printf("Evaluating a nonlinear block outer derivative.\n");
+
+      fwd_var_for_tlm = fwd_eqn.blocks[k].nonlinear_block.depends[l];
+      tlm_var = fwd_var_for_tlm; tlm_var.type = ADJ_TLM; strncpy(tlm_var.functional, parameter, ADJ_NAME_LEN);
+      ierr = adj_get_variable_value(adjointer, tlm_var, &tlm_value);
+      if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
+
+      ierr = adj_create_nonlinear_block_derivative(adjointer, fwd_eqn.blocks[k].nonlinear_block, fwd_eqn.blocks[k].coefficient, fwd_var_for_tlm, tlm_value, !fwd_eqn.blocks[k].hermitian, ADJ_TRUE, &deriv);
+      if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
+
+      ierr = adj_evaluate_nonlinear_derivative_action(adjointer, 1, &deriv, adj_value, rhs);
+    }
+  }
+  }
+
 
   /* Now we implement [ d^2 b du          ] *
                       [ ----- -- \delta m ]  \lambda
