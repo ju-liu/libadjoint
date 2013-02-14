@@ -1490,8 +1490,8 @@ class Adjointer(object):
     try:
       references_taken.remove(vec)
     except:
-      print vec.data
-      print references_taken
+      print "vec.__class__: ", vec.__class__
+      print "references_taken: ", references_taken
       raise
 
   @staticmethod

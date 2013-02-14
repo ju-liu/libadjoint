@@ -1513,6 +1513,7 @@ int adj_get_soa_equation(adj_adjointer* adjointer, int equation, char* functiona
         if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
 
         /* And now we are ready */
+        printf("Evaluating nonlinear derivative middle action.\n");
         ierr = adj_evaluate_nonlinear_derivative_action(adjointer, nnew_derivs, new_second_derivs, adj_value, rhs);
         if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
       }
