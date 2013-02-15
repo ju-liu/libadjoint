@@ -715,8 +715,7 @@ class RHS(object):
         if not isinstance(output, Vector):
           raise exceptions.LibadjointErrorInvalidInputs("Output from RHS derivative_action callback must be None or a Vector.")
         output_c[0].ptr = python_utils.c_ptr(output)
-
-      references_taken.append(output)
+        references_taken.append(output)
 
     rhs_deriv_action_type = ctypes.CFUNCTYPE(None, ctypes.POINTER(clib.adj_adjointer), clib.adj_variable, ctypes.c_int, ctypes.POINTER(clib.adj_variable),
         ctypes.POINTER(clib.adj_vector), clib.adj_variable, clib.adj_vector, ctypes.c_int, ctypes.POINTER(None), ctypes.POINTER(clib.adj_vector), ctypes.POINTER(ctypes.c_int))
@@ -747,8 +746,7 @@ class RHS(object):
         if not isinstance(output, Vector):
           raise exceptions.LibadjointErrorInvalidInputs("Output from RHS second derivative_action callback must be None or a Vector.")
         output_c[0].ptr = python_utils.c_ptr(output)
-
-      references_taken.append(output)
+        references_taken.append(output)
 
     rhs_second_deriv_action_type = ctypes.CFUNCTYPE(None, ctypes.POINTER(clib.adj_adjointer), clib.adj_variable, ctypes.c_int, ctypes.POINTER(clib.adj_variable),
         ctypes.POINTER(clib.adj_vector), clib.adj_variable, clib.adj_vector, clib.adj_variable, ctypes.c_int, clib.adj_vector, ctypes.POINTER(None), ctypes.POINTER(clib.adj_vector), ctypes.POINTER(ctypes.c_int))
