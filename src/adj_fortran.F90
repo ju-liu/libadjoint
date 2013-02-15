@@ -143,7 +143,6 @@ module libadjoint_data_structures
     integer(kind=c_int), dimension(ADJ_NO_OPTIONS) :: options
 
     type(adj_data_callbacks) :: callbacks
-    type(adj_op_callback_list) :: nonlinear_colouring_list
     type(adj_op_callback_list) :: nonlinear_action_list
     type(adj_op_callback_list) :: nonlinear_derivative_action_list
     type(adj_op_callback_list) :: nonlinear_derivative_assembly_list
@@ -307,18 +306,6 @@ module libadjoint
       type(adj_vector), intent(in), value :: rhs
       type(adj_vector), intent(out) :: soln
     end subroutine adj_solve_proc
-
-    subroutine adj_nonlinear_colouring_proc(ndepends, variables, dependencies, derivative, context, sz, colouring) bind(c)
-      use iso_c_binding
-      use libadjoint_data_structures
-      integer(kind=c_int), intent(in), value :: ndepends
-      type(adj_variable), dimension(ndepends), intent(in) :: variables
-      type(adj_vector), dimension(ndepends), intent(in) :: dependencies
-      type(adj_variable), intent(in), value :: derivative
-      type(c_ptr), intent(in), value :: context
-      integer(kind=c_int), intent(in), value :: sz
-      integer(kind=c_int), dimension(sz), intent(out) :: colouring
-    end subroutine adj_nonlinear_colouring_proc
 
     subroutine adj_nonlinear_action_proc(ndepends, variables, dependencies, input, context, output) bind(c)
       use iso_c_binding

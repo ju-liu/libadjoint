@@ -43,8 +43,6 @@ int adj_create_adjointer(adj_adjointer* adjointer)
   adjointer->revolve_data.overwrite = ADJ_FALSE;
   adjointer->revolve_data.comparison_tolerance = 0.0;
 
-  adjointer->nonlinear_colouring_list.firstnode = NULL;
-  adjointer->nonlinear_colouring_list.lastnode = NULL;
   adjointer->nonlinear_action_list.firstnode = NULL;
   adjointer->nonlinear_action_list.lastnode = NULL;
   adjointer->nonlinear_derivative_action_list.firstnode = NULL;
@@ -120,14 +118,6 @@ int adj_destroy_adjointer(adj_adjointer* adjointer)
     data_ptr_tmp = data_ptr;
     data_ptr = data_ptr->next;
     free(data_ptr_tmp);
-  }
-
-  cb_ptr = adjointer->nonlinear_colouring_list.firstnode;
-  while(cb_ptr != NULL)
-  {
-    cb_ptr_tmp = cb_ptr;
-    cb_ptr = cb_ptr->next;
-    free(cb_ptr_tmp);
   }
 
   cb_ptr = adjointer->nonlinear_action_list.firstnode;
@@ -1251,9 +1241,6 @@ int adj_register_operator_callback(adj_adjointer* adjointer, int type, char* nam
 
   switch(type)
   {
-    case ADJ_NBLOCK_COLOURING_CB:
-      cb_list_ptr = &(adjointer->nonlinear_colouring_list);
-      break;
     case ADJ_NBLOCK_ACTION_CB:
       cb_list_ptr = &(adjointer->nonlinear_action_list);
       break;
@@ -1930,15 +1917,12 @@ int adj_find_operator_callback(adj_adjointer* adjointer, int type, char* name, v
   adj_op_callback_list* cb_list_ptr;
   adj_op_callback* cb_ptr;
 
-  char adj_callback_types[8][ADJ_ERROR_MSG_BUF] = {"ADJ_NBLOCK_COLOURING_CB", "ADJ_NBLOCK_ACTION_CB", "ADJ_NBLOCK_DERIVATIVE_ACTION_CB",
+  char adj_callback_types[7][ADJ_ERROR_MSG_BUF] = {"ADJ_NBLOCK_ACTION_CB", "ADJ_NBLOCK_DERIVATIVE_ACTION_CB",
                                                    "ADJ_NBLOCK_DERIVATIVE_ASSEMBLY_CB", "ADJ_BLOCK_ACTION_CB", "ADJ_BLOCK_ASSEMBLY_CB",
                                                    "ADJ_NBLOCK_SECOND_DERIVATIVE_ACTION_CB", "ADJ_NBLOCK_DERIVATIVE_OUTER_ACTION_CB"};
 
   switch(type)
   {
-    case ADJ_NBLOCK_COLOURING_CB:
-      cb_list_ptr = &(adjointer->nonlinear_colouring_list);
-      break;
     case ADJ_NBLOCK_ACTION_CB:
       cb_list_ptr = &(adjointer->nonlinear_action_list);
       break;

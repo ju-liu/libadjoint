@@ -315,8 +315,7 @@ typedef struct adj_adjointer
   int options[ADJ_NO_OPTIONS]; /* Pretty obvious */
 
   adj_data_callbacks callbacks; /* Data callbacks */
-  adj_op_callback_list nonlinear_colouring_list; /* Operator callbacks */
-  adj_op_callback_list nonlinear_action_list;
+  adj_op_callback_list nonlinear_action_list; /* Operator callbacks */
   adj_op_callback_list nonlinear_derivative_action_list;
   adj_op_callback_list nonlinear_derivative_assembly_list;
   adj_op_callback_list block_action_list;
