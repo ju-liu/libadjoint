@@ -6,6 +6,10 @@
 #include "adj_adjointer_routines.h"
 #include "adj_debug.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #ifndef ADJ_HIDE_FROM_USER
 int adj_evaluate_block_action(adj_adjointer* adjointer, adj_block block, adj_vector input, adj_vector* output);
 int adj_evaluate_block_assembly(adj_adjointer* adjointer, adj_block block, adj_matrix *output, adj_vector* rhs);
@@ -26,5 +30,9 @@ int adj_evaluate_rhs_second_derivative_action(adj_adjointer* adjointer, adj_equa
 int adj_evaluate_rhs_derivative_assembly(adj_adjointer* adjointer, adj_equation source_eqn, int hermitian, adj_matrix* output);
 #endif
 int adj_evaluate_functional(adj_adjointer* adjointer, int timestep, char* functional, adj_scalar* output);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

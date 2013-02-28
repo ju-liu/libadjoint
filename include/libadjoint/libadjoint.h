@@ -1,3 +1,7 @@
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define ADJ_HIDE_FROM_USER
 #include "adj_constants.h"
 #include "adj_error_handling.h"
@@ -11,4 +15,8 @@
 
 #ifdef PYTHON_BINDINGS
 #include "adj_test_tools.h"
+#endif
+
+#ifdef __cplusplus
+}
 #endif

@@ -7,7 +7,7 @@
 
 #define ADJ_ERROR_MSG_BUF 1024
 
-char adj_error_msg[ADJ_ERROR_MSG_BUF];
+static char adj_error_msg[ADJ_ERROR_MSG_BUF];
 
 #define ADJ_OK 0
 #define ADJ_ERR_INVALID_INPUTS 1
@@ -27,6 +27,9 @@ char adj_error_msg[ADJ_ERROR_MSG_BUF];
 #define ADJ_WARN_NOT_IMPLEMENTED -4
 
 /* if you add a new one, make sure to add it into adj_error_codes in src/adj_error_handling.c */
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #define adj_chkierr(ierr) adj_chkierr_private(ierr, __FILE__, __LINE__)
 void adj_chkierr_private(int ierr, char* file, int line);
@@ -35,6 +38,10 @@ void adj_chkierr_private(int ierr, char* file, int line);
 int adj_chkierr_auto_private(int ierr, char* file, int line);
 
 int adj_set_error_checking(int check);
+
+#ifdef __cplusplus
+}
+#endif
 
 #define ADJ_CHKMALLOC(x) \
   if ((void*) (x) == NULL) {\

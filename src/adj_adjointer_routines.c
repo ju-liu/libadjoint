@@ -37,7 +37,7 @@ int adj_create_adjointer(adj_adjointer* adjointer)
   adjointer->revolve_data.snaps = 0;
   adjointer->revolve_data.snaps_in_ram = 0;
   adjointer->revolve_data.revolve.ptr = NULL;
-  adjointer->revolve_data.current_action = -1;
+  adjointer->revolve_data.current_action = CACTION_ERROR;
   adjointer->revolve_data.current_timestep = ADJ_UNSET;
   adjointer->revolve_data.verbose = ADJ_FALSE;
   adjointer->revolve_data.overwrite = ADJ_FALSE;
@@ -109,7 +109,7 @@ int adj_destroy_adjointer(adj_adjointer* adjointer)
     free(adjointer->timestep_data);
   }
 
-  for(varhash = adjointer->varhash; varhash != NULL; varhash = varhash->hh.next)
+  for(varhash = adjointer->varhash; varhash != NULL; varhash = (adj_variable_hash*) varhash->hh.next)
   {
     data_ptr = varhash->data;
     ierr = adj_forget_variable_value(adjointer, varhash->variable, data_ptr);
@@ -1520,7 +1520,7 @@ int adj_forget_adjoint_equation(adj_adjointer* adjointer, int equation)
     return adj_chkierr_auto(ADJ_ERR_INVALID_INPUTS);
   }
 
-  for(varhash = adjointer->varhash; varhash != NULL; varhash = varhash->hh.next)
+  for(varhash = adjointer->varhash; varhash != NULL; varhash = (adj_variable_hash*) varhash->hh.next)
   {
     data = varhash->data;
     if (data->storage.storage_memory_has_value || data->storage.storage_disk_has_value)
@@ -1593,7 +1593,7 @@ int adj_forget_adjoint_values(adj_adjointer* adjointer, int equation)
     return adj_chkierr_auto(ADJ_ERR_INVALID_INPUTS);
   }
 
-  for(varhash = adjointer->varhash; varhash != NULL; varhash = varhash->hh.next)
+  for(varhash = adjointer->varhash; varhash != NULL; varhash = (adj_variable_hash*) varhash->hh.next)
   {
     data = varhash->data;
     if (data->type != ADJ_ADJOINT)
@@ -1681,7 +1681,7 @@ int adj_forget_forward_equation_until(adj_adjointer* adjointer, int equation, in
     return adj_chkierr_auto(ADJ_ERR_INVALID_INPUTS);
   }
 
-  for(varhash = adjointer->varhash; varhash != NULL; varhash = varhash->hh.next)
+  for(varhash = adjointer->varhash; varhash != NULL; varhash = (adj_variable_hash*) varhash->hh.next)
   {
       data = varhash->data;
     /* Only forget forward variables */
@@ -1789,7 +1789,7 @@ int adj_forget_tlm_equation(adj_adjointer* adjointer, int equation)
     return adj_chkierr_auto(ADJ_ERR_INVALID_INPUTS);
   }
 
-  for(varhash = adjointer->varhash; varhash != NULL; varhash = varhash->hh.next)
+  for(varhash = adjointer->varhash; varhash != NULL; varhash = (adj_variable_hash*) varhash->hh.next)
   {
     data = varhash->data;
 
@@ -1857,7 +1857,7 @@ int adj_forget_tlm_values(adj_adjointer* adjointer, int equation)
     return adj_chkierr_auto(ADJ_ERR_INVALID_INPUTS);
   }
 
-  for(varhash = adjointer->varhash; varhash != NULL; varhash = varhash->hh.next)
+  for(varhash = adjointer->varhash; varhash != NULL; varhash = (adj_variable_hash*) varhash->hh.next)
   {
     data = varhash->data;
 

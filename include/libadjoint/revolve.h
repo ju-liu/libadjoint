@@ -106,9 +106,9 @@ class Schedule
 	/** This function is virtual.*/
 	virtual int get_check() { return 0; };	
 	/** This function is virtual.*/
-	virtual void set_fine(int f){};  
+	virtual void set_fine(int f){ (void) f; };  
 	/** This function is virtual.*/
-	virtual void set_capo(int c) {}; 
+	virtual void set_capo(int c) { (void) c; }; 
 	/** This function is virtual.*/
 	int get_snaps() { return snaps; }
 	/** This function returns the pointer of a Checkpoint class.

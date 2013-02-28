@@ -89,18 +89,18 @@ void adj_html_table_end(FILE* fp)
   fprintf(fp, "</table>\n");
 }
 
-void adj_html_write_row(FILE* fp, char* strings[], char* desc[], int nb_strings, int diag_index, char* class)
+void adj_html_write_row(FILE* fp, char* strings[], char* desc[], int nb_strings, int diag_index, char* klass)
 {
   int i;
   for (i = 0; i < nb_strings; i++)
   {
     if (strlen(desc[i]))
       if (diag_index == i)
-        fprintf(fp, "<td class=\"diagonal %s\"><div title=\"%s\">%s</div></td>\n", class, desc[i], strings[i]);
+        fprintf(fp, "<td class=\"diagonal %s\"><div title=\"%s\">%s</div></td>\n", klass, desc[i], strings[i]);
       else
-        fprintf(fp, "<td class=\"%s\"><div title=\"%s\">%s</div></td>\n", class, desc[i], strings[i]);
+        fprintf(fp, "<td class=\"%s\"><div title=\"%s\">%s</div></td>\n", klass, desc[i], strings[i]);
     else
-      fprintf(fp, "<td class=\"%s\"></td>\n", class);
+      fprintf(fp, "<td class=\"%s\"></td>\n", klass);
   }
 }
 
@@ -114,7 +114,7 @@ int adj_html_find_column_index(adj_adjointer* adjointer, adj_variable* variable,
 
   /* Check for auxiliary variables */
   *col = 0;
-  for (varhash = adjointer->varhash; varhash != NULL; varhash = varhash->hh.next)
+  for (varhash = adjointer->varhash; varhash != NULL; varhash = (adj_variable_hash*) varhash->hh.next)
   {
     if (varhash->variable.auxiliary == ADJ_TRUE)
     {
@@ -150,7 +150,7 @@ int adj_html_count_auxiliary_variables(adj_adjointer* adjointer)
   adj_variable_hash* varhash;
   int n=0;
 
-  for (varhash = adjointer->varhash; varhash != NULL; varhash = varhash->hh.next)
+  for (varhash = adjointer->varhash; varhash != NULL; varhash = (adj_variable_hash*) varhash->hh.next)
   {
     if (varhash->variable.auxiliary == ADJ_TRUE)
       n++;
@@ -166,7 +166,7 @@ void adj_html_print_auxiliary_variables(FILE* fp, adj_adjointer* adjointer)
 
   fprintf(fp, "<h1>Auxiliary variables</h1>");
 
-  for (varhash = adjointer->varhash; varhash != NULL; varhash = varhash->hh.next)
+  for (varhash = adjointer->varhash; varhash != NULL; varhash = (adj_variable_hash*) varhash->hh.next)
   {
 
     if (varhash->variable.auxiliary == ADJ_TRUE)
@@ -347,7 +347,7 @@ void adj_html_vars(FILE* fp, adj_adjointer* adjointer, int type)
   fprintf(fp, "<tr>\n");
 
   /* First print the auxiliary variables */
-  for (varhash = adjointer->varhash; varhash != NULL; varhash = varhash->hh.next)
+  for (varhash = adjointer->varhash; varhash != NULL; varhash = (adj_variable_hash*) varhash->hh.next)
   {
     if (varhash->variable.auxiliary == ADJ_TRUE)
     {
@@ -462,7 +462,7 @@ void adj_html_vars(FILE* fp, adj_adjointer* adjointer, int type)
  }
 
 /* Writes a html row containing the supplied equation into fp */
-int adj_html_eqn(FILE* fp, adj_adjointer* adjointer, adj_equation adj_eqn, int diag_index, char* class)
+int adj_html_eqn(FILE* fp, adj_adjointer* adjointer, adj_equation adj_eqn, int diag_index, char* klass)
 {
   int i,k;
   int nb_vars = adjointer->nequations + adj_html_count_auxiliary_variables(adjointer);
@@ -483,16 +483,16 @@ int adj_html_eqn(FILE* fp, adj_adjointer* adjointer, adj_equation adj_eqn, int d
   /* Allocate the strings for this row */
   for (i = 0; i < nb_vars; ++i)
   {
-    row[i] = malloc(ADJ_NAME_LEN*sizeof(char));
+    row[i] = (char*) malloc(ADJ_NAME_LEN*sizeof(char));
     ADJ_CHKMALLOC(row[i]);
     row[i][0]='\0';
-    desc[i] = malloc(max_desc_size*sizeof(char));  
+    desc[i] = (char*) malloc(max_desc_size*sizeof(char));  
     ADJ_CHKMALLOC(desc[i]);
     desc[i][0]='\0';
   }
   /* Allocate the strings for the rhs */
-  row_rhs[0] = malloc(ADJ_NAME_LEN*sizeof(char));
-  desc_rhs[0] = malloc(max_desc_size*sizeof(char));
+  row_rhs[0] = (char*) malloc(ADJ_NAME_LEN*sizeof(char));
+  desc_rhs[0] = (char*) malloc(max_desc_size*sizeof(char));
 
   for (i = 0; i < adj_eqn.nblocks; i++)
   {
@@ -550,7 +550,7 @@ int adj_html_eqn(FILE* fp, adj_adjointer* adjointer, adj_equation adj_eqn, int d
     }
   }
   /* Write the row */
-  adj_html_write_row(fp, row, desc, adjointer->nequations, diag_index, class);
+  adj_html_write_row(fp, row, desc, adjointer->nequations, diag_index, klass);
 
   if (adj_eqn.nrhsdeps>0)
   {
@@ -589,7 +589,7 @@ int adj_html_eqn(FILE* fp, adj_adjointer* adjointer, adj_equation adj_eqn, int d
 }
 
 /* Writes a html row containing the supplied adjoint equation into fp */
-int adj_html_adjoint_eqn(FILE* fp, adj_adjointer* adjointer, adj_equation fwd_eqn, int diag_index, char* class)
+int adj_html_adjoint_eqn(FILE* fp, adj_adjointer* adjointer, adj_equation fwd_eqn, int diag_index, char* klass)
 {
   int i, j, k, l;
   int nb_vars = adjointer->nequations + adj_html_count_auxiliary_variables(adjointer);
@@ -604,10 +604,10 @@ int adj_html_adjoint_eqn(FILE* fp, adj_adjointer* adjointer, adj_equation fwd_eq
   /* Allocate the strings for this row */
   for (i = 0; i < nb_vars; ++i)
   {
-    row[i] = malloc(ADJ_NAME_LEN*sizeof(char));
+    row[i] = (char*) malloc(ADJ_NAME_LEN*sizeof(char));
     ADJ_CHKMALLOC(row[i]);
     row[i][0]='\0';
-    desc[i] = malloc(max_desc_size*sizeof(char)); // The description can become very long
+    desc[i] = (char*) malloc(max_desc_size*sizeof(char)); // The description can become very long
     ADJ_CHKMALLOC(desc[i]);
     desc[i][0]='\0';
   }
@@ -842,7 +842,7 @@ int adj_html_adjoint_eqn(FILE* fp, adj_adjointer* adjointer, adj_equation fwd_eq
   }
 
   /* Write it to file */
-  adj_html_write_row(fp, row, desc, adjointer->nequations, diag_index, class);
+  adj_html_write_row(fp, row, desc, adjointer->nequations, diag_index, klass);
 
   /* Tidy up */
   for (i = 0; i < adjointer->nequations; ++i)

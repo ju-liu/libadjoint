@@ -67,6 +67,10 @@ ifneq (,$(findstring gcc, $(CC_VERSION)))
 	# gcc-specific settings here
 	COMPILER_CFLAGS := -Wall -Wextra -Wunused-parameter -Wunsafe-loop-optimizations -Wpointer-arith -Wstrict-prototypes -ggdb3 -fstack-protector-all -lstdc++
 endif
+ifneq (,$(findstring g++, $(CC_VERSION)))
+	# g++-specific settings here
+	COMPILER_CFLAGS := -Wall -Wextra -Wunused-parameter -Wunsafe-loop-optimizations -Wno-write-strings -Wpointer-arith -ggdb3 -fstack-protector-all
+endif
 ifneq (,$(findstring icc, $(CC_VERSION)))
 	# icc-specific settings here
 	COMPILER_CFLAGS := -Wall 

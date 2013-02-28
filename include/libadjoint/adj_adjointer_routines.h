@@ -9,6 +9,10 @@
 #include "adj_error_handling.h"
 #include "revolve_c.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 int adj_reset_revolve(adj_adjointer* adjointer);
 int adj_advance_to_adjoint_run_revolve(adj_adjointer* adjointer);
 int adj_create_adjointer(adj_adjointer* adjointer);
@@ -95,4 +99,9 @@ int adj_initialise_revolve(adj_adjointer* adjointer);
 int adj_checkpoint_equation(adj_adjointer* adjointer, int eqn_number, int checkpoint_strategy);
 int adj_checkpoint_variable(adj_adjointer* adjointer, adj_variable var, int checkpoint_strategy);
 #endif
+
+#ifdef __cplusplus
+}
+#endif
+
 #endif

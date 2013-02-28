@@ -330,6 +330,10 @@ typedef struct adj_adjointer
   int finished; /* Is the annotation finished? */
 } adj_adjointer;
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 int adj_create_variable(char* name, int timestep, int iteration, int auxiliary, adj_variable* var);
 int adj_variable_get_name(adj_variable var, char** name);
 int adj_variable_get_timestep(adj_variable var, int* timestep);
@@ -371,6 +375,10 @@ int adj_create_nonlinear_block_second_derivative(adj_adjointer* adjointer, adj_n
 int adj_destroy_nonlinear_block_second_derivative(adj_adjointer* adjointer, adj_nonlinear_block_second_derivative* deriv);
 int adj_copy_nonlinear_block(adj_nonlinear_block src, adj_nonlinear_block* dest);
 int adj_equation_rhs_nonlinear_index(adj_equation eqn);
+#endif
+
+#ifdef __cplusplus
+}
 #endif
 
 #endif

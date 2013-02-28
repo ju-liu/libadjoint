@@ -5,6 +5,8 @@ export DH_VERBOSE=1
 
 # Find the most recent PETSc installed on the system
 PETSC_VERSION := $(shell ls -ld /usr/lib/petscdir/* | tail -n 1 | awk -F/ '{print $$(NF)}')
+SLEPC_VERSION := $(shell ls -ld /usr/lib/slepcdir/* | tail -n 1 | awk -F/ '{print $$(NF)}')
+PETSC_VERSION := $(shell python -c "print min('$(PETSC_VERSION)', '$(SLEPC_VERSION)')")
 
 export PETSC_ARCH=linux-gnu-c-opt
 export PETSC_DIR=/usr/lib/petscdir/$(PETSC_VERSION)

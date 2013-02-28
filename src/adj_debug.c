@@ -20,7 +20,7 @@ int adj_adjointer_check_consistency(adj_adjointer* adjointer)
       return adj_chkierr_auto(ierr);
     }
 
-    hash_ptr = hash_ptr->hh.next;
+    hash_ptr = (adj_variable_hash*) hash_ptr->hh.next;
   }
 
   return ADJ_OK;
@@ -221,7 +221,7 @@ int adj_adjointer_check_checkpoints(adj_adjointer* adjointer)
     }
 
     /* Check we have the required variables for the adjoint equations */
-    for(varhash = adjointer->varhash; varhash != NULL; varhash = varhash->hh.next)
+    for(varhash = adjointer->varhash; varhash != NULL; varhash = (adj_variable_hash*) varhash->hh.next)
     {
     	data = varhash->data;
       /* We are only interested in forward variables */
