@@ -69,7 +69,7 @@ ifneq (,$(findstring gcc, $(CC_VERSION)))
 endif
 ifneq (,$(findstring g++, $(CC_VERSION)))
 	# g++-specific settings here
-	COMPILER_CFLAGS := -Wall -Wextra -Wunused-parameter -Wunsafe-loop-optimizations -Wno-write-strings -Wpointer-arith -ggdb3 -fstack-protector-all
+	COMPILER_CFLAGS := -Wall -Wextra -Wunused-parameter -Wunsafe-loop-optimizations -Wno-write-strings -Wpointer-arith -ggdb3 -fstack-protector-all -fno-leading-underscore
 endif
 ifneq (,$(findstring icc, $(CC_VERSION)))
 	# icc-specific settings here
@@ -173,7 +173,7 @@ LDFLAGS := $(CXXLIBS) -shared -Wl,-soname,$(SLIB)
 SEDFLG  := 
 else
 SLIB := libadjoint.dylib
-CXXLIBS := -lstdc++ -lsupc++
+CXXLIBS := -lstdc++ 
 LDFLAGS := $(CXXLIBS) -shared -Wl,-install_name,$(SLIB)
 SEDFLG  := ""
 endif
@@ -220,7 +220,7 @@ endif
 
 obj/%.o: src/%.c
 	@echo "  CC $<"
-	@$(CC) $(CFLAGS) -c -o $@ $<
+	$(CC) $(CFLAGS) -c -o $@ $<
 
 obj/%.o: src/%.cpp
 	@echo "  C++ $<"
@@ -243,7 +243,7 @@ clean:
 	@echo "  RM obj/*.o"
 	@rm -f obj/tests/*.o
 	@echo "  RM obj/tests/*.o"
-	@rm -f bin/tests/*
+	@rm -rf bin/tests/*
 	@echo "  RM bin/tests/*"
 	@rm -f include/libadjoint/*.mod include/*.mod *.mod
 	@echo "  RM include/libadjoint/*.mod"
