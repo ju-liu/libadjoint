@@ -276,6 +276,8 @@ int adj_test_block_action_transpose(adj_adjointer* adjointer, adj_block block, a
   adj_vector x, y, Ax, ATy;
   adj_scalar yAx, ATyx;
 
+  (void) tol;
+
   if (adjointer->callbacks.vec_set_random == NULL)
   {
     snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "In order to test the transpose of an operator, you need the ADJ_VEC_SET_RANDOM_CB callback.");
@@ -326,9 +328,9 @@ int adj_test_block_action_transpose(adj_adjointer* adjointer, adj_block block, a
     adjointer->callbacks.vec_destroy(&ATy);
     adjointer->callbacks.vec_destroy(&Ax);
 
-    if (cabs((double complex) yAx - ATyx) > tol) 
+    if (COMPLEX_ABS(yAx - ATyx) > tol) 
     {
-      snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Transpose verification of block \"%s\" failed: |<y, Ax> - <A^Ty, x>| == %e (> tolerance of %e, iteration %d).", block.name, cabs((double complex) yAx - ATyx), (double) tol, i+1);
+      snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Transpose verification of block \"%s\" failed: |<y, Ax> - <A^Ty, x>| == %e (> tolerance of %e, iteration %d).", block.name, COMPLEX_ABS(yAx - ATyx), (double) tol, i+1);
       ierr = ADJ_ERR_TOLERANCE_EXCEEDED;
       break;
     }
@@ -401,9 +403,9 @@ int adj_test_nonlinear_derivative_action_transpose(adj_adjointer* adjointer, adj
     adjointer->callbacks.vec_destroy(&GTy);
     adjointer->callbacks.vec_destroy(&Gx);
 
-    if (cabs((double complex) yGx - GTyx) > tol) 
+    if (COMPLEX_ABS(yGx - GTyx) > tol) 
     {
-      snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Transpose verification of the derivative of nonlinear block \"%s\" failed: |<y, Gx> - <G^Ty, x>| == %e (> tolerance of %e, iteration %d).", nonlinear_block_derivative.nonlinear_block.name, cabs((double complex) yGx - GTyx), (double) tol, i+1);
+      snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "Transpose verification of the derivative of nonlinear block \"%s\" failed: |<y, Gx> - <G^Ty, x>| == %e (> tolerance of %e, iteration %d).", nonlinear_block_derivative.nonlinear_block.name, COMPLEX_ABS(yGx - GTyx), (double) tol, i+1);
       ierr = ADJ_ERR_TOLERANCE_EXCEEDED;
       break;
     }

@@ -12,6 +12,12 @@
 #include "adj_error_handling.h"
 #include "adj_evaluation.h"
 
+#ifdef __cplusplus
+#define COMPLEX_ABS(x) (abs( (complex<double>) (x)))
+#else
+#define COMPLEX_ABS(x) (cabs( (double complex) (x)))
+#endif
+
 int adj_adjointer_check_consistency(adj_adjointer* adjointer);
 int adj_adjointer_check_checkpoints(adj_adjointer* adjointer); /* Checks that all required variables for the adjoint solve with revolve are stored as checkpoints. Should be called just before the adjoint main loop */
 #ifndef ADJ_HIDE_FROM_USER
