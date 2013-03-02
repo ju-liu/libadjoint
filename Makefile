@@ -195,7 +195,7 @@ PYDIR = $(shell python -c  "import distutils.sysconfig; print distutils.sysconfi
 ###############################################################################
 # The targets                                                                 #
 ###############################################################################
-all: lib/libadjoint.a $(SLIB)
+all: lib/libadjoint.a lib/$(SLIB)
 
 bin/tests/%: src/tests/%.c src/tests/test_main.c lib/libadjoint.a
 	@echo "  CC $@"
@@ -234,7 +234,7 @@ lib/libadjoint.a: $(OBJECTS)
 	@echo "  AR $@"
 	@$(AR) $(ARFLAGS) $@ obj/*.o
 
-$(SLIB): $(OBJECTS)
+lib/$(SLIB): $(OBJECTS)
 	@echo "  LD $@"
 	@$(LD) $(DBGFLAGS) -o $@ obj/*.o $(SLEPC_LDFLAGS) $(PETSC_LDFLAGS) $(LIBS) $(LDFLAGS)
 
@@ -312,14 +312,14 @@ all: python
 test: python
 install: python
 
-python/libadjoint/clibadjoint.py: $(SLIB) pybuild
+python/libadjoint/clibadjoint.py: lib/$(SLIB) pybuild
 	@echo "  H2XML  include/libadjoint/libadjoint.h"
 	@$(CPP) -DPYTHON_BINDINGS include/libadjoint/libadjoint.h > include/libadjoint/pylibadjoint.h
 	@sed -i $(SEDFLG) "s/__builtin___stpncpy_chk/__builtin___strncpy_chk/" include/libadjoint/pylibadjoint.h
 	@$(H2XML) -q -I. include/libadjoint/pylibadjoint.h -o python/libadjoint/libadjoint.xml
 	@rm -f include/libadjoint/pylibadjoint.h
 	@echo "  XML2PY python/libadjoint/clibadjoint.py"
-	@$(XML2PY) -r '^adj.*' -l $(shell python bin/realpath $(SLIB)) python/libadjoint/libadjoint.xml -o python/libadjoint/clibadjoint.py
+	@$(XML2PY) -r '^adj.*' -l $(shell python bin/realpath lib/$(SLIB)) python/libadjoint/libadjoint.xml -o python/libadjoint/clibadjoint.py
 # OSX is such a steaming crock of $#!@
 	@((uname -a | grep -q Darwin) && sed -i $(SEDFLG) "s/._pack_ = 4/._pack_ = 8/" python/libadjoint/clibadjoint.py) || true
 	@rm -f python/libadjoint/libadjoint.xml
@@ -329,11 +329,11 @@ python/libadjoint/clibadjoint_constants.py:
 	@python ./tools/create_python_constants.py
 endif
 
-install: lib/libadjoint.a $(SLIB)
+install: lib/libadjoint.a lib/$(SLIB)
 	@echo "  INSTALL $(ABSDESTDIR)/$(prefix)/lib"
 	@install -d $(ABSDESTDIR)/$(prefix)/lib
 	@install lib/libadjoint.a $(ABSDESTDIR)/$(prefix)/lib
-	@install $(SLIB) $(ABSDESTDIR)/$(prefix)/lib
+	@install lib/$(SLIB) $(ABSDESTDIR)/$(prefix)/lib
 ifneq (,$(GCCXML))
 	@echo "  INSTALL $(PYDIR)"
 ifeq ($(LIBADJOINT_BUILDING_DEBIAN),yes)
@@ -341,7 +341,7 @@ ifeq ($(LIBADJOINT_BUILDING_DEBIAN),yes)
 else
 	@cd python; python setup.py install --prefix=$(ABSDESTDIR)/$(prefix) $(LIBADJOINT_PYTHON_INSTALL_ARGS)
 endif
-	@find $(ABSDESTDIR)/$(prefix) -name clibadjoint.py | xargs sed -i $(SEDFLG) -e "s@CDLL('$(SLIB)')@CDLL('/$(prefix)/lib/$(SLIB)')@" -e "s@CDLL('$(shell python bin/realpath $(SLIB))')@CDLL('/$(prefix)/lib/$(SLIB)')@"
+	@find $(ABSDESTDIR)/$(prefix) -name clibadjoint.py | xargs sed -i $(SEDFLG) -e "s@CDLL('lib/$(SLIB)')@CDLL('/$(prefix)/lib/$(SLIB)')@" -e "s@CDLL('$(shell python bin/realpath lib/$(SLIB))')@CDLL('/$(prefix)/lib/$(SLIB)')@"
 endif
 	@echo "  INSTALL $(ABSDESTDIR)/$(prefix)/include/libadjoint"
 	@install -d $(ABSDESTDIR)/$(prefix)/include/libadjoint
