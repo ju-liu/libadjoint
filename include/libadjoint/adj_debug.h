@@ -6,15 +6,16 @@
 #include <stdlib.h>
 #include <time.h>
 #include <math.h>
-#include <complex.h>
 #undef I
 #include "adj_data_structures.h"
 #include "adj_error_handling.h"
 #include "adj_evaluation.h"
 
 #ifdef __cplusplus
+#include <complex>
 #define COMPLEX_ABS(x) (abs( (complex<double>) (x)))
 #else
+#include <complex.h>
 #define COMPLEX_ABS(x) (cabs( (double complex) (x)))
 #endif
 
