@@ -7,7 +7,11 @@
 
 #define ADJ_ERROR_MSG_BUF 1024
 
+#ifdef __cplusplus
 static char adj_error_msg[ADJ_ERROR_MSG_BUF];
+#else
+char adj_error_msg[ADJ_ERROR_MSG_BUF];
+#endif
 
 #define ADJ_OK 0
 #define ADJ_ERR_INVALID_INPUTS 1
