@@ -112,7 +112,7 @@ class Variable(object):
     fwd_var = Variable(self.name, self.timestep, self.iteration)
     return fwd_var
 
-  def to_soa(self):
+  def to_soa(self, functional, parameter):
     soa_var = Variable(self.name, self.timestep, self.iteration)
     soa_var.c_object.type = int(constants.adj_constants['ADJ_SOA'])
     soa_var.c_object.functional = str(functional) + ":" + str(parameter)
