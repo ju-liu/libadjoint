@@ -4,16 +4,16 @@ This work was packaged for Debian by:
 
 It was downloaded from:
 
-    http://amcg.ese.ic.ac.uk
+    http://launchpad.net/libadjoint
 
-Upstream Author(s):
+Authors:
 
     Patrick Farrell <patrick.farrell06@imperial.ac.uk>
     Simon Funke <simon.funke09@imperial.ac.uk>
 
 Copyright:
 
-    Copyright (C) 2010 Imperial College London
+    Copyright (C) 2010-2013 Imperial College London
 
 License:
 
@@ -21,7 +21,7 @@ License:
 
 The Debian packaging is:
 
-    Copyright (C) 2011 Patrick Farrell <patrick.farrell06@imperial.ac.uk>
+    Copyright (C) 2011-2013 Patrick Farrell <patrick.farrell06@imperial.ac.uk>
 
 and is licensed under the LGPL v2.1,
 see "/usr/share/common-licenses/LGPL-2.1".
