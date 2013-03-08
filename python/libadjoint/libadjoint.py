@@ -1665,6 +1665,37 @@ class Adjointer(object):
     gst.orig_ic_norm = orig_ic_norm
     return gst
 
+  def compute_eps(self, matrix, options):
+    '''Computes the eigendecomposition of a given adj_matrix.'''
+
+    c_handle = clib.adj_eps()
+    c_options = clib.adj_eps_options()
+    nconverged = ctypes.c_int()
+
+    # no support for generalised eigenproblems yet
+    type_map = {'hermitian': 1,
+                'non_hermitian': 3}
+    which_map = {'largest magnitude': 1,
+                 'smallest magnitude': 2}
+
+    c_options.method      = options['method']
+    c_options.type        = type_map[options['type']]
+    c_options.which       = which_map[options['which']]
+    c_options.monitor     = options['monitor']
+    c_options.neigenpairs = options['neigenpairs']
+
+    c_options.input   = options['input'].as_adj_vector()
+    c_options.output  = options['output'].as_adj_vector()
+
+    c_matrix = matrix.as_adj_matrix()
+    clib.adj_compute_eps(self.adjointer, c_matrix, c_options, c_handle, nconverged)
+    eps = EPSHandle(c_handle, options, nconverged)
+
+    eps.c_matrix = c_matrix
+    eps.c_input = c_options.input
+    eps.c_output = c_options.output
+    return eps
+
   def get_variable_value(self, var):
     vec = clib.adj_vector()
     clib.adj_get_variable_value(self.adjointer, var.var, vec)
@@ -1863,4 +1894,60 @@ class GSTHandle(object):
   def destroy(self):
     if self.allocated:
       clib.adj_destroy_gst(self.handle)
+      self.allocated = False
+
+class EPSHandle(object):
+  '''An object that wraps the result of an eigenvalue computation.
+     Request the computed results with get_eps.'''
+  def __init__(self, handle, options, ncv):
+    self.handle = handle
+    self.options = options
+    self.ncv = ncv.value
+    self.allocated = True
+
+  def __del__(self):
+    self.destroy()
+
+  def get_eps(self, i, return_vector=True):
+    if return_vector:
+      u_re = clib.adj_vector()
+      if "hermitian" in self.options['type']:
+        u_im = None
+      else:
+        u_im = clib.adj_vector()
+
+    else:
+      u_re = None
+      u_im = None
+
+    sigma_re = adj_scalar()
+    sigma_im = adj_scalar()
+
+    clib.adj_get_eps(self.handle, i, sigma_re, sigma_im, u_re, u_im)
+
+    if sigma_im.value > 0:
+      sigma = complex(sigma_re.value, sigma_im.value)
+    else:
+      sigma = sigma_re.value
+
+    retval = [sigma]
+
+    if return_vector:
+      u_re_vec = vector(u_re)
+      references_taken.remove(u_re_vec)
+      retval += [u_re_vec]
+
+      if 'hermitian' not in self.options['type']: 
+        u_im_vec = vector(u_im)
+        references_taken.remove(u_im_vec)
+        retval += [u_im_vec]
+
+    if len(retval) == 1:
+      retval = retval[0]
+
+    return retval
+
+  def destroy(self):
+    if self.allocated:
+      clib.adj_destroy_eps(self.handle)
       self.allocated = False

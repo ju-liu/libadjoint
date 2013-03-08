@@ -4,31 +4,20 @@
 #include "adj_data_structures.h"
 #include "adj_error_handling.h"
 
-#ifdef HAVE_SLEPC
-#include "slepceps.h"
-
 typedef struct
 {
   adj_vector input;    /* A model input vector; not modified */
   adj_vector output;   /* A model output vector; not modified */
-  EPSType method;      /* What algorithm should be used? */
-  EPSProblemType type; /* What type of problem is it? */
-  EPSWhich which;      /* Which eigenvectors do you want? */
+  char* method;        /* What algorithm should be used? */
+  int type;            /* What type of problem is it? */
+  int which;           /* Which eigenvectors do you want? */
   int monitor;         /* Do you want to print out information about convergence? */
   int neigenpairs;     /* How many vectors do you want? */
 } adj_eps_options;
 
-#else /* You don't HAVE_SLEPC */
-
-typedef struct
-{
-  char* method;
-  int   type;
-  int   which;
-  int   monitor;
-  int   ncv;
-} adj_eps_options;
-#endif/* HAVE_SLEPC */
+#ifdef HAVE_SLEPC
+#include "slepceps.h"
+#endif /* HAVE_SLEPC */
 
 typedef struct
 {

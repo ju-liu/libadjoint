@@ -12,6 +12,7 @@ extern "C" {
 #include "adj_core.h"
 #include "adj_debug.h"
 #include "adj_gst.h"
+#include "adj_eps.h"
 
 #ifdef PYTHON_BINDINGS
 #include "adj_test_tools.h"
