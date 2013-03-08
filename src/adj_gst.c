@@ -1,4 +1,4 @@
-#include "libadjoint/adj_predictability.h"
+#include "libadjoint/adj_gst.h"
 #define min(X, Y)  ((X) < (Y) ? (X) : (Y))
 
 int adj_compute_gst(adj_adjointer* adjointer, adj_variable ic, adj_matrix* ic_norm, adj_variable final, adj_matrix* final_norm, int nrv, adj_gst* gst_handle, int* ncv)
