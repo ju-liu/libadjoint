@@ -1,5 +1,5 @@
-#ifndef ADJ_PREDICTABILITY_H
-#define ADJ_PREDICTABILITY_H
+#ifndef ADJ_GST_H
+#define ADJ_GST_H
 
 #include "adj_data_structures.h"
 #include "adj_error_handling.h"
@@ -21,7 +21,7 @@ typedef struct
 } adj_gst;
 
 int adj_compute_gst(adj_adjointer* adjointer, adj_variable ic, adj_matrix* ic_norm, adj_variable final, adj_matrix* final_norm, int nrv, adj_gst* gst_handle, int* ncv);
-int adj_get_gst(adj_gst* gst_handle, int i, adj_scalar* sigma, adj_vector* u, adj_vector* v, adj_scalar* error);
+int adj_get_gst(adj_gst* gst_handle, int i, adj_scalar* sigma, adj_vector* u, adj_vector* v, adj_scalar* residual);
 int adj_destroy_gst(adj_gst* gst_handle);
 
 #ifndef ADJ_HIDE_FROM_USER
