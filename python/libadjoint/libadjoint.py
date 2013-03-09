@@ -407,7 +407,7 @@ class Storage(object):
 
 class MemoryStorage(Storage):
   '''Wrapper class for Vectors that contains additional information for storing the vector values in memory.'''
-  def __init__(self, vec, copy=True, cs=False):
+  def __init__(self, vec, copy=True, cs=False, overwrite=None):
     self.storage_data = clib.adj_storage_data()
     self.c_object = self.storage_data
     if copy:
@@ -422,9 +422,12 @@ class MemoryStorage(Storage):
     # Ensure that the storage object always holds a reference to the vec
     self.vec = vec
 
+    if overwrite is not None:
+      self.set_overwrite(overwrite)
+
 class DiskStorage(Storage):
   '''Wrapper class for Vectors that contains additional information for storing the vector values in memory.'''
-  def __init__(self, vec, cs=False):
+  def __init__(self, vec, cs=False, overwrite=None):
     self.storage_data = clib.adj_storage_data()
     self.c_object = self.storage_data
     clib.adj_storage_disk(vec.as_adj_vector(), self.storage_data)
@@ -433,6 +436,9 @@ class DiskStorage(Storage):
 
     # Ensure that the storage object always holds a reference to the vec
     self.vec = vec
+
+    if overwrite is not None:
+      self.set_overwrite(overwrite)
 
 class Functional(object):
   '''Base class for functionals and their derivatives.'''
