@@ -86,7 +86,7 @@ int adj_compute_eps(adj_adjointer* adjointer, adj_matrix matrix, adj_eps_options
   EPSCreate(PETSC_COMM_WORLD, eps);
   EPSSetOperators(*eps, eps_mat, PETSC_NULL);
 
-  EPSSetProblemType(*eps, options.type);
+  EPSSetProblemType(*eps, (EPSProblemType) options.type);
   EPSSetType(*eps, options.method);
 
   nwv = 3*options.neigenpairs;
@@ -96,7 +96,7 @@ int adj_compute_eps(adj_adjointer* adjointer, adj_matrix matrix, adj_eps_options
 #if SLEPC_VERSION_MAJOR > 3 || (SLEPC_VERSION_MAJOR == 3 && SLEPC_VERSION_MINOR >= 1)
   if (options.monitor) EPSMonitorSet(*eps, EPSMonitorAll, PETSC_NULL, PETSC_NULL);
 #endif
-  EPSSetWhichEigenpairs(*eps, options.which);
+  EPSSetWhichEigenpairs(*eps, (EPSWhich) options.which);
 
   if (options.monitor) EPSView(*eps, PETSC_VIEWER_STDOUT_WORLD);
   ierr = EPSSolve(*eps);
