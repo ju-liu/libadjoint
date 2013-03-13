@@ -7,10 +7,8 @@
 
 #define ADJ_ERROR_MSG_BUF 1024
 
-#ifdef __cplusplus
-static char adj_error_msg[ADJ_ERROR_MSG_BUF];
-#else
-char adj_error_msg[ADJ_ERROR_MSG_BUF];
+#ifndef HIDE_DECLARATION
+extern char adj_error_msg[ADJ_ERROR_MSG_BUF];
 #endif
 
 #define ADJ_OK 0

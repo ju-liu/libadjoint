@@ -1,7 +1,10 @@
+#define HIDE_DECLARATION
 #include "libadjoint/adj_error_handling.h"
+#undef HIDE_DECLARATION
 #include "libadjoint/adj_constants.h"
 
 static int error_check = ADJ_FALSE;
+char adj_error_msg[ADJ_ERROR_MSG_BUF];
 
 void adj_chkierr_private(int ierr, char* file, int line)
 {
