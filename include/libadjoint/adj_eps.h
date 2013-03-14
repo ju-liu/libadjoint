@@ -25,9 +25,17 @@ typedef struct
   void* eps_data;          /* Any data the eigendecomposition might need as context */
 } adj_eps;
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 int adj_compute_eps(adj_adjointer* adjointer, adj_matrix matrix, adj_eps_options options, adj_eps* eps_handle, int* nconverged);
 int adj_get_eps(adj_eps* eps_handle, int i, adj_scalar* sigma_re, adj_scalar* sigma_im, adj_vector* u_re, adj_vector* u_im);
 int adj_destroy_eps(adj_eps* eps_handle);
+
+#ifdef __cplusplus
+}
+#endif
 
 #ifndef ADJ_HIDE_FROM_USER
 typedef struct
