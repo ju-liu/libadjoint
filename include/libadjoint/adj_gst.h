@@ -20,9 +20,17 @@ typedef struct
   void* gst_data;
 } adj_gst;
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 int adj_compute_gst(adj_adjointer* adjointer, adj_variable ic, adj_matrix* ic_norm, adj_variable final, adj_matrix* final_norm, int nrv, adj_gst* gst_handle, int* ncv);
 int adj_get_gst(adj_gst* gst_handle, int i, adj_scalar* sigma, adj_vector* u, adj_vector* v, adj_scalar* residual);
 int adj_destroy_gst(adj_gst* gst_handle);
+
+#ifdef __cplusplus
+}
+#endif
 
 #ifndef ADJ_HIDE_FROM_USER
 #ifdef HAVE_SLEPC
