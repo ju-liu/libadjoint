@@ -48,6 +48,7 @@ typedef struct
 } adj_eps_data;
 
 #ifdef HAVE_PETSC
+#include "petsc.h"
 PetscErrorCode eps_mult(Mat A, Vec x, Vec y);
 #endif /* HAVE_PETSC */
 #endif /* ADJ_HIDE_FROM_USER */
