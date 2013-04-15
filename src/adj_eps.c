@@ -269,6 +269,7 @@ PetscErrorCode eps_mult(Mat A, Vec x, Vec y)
   adjointer = eps_data->adjointer;
   matrix = eps_data->matrix;
   eps_data->multiplications++;
+  printf("Beginning matrix action %d.\n", eps_data->multiplications-1);
 
   adjointer->callbacks.vec_duplicate(eps_data->input, &work_input);
   ierr = VecGetArray(x, &input_arr); CHKERRQ(ierr);
@@ -285,6 +286,7 @@ PetscErrorCode eps_mult(Mat A, Vec x, Vec y)
 
   adjointer->callbacks.vec_destroy(&work_input);
   adjointer->callbacks.vec_destroy(&work_output);
+  printf("Matrix action %d completed.\n", eps_data->multiplications-1);
 
   PetscFunctionReturn(0);
 }
