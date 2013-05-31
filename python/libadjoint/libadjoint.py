@@ -820,6 +820,10 @@ class AdjointerTime(object):
       raise exceptions.LibadjointErrorInvalidInputs(
         "time.next() called before time started!")
 
+    if time == self.time_levels[-1]:
+      raise exceptions.LibadjointErrorInvalidInputs(
+        "time.next() called with the same time as before!")
+
     self.time_levels.append(time)
     timestep = len(self.time_levels) - 2
     self.adjointer.set_times(timestep, self.time_levels[-2], self.time_levels[-1])
