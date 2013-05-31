@@ -1077,6 +1077,25 @@ class Adjointer(object):
 
     return output.value
 
+  def evaluate_functional_derivative(self, functional, var):
+    '''evaluate_functional_derivative(self, functional, var)
+
+    Evaluate the functional derivative.'''
+
+    self.__register_functional__(functional)
+    for timestep in range(self.timestep_count):
+      self.set_functional_dependencies(functional, timestep)
+
+    has_output = clib.c_int()
+    output = clib.adj_vector()
+
+    clib.adj_evaluate_functional_derivative(self.adjointer, var.c_object, functional.__str__(), output, has_output)
+
+    if has_output.value:
+      return python_utils.c_deref(output.ptr)
+    else:
+      return None
+
   def to_html(self, filename, viztype):
     try:
       typecode = {"forward": 1, "adjoint": 2, "tlm": 3}[viztype]
