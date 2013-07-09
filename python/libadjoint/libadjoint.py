@@ -907,6 +907,9 @@ class Adjointer(object):
     ''' Resets all time information and forgets the annotation. '''
     if self.adjointer_created:
       clib.adj_destroy_adjointer(self.adjointer)
+      if len(references_taken) != 0:
+        print "References outstanding: ", references_taken
+
       assert len(references_taken) == 0
 
     self.functions_registered = []
@@ -1092,7 +1095,9 @@ class Adjointer(object):
     clib.adj_evaluate_functional_derivative(self.adjointer, var.c_object, functional.__str__(), output, has_output)
 
     if has_output.value:
-      return python_utils.c_deref(output.ptr)
+      dJdu_py = python_utils.c_deref(output.ptr)
+      references_taken.remove(dJdu_py)
+      return dJdu_py
     else:
       return None
 
