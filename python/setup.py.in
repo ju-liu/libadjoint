@@ -1,0 +1,15 @@
+from distutils.core import setup, Extension
+
+python_utils=Extension("libadjoint.python_utils",
+                       sources=["${CMAKE_CURRENT_SOURCE_DIR}/libadjoint/adj_python_utils.c"]
+                       )
+
+setup (name = 'libadjoint',
+       version = '${libadjoint_VERSION}',
+       description = 'libadjoint python bindings',
+       author = 'The libadjoint team',
+       author_email = 'patrick.farrell06@imperial.ac.uk',
+       packages = ['libadjoint'],
+       package_dir={ '': '${CMAKE_CURRENT_SOURCE_DIR}' },
+       #package_dir = {'libadjoint': 'libadjoint'},
+       ext_modules = [python_utils])
