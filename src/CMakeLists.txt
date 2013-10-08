@@ -1,5 +1,10 @@
 include_directories(${libadjoint_SOURCE_DIR}/include)
 
+# Here comes a hack: The C headers are adapted for inclusion in Fortran files.
+# TODO remove this hack
+execute_process(COMMAND sh -c "sed -e 's@/\\*@!@' -e 's@\\*/@@' -e 's@ADJ_CONSTANTS_H@ADJ_CONSTANTS_F_H@' -e '/adj_scalar /d' ${libadjoint_SOURCE_DIR}/include/libadjoint/adj_constants.h > ${libadjoint_SOURCE_DIR}/include/libadjoint/adj_constants_f.h")
+execute_process(COMMAND sh -c "grep '^#' ${libadjoint_SOURCE_DIR}/include/libadjoint/adj_error_handling.h | grep -v '^#include' | grep -v 'CHKMALLOC' > ${libadjoint_SOURCE_DIR}/include/libadjoint/adj_error_handling_f.h")
+
 file(GLOB libadjoint_SRCS
      "${CMAKE_CURRENT_SOURCE_DIR}/*.c"
      "${CMAKE_CURRENT_SOURCE_DIR}/*.cpp"
