@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 
 f = open('include/libadjoint/adj_constants.h', 'r')
 constants = {}

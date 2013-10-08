@@ -20,7 +20,8 @@ add_library(adjoint ${libadjoint_SRCS})
 set_target_properties(adjoint PROPERTIES
   PUBLIC_HEADER "${libadjoint_HEADERS}"
   VERSION ${libadjoint_VERSION}
-  SOVERSION ${libadjoint_MAJOR_VERSION})
+  SOVERSION ${libadjoint_MAJOR_VERSION}
+  )
 
 # Installation of the program
 install(TARGETS adjoint
