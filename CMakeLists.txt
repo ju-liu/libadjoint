@@ -9,6 +9,9 @@ set(libadjoint_PATCH_VERSION 2)
 set(libadjoint_VERSION
     ${libadjoint_MAJOR_VERSION}.${libadjoint_MINOR_VERSION}.${libadjoint_PATCH_VERSION})
 
+# Build shared library.
+SET(BUILD_SHARED_LIBS ON)
+
 # Offer the user the choice of overriding the installation directories
 set(INSTALL_LIB_DIR "lib" CACHE PATH
     "Installation directory for libraries")
