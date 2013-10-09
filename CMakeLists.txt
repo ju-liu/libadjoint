@@ -47,5 +47,6 @@ execute_process(COMMAND ${PYTHON_EXECUTABLE} ${libadjoint_SOURCE_DIR}/tools/crea
 
 # 3.) Make sure that the installed clibadjoint.py has the location of the
 #     shared library hardcoded in it.
-execute_process(COMMAND sh -c "find ${CMAKE_INSTALL_PREFIX}/${INSTALL_LIB_DIR} -name clibadjoint.py | xargs sed -i -e \"s@CDLL('${libadjoint_SOURCE_DIR}/lib/libadjoint.so')@CDLL('${CMAKE_INSTALL_PREFIX}/${INSTALL_LIB_DIR}/libadjoint.so')@\" -e \"s@CDLL('${LIB_REALPATH}')@CDLL('${CMAKE_INSTALL_PREFIX}/${INSTALL_LIB_DIR}/libadjoint.so')@\"")
+# TODO make sure this is executed *after* installation
+INSTALL(CODE "execute_process(COMMAND sh -c \"find ${CMAKE_INSTALL_PREFIX}/${INSTALL_LIB_DIR} -name clibadjoint.py | xargs sed -i -e \\\"s@CDLL('${libadjoint_SOURCE_DIR}/lib/libadjoint.so')@CDLL('${CMAKE_INSTALL_PREFIX}/${INSTALL_LIB_DIR}/libadjoint.so')@\\\" -e \\\"s@CDLL('${LIB_REALPATH}')@CDLL('${CMAKE_INSTALL_PREFIX}/${INSTALL_LIB_DIR}/libadjoint.so')@\\\"\")")
 # -----------------------------------------------------------------------------
