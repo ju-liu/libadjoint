@@ -27,7 +27,7 @@ add_subdirectory(python)
 # Now some hardcore hacks for the Python bindings.
 find_package(PythonInterp REQUIRED)
 # 1.) Generate pylibadjoint.h and mess around with it.
-execute_process(COMMAND sh -c "${CMAKE_CXX_COMPILER} -E -U__BLOCKS__ -DPYTHON_BINDINGS ${libadjoint_SOURCE_DIR}/include/libadjoint/libadjoint.h > ${libadjoint_SOURCE_DIR}/include/libadjoint/pylibadjoint.h")
+execute_process(COMMAND sh -c "${CMAKE_C_COMPILER} -E -U__BLOCKS__ -DPYTHON_BINDINGS ${libadjoint_SOURCE_DIR}/include/libadjoint/libadjoint.h > ${libadjoint_SOURCE_DIR}/include/libadjoint/pylibadjoint.h")
 execute_process(COMMAND sh -c "sed -i s/__builtin___stpncpy_chk/__builtin___strncpy_chk/ ${libadjoint_SOURCE_DIR}/include/libadjoint/pylibadjoint.h")
 execute_process(COMMAND sh -c "${libadjoint_SOURCE_DIR}/python/ctypeslib/scripts/h2xml.py -q -I. ${libadjoint_SOURCE_DIR}/include/libadjoint/pylibadjoint.h -o ${libadjoint_SOURCE_DIR}/python/libadjoint/libadjoint.xml")
 execute_process(COMMAND sh -c "rm -f ${libadjoint_SOURCE_DIR}/include/libadjoint/pylibadjoint.h")
@@ -37,15 +37,15 @@ get_filename_component(LIB_REALPATH ${libadjoint_SOURCE_DIR}/lib/libadjoint.so
 execute_process(COMMAND sh -c "${libadjoint_SOURCE_DIR}/python/ctypeslib/scripts/xml2py.py -r '^adj.*' -l ${LIB_REALPATH} ${libadjoint_SOURCE_DIR}/python/libadjoint/libadjoint.xml -o ${libadjoint_SOURCE_DIR}/python/libadjoint/clibadjoint.py")
 # Some extra adaptations for OS X.
 IF(APPLE)
-  execute_process(COMMAND sh -c "sed -i $(SEDFLG) \"s/._pack_ = 4/._pack_ = 8/\" python/libadjoint/clibadjoint.py) || true")
+  execute_process(COMMAND sh -c "sed -i $(SEDFLG) \"s/._pack_ = 4/._pack_ = 8/\" ${libadjoint_SOURCE_DIR}/python/libadjoint/clibadjoint.py) || true")
 ENDIF()
-execute_process(COMMAND sh -c "rm -f python/libadjoint/libadjoint.xml")
-execute_process(COMMAND sh -c "chmod a-x python/libadjoint/clibadjoint.py")
+execute_process(COMMAND sh -c "rm -f ${libadjoint_SOURCE_DIR}/python/libadjoint/libadjoint.xml")
+execute_process(COMMAND sh -c "chmod a-x ${libadjoint_SOURCE_DIR}/python/libadjoint/clibadjoint.py")
 
 # 2.) Generate python/libadjoint/clibadjoint_constants.py via a Python script.
-execute_process(COMMAND ${PYTHON_EXECUTABLE} ${libadjoint_SOURCE_DIR}/tools/create_python_constants.py)
+execute_process(COMMAND ${PYTHON_EXECUTABLE} ${libadjoint_SOURCE_DIR}/tools/create_python_constants.py ${libadjoint_SOURCE_DIR})
 
-# 3.) Make sure that clibadjoint.py has the location of the shared library
-#     hardcoded in it.
-execute_process(COMMAND sh -c "find $(ABSDESTDIR)/$(prefix) -name clibadjoint.py | xargs sed -i -e \"s@CDLL('lib/$(SLIB)')@CDLL('/$(prefix)/lib/$(SLIB)')@\" -e \"s@CDLL('${LIB_REALPATH}')@CDLL('/$(prefix)/lib/$(SLIB)')@\"")
+# 3.) Make sure that the installed clibadjoint.py has the location of the
+#     shared library hardcoded in it.
+execute_process(COMMAND sh -c "find ${CMAKE_INSTALL_PREFIX}/${INSTALL_LIB_DIR} -name clibadjoint.py | xargs sed -i -e \"s@CDLL('${libadjoint_SOURCE_DIR}/lib/libadjoint.so')@CDLL('${CMAKE_INSTALL_PREFIX}/${INSTALL_LIB_DIR}/libadjoint.so')@\" -e \"s@CDLL('${LIB_REALPATH}')@CDLL('${CMAKE_INSTALL_PREFIX}/${INSTALL_LIB_DIR}/libadjoint.so')@\"")
 # -----------------------------------------------------------------------------

@@ -1,6 +1,13 @@
 #!/usr/bin/env python
 
-f = open('include/libadjoint/adj_constants.h', 'r')
+import sys
+if len(sys.argv) > 1:
+    path = sys.argv[1] + '/'
+else:
+    path = ''
+print path
+
+f = open(path + 'include/libadjoint/adj_constants.h', 'r')
 constants = {}
 
 for line in f:
@@ -14,6 +21,6 @@ f.close()
 
 code = 'adj_constants = %s' % repr(constants)
 
-fc = open('python/libadjoint/clibadjoint_constants.py', 'w')
+fc = open(path + 'python/libadjoint/clibadjoint_constants.py', 'w')
 fc.write(code)
 fc.close()
