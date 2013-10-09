@@ -44,10 +44,8 @@ execute_process(COMMAND sh -c "chmod a-x ${libadjoint_SOURCE_DIR}/python/libadjo
 
 # 2.) Make sure that the installed clibadjoint.py has the location of the
 #     shared library hardcoded in it.
-# TODO make sure this is executed *after* installation
 execute_process(COMMAND sh -c "sed -i -e \"s@CDLL('${libadjoint_SOURCE_DIR}/lib/libadjoint.so')@CDLL('${CMAKE_INSTALL_PREFIX}/${INSTALL_LIB_DIR}/libadjoint.so')@\" -e \"s@CDLL('${LIB_REALPATH}')@CDLL('${CMAKE_INSTALL_PREFIX}/${INSTALL_LIB_DIR}/libadjoint.so')@\" ${libadjoint_SOURCE_DIR}/python/libadjoint/clibadjoint.py")
 
 # 3.) Generate python/libadjoint/clibadjoint_constants.py via a Python script.
 execute_process(COMMAND ${PYTHON_EXECUTABLE} ${libadjoint_SOURCE_DIR}/tools/create_python_constants.py ${libadjoint_SOURCE_DIR})
-
 # -----------------------------------------------------------------------------
