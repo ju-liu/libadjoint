@@ -37,16 +37,17 @@ get_filename_component(LIB_REALPATH ${libadjoint_SOURCE_DIR}/lib/libadjoint.so
 execute_process(COMMAND sh -c "${libadjoint_SOURCE_DIR}/python/ctypeslib/scripts/xml2py.py -r '^adj.*' -l ${LIB_REALPATH} ${libadjoint_SOURCE_DIR}/python/libadjoint/libadjoint.xml -o ${libadjoint_SOURCE_DIR}/python/libadjoint/clibadjoint.py")
 # Some extra adaptations for OS X.
 IF(APPLE)
-  execute_process(COMMAND sh -c "sed -i $(SEDFLG) \"s/._pack_ = 4/._pack_ = 8/\" ${libadjoint_SOURCE_DIR}/python/libadjoint/clibadjoint.py) || true")
+  execute_process(COMMAND sh -c "sed -i \"s/._pack_ = 4/._pack_ = 8/\" ${libadjoint_SOURCE_DIR}/python/libadjoint/clibadjoint.py")
 ENDIF()
 execute_process(COMMAND sh -c "rm -f ${libadjoint_SOURCE_DIR}/python/libadjoint/libadjoint.xml")
 execute_process(COMMAND sh -c "chmod a-x ${libadjoint_SOURCE_DIR}/python/libadjoint/clibadjoint.py")
 
-# 2.) Generate python/libadjoint/clibadjoint_constants.py via a Python script.
-execute_process(COMMAND ${PYTHON_EXECUTABLE} ${libadjoint_SOURCE_DIR}/tools/create_python_constants.py ${libadjoint_SOURCE_DIR})
-
-# 3.) Make sure that the installed clibadjoint.py has the location of the
+# 2.) Make sure that the installed clibadjoint.py has the location of the
 #     shared library hardcoded in it.
 # TODO make sure this is executed *after* installation
-INSTALL(CODE "execute_process(COMMAND sh -c \"find ${CMAKE_INSTALL_PREFIX}/${INSTALL_LIB_DIR} -name clibadjoint.py | xargs sed -i -e \\\"s@CDLL('${libadjoint_SOURCE_DIR}/lib/libadjoint.so')@CDLL('${CMAKE_INSTALL_PREFIX}/${INSTALL_LIB_DIR}/libadjoint.so')@\\\" -e \\\"s@CDLL('${LIB_REALPATH}')@CDLL('${CMAKE_INSTALL_PREFIX}/${INSTALL_LIB_DIR}/libadjoint.so')@\\\"\")")
+execute_process(COMMAND sh -c "sed -i -e \"s@CDLL('${libadjoint_SOURCE_DIR}/lib/libadjoint.so')@CDLL('${CMAKE_INSTALL_PREFIX}/${INSTALL_LIB_DIR}/libadjoint.so')@\" -e \"s@CDLL('${LIB_REALPATH}')@CDLL('${CMAKE_INSTALL_PREFIX}/${INSTALL_LIB_DIR}/libadjoint.so')@\" ${libadjoint_SOURCE_DIR}/python/libadjoint/clibadjoint.py")
+
+# 3.) Generate python/libadjoint/clibadjoint_constants.py via a Python script.
+execute_process(COMMAND ${PYTHON_EXECUTABLE} ${libadjoint_SOURCE_DIR}/tools/create_python_constants.py ${libadjoint_SOURCE_DIR})
+
 # -----------------------------------------------------------------------------
