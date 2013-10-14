@@ -326,7 +326,7 @@ python/libadjoint/clibadjoint.py: lib/$(SLIB) pybuild
 	@chmod a-x python/libadjoint/clibadjoint.py
 python/libadjoint/clibadjoint_constants.py:
 	@echo "  PYTHON tools/create_python_constants.py"
-	@python ./tools/create_python_constants.py $(PWD) $(ABSDESTDIR)
+	@python ./tools/create_python_constants.py $(PWD) python/libadjoint/
 endif
 
 install: lib/libadjoint.a lib/$(SLIB)
