@@ -101,4 +101,10 @@ add_custom_command(TARGET adjoint
                                     COMMAND ${PYTHON_EXECUTABLE} ${libadjoint_SOURCE_DIR}/tools/create_python_constants.py ${libadjoint_SOURCE_DIR} ${CMAKE_BINARY_DIR}
                                     COMMENT "Generating clibadjoint_constants.py..."
                                     )
+
+# Make sure to install the generated files
+install(FILES ${CMAKE_BINARY_DIR}/clibadjoint.py
+              ${CMAKE_BINARY_DIR}/clibadjoint_constants.py
+              DESTINATION lib/python${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}/site-packages/libadjoint/
+        )
 # -----------------------------------------------------------------------------
