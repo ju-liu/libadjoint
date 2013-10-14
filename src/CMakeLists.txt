@@ -90,7 +90,7 @@ add_custom_command(TARGET adjoint
                  #     location of the shared library hardcoded in it.
                  add_custom_command(TARGET adjoint
                                     POST_BUILD
-                                    COMMAND sed -i -e "s@CDLL('${libadjoint_SOURCE_DIR}/lib/libadjoint.so')@CDLL('${CMAKE_INSTALL_PREFIX}/${INSTALL_LIB_DIR}/libadjoint.so')@" -e "s@CDLL('${LIB_REALPATH}')@CDLL('${CMAKE_INSTALL_PREFIX}/${INSTALL_LIB_DIR}/libadjoint.so')@" ${CMAKE_BINARY_DIR}/clibadjoint.py
+                                    COMMAND sed -i -e "s@CDLL\\('${libadjoint_SOURCE_DIR}/lib/libadjoint.so'\\)@CDLL\\('${CMAKE_INSTALL_PREFIX}/${INSTALL_LIB_DIR}/libadjoint.so'\\)@" -e "s@CDLL\\('${LIB_REALPATH}'\\)@CDLL\\('${CMAKE_INSTALL_PREFIX}/${INSTALL_LIB_DIR}/libadjoint.so'\\)@" ${CMAKE_BINARY_DIR}/clibadjoint.py
                                     COMMENT "Adaptations for clibadjoint.py..."
                                     )
 
@@ -98,7 +98,7 @@ add_custom_command(TARGET adjoint
                  #     a Python script.
                  add_custom_command(TARGET adjoint
                                     POST_BUILD
-                                    COMMAND ${PYTHON_EXECUTABLE} ${libadjoint_SOURCE_DIR}/tools/create_python_constants.py ${libadjoint_SOURCE_DIR}
+                                    COMMAND ${PYTHON_EXECUTABLE} ${libadjoint_SOURCE_DIR}/tools/create_python_constants.py ${libadjoint_SOURCE_DIR} ${CMAKE_BINARY_DIR}
                                     COMMENT "Generating clibadjoint_constants.py..."
                                     )
 # -----------------------------------------------------------------------------
