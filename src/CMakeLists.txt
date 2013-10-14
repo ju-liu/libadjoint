@@ -15,12 +15,20 @@ file(GLOB libadjoint_HEADERS
      "${libadjoint_SOURCE_DIR}/include/libadjoint/*.mod"
      )
 
-add_library(adjoint ${libadjoint_SRCS})
+# Build both shared and static libraries here. Do not share the object files
+# (which would be possible using CMake's OBJECT keyword) since objects intended
+# for linking into a shared library need to be compiled with -fPIC.
+add_library(adjoint SHARED ${libadjoint_SRCS})
 
 set_target_properties(adjoint PROPERTIES
   PUBLIC_HEADER "${libadjoint_HEADERS}"
   VERSION ${libadjoint_VERSION}
   SOVERSION ${libadjoint_MAJOR_VERSION}
+  )
+
+add_library(adjoint-static STATIC ${libadjoint_SRCS})
+set_target_properties(adjoint-static PROPERTIES
+  OUTPUT_NAME adjoint
   )
 
 # Installation of the program
