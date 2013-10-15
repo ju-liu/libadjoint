@@ -4,6 +4,44 @@ sudo apt-add-repository ppa:libadjoint/ppa
 sudo apt-get update
 sudo apt-get install libadjoint libadjoint-dev python-libadjoint
 
+Compiling libadjoint
+====================
+
+If you would like to configure and compile libadjoint yourself, you have two
+possibilities. Using CMake is recommended.
+
+Using CMake
+-----------
+
+Create a separate build directory next to the libadjoint source and run CMake
+in it:
+
+$ ls
+libadjoint-0.9.3
+$ mkdir build
+$ cd build
+$ cmake ../libadjoint-0.9.3
+
+All typical CMake commands are available. For example to set the compiler,
+specify the installation directory, and build a shared library, you would
+execute
+
+$ CC=mpicc CXX=mpicxx FC=mpif90 cmake \
+    -DCMAKE_INSTALL_PREFIX:PATH=/custom/install/path \
+    -DBUILD_SHARED_LIBS:BOOL=TRUE \
+    ../source
+
+After the CMake configuration, type
+
+$ make
+$ make install
+
+in the build directory to build and install libadjoint.
+
+
+Using Makefile
+------------
+
 The minimum requirements for compiling libadjoint are a C compiler 
 (environment variable CC) and a C++ compiler (environment variable
 CXX). If these are not specified, the defaults are 'mpicc' and 'mpicxx'.
