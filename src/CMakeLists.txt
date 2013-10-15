@@ -106,7 +106,7 @@ add_custom_command(TARGET adjoint
                  #     a Python script.
                  add_custom_command(TARGET adjoint
                                     POST_BUILD
-                                    COMMAND ${PYTHON_EXECUTABLE} ${libadjoint_SOURCE_DIR}/tools/create_python_constants.py ${libadjoint_SOURCE_DIR} ${CMAKE_BINARY_DIR}
+                                    COMMAND ${PYTHON_EXECUTABLE} ${libadjoint_SOURCE_DIR}/tools/create_python_constants.py ${CMAKE_BINARY_DIR}
                                     COMMENT "Generating clibadjoint_constants.py..."
                                     )
 
