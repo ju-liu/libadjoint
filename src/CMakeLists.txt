@@ -32,7 +32,7 @@ set_target_properties(adjoint-static PROPERTIES
   )
 
 # Installation of the program
-install(TARGETS adjoint
+install(TARGETS adjoint adjoint-static
   # We don't actually need the RUNTIME DESTINATION here since we're only
   # installing a library.
   RUNTIME DESTINATION "${INSTALL_BIN_DIR}" COMPONENT bin
