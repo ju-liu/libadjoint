@@ -5,7 +5,7 @@ project(libadjoint C CXX Fortran)
 # Set the version. (Used for so-naming of the library.)
 set(libadjoint_MAJOR_VERSION 0)
 set(libadjoint_MINOR_VERSION 9)
-set(libadjoint_PATCH_VERSION 2)
+set(libadjoint_PATCH_VERSION 3)
 set(libadjoint_VERSION
     ${libadjoint_MAJOR_VERSION}.${libadjoint_MINOR_VERSION}.${libadjoint_PATCH_VERSION})
 
