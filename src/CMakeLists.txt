@@ -52,63 +52,68 @@ add_custom_command(TARGET adjoint
                    COMMAND ${CMAKE_C_COMPILER} -E -U__BLOCKS__ -DPYTHON_BINDINGS ${libadjoint_SOURCE_DIR}/include/libadjoint/libadjoint.h > ${CMAKE_BINARY_DIR}/pylibadjoint.h
                    COMMENT "Generating pylibadjoint.h..."
                    )
-                 add_custom_command(TARGET adjoint
-                                    POST_BUILD
-                                    COMMAND sed -i s/__builtin___stpncpy_chk/__builtin___strncpy_chk/ ${CMAKE_BINARY_DIR}/pylibadjoint.h
-                                    COMMENT "Adapting pylibadjoint.h..."
-                                    )
-                 add_custom_command(TARGET adjoint
-                                    POST_BUILD
-                                    COMMAND ${libadjoint_SOURCE_DIR}/python/ctypeslib/scripts/h2xml.py -q -I. ${CMAKE_BINARY_DIR}/pylibadjoint.h -o ${CMAKE_BINARY_DIR}/libadjoint.xml
-                                    COMMENT "Generating libadjoint.xml..."
-                                    )
-                 add_custom_command(TARGET adjoint
-                                    POST_BUILD
-                                    COMMAND rm -f ${CMAKE_BINARY_DIR}/include/libadjoint/pylibadjoint.h
-                                    COMMENT "Removing pylibadjoint.h..."
-                                    )
-                 get_filename_component(LIB_REALPATH ${CMAKE_BINARY_DIR}/src/libadjoint.so
-                                        REALPATH
-                                        )
-                 add_custom_command(TARGET adjoint
-                                    POST_BUILD
-                                    COMMAND ${libadjoint_SOURCE_DIR}/python/ctypeslib/scripts/xml2py.py -r '^adj.*' -l ${LIB_REALPATH} ${CMAKE_BINARY_DIR}/libadjoint.xml -o ${CMAKE_BINARY_DIR}/clibadjoint.py
-                                    COMMENT "Generating clibadjoint.py..."
-                                    )
-                 # Some extra adaptations for OS X.
-                 IF(APPLE)
-                     add_custom_command(TARGET adjoint
-                                        POST_BUILD
-                                        COMMAND sed -i \"s/._pack_ = 4/._pack_ = 8/\" ${CMAKE_BINARY_DIR}/clibadjoint.py
-                                        COMMENT "Adaptations for OS X..."
-                                        )
-                 ENDIF()
-                 add_custom_command(TARGET adjoint
-                                    POST_BUILD
-                                    COMMAND rm -f ${CMAKE_BINDARY_DIR}/libadjoint.xml
-                                    COMMENT "Removing libadjoint.xml..."
-                                    )
-                 add_custom_command(TARGET adjoint
-                                    POST_BUILD
-                                    COMMAND chmod a-x ${CMAKE_BINARY_DIR}/clibadjoint.py
-                                    COMMENT "Changing permissions on clibadjoint.py..."
-                                    )
+add_custom_command(TARGET adjoint
+                  POST_BUILD
+                  COMMAND sed -i s/__builtin___stpncpy_chk/__builtin___strncpy_chk/ ${CMAKE_BINARY_DIR}/pylibadjoint.h
+                  COMMENT "Adapting pylibadjoint.h..."
+                  )
+# Make sure that gccxml is present.
+find_program(GCCXML_EXECUTABLE gccxml)
+if(NOT GCCXML_EXECUTABLE)
+    message(FATAL_ERROR "Required command gccxml not found. Abort.")
+endif()
+add_custom_command(TARGET adjoint
+                  POST_BUILD
+                  COMMAND ${libadjoint_SOURCE_DIR}/python/ctypeslib/scripts/h2xml.py -q -I. ${CMAKE_BINARY_DIR}/pylibadjoint.h -o ${CMAKE_BINARY_DIR}/libadjoint.xml
+                  COMMENT "Generating libadjoint.xml..."
+                  )
+add_custom_command(TARGET adjoint
+                  POST_BUILD
+                  COMMAND rm -f ${CMAKE_BINARY_DIR}/include/libadjoint/pylibadjoint.h
+                  COMMENT "Removing pylibadjoint.h..."
+                  )
+get_filename_component(LIB_REALPATH ${CMAKE_BINARY_DIR}/src/libadjoint.so
+                      REALPATH
+                      )
+add_custom_command(TARGET adjoint
+                  POST_BUILD
+                  COMMAND ${libadjoint_SOURCE_DIR}/python/ctypeslib/scripts/xml2py.py -r '^adj.*' -l ${LIB_REALPATH} ${CMAKE_BINARY_DIR}/libadjoint.xml -o ${CMAKE_BINARY_DIR}/clibadjoint.py
+                  COMMENT "Generating clibadjoint.py..."
+                  )
+# Some extra adaptations for OS X.
+IF(APPLE)
+   add_custom_command(TARGET adjoint
+                      POST_BUILD
+                      COMMAND sed -i \"s/._pack_ = 4/._pack_ = 8/\" ${CMAKE_BINARY_DIR}/clibadjoint.py
+                      COMMENT "Adaptations for OS X..."
+                      )
+ENDIF()
+add_custom_command(TARGET adjoint
+                  POST_BUILD
+                  COMMAND rm -f ${CMAKE_BINDARY_DIR}/libadjoint.xml
+                  COMMENT "Removing libadjoint.xml..."
+                  )
+add_custom_command(TARGET adjoint
+                  POST_BUILD
+                  COMMAND chmod a-x ${CMAKE_BINARY_DIR}/clibadjoint.py
+                  COMMENT "Changing permissions on clibadjoint.py..."
+                  )
 
-                 # 2.) Make sure that the installed clibadjoint.py has the
-                 #     location of the shared library hardcoded in it.
-                 add_custom_command(TARGET adjoint
-                                    POST_BUILD
-                                    COMMAND sed -i -e "s@CDLL\\('${libadjoint_SOURCE_DIR}/lib/libadjoint.so'\\)@CDLL\\('${CMAKE_INSTALL_PREFIX}/${INSTALL_LIB_DIR}/libadjoint.so'\\)@" -e "s@CDLL\\('${LIB_REALPATH}'\\)@CDLL\\('${CMAKE_INSTALL_PREFIX}/${INSTALL_LIB_DIR}/libadjoint.so'\\)@" ${CMAKE_BINARY_DIR}/clibadjoint.py
-                                    COMMENT "Adaptations for clibadjoint.py..."
-                                    )
+# 2.) Make sure that the installed clibadjoint.py has the
+#     location of the shared library hardcoded in it.
+add_custom_command(TARGET adjoint
+                  POST_BUILD
+                  COMMAND sed -i -e "s@CDLL\\('${libadjoint_SOURCE_DIR}/lib/libadjoint.so'\\)@CDLL\\('${CMAKE_INSTALL_PREFIX}/${INSTALL_LIB_DIR}/libadjoint.so'\\)@" -e "s@CDLL\\('${LIB_REALPATH}'\\)@CDLL\\('${CMAKE_INSTALL_PREFIX}/${INSTALL_LIB_DIR}/libadjoint.so'\\)@" ${CMAKE_BINARY_DIR}/clibadjoint.py
+                  COMMENT "Adaptations for clibadjoint.py..."
+                  )
 
-                 # 3.) Generate python/libadjoint/clibadjoint_constants.py via
-                 #     a Python script.
-                 add_custom_command(TARGET adjoint
-                                    POST_BUILD
-                                    COMMAND ${PYTHON_EXECUTABLE} ${libadjoint_SOURCE_DIR}/tools/create_python_constants.py ${CMAKE_BINARY_DIR}
-                                    COMMENT "Generating clibadjoint_constants.py..."
-                                    )
+# 3.) Generate python/libadjoint/clibadjoint_constants.py via
+#     a Python script.
+add_custom_command(TARGET adjoint
+                  POST_BUILD
+                  COMMAND ${PYTHON_EXECUTABLE} ${libadjoint_SOURCE_DIR}/tools/create_python_constants.py ${CMAKE_BINARY_DIR}
+                  COMMENT "Generating clibadjoint_constants.py..."
+                  )
 
 # Make sure to install the generated files
 install(FILES ${CMAKE_BINARY_DIR}/clibadjoint.py
