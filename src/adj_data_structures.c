@@ -28,6 +28,7 @@ int adj_create_variable(char* name, int timestep, int iteration, int auxiliary, 
   }
 
   strncpy(var->name, name, ADJ_NAME_LEN);
+  var->name[ADJ_NAME_LEN-1] = '\0';
   var->timestep = timestep;
   var->iteration = iteration;
   var->auxiliary = auxiliary;
@@ -122,6 +123,7 @@ int adj_create_block(char* name, adj_nonlinear_block* nblock, void* context, adj
   }
 
   strncpy(block->name, name, ADJ_NAME_LEN);
+  block->name[ADJ_NAME_LEN-1] = '\0';
 
   if (nblock == NULL)
   {
