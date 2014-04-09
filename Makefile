@@ -6,6 +6,7 @@ DEPENDENCIES = $(shell bin/checkdeps)
 ###############################################################################
 # Find all the relevant objects                                               #
 ###############################################################################
+DUMMY := $(shell mkdir -p obj lib)
 FSRC = $(wildcard src/*.F90)
 FOBJ = $(patsubst src/%.F90,obj/%.o,$(FSRC))
 
