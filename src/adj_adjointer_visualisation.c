@@ -447,6 +447,7 @@ void adj_html_vars(FILE* fp, adj_adjointer* adjointer, int type)
         adj_var = adjointer->equations[i].variable;
         adj_var.type = type;
         strncpy(adj_var.functional, func_deriv_cb->name, ADJ_NAME_LEN);
+        adj_var.functional[ADJ_NAME_LEN-1] = '\0';
         adj_variable_str(adj_var, adj_name, ADJ_NAME_LEN);
         ierr = adj_has_variable_value(adjointer, adj_var);
         if (ierr != ADJ_OK)

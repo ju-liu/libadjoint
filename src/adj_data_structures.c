@@ -82,6 +82,7 @@ int adj_create_nonlinear_block(char* name, int ndepends, adj_variable* depends, 
   }
 
   strncpy(nblock->name, name, ADJ_NAME_LEN);
+  nblock->name[ADJ_NAME_LEN-1] = '\0';
   nblock->coefficient = coefficient;
   nblock->context = context;
   nblock->ndepends = ndepends;

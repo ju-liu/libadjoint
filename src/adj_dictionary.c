@@ -22,7 +22,9 @@ int adj_dict_set(adj_dictionary* dict, char* key, char* value)
   entry = (adj_dictionary_entry*) malloc(sizeof(adj_dictionary_entry));
   memset(entry, 0, sizeof(adj_dictionary_entry));
   strncpy(entry->key, key, ADJ_DICT_LEN * sizeof(char));
+  entry->key[ADJ_DICT_LEN-1] = '\0';
   strncpy(entry->value, value, ADJ_DICT_LEN * sizeof(char));
+  entry->value[ADJ_DICT_LEN-1] = '\0';
 
   HASH_ADD(hh, dict->dict, key, ADJ_DICT_LEN * sizeof(char), entry);
   return ADJ_OK;

@@ -1395,6 +1395,7 @@ int adj_register_functional_callback(adj_adjointer* adjointer, char* name, void 
   cb_ptr = (adj_func_callback*) malloc(sizeof(adj_func_callback));
   ADJ_CHKMALLOC(cb_ptr);
   strncpy(cb_ptr->name, name, ADJ_NAME_LEN);
+  cb_ptr->name[ADJ_NAME_LEN-1] = '\0';
   cb_ptr->callback = (void (*)(void* adjointer, int timestep, int ndepends, adj_variable* variables, adj_vector* dependencies, char* name, adj_scalar* output)) fn;
   cb_ptr->next = NULL;
 
@@ -2589,6 +2590,7 @@ int adj_timestep_set_functional_dependencies(adj_adjointer* adjointer, int times
 
   functional_data_ptr->next = NULL;
   strncpy(functional_data_ptr->name, functional, ADJ_NAME_LEN);
+  functional_data_ptr->name[ADJ_NAME_LEN-1] = '\0';
   functional_data_ptr->ndepends = ndepends;
   functional_data_ptr->dependencies = (adj_variable*) malloc(ndepends * sizeof(adj_variable));
   ADJ_CHKMALLOC(functional_data_ptr->dependencies);
