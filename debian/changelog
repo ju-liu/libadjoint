@@ -1,3 +1,9 @@
+libadjoint (0.9.4) trusty; urgency=medium
+
+  * Increase name length data types to fix issues with new DOLFIN versions
+
+ -- Simon Funke <simon@simula.no>  Wed, 14 May 2014 22:14:38 +0200
+
 libadjoint (0.9.3) unstable; urgency=low
 
   * Support for Mac OSX; bugfixes in checkpointing with optimisation
