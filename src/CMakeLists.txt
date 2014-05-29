@@ -72,7 +72,7 @@ add_custom_command(TARGET adjoint
                   COMMAND rm -f ${CMAKE_BINARY_DIR}/include/libadjoint/pylibadjoint.h
                   COMMENT "Removing pylibadjoint.h..."
                   )
-get_filename_component(LIB_REALPATH ${CMAKE_BINARY_DIR}/src/libadjoint.so
+get_filename_component(LIB_REALPATH ${CMAKE_BINARY_DIR}/src/libadjoint${CMAKE_SHARED_LIBRARY_SUFFIX}
                       REALPATH
                       )
 add_custom_command(TARGET adjoint
@@ -103,7 +103,7 @@ add_custom_command(TARGET adjoint
 #     location of the shared library hardcoded in it.
 add_custom_command(TARGET adjoint
                   POST_BUILD
-                  COMMAND sed -i -e "s@CDLL\\('${libadjoint_SOURCE_DIR}/lib/libadjoint.so'\\)@CDLL\\('${CMAKE_INSTALL_PREFIX}/${INSTALL_LIB_DIR}/libadjoint.so'\\)@" -e "s@CDLL\\('${LIB_REALPATH}'\\)@CDLL\\('${CMAKE_INSTALL_PREFIX}/${INSTALL_LIB_DIR}/libadjoint.so'\\)@" ${CMAKE_BINARY_DIR}/clibadjoint.py
+                  COMMAND sed -i -e "s@CDLL\\('${libadjoint_SOURCE_DIR}/lib/libadjoint${CMAKE_SHARED_LIBRARY_SUFFIX}'\\)@CDLL\\('${CMAKE_INSTALL_PREFIX}/${INSTALL_LIB_DIR}/libadjoint${CMAKE_SHARED_LIBRARY_SUFFIX}'\\)@" -e "s@CDLL\\('${LIB_REALPATH}'\\)@CDLL\\('${CMAKE_INSTALL_PREFIX}/${INSTALL_LIB_DIR}/libadjoint${CMAKE_SHARED_LIBRARY_SUFFIX}'\\)@" ${CMAKE_BINARY_DIR}/clibadjoint.py
                   COMMENT "Adaptations for clibadjoint.py..."
                   )
 
