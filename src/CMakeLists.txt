@@ -64,7 +64,7 @@ add_custom_command(TARGET adjoint
                    )
 add_custom_command(TARGET adjoint
                   POST_BUILD
-                  COMMAND sed -i s/__builtin___stpncpy_chk/__builtin___strncpy_chk/ ${CMAKE_BINARY_DIR}/pylibadjoint.h
+                  COMMAND sed -i.bak s/__builtin___stpncpy_chk/__builtin___strncpy_chk/ ${CMAKE_BINARY_DIR}/pylibadjoint.h
                   COMMENT "Adapting pylibadjoint.h..."
                   )
 # Make sure that gccxml is present.
@@ -94,7 +94,7 @@ add_custom_command(TARGET adjoint
 IF(APPLE)
    add_custom_command(TARGET adjoint
                       POST_BUILD
-                      COMMAND sed -i \"s/._pack_ = 4/._pack_ = 8/\" ${CMAKE_BINARY_DIR}/clibadjoint.py
+                      COMMAND sed -i.bak \"s/._pack_ = 4/._pack_ = 8/\" ${CMAKE_BINARY_DIR}/clibadjoint.py
                       COMMENT "Adaptations for OS X..."
                       )
 ENDIF()
@@ -113,7 +113,7 @@ add_custom_command(TARGET adjoint
 #     location of the shared library hardcoded in it.
 add_custom_command(TARGET adjoint
                   POST_BUILD
-                  COMMAND sed -i -e "s@CDLL\\('${libadjoint_SOURCE_DIR}/lib/libadjoint${CMAKE_SHARED_LIBRARY_SUFFIX}'\\)@CDLL\\('${CMAKE_INSTALL_PREFIX}/${INSTALL_LIB_DIR}/libadjoint${CMAKE_SHARED_LIBRARY_SUFFIX}'\\)@" -e "s@CDLL\\('${LIB_REALPATH}'\\)@CDLL\\('${CMAKE_INSTALL_PREFIX}/${INSTALL_LIB_DIR}/libadjoint${CMAKE_SHARED_LIBRARY_SUFFIX}'\\)@" ${CMAKE_BINARY_DIR}/clibadjoint.py
+                  COMMAND sed -i.bak -e "s@CDLL\\('${libadjoint_SOURCE_DIR}/lib/libadjoint${CMAKE_SHARED_LIBRARY_SUFFIX}'\\)@CDLL\\('${CMAKE_INSTALL_PREFIX}/${INSTALL_LIB_DIR}/libadjoint${CMAKE_SHARED_LIBRARY_SUFFIX}'\\)@" -e "s@CDLL\\('${LIB_REALPATH}'\\)@CDLL\\('${CMAKE_INSTALL_PREFIX}/${INSTALL_LIB_DIR}/libadjoint${CMAKE_SHARED_LIBRARY_SUFFIX}'\\)@" ${CMAKE_BINARY_DIR}/clibadjoint.py
                   COMMENT "Adaptations for clibadjoint.py..."
                   )
 
