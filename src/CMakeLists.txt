@@ -5,15 +5,25 @@ include_directories(${libadjoint_SOURCE_DIR}/include)
 execute_process(COMMAND sh -c "sed -e 's@/\\*@!@' -e 's@\\*/@@' -e 's@ADJ_CONSTANTS_H@ADJ_CONSTANTS_F_H@' -e '/adj_scalar /d' ${libadjoint_SOURCE_DIR}/include/libadjoint/adj_constants.h > ${libadjoint_SOURCE_DIR}/include/libadjoint/adj_constants_f.h")
 execute_process(COMMAND sh -c "grep '^#' ${libadjoint_SOURCE_DIR}/include/libadjoint/adj_error_handling.h | grep -v '^#include' | grep -v 'CHKMALLOC' > ${libadjoint_SOURCE_DIR}/include/libadjoint/adj_error_handling_f.h")
 
-file(GLOB libadjoint_SRCS
-     "${CMAKE_CURRENT_SOURCE_DIR}/*.c"
-     "${CMAKE_CURRENT_SOURCE_DIR}/*.cpp"
-     "${CMAKE_CURRENT_SOURCE_DIR}/*.F90"
-     )
-file(GLOB libadjoint_HEADERS
-     "${libadjoint_SOURCE_DIR}/include/libadjoint/*.h"
-     "${libadjoint_SOURCE_DIR}/include/libadjoint/*.mod"
-     )
+if (CMAKE_Fortran_COMPILER_WORKS)
+	file(GLOB libadjoint_SRCS
+	     "${CMAKE_CURRENT_SOURCE_DIR}/*.c"
+	     "${CMAKE_CURRENT_SOURCE_DIR}/*.cpp"
+	     "${CMAKE_CURRENT_SOURCE_DIR}/*.F90"
+	     )
+	file(GLOB libadjoint_HEADERS
+	     "${libadjoint_SOURCE_DIR}/include/libadjoint/*.h"
+	     "${libadjoint_SOURCE_DIR}/include/libadjoint/*.mod"
+	     )
+else()
+	file(GLOB libadjoint_SRCS
+	     "${CMAKE_CURRENT_SOURCE_DIR}/*.c"
+	     "${CMAKE_CURRENT_SOURCE_DIR}/*.cpp"
+	     )
+	file(GLOB libadjoint_HEADERS
+	     "${libadjoint_SOURCE_DIR}/include/libadjoint/*.h"
+	     )
+endif()
 
 # Build both shared and static libraries here. Do not share the object files
 # (which would be possible using CMake's OBJECT keyword) since objects intended
