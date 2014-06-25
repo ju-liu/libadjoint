@@ -49,47 +49,8 @@ install(TARGETS adjoint adjoint-static
   LIBRARY DESTINATION "${INSTALL_LIB_DIR}" COMPONENT shlib # .so
   ARCHIVE DESTINATION "${INSTALL_LIB_DIR}" COMPONENT shlib # .a
   PUBLIC_HEADER DESTINATION "${INSTALL_INCLUDE_DIR}" COMPONENT dev
-  #PUBLIC_HEADER DESTINATION "${INSTALL_INCLUDE_DIR}/libadjoint" COMPONENT dev
   )
 
 # -----------------------------------------------------------------------------
-# Now some hardcore hacks for the Python bindings.
 find_package(PythonInterp REQUIRED)
-
-get_filename_component(LIB_REALPATH ${CMAKE_BINARY_DIR}/src/libadjoint${CMAKE_SHARED_LIBRARY_SUFFIX}
-                      REALPATH
-                      )
-add_custom_command(TARGET adjoint
-                  POST_BUILD
-                  COMMAND cp ${libadjoint_SOURCE_DIR}/python/libadjoint/clibadjoint.py ${CMAKE_BINARY_DIR}/clibadjoint.py
-                  COMMAND cp ${libadjoint_SOURCE_DIR}/python/libadjoint/clibadjoint_constants.py ${CMAKE_BINARY_DIR}/clibadjoint_constants.py
-                  COMMENT "Generating clibadjoint.py..."
-                  )
-# Some extra adaptations for OS X.
-IF(APPLE)
-   add_custom_command(TARGET adjoint
-                      POST_BUILD
-                      COMMAND sed -i.bak \"s/._pack_ = 4/._pack_ = 8/\" ${CMAKE_BINARY_DIR}/clibadjoint.py
-                      COMMENT "Adaptations for OS X..."
-                      )
-ENDIF()
-add_custom_command(TARGET adjoint
-                  POST_BUILD
-                  COMMAND chmod a-x ${CMAKE_BINARY_DIR}/clibadjoint.py
-                  COMMENT "Changing permissions on clibadjoint.py..."
-                  )
-
-# Make sure that the installed clibadjoint.py has the
-# location of the shared library hardcoded in it.
-add_custom_command(TARGET adjoint
-                  POST_BUILD
-                  COMMAND sed -i.bak -e 's@LIBADJOINT_LIBRARY_FILE@"${CMAKE_INSTALL_PREFIX}/${INSTALL_LIB_DIR}/libadjoint${CMAKE_SHARED_LIBRARY_SUFFIX}"@' ${CMAKE_BINARY_DIR}/clibadjoint.py
-                  COMMENT "Adaptations for clibadjoint.py..."
-                  )
-
-# Make sure to install the generated files
-install(FILES ${CMAKE_BINARY_DIR}/clibadjoint.py
-              ${CMAKE_BINARY_DIR}/clibadjoint_constants.py
-              DESTINATION lib/python${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}/site-packages/libadjoint/
-        )
 # -----------------------------------------------------------------------------
