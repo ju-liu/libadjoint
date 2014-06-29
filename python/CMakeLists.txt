@@ -1,6 +1,6 @@
 # Python bindings.
 # <http://bloerg.net/2012/11/10/cmake-and-distutils.html>
-find_package(PythonInterp)
+find_package(PythonInterp 2.7)
 if(PYTHONINTERP_FOUND)
     set(SETUP_PY_IN "${CMAKE_CURRENT_SOURCE_DIR}/setup.py.in")
     set(SETUP_PY "${CMAKE_CURRENT_BINARY_DIR}/setup.py")
