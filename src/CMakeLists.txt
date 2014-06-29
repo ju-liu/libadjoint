@@ -41,6 +41,20 @@ set_target_properties(adjoint-static PROPERTIES
   OUTPUT_NAME adjoint
   )
 
+set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/modules")
+find_package(PETSc 3.3)
+if (PETSC_FOUND)
+  find_package(SLEPc 3.3)
+  if (SLEPC_FOUND)
+    include_directories(SYSTEM ${PETSC_INCLUDE_DIRS})
+    include_directories(SYSTEM ${SLEPC_INCLUDE_DIRS})
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DHAVE_SLEPC")
+    target_link_libraries(adjoint ${PETSC_LIBRARIES} ${SLEPC_LIBRARIES})
+    target_link_libraries(adjoint-static ${PETSC_LIBRARIES} ${SLEPC_LIBRARIES})
+  endif()
+endif()
+
+
 # Installation of the program
 install(TARGETS adjoint adjoint-static
   # We don't actually need the RUNTIME DESTINATION here since we're only

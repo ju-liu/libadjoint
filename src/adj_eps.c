@@ -1,6 +1,51 @@
 #include "libadjoint/adj_eps.h"
 #define min(X, Y)  ((X) < (Y) ? (X) : (Y))
 
+#ifdef HAVE_SLEPC
+#undef __FUNCT__
+#define __FUNCT__ "eps_mult"
+PetscErrorCode eps_mult(Mat A, Vec x, Vec y)
+{
+  adj_eps_data* eps_data;
+  adj_adjointer* adjointer;
+  adj_matrix matrix;
+  adj_scalar* input_arr;
+  adj_scalar* output_arr;
+  adj_vector work_input;
+  adj_vector work_output;
+  int ierr;
+
+
+  PetscFunctionBegin;
+
+  ierr = MatShellGetContext(A, (void**) &eps_data); CHKERRQ(ierr);
+  adjointer = eps_data->adjointer;
+  matrix = eps_data->matrix;
+  eps_data->multiplications++;
+  printf("Beginning matrix action %d.\n", eps_data->multiplications-1);
+
+  adjointer->callbacks.vec_duplicate(eps_data->input, &work_input);
+  ierr = VecGetArray(x, &input_arr); CHKERRQ(ierr);
+  adjointer->callbacks.vec_set_values(&work_input, input_arr);
+  ierr = VecRestoreArray(x, &input_arr); CHKERRQ(ierr);
+
+  adjointer->callbacks.vec_duplicate(eps_data->output, &work_output);
+
+  adjointer->callbacks.mat_action(matrix, work_input, &work_output);
+
+  ierr = VecGetArray(y, &output_arr); CHKERRQ(ierr);
+  adjointer->callbacks.vec_get_values(work_output, &output_arr);
+  ierr = VecRestoreArray(y, &output_arr); CHKERRQ(ierr);
+
+  adjointer->callbacks.vec_destroy(&work_input);
+  adjointer->callbacks.vec_destroy(&work_output);
+  printf("Matrix action %d completed.\n", eps_data->multiplications-1);
+
+  PetscFunctionReturn(0);
+}
+
+#endif /* HAVE_SLEPC */
+
 int adj_compute_eps(adj_adjointer* adjointer, adj_matrix matrix, adj_eps_options options, adj_eps* eps_handle, int* nconverged)
 {
 #ifndef HAVE_SLEPC
@@ -247,48 +292,3 @@ int adj_destroy_eps(adj_eps* eps_handle)
 #endif
 }
 
-#ifdef HAVE_SLEPC
-
-#undef __FUNCT__
-#define __FUNCT__ "eps_mult"
-PetscErrorCode eps_mult(Mat A, Vec x, Vec y)
-{
-  adj_eps_data* eps_data;
-  adj_adjointer* adjointer;
-  adj_matrix matrix;
-  adj_scalar* input_arr;
-  adj_scalar* output_arr;
-  adj_vector work_input;
-  adj_vector work_output;
-  int ierr;
-
-
-  PetscFunctionBegin;
-
-  ierr = MatShellGetContext(A, (void**) &eps_data); CHKERRQ(ierr);
-  adjointer = eps_data->adjointer;
-  matrix = eps_data->matrix;
-  eps_data->multiplications++;
-  printf("Beginning matrix action %d.\n", eps_data->multiplications-1);
-
-  adjointer->callbacks.vec_duplicate(eps_data->input, &work_input);
-  ierr = VecGetArray(x, &input_arr); CHKERRQ(ierr);
-  adjointer->callbacks.vec_set_values(&work_input, input_arr);
-  ierr = VecRestoreArray(x, &input_arr); CHKERRQ(ierr);
-
-  adjointer->callbacks.vec_duplicate(eps_data->output, &work_output);
-
-  adjointer->callbacks.mat_action(matrix, work_input, &work_output);
-
-  ierr = VecGetArray(y, &output_arr); CHKERRQ(ierr);
-  adjointer->callbacks.vec_get_values(work_output, &output_arr);
-  ierr = VecRestoreArray(y, &output_arr); CHKERRQ(ierr);
-
-  adjointer->callbacks.vec_destroy(&work_input);
-  adjointer->callbacks.vec_destroy(&work_output);
-  printf("Matrix action %d completed.\n", eps_data->multiplications-1);
-
-  PetscFunctionReturn(0);
-}
-
-#endif /* HAVE_SLEPC */
