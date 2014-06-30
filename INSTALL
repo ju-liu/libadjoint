@@ -17,10 +17,10 @@ Create a separate build directory next to the libadjoint source and run CMake
 in it:
 
 $ ls
-libadjoint-0.9.3
+libadjoint-1.4
 $ mkdir build
 $ cd build
-$ cmake ../libadjoint-0.9.3
+$ cmake ../libadjoint-1.4
 
 All typical CMake commands are available. For example to set the compiler,
 specify the installation directory, and build a shared library, you would
@@ -38,6 +38,9 @@ $ make install
 
 in the build directory to build and install libadjoint.
 
+Note: to use the generalised stability analysis features of libadjoint,
+you need to compile against PETSc and SLEPc. This can be done in the
+usual way (set PETSC_ARCH, PETSC_DIR, and SLEPC_DIR appropriately).
 
 Using Makefile
 ------------

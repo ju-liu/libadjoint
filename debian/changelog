@@ -1,4 +1,10 @@
-libadjoint (0.9.4) trusty; urgency=medium
+libadjoint (1.4) unstable; urgency=low
+
+  * Release version 1.4.
+
+ -- Patrick Farrell <patrick.farrell@maths.ox.ac.uk>  Mon, 30 Jun 2014 06:53:57 +0100
+
+libadjoint (0.9.4) unstable; urgency=medium
 
   * Increase name length data types to fix issues with new DOLFIN versions
 

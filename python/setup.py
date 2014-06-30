@@ -5,10 +5,10 @@ python_utils=Extension("libadjoint.python_utils",
                        )
 
 setup (name = 'libadjoint',
-       version = '0.9',
+       version = '1.4',
        description = 'libadjoint python bindings',
        author = 'The libadjoint team',
-       author_email = 'patrick.farrell06@imperial.ac.uk',
+       author_email = 'patrick.farrell@maths.ox.ac.uk',
        packages = ['libadjoint'],
        package_dir = {'libadjoint': 'libadjoint'},
        ext_modules = [python_utils])
