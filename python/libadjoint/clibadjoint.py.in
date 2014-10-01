@@ -629,7 +629,7 @@ adj_gst._fields_ = [
 ]
 adj_compute_gst = _library.adj_compute_gst
 adj_compute_gst.restype = c_int
-adj_compute_gst.argtypes = [POINTER(adj_adjointer), adj_variable, POINTER(adj_matrix), adj_variable, POINTER(adj_matrix), c_int, POINTER(adj_gst), POINTER(c_int)]
+adj_compute_gst.argtypes = [POINTER(adj_adjointer), adj_variable, POINTER(adj_matrix), adj_variable, POINTER(adj_matrix), c_int, POINTER(adj_gst), POINTER(c_int), c_int]
 adj_get_gst = _library.adj_get_gst
 adj_get_gst.restype = c_int
 adj_get_gst.argtypes = [POINTER(adj_gst), c_int, POINTER(c_double), POINTER(adj_vector), POINTER(adj_vector), POINTER(c_double)]

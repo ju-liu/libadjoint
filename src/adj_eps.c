@@ -207,7 +207,7 @@ int adj_get_eps(adj_eps* eps_handle, int i, adj_scalar* sigma_re, adj_scalar* si
 
   /* Shut the compiler up about uninitialised variables */
   EPSGetOperators(*( (EPS*) eps_handle->eps_handle ), &A, PETSC_NULL);
-  MatGetVecs(A, &u_vec_re, PETSC_NULL);
+  MatCreateVecs(A, &u_vec_re, PETSC_NULL);
   VecDuplicate(u_vec_re, &u_vec_im);
 
   ierr = EPSGetEigenpair(*eps, i, &ssigma_re, &ssigma_im, u_vec_re, u_vec_im);
@@ -248,6 +248,9 @@ int adj_get_eps(adj_eps* eps_handle, int i, adj_scalar* sigma_re, adj_scalar* si
     adjointer->callbacks.vec_set_values(u_re, u_arr);
     ierr = VecRestoreArray(u_vec_re, &u_arr);
   }
+
+  ierr = VecDestroy(&u_vec_re);
+
   if (u_im != NULL)
   {
     adj_scalar* u_arr;
@@ -258,6 +261,8 @@ int adj_get_eps(adj_eps* eps_handle, int i, adj_scalar* sigma_re, adj_scalar* si
     adjointer->callbacks.vec_set_values(u_im, u_arr);
     ierr = VecRestoreArray(u_vec_im, &u_arr);
   }
+
+  ierr = VecDestroy(&u_vec_im);
 
   return ADJ_OK;
 

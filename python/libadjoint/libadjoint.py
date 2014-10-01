@@ -1651,7 +1651,7 @@ class Adjointer(object):
     adj_soln_ptr[0].klass = 0
     adj_soln_ptr[0].flags = 0
 
-  def compute_gst(self, ic, ic_norm, final, final_norm, nrv):
+  def compute_gst(self, ic, ic_norm, final, final_norm, nrv, which):
     '''Computes the singular value decomposition of the propagator,
     possibly with some norms for the initial and final condition spaces.
     Pass ic_norm=None and final_norm=None to use the vector l2 norm.
@@ -1674,7 +1674,8 @@ class Adjointer(object):
     final -- an adj_variable corresponding to the final condition
     final_norm -- an adj_matrix with a norm for the final condition.
                   must be symmetric positive-definite
-    nrv -- number of requested singular vectors.'''
+    nrv -- number of requested singular vectors
+    which -- which eigenpairs to compute (see SLEPc manual for EPSWhich)'''
 
     handle = clib.adj_gst()
     ncv = ctypes.c_int()
@@ -1688,7 +1689,7 @@ class Adjointer(object):
     if ic_norm is not None:
       ic_norm = ic_norm.as_adj_matrix()
 
-    clib.adj_compute_gst(self.adjointer, ic.var, ic_norm, final.var, final_norm, nrv, handle, ncv)
+    clib.adj_compute_gst(self.adjointer, ic.var, ic_norm, final.var, final_norm, nrv, handle, ncv, which)
 
     gst = GSTHandle(handle, ncv)
 

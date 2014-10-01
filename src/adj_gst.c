@@ -1,7 +1,7 @@
 #include "libadjoint/adj_gst.h"
 #define min(X, Y)  ((X) < (Y) ? (X) : (Y))
 
-int adj_compute_gst(adj_adjointer* adjointer, adj_variable ic, adj_matrix* ic_norm, adj_variable final, adj_matrix* final_norm, int nrv, adj_gst* gst_handle, int* ncv)
+int adj_compute_gst(adj_adjointer* adjointer, adj_variable ic, adj_matrix* ic_norm, adj_variable final, adj_matrix* final_norm, int nrv, adj_gst* gst_handle, int* ncv, int which)
 {
 #ifndef HAVE_SLEPC
   (void) adjointer;
@@ -122,7 +122,7 @@ int adj_compute_gst(adj_adjointer* adjointer, adj_variable ic, adj_matrix* ic_no
 #if SLEPC_VERSION_MAJOR > 3 || (SLEPC_VERSION_MAJOR == 3 && SLEPC_VERSION_MINOR >= 1)
   EPSMonitorSet(*eps, EPSMonitorAll, PETSC_NULL, PETSC_NULL);
 #endif
-  EPSSetWhichEigenpairs(*eps, EPS_LARGEST_REAL);
+  EPSSetWhichEigenpairs(*eps, which);
 
   ierr = EPSView(*eps, PETSC_VIEWER_STDOUT_WORLD);
   ierr = EPSSolve(*eps);
@@ -178,14 +178,13 @@ int adj_get_gst(adj_gst* gst_handle, int i, adj_scalar* sigma, adj_vector* u, ad
 
   if (u != NULL || v != NULL || sigma != NULL) /* we need to pull the eigenfunction */
   {
-    Vec dummy;
     Mat A;
 
     /* Shut the compiler up about uninitialised variables */
     EPSGetOperators(*( (EPS*) gst_handle->eps_handle ), &A, PETSC_NULL);
-    MatGetVecs(A, &v_vec, &dummy);
+    MatCreateVecs(A, &v_vec, PETSC_NULL);
 
-    ierr = EPSGetEigenpair(*eps, i, &ssigma, &ssigma_complex, v_vec, dummy);
+    ierr = EPSGetEigenpair(*eps, i, &ssigma, &ssigma_complex, v_vec, PETSC_NULL);
     if (ierr != 0)
     {
       snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "SLEPc error from EPSGetEigenpair (ierr == %d).", ierr);
@@ -211,7 +210,7 @@ int adj_get_gst(adj_gst* gst_handle, int i, adj_scalar* sigma, adj_vector* u, ad
     Vec u_vec; /* the vector that contains the tlm output */
     adj_scalar* u_arr;
 
-    MatGetVecs(gst_data->tlm_mat, PETSC_NULL, &u_vec);
+    MatCreateVecs(gst_data->tlm_mat, PETSC_NULL, &u_vec);
     MatMult(gst_data->tlm_mat, v_vec, u_vec); /* do the TLM solve */
 
     ierr = adj_get_variable_value(adjointer, gst_data->final, &final_val);
@@ -251,6 +250,8 @@ int adj_get_gst(adj_gst* gst_handle, int i, adj_scalar* sigma, adj_vector* u, ad
     ierr = VecGetArray(u_vec, &u_arr);
     adjointer->callbacks.vec_set_values(u, u_arr);
     ierr = VecRestoreArray(u_vec, &u_arr);
+
+    ierr = VecDestroy(&u_vec);
   }
 
   if (v != NULL) /* this is the input perturbation, which we already have, handily */
@@ -313,6 +314,8 @@ int adj_get_gst(adj_gst* gst_handle, int i, adj_scalar* sigma, adj_vector* u, ad
       return adj_chkierr_auto(ADJ_ERR_SLEPC_ERROR);
     }
   }
+
+  ierr = VecDestroy(&v_vec);
 
   return ADJ_OK;
 
@@ -571,7 +574,7 @@ PetscErrorCode gst_mult(Mat A, Vec x, Vec y)
   gst_data->multiplications++;
 
   /* Multiply by L .. */
-  ierr = MatGetVecs(tlm_mat, PETSC_NULL, &Lx);   CHKERRQ(ierr);
+  ierr = MatCreateVecs(tlm_mat, PETSC_NULL, &Lx);   CHKERRQ(ierr);
   ierr = MatMult(tlm_mat, x, Lx);                CHKERRQ(ierr);
 
   /* Then take the final norm */
@@ -606,11 +609,7 @@ PetscErrorCode gst_mult(Mat A, Vec x, Vec y)
     adjointer->callbacks.vec_destroy(&Lx_vector);
     adjointer->callbacks.vec_destroy(&XLx_vector);
 
-#if PETSC_VERSION_MINOR > 1
     ierr = VecDestroy(&Lx);                         CHKERRQ(ierr);
-#else
-    ierr = VecDestroy(Lx);                         CHKERRQ(ierr);
-#endif
 
     /* Now XLx contains the action of the norm matrix, and everything
        else is destroyed. */
@@ -619,31 +618,18 @@ PetscErrorCode gst_mult(Mat A, Vec x, Vec y)
   {
     ierr = VecDuplicate(Lx, &XLx);                 CHKERRQ(ierr);
     ierr = VecCopy(Lx, XLx);                       CHKERRQ(ierr);
-#if PETSC_VERSION_MINOR > 1
     ierr = VecDestroy(&Lx);                         CHKERRQ(ierr);
-#else
-    ierr = VecDestroy(Lx);                         CHKERRQ(ierr);
-#endif
   }
 
   /* Now multiply by L^* .. */
-  ierr = MatGetVecs(tlm_mat, &LXLx, PETSC_NULL); CHKERRQ(ierr);
+  ierr = MatCreateVecs(tlm_mat, &LXLx, PETSC_NULL); CHKERRQ(ierr);
   ierr = MatMultTranspose(tlm_mat, XLx, LXLx);   CHKERRQ(ierr);
-#if PETSC_VERSION_MINOR > 1
   ierr = VecDestroy(&XLx);
-#else
-  ierr = VecDestroy(XLx);
-#endif
 
   /* Now take the initial norm */
   if (gst_data->ic_norm == NULL)
   {
     ierr = VecCopy(LXLx, y);                       CHKERRQ(ierr);
-#if PETSC_VERSION_MINOR > 1
-    ierr = VecDestroy(&LXLx);
-#else
-    ierr = VecDestroy(LXLx);
-#endif
   }
   else
   {
@@ -671,6 +657,7 @@ PetscErrorCode gst_mult(Mat A, Vec x, Vec y)
     adjointer->callbacks.vec_get_values(y_vec, &y_array);
     ierr = VecRestoreArray(y, &y_array);           CHKERRQ(ierr);
   }
+  ierr = VecDestroy(&LXLx);
 
   PetscFunctionReturn(0);
 }
