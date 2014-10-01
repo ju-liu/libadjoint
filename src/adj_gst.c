@@ -124,7 +124,7 @@ int adj_compute_gst(adj_adjointer* adjointer, adj_variable ic, adj_matrix* ic_no
 #endif
   EPSSetWhichEigenpairs(*eps, which);
 
-  ierr = EPSSetFromOptions(eps);
+  ierr = EPSSetFromOptions(*eps);
 
   ierr = EPSView(*eps, PETSC_VIEWER_STDOUT_WORLD);
   ierr = EPSSolve(*eps);
