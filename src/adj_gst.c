@@ -111,7 +111,7 @@ int adj_compute_gst(adj_adjointer* adjointer, adj_variable ic, adj_matrix* ic_no
   eps = (EPS*) malloc(sizeof(EPS));
   EPSCreate(PETSC_COMM_WORLD, eps);
   EPSSetOperators(*eps, gst_mat, PETSC_NULL);
-  EPSSetProblemType(*eps, EPS_HEP);
+  EPSSetProblemType(*eps, EPS_NHEP);
   EPSSetType(*eps, EPSKRYLOVSCHUR);
 
   nwv = 3*nrv;
@@ -438,7 +438,7 @@ PetscErrorCode tlm_solve(Mat A, Vec x, Vec y)
 
     adjointer->callbacks.vec_destroy(&soln);
 
-    if (return_flag) 
+    if (return_flag)
     {
       time(&end);
       wall_time_used =  end - start;
@@ -535,7 +535,7 @@ PetscErrorCode adj_solve(Mat A, Vec x, Vec y)
 
     adjointer->callbacks.vec_destroy(&soln);
 
-    if (return_flag) 
+    if (return_flag)
     {
       time(&end);
       wall_time_used =  end - start;
