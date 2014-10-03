@@ -304,7 +304,10 @@ int adj_get_gst(adj_gst* gst_handle, int i, adj_scalar* sigma, adj_vector* u, ad
   if (sigma != NULL)
   {
     if (abs(ssigma) < DBL_EPSILON && ssigma < 0.0)
-      *sigma = 0.0;
+    {
+      snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "SLEPc returned a negative number as a growth rate (error in SLEPc)?");
+      return adj_chkierr_auto(ADJ_ERR_SLEPC_ERROR);
+    }
     else
     {
       *sigma = sqrt(ssigma);
