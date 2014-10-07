@@ -19,7 +19,7 @@ if(PYTHONINTERP_FOUND)
     add_custom_command(
       OUTPUT ${OUTPUT}/timestamp
       COMMAND ${PYTHON_EXECUTABLE} ${SETUP_PY}
-      ARGS  -q build
+      ARGS  build
       COMMAND ${CMAKE_COMMAND} -E touch ${OUTPUT}
       DEPENDS ${DEPS}
     )
@@ -28,6 +28,6 @@ if(PYTHONINTERP_FOUND)
 
     # Run `python setup.py install`
     install(CODE
-            "execute_process(COMMAND ${PYTHON_EXECUTABLE} ${SETUP_PY} -q install --prefix=${CMAKE_INSTALL_PREFIX})"
+            "execute_process(COMMAND ${PYTHON_EXECUTABLE} ${SETUP_PY} install --prefix=${CMAKE_INSTALL_PREFIX})"
            )
 endif()
