@@ -252,7 +252,11 @@ void petsc_solve_proc(adj_variable var, adj_matrix mat, adj_vector rhs, adj_vect
 
     /* Create the output vector */
     Vec *sol_vec=(Vec*) malloc(sizeof(Vec));
+#if PETSC_VERSION_MAJOR == 3 && PETSC_VERSION_MINOR <= 5 && PETSC_VERSION_RELEASE == 1
     MatGetVecs(petsc_mat_from_adj_matrix(mat), sol_vec, NULL);
+#else
+    MatCreateVecs(petsc_mat_from_adj_matrix(mat), sol_vec, NULL);
+#endif
 
     KSPCreate(PETSC_COMM_WORLD, &ksp);
     KSPSetOperators(ksp, petsc_mat_from_adj_matrix(mat), petsc_mat_from_adj_matrix(mat), DIFFERENT_NONZERO_PATTERN);

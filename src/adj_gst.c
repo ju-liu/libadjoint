@@ -184,7 +184,11 @@ int adj_get_gst(adj_gst* gst_handle, int i, adj_scalar* sigma, adj_vector* u, ad
 
     /* Shut the compiler up about uninitialised variables */
     EPSGetOperators(*( (EPS*) gst_handle->eps_handle ), &A, PETSC_NULL);
+#if PETSC_VERSION_MAJOR == 3 && PETSC_VERSION_MINOR <= 5 && PETSC_VERSION_RELEASE == 1
+    MatGetVecs(A, &v_vec, PETSC_NULL);
+#else
     MatCreateVecs(A, &v_vec, PETSC_NULL);
+#endif
 
     ierr = EPSGetEigenpair(*eps, i, &ssigma, &ssigma_complex, v_vec, PETSC_NULL);
     if (ierr != 0)
@@ -212,7 +216,11 @@ int adj_get_gst(adj_gst* gst_handle, int i, adj_scalar* sigma, adj_vector* u, ad
     Vec u_vec; /* the vector that contains the tlm output */
     adj_scalar* u_arr;
 
+#if PETSC_VERSION_MAJOR == 3 && PETSC_VERSION_MINOR <= 5 && PETSC_VERSION_RELEASE == 1
+    MatGetVecs(gst_data->tlm_mat, PETSC_NULL, &u_vec);
+#else
     MatCreateVecs(gst_data->tlm_mat, PETSC_NULL, &u_vec);
+#endif
     MatMult(gst_data->tlm_mat, v_vec, u_vec); /* do the TLM solve */
 
     ierr = adj_get_variable_value(adjointer, gst_data->final, &final_val);
@@ -579,7 +587,11 @@ PetscErrorCode gst_mult(Mat A, Vec x, Vec y)
   gst_data->multiplications++;
 
   /* Multiply by L .. */
+#if PETSC_VERSION_MAJOR == 3 && PETSC_VERSION_MINOR <= 5 && PETSC_VERSION_RELEASE == 1
+  ierr = MatGetVecs(tlm_mat, PETSC_NULL, &Lx);   CHKERRQ(ierr);
+#else
   ierr = MatCreateVecs(tlm_mat, PETSC_NULL, &Lx);   CHKERRQ(ierr);
+#endif
   ierr = MatMult(tlm_mat, x, Lx);                CHKERRQ(ierr);
 
   /* Then take the final norm */
@@ -627,7 +639,11 @@ PetscErrorCode gst_mult(Mat A, Vec x, Vec y)
   }
 
   /* Now multiply by L^* .. */
+#if PETSC_VERSION_MAJOR == 3 && PETSC_VERSION_MINOR <= 5 && PETSC_VERSION_RELEASE == 1
+  ierr = MatGetVecs(tlm_mat, &LXLx, PETSC_NULL); CHKERRQ(ierr);
+#else
   ierr = MatCreateVecs(tlm_mat, &LXLx, PETSC_NULL); CHKERRQ(ierr);
+#endif
   ierr = MatMultTranspose(tlm_mat, XLx, LXLx);   CHKERRQ(ierr);
   ierr = VecDestroy(&XLx);
 
