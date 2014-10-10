@@ -207,7 +207,11 @@ int adj_get_eps(adj_eps* eps_handle, int i, adj_scalar* sigma_re, adj_scalar* si
 
   /* Shut the compiler up about uninitialised variables */
   EPSGetOperators(*( (EPS*) eps_handle->eps_handle ), &A, PETSC_NULL);
+#if PETSC_VERSION_MAJOR == 3 && PETSC_VERSION_MINOR <= 5 && PETSC_VERSION_RELEASE == 1
+  MatGetVecs(A, &u_vec_re, PETSC_NULL);
+#else
   MatCreateVecs(A, &u_vec_re, PETSC_NULL);
+#endif
   VecDuplicate(u_vec_re, &u_vec_im);
 
   ierr = EPSGetEigenpair(*eps, i, &ssigma_re, &ssigma_im, u_vec_re, u_vec_im);
