@@ -440,6 +440,7 @@ int adj_test_nonlinear_derivative_action_consistency(adj_adjointer* adjointer, a
   adj_vector perturbed_output; /* J(u + delta_u) */
   adj_vector gradient; /* grad(J) . delta_u */
   adj_vector contraction;
+  adj_vector contraction_bak;
   adj_scalar contraction_norm;
   adj_scalar* fd_conv; /* the orders of convergence for fd_errors */
   adj_scalar* grad_conv; /* the orders of convergence for grad_errors */
@@ -500,6 +501,9 @@ int adj_test_nonlinear_derivative_action_consistency(adj_adjointer* adjointer, a
   if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
 
   /* First, let's check if contraction vector is suitable (nonzero) */
+  adjointer->callbacks.vec_duplicate(nonlinear_block_derivative.contraction, &contraction_bak);
+  adjointer->callbacks.vec_axpy(&contraction_bak, (adj_scalar) 1.0, nonlinear_block_derivative.contraction);
+
   adjointer->callbacks.vec_get_norm(nonlinear_block_derivative.contraction, &contraction_norm);
   if (contraction_norm > 0)
   {
@@ -522,6 +526,8 @@ int adj_test_nonlinear_derivative_action_consistency(adj_adjointer* adjointer, a
     adjointer->callbacks.vec_set_values(&contraction, contraction_vec);
     free(contraction_vec);
   }
+  adjointer->callbacks.vec_axpy(&nonlinear_block_derivative.contraction, (adj_scalar)-1.0, contraction_bak);
+  adjointer->callbacks.vec_axpy(&nonlinear_block_derivative.contraction, (adj_scalar) 1.0, contraction);
 
   /* Compute the unperturbed quantity we'll need through the loop */
   ierr = adj_evaluate_nonlinear_action(adjointer, nonlinear_action_func, nonlinear_block_derivative.nonlinear_block, contraction, NULL, NULL, &original_output);
@@ -586,6 +592,10 @@ int adj_test_nonlinear_derivative_action_consistency(adj_adjointer* adjointer, a
   free(unscaled_perturbation);
   adjointer->callbacks.vec_destroy(&dependency_perturbation);
   adjointer->callbacks.vec_destroy(&original_output);
+
+  adjointer->callbacks.vec_axpy(&nonlinear_block_derivative.contraction, (adj_scalar)-1.0, contraction);
+  adjointer->callbacks.vec_axpy(&nonlinear_block_derivative.contraction, (adj_scalar) 1.0, contraction_bak);
+
   adjointer->callbacks.vec_destroy(&contraction);
 
   /* Now we analyse the fd_errors and grad_errors to investigate the order of convergence.
