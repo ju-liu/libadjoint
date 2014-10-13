@@ -439,6 +439,8 @@ int adj_test_nonlinear_derivative_action_consistency(adj_adjointer* adjointer, a
   adj_vector original_output; /* J(u) */
   adj_vector perturbed_output; /* J(u + delta_u) */
   adj_vector gradient; /* grad(J) . delta_u */
+  adj_vector contraction;
+  adj_scalar contraction_norm;
   adj_scalar* fd_conv; /* the orders of convergence for fd_errors */
   adj_scalar* grad_conv; /* the orders of convergence for grad_errors */
   int return_ierr;
@@ -497,8 +499,32 @@ int adj_test_nonlinear_derivative_action_consistency(adj_adjointer* adjointer, a
   ierr = adj_get_variable_value(adjointer, deriv_var, &original_dependency);
   if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
 
+  /* First, let's check if contraction vector is suitable (nonzero) */
+  adjointer->callbacks.vec_get_norm(nonlinear_block_derivative.contraction, &contraction_norm);
+  if (contraction_norm > 0)
+  {
+    adjointer->callbacks.vec_duplicate(nonlinear_block_derivative.contraction, &contraction);
+    adjointer->callbacks.vec_axpy(&contraction, (adj_scalar) 1.0, nonlinear_block_derivative.contraction);
+  }
+  else
+  {
+    int contraction_sz;
+    adj_scalar* contraction_vec; /* the direction of the perturbation */
+    adjointer->callbacks.vec_duplicate(nonlinear_block_derivative.contraction, &contraction);
+    adjointer->callbacks.vec_get_size(nonlinear_block_derivative.contraction, &contraction_sz);
+
+    contraction_vec = (adj_scalar*) malloc(contraction_sz * sizeof(adj_scalar));
+    ADJ_CHKMALLOC(contraction_vec);
+    for (j = 0; j < contraction_sz; j++)
+    {
+      contraction_vec[j] = random() / ((adj_scalar) RAND_MAX) ;
+    }
+    adjointer->callbacks.vec_set_values(&contraction, contraction_vec);
+    free(contraction_vec);
+  }
+
   /* Compute the unperturbed quantity we'll need through the loop */
-  ierr = adj_evaluate_nonlinear_action(adjointer, nonlinear_action_func, nonlinear_block_derivative.nonlinear_block, nonlinear_block_derivative.contraction, NULL, NULL, &original_output);
+  ierr = adj_evaluate_nonlinear_action(adjointer, nonlinear_action_func, nonlinear_block_derivative.nonlinear_block, contraction, NULL, NULL, &original_output);
   if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
 
   adjointer->callbacks.vec_duplicate(original_dependency, &dependency_perturbation);
@@ -531,7 +557,7 @@ int adj_test_nonlinear_derivative_action_consistency(adj_adjointer* adjointer, a
     }
     adjointer->callbacks.vec_set_values(&dependency_perturbation, perturbations);
 
-    ierr = adj_evaluate_nonlinear_action(adjointer, nonlinear_action_func, nonlinear_block_derivative.nonlinear_block, nonlinear_block_derivative.contraction, &deriv_var, &dependency_perturbation, &perturbed_output);
+    ierr = adj_evaluate_nonlinear_action(adjointer, nonlinear_action_func, nonlinear_block_derivative.nonlinear_block, contraction, &deriv_var, &dependency_perturbation, &perturbed_output);
     if (ierr != ADJ_OK) return adj_chkierr_auto(ierr);
 
     adjointer->callbacks.vec_axpy(&perturbed_output, (adj_scalar) -1.0, original_output);
@@ -560,6 +586,7 @@ int adj_test_nonlinear_derivative_action_consistency(adj_adjointer* adjointer, a
   free(unscaled_perturbation);
   adjointer->callbacks.vec_destroy(&dependency_perturbation);
   adjointer->callbacks.vec_destroy(&original_output);
+  adjointer->callbacks.vec_destroy(&contraction);
 
   /* Now we analyse the fd_errors and grad_errors to investigate the order of convergence.
      fd_errors should converge at first order, and grad_errors should converge at second order. */
