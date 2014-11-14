@@ -75,6 +75,7 @@ int adj_destroy_adjointer(adj_adjointer* adjointer)
   int i;
   int ierr;
   adj_variable_hash* varhash;
+  adj_variable_hash* varhash_tmp;
   adj_variable_data* data_ptr;
   adj_variable_data* data_ptr_tmp;
   adj_op_callback* cb_ptr;
@@ -113,7 +114,7 @@ int adj_destroy_adjointer(adj_adjointer* adjointer)
     free(adjointer->timestep_data);
   }
 
-  for(varhash = adjointer->varhash; varhash != NULL; varhash = (adj_variable_hash*) varhash->hh.next)
+  for (varhash = adjointer->varhash; varhash != NULL; varhash = (adj_variable_hash*) varhash->hh.next)
   {
     data_ptr = varhash->data;
 
@@ -154,6 +155,14 @@ int adj_destroy_adjointer(adj_adjointer* adjointer)
     data_ptr = data_ptr->next;
     free(data_ptr_tmp);
   }
+
+  for (varhash = adjointer->varhash; varhash != NULL; )
+  {
+    varhash_tmp = varhash;
+    varhash = varhash->hh.next;
+    free(varhash_tmp);
+  }
+  adjointer->varhash = NULL;
 
   cb_ptr = adjointer->nonlinear_action_list.firstnode;
   while(cb_ptr != NULL)
