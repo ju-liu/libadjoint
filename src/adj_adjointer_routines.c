@@ -83,6 +83,8 @@ int adj_destroy_adjointer(adj_adjointer* adjointer)
   adj_func_callback* func_cb_ptr_tmp;
   adj_func_deriv_callback* func_deriv_cb_ptr;
   adj_func_deriv_callback* func_deriv_cb_ptr_tmp;
+  adj_func_second_deriv_callback* func_second_deriv_cb_ptr;
+  adj_func_second_deriv_callback* func_second_deriv_cb_ptr_tmp;
   adj_parameter_source_callback* parameter_source_cb_ptr;
   adj_parameter_source_callback* parameter_source_cb_ptr_tmp;
   adj_functional_data* functional_data_ptr_next = NULL;
@@ -205,6 +207,14 @@ int adj_destroy_adjointer(adj_adjointer* adjointer)
     func_deriv_cb_ptr_tmp = func_deriv_cb_ptr;
     func_deriv_cb_ptr = func_deriv_cb_ptr->next;
     free(func_deriv_cb_ptr_tmp);
+  }
+
+  func_second_deriv_cb_ptr = adjointer->functional_second_derivative_list.firstnode;
+  while(func_second_deriv_cb_ptr != NULL)
+  {
+    func_second_deriv_cb_ptr_tmp = func_second_deriv_cb_ptr;
+    func_second_deriv_cb_ptr = func_second_deriv_cb_ptr->next;
+    free(func_second_deriv_cb_ptr_tmp);
   }
 
   parameter_source_cb_ptr = adjointer->parameter_source_list.firstnode;
