@@ -100,6 +100,7 @@ int adj_destroy_adjointer(adj_adjointer* adjointer)
   if (adjointer->timestep_data != NULL)
   {
     for (i = 0; i < adjointer->ntimesteps; i++)
+    {
       functional_data_ptr = adjointer->timestep_data[i].functional_data_start;
       while (functional_data_ptr != NULL)
       {
@@ -108,6 +109,7 @@ int adj_destroy_adjointer(adj_adjointer* adjointer)
         free(functional_data_ptr);
         functional_data_ptr = functional_data_ptr_next;
       }
+    }
     free(adjointer->timestep_data);
   }
 
