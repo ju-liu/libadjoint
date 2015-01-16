@@ -17,10 +17,10 @@ Create a separate build directory next to the libadjoint source and run CMake
 in it:
 
 $ ls
-libadjoint-1.4
+libadjoint-1.5
 $ mkdir build
 $ cd build
-$ cmake ../libadjoint-1.4
+$ cmake ../libadjoint-1.5
 
 All typical CMake commands are available. For example to set the compiler,
 specify the installation directory, and build a shared library, you would
@@ -45,7 +45,7 @@ usual way (set PETSC_ARCH, PETSC_DIR, and SLEPC_DIR appropriately).
 Using Makefile
 ------------
 
-The minimum requirements for compiling libadjoint are a C compiler 
+The minimum requirements for compiling libadjoint are a C compiler
 (environment variable CC) and a C++ compiler (environment variable
 CXX). If these are not specified, the defaults are 'mpicc' and 'mpicxx'.
 With these, the library may be built and installed with a simple

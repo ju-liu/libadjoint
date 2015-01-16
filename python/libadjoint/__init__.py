@@ -2,7 +2,7 @@
 
 __all__=["clibadjoint_constants","clibadjoint","exceptions","python_utils"]
 
-__version__ = '1.4'
+__version__ = '1.5'
 __author__  = 'Patrick Farrell and Simon Funke'
 __credits__ = ['Patrick Farrell', 'Simon Funke', 'David Ham']
 __license__ = 'LGPL-3'
