@@ -1711,7 +1711,9 @@ class Adjointer(object):
     type_map = {'hermitian': 1,
                 'non_hermitian': 3}
     which_map = {'largest magnitude': 1,
-                 'smallest magnitude': 2}
+                 'smallest magnitude': 2,
+                 'largest real': 3,
+                 'smallest real': 4}
 
     c_options.method      = options['method']
     c_options.type        = type_map[options['type']]
