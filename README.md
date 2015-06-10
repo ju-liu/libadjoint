@@ -18,4 +18,4 @@ The libadjoint software is freely available under the GNU LGPL, version 3.
 ### Authors ###
 
 * Patrick E. Farrell (Mathematical Institute, University of Oxford)
-* Simon W. Funke (Center for Biomedical Computing, Simula Research Laboratory / Applied Modelling and Computation Group, Imperial College London)
+* Simon W. Funke (Center for Biomedical Computing, Simula Research Laboratory)
