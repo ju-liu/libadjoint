@@ -25,9 +25,9 @@ PetscErrorCode eps_mult(Mat A, Vec x, Vec y)
   printf("Beginning matrix action %d.\n", eps_data->multiplications-1);
 
   adjointer->callbacks.vec_duplicate(eps_data->input, &work_input);
-  ierr = VecGetArray(x, &input_arr); CHKERRQ(ierr);
+  ierr = VecGetArrayRead(x, &input_arr); CHKERRQ(ierr);
   adjointer->callbacks.vec_set_values(&work_input, input_arr);
-  ierr = VecRestoreArray(x, &input_arr); CHKERRQ(ierr);
+  ierr = VecRestoreArrayRead(x, &input_arr); CHKERRQ(ierr);
 
   adjointer->callbacks.vec_duplicate(eps_data->output, &work_output);
 
