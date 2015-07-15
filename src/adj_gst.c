@@ -126,7 +126,7 @@ int adj_compute_gst(adj_adjointer* adjointer, adj_variable ic, adj_matrix* ic_no
 
   ierr = EPSSetFromOptions(*eps);
 
-  ierr = EPSView(*eps, PETSC_VIEWER_STDOUT_WORLD);
+  /* ierr = EPSView(*eps, PETSC_VIEWER_STDOUT_WORLD); */
   ierr = EPSSolve(*eps);
 
   printf("GST calculation took %d multiplications of L^*L.\n", gst_data->multiplications);
@@ -423,9 +423,9 @@ PetscErrorCode tlm_solve(Mat A, Vec x, Vec y)
       /* fetch the vector from our input PETSc Vec, stuff it into rhs_tmp */
       adjointer->callbacks.vec_duplicate(rhs, &rhs_tmp);
 
-      ierr = VecGetArray(x, &px); CHKERRQ(ierr);
+      ierr = VecGetArrayRead(x, &px); CHKERRQ(ierr);
       adjointer->callbacks.vec_set_values(&rhs_tmp, px);
-      ierr = VecRestoreArray(x, &px); CHKERRQ(ierr);
+      ierr = VecRestoreArrayRead(x, &px); CHKERRQ(ierr);
 
       adjointer->callbacks.vec_axpy(&rhs, (adj_scalar) 1.0, rhs_tmp);
       adjointer->callbacks.vec_destroy(&rhs_tmp);
@@ -520,9 +520,9 @@ PetscErrorCode adj_solve(Mat A, Vec x, Vec y)
       /* fetch the vector from our input PETSc Vec, stuff it into rhs_tmp */
       adjointer->callbacks.vec_duplicate(rhs, &rhs_tmp);
 
-      ierr = VecGetArray(x, &px); CHKERRQ(ierr);
+      ierr = VecGetArrayRead(x, &px); CHKERRQ(ierr);
       adjointer->callbacks.vec_set_values(&rhs_tmp, px);
-      ierr = VecRestoreArray(x, &px); CHKERRQ(ierr);
+      ierr = VecRestoreArrayRead(x, &px); CHKERRQ(ierr);
 
       adjointer->callbacks.vec_axpy(&rhs, (adj_scalar) 1.0, rhs_tmp);
       adjointer->callbacks.vec_destroy(&rhs_tmp);
