@@ -423,9 +423,9 @@ PetscErrorCode tlm_solve(Mat A, Vec x, Vec y)
       /* fetch the vector from our input PETSc Vec, stuff it into rhs_tmp */
       adjointer->callbacks.vec_duplicate(rhs, &rhs_tmp);
 
-      ierr = VecGetArrayRead(x, &px); CHKERRQ(ierr);
+      ierr = VecGetArrayRead(x, (const PetscScalar**) &px); CHKERRQ(ierr);
       adjointer->callbacks.vec_set_values(&rhs_tmp, px);
-      ierr = VecRestoreArrayRead(x, &px); CHKERRQ(ierr);
+      ierr = VecRestoreArrayRead(x, (const PetscScalar**) &px); CHKERRQ(ierr);
 
       adjointer->callbacks.vec_axpy(&rhs, (adj_scalar) 1.0, rhs_tmp);
       adjointer->callbacks.vec_destroy(&rhs_tmp);
@@ -520,9 +520,9 @@ PetscErrorCode adj_solve(Mat A, Vec x, Vec y)
       /* fetch the vector from our input PETSc Vec, stuff it into rhs_tmp */
       adjointer->callbacks.vec_duplicate(rhs, &rhs_tmp);
 
-      ierr = VecGetArrayRead(x, &px); CHKERRQ(ierr);
+      ierr = VecGetArrayRead(x, (const PetscScalar**) &px); CHKERRQ(ierr);
       adjointer->callbacks.vec_set_values(&rhs_tmp, px);
-      ierr = VecRestoreArrayRead(x, &px); CHKERRQ(ierr);
+      ierr = VecRestoreArrayRead(x, (const PetscScalar**) &px); CHKERRQ(ierr);
 
       adjointer->callbacks.vec_axpy(&rhs, (adj_scalar) 1.0, rhs_tmp);
       adjointer->callbacks.vec_destroy(&rhs_tmp);
