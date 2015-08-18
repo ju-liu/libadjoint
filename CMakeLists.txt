@@ -1,7 +1,6 @@
 cmake_minimum_required(VERSION 2.8)
 
 project(libadjoint C CXX)
-enable_language(Fortran OPTIONAL)
 
 # Set the version. (Used for so-naming of the library.)
 set(libadjoint_MAJOR_VERSION 0)
