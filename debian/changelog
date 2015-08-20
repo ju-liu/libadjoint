@@ -1,3 +1,9 @@
+libadjoint (1.6~vivid) vivid; urgency=low
+
+  * Release version 1.6.
+
+ -- Simon Funke <simon@simula.no>  Thu, 20 Aug 2015 16:53:57 +0100
+
 libadjoint (1.5~saucy) saucy; urgency=low
 
   * Release version 1.5.
