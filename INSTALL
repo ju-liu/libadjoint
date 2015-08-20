@@ -17,10 +17,10 @@ Create a separate build directory next to the libadjoint source and run CMake
 in it:
 
 $ ls
-libadjoint-1.5
+libadjoint
 $ mkdir build
 $ cd build
-$ cmake ../libadjoint-1.5
+$ cmake ../libadjoint
 
 All typical CMake commands are available. For example to set the compiler,
 specify the installation directory, and build a shared library, you would
