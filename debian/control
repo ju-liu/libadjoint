@@ -1,7 +1,7 @@
 Source: libadjoint
 Priority: extra
 Maintainer: Patrick Farrell <patrick.farrell@maths.ox.ac.uk>
-Build-Depends: debhelper (>= 7.0.50~), libpetsc3.6.2-dev|libpetsc3.4.2-dev|libpetsc3.2-dev|libpetsc3.1-dev|libpetsc3.0.0-dev, gfortran-4.5|gfortran, python (>= 2.5), lsb-release, python-all-dev, libslepc3.6.2-dev|libslepc3.4.2-dev|libslepc3.2-dev|libslepc3.1-dev|libslepc3.0.0-dev, gccxml
+Build-Depends: debhelper (>= 7.0.50~), libpetsc3.6.2-dev|libpetsc3.4.2-dev|libpetsc3.2-dev|libpetsc3.1-dev|libpetsc3.0.0-dev, gfortran-4.5|gfortran, python (>= 2.5), lsb-release, python-all-dev, libslepc3.6.1-dev|libslepc3.4.2-dev|libslepc3.2-dev|libslepc3.1-dev|libslepc3.0.0-dev, gccxml
 Standards-Version: 3.9.3
 XS-Python-Version: >= 2.5
 Section: libs
