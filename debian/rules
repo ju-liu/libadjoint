@@ -3,32 +3,15 @@
 
 export DH_VERBOSE=1
 
-# Find the most recent PETSc installed on the system
-PETSC_VERSION := $(shell ls -ld /usr/lib/petscdir/* | tail -n 1 | awk -F/ '{print $$(NF)}')
-SLEPC_VERSION := $(shell ls -ld /usr/lib/slepcdir/* | tail -n 1 | awk -F/ '{print $$(NF)}')
-PETSC_VERSION := $(shell python -c "print min('$(PETSC_VERSION)', '$(SLEPC_VERSION)')")
+DESTDIR = $(CURDIR)/debian/tmp
 
-export PETSC_ARCH=linux-gnu-c-opt
-export PETSC_DIR=/usr/lib/petscdir/$(PETSC_VERSION)
-export SLEPC_DIR=/usr/lib/slepcdir/$(PETSC_VERSION)
-export prefix=/usr
-export DEB_BUILD_OPTIONS=nostrip
-
-export PYTHONPATH=
-export LIBADJOINT_PYTHON_INSTALL_ARGS=--install-layout=deb
-export LIBADJOINT_BUILDING_DEBIAN=yes
-
-ifeq ($(shell lsb_release -c | awk '{print $$NF}'),maverick)
-export FC=gfortran-4.5
-endif
-
-PYSUPPORT := python2
-ifneq (,$(findstring lucid, $(shell lsb_release -c)))
-	PYSUPPORT := python_central
-endif
+CMAKE_OPTS := \
+	-DCMAKE_BUILD_TYPE=RelWithDebInfo \
+	-DBUILD_SHARED_LIBS:BOOL=ON \
+	-DLIBADJOINT_PYTHON_INSTALL_ARGS="--install-layout=deb --root=$(DESTDIR)"
 
 %:
-	dh --with=$(PYSUPPORT) $@ 
+	dh $@ --with=python2 --buildsystem=cmake
 
-override_dh_auto_test:
-	true
+override_dh_auto_configure:
+	dh_auto_configure --buildsystem=cmake -- $(CMAKE_OPTS)
