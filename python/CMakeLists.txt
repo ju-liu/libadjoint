@@ -28,6 +28,6 @@ if(PYTHONINTERP_FOUND)
 
     # Run `python setup.py install`
     install(CODE
-        "execute_process(COMMAND ${PYTHON_EXECUTABLE} ${SETUP_PY} install --install-layout=deb --prefix=${CMAKE_INSTALL_PREFIX} ${LIBADJOINT_PYTHON_INSTALL_ARGS})"
+        "execute_process(COMMAND ${PYTHON_EXECUTABLE} ${SETUP_PY} install --prefix=${CMAKE_INSTALL_PREFIX} ${LIBADJOINT_PYTHON_INSTALL_ARGS})"
            )
 endif()
