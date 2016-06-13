@@ -20,5 +20,8 @@ set(INSTALL_BIN_DIR "bin" CACHE PATH
 set(INSTALL_INCLUDE_DIR "include/libadjoint" CACHE PATH
     "Installation directory for header files")
 
+# Fix random bug in CMake (fix from Jack Hale)
+set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+
 add_subdirectory(src)
 add_subdirectory(python)
