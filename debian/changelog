@@ -1,3 +1,9 @@
+libadjoint (2016.1.0~xenial) xenial; urgency=low
+
+  * Release version 2016.1.0.
+
+ -- Simon Funke <simon@simula.no>  Tue, 30 Jun 2016 16:53:57 +0100
+
 libadjoint (1.6.12~xenial) xenial; urgency=low
 
   * Release version 1.6.
