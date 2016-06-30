@@ -301,11 +301,7 @@ int adj_get_gst(adj_gst* gst_handle, int i, adj_scalar* sigma, adj_vector* u, ad
 
   if (error != NULL)
   {
-    #ifdef EPS_ERROR_RELATIVE
-        ierr = EPSComputeError(*eps, i, EPS_ERROR_RELATIVE, error);
-    #else
-        ierr = EPSComputeRelativeError(*eps, i, error);
-    #endif
+    ierr = EPSComputeError(*eps, i, EPS_ERROR_RELATIVE, error);
     if (ierr != 0)
     {
       snprintf(adj_error_msg, ADJ_ERROR_MSG_BUF, "SLEPc error from EPSComputeRelativeError (ierr == %d).", ierr);
