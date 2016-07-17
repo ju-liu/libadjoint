@@ -119,9 +119,6 @@ int adj_compute_gst(adj_adjointer* adjointer, adj_variable ic, adj_matrix* ic_no
     nwv = PETSC_DECIDE;
 
   EPSSetDimensions(*eps, nrv, PETSC_DECIDE, PETSC_DECIDE);
-#if SLEPC_VERSION_MAJOR > 3 || (SLEPC_VERSION_MAJOR == 3 && SLEPC_VERSION_MINOR >= 1)
-  EPSMonitorSet(*eps, EPSMonitorAll, PETSC_NULL, PETSC_NULL);
-#endif
   EPSSetWhichEigenpairs(*eps, which);
 
   ierr = EPSSetFromOptions(*eps);
