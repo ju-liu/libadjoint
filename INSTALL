@@ -20,7 +20,7 @@ $ ls
 libadjoint
 $ mkdir build
 $ cd build
-$ cmake ../libadjoint
+$ cmake ..
 
 All typical CMake commands are available. For example to set the compiler,
 specify the installation directory, and build a shared library, you would
