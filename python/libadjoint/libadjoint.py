@@ -3,12 +3,11 @@ from __future__ import print_function
 from . import clibadjoint_constants as constants
 import ctypes
 from . import exceptions
-from . import python_utils
 from . import clibadjoint as clib
 from six.moves import range
 
 adj_scalar = ctypes.c_double
-references_taken = []
+references_taken = {}
 
 def adj_test_assert(test_pass, msg=None):
   assert isinstance(test_pass, bool)
@@ -418,7 +417,7 @@ class MemoryStorage(Storage):
     else:
       adjvec = vec.as_adj_vector()
       clib.adj_storage_memory_incref(adjvec, self.storage_data)
-      references_taken.append(adjvec)
+      references_taken[id(adjvec)] = adjvec
 
     self.set_checkpoint(cs)
 
@@ -502,8 +501,8 @@ class Functional(object):
       output_c[0].ptr = 0
       if not isinstance(output, Vector):
         raise exceptions.LibadjointErrorInvalidInputs("Output from functional derivative must be a Vector.")
-      output_c[0].ptr = python_utils.c_ptr(output)
-      references_taken.append(output)
+      output_c[0].ptr = id(output)
+      references_taken[id(output)] = output
 
     functional_derivative_type = ctypes.CFUNCTYPE(None, ctypes.POINTER(clib.adj_adjointer), clib.adj_variable, ctypes.c_int, ctypes.POINTER(clib.adj_variable), ctypes.POINTER(clib.adj_vector), ctypes.c_char_p, ctypes.POINTER(clib.adj_vector))
     return functional_derivative_type(cfunc)
@@ -528,8 +527,8 @@ class Functional(object):
       output_c[0].ptr = 0
       if not isinstance(output, Vector):
         raise exceptions.LibadjointErrorInvalidInputs("Output from functional second derivative must be a Vector.")
-      output_c[0].ptr = python_utils.c_ptr(output)
-      references_taken.append(output)
+      output_c[0].ptr = id(output)
+      references_taken[id(output)] = output
 
     functional_second_derivative_type = ctypes.CFUNCTYPE(None, ctypes.POINTER(clib.adj_adjointer), clib.adj_variable, ctypes.c_int, ctypes.POINTER(clib.adj_variable), ctypes.POINTER(clib.adj_vector), clib.adj_vector, ctypes.c_char_p, ctypes.POINTER(clib.adj_vector))
     return functional_second_derivative_type(cfunc)
@@ -594,8 +593,8 @@ class Parameter(object):
       if output:
         if not isinstance(output, Vector):
           raise exceptions.LibadjointErrorInvalidInputs("Output from parameter source term must be a Vector.")
-        output_c[0].ptr = python_utils.c_ptr(output)
-        references_taken.append(output)
+        output_c[0].ptr = id(output)
+        references_taken[id(output)] = output
 
     parameter_type = ctypes.CFUNCTYPE(None, ctypes.POINTER(clib.adj_adjointer), ctypes.c_int, clib.adj_variable, ctypes.c_int, ctypes.POINTER(clib.adj_variable), ctypes.POINTER(clib.adj_vector), ctypes.c_char_p, ctypes.POINTER(clib.adj_vector), ctypes.POINTER(ctypes.c_int))
     return parameter_type(cfunc)
@@ -691,9 +690,9 @@ class RHS(object):
       if output:
         if not isinstance(output, Vector):
           raise exceptions.LibadjointErrorInvalidInputs("Output from RHS callback must be None or a Vector.")
-        output_c[0].ptr = python_utils.c_ptr(output)
+        output_c[0].ptr = id(output)
 
-      references_taken.append(output)
+      references_taken[id(output)] = output
 
     rhs_func_type = ctypes.CFUNCTYPE(None, ctypes.POINTER(clib.adj_adjointer), clib.adj_variable, ctypes.c_int, ctypes.POINTER(clib.adj_variable), ctypes.POINTER(clib.adj_vector), ctypes.POINTER(None),
                                      ctypes.POINTER(clib.adj_vector), ctypes.POINTER(ctypes.c_int))
@@ -723,8 +722,8 @@ class RHS(object):
       if output:
         if not isinstance(output, Vector):
           raise exceptions.LibadjointErrorInvalidInputs("Output from RHS derivative_action callback must be None or a Vector.")
-        output_c[0].ptr = python_utils.c_ptr(output)
-        references_taken.append(output)
+        output_c[0].ptr = id(output)
+        references_taken[id(output)] = output
 
     rhs_deriv_action_type = ctypes.CFUNCTYPE(None, ctypes.POINTER(clib.adj_adjointer), clib.adj_variable, ctypes.c_int, ctypes.POINTER(clib.adj_variable),
         ctypes.POINTER(clib.adj_vector), clib.adj_variable, clib.adj_vector, ctypes.c_int, ctypes.POINTER(None), ctypes.POINTER(clib.adj_vector), ctypes.POINTER(ctypes.c_int))
@@ -754,8 +753,8 @@ class RHS(object):
       if output:
         if not isinstance(output, Vector):
           raise exceptions.LibadjointErrorInvalidInputs("Output from RHS second derivative_action callback must be None or a Vector.")
-        output_c[0].ptr = python_utils.c_ptr(output)
-        references_taken.append(output)
+        output_c[0].ptr = id(output)
+        references_taken[id(output)] = output
 
     rhs_second_deriv_action_type = ctypes.CFUNCTYPE(None, ctypes.POINTER(clib.adj_adjointer), clib.adj_variable, ctypes.c_int, ctypes.POINTER(clib.adj_variable),
         ctypes.POINTER(clib.adj_vector), clib.adj_variable, clib.adj_vector, clib.adj_variable, ctypes.c_int, clib.adj_vector, ctypes.POINTER(None), ctypes.POINTER(clib.adj_vector), ctypes.POINTER(ctypes.c_int))
@@ -781,9 +780,9 @@ class RHS(object):
       output_c[0].ptr = 0
       if not isinstance(output, Matrix):
         raise exceptions.LibadjointErrorInvalidInputs("Output from RHS derivative_assembly callback must be a Matrix.")
-      output_c[0].ptr = python_utils.c_ptr(output)
+      output_c[0].ptr = id(output)
 
-      references_taken.append(output)
+      references_taken[id(output)] = output
 
     rhs_deriv_assembly_type = ctypes.CFUNCTYPE(None, ctypes.POINTER(clib.adj_adjointer), clib.adj_variable, ctypes.c_int, ctypes.POINTER(clib.adj_variable),
         ctypes.POINTER(clib.adj_vector), ctypes.c_int, ctypes.POINTER(None), ctypes.POINTER(clib.adj_matrix))
@@ -1055,8 +1054,8 @@ class Adjointer(object):
         var = Variable(var=adj_var)
         y = storage_class.read(var)
         # Increase the reference counter of the new object to protect it from deallocation at the end of the callback
-        references_taken.append(y)
-        adj_vec_ptr[0].ptr = python_utils.c_ptr(y)
+        references_taken[id(y)] = y
+        adj_vec_ptr[0].ptr = id(y)
         adj_vec_ptr[0].klass = 0
         adj_vec_ptr[0].flags = 0
 
@@ -1098,8 +1097,8 @@ class Adjointer(object):
     clib.adj_evaluate_functional_derivative(self.adjointer, var.c_object, functional.__str__(), output, has_output)
 
     if has_output.value:
-      dJdu_py = python_utils.c_deref(output.ptr)
-      references_taken.remove(dJdu_py)
+      output_id = output.ptr
+      dJdu_py = references_taken.pop(output_id)
       return dJdu_py
     else:
       return None
@@ -1120,10 +1119,10 @@ class Adjointer(object):
     rhs = clib.adj_vector()
     fwd_var = clib.adj_variable()
     clib.adj_get_forward_equation(self.adjointer, equation, lhs, rhs, fwd_var)
-    lhs_py = python_utils.c_deref(lhs.ptr)
-    references_taken.remove(lhs_py)
-    rhs_py = python_utils.c_deref(rhs.ptr)
-    references_taken.remove(rhs_py)
+    lhs_id = lhs.ptr
+    references_taken.pop(lhs_id)
+    rhs_id = rhs.ptr
+    references_taken.pop(rhs_id)
 
     return (Variable(var=fwd_var), lhs_py, rhs_py)
 
@@ -1131,8 +1130,8 @@ class Adjointer(object):
     output = clib.adj_vector()
     fwd_var = clib.adj_variable()
     clib.adj_get_forward_solution(self.adjointer, equation, output, fwd_var)
-    output_py = python_utils.c_deref(output.ptr)
-    references_taken.remove(output_py)
+    output_id = output.ptr
+    references_taken.pop(output_id)
 
     return (Variable(var=fwd_var), output_py)
 
@@ -1145,10 +1144,10 @@ class Adjointer(object):
     rhs = clib.adj_vector()
     adj_var = clib.adj_variable()
     clib.adj_get_adjoint_equation(self.adjointer, equation, str(functional), lhs, rhs, adj_var)
-    lhs_py = python_utils.c_deref(lhs.ptr)
-    references_taken.remove(lhs_py)
-    rhs_py = python_utils.c_deref(rhs.ptr)
-    references_taken.remove(rhs_py)
+    lhs_id = lhs.ptr
+    references_taken.pop(lhs_id)
+    rhs_id = rhs.ptr
+    references_taken.pop(rhs_id)
 
     return (Variable(var=adj_var), lhs_py, rhs_py)
 
@@ -1160,8 +1159,8 @@ class Adjointer(object):
     output = clib.adj_vector()
     adj_var = clib.adj_variable()
     clib.adj_get_adjoint_solution(self.adjointer, equation, str(functional), output, adj_var)
-    output_py = python_utils.c_deref(output.ptr)
-    references_taken.remove(output_py)
+    output_id = output.ptr
+    references_taken.pop(output_id)
 
     return (Variable(var=adj_var), output_py)
 
@@ -1174,10 +1173,10 @@ class Adjointer(object):
     rhs = clib.adj_vector()
     tlm_var = clib.adj_variable()
     clib.adj_get_tlm_equation(self.adjointer, equation, str(parameter), lhs, rhs, tlm_var)
-    lhs_py = python_utils.c_deref(lhs.ptr)
-    references_taken.remove(lhs_py)
-    rhs_py = python_utils.c_deref(rhs.ptr)
-    references_taken.remove(rhs_py)
+    lhs_id = lhs.ptr
+    references_taken.pop(lhs_id)
+    rhs_id = rhs.ptr
+    references_taken.pop(rhs_id)
 
     return (Variable(var=tlm_var), lhs_py, rhs_py)
 
@@ -1189,8 +1188,8 @@ class Adjointer(object):
     output = clib.adj_vector()
     adj_var = clib.adj_variable()
     clib.adj_get_tlm_solution(self.adjointer, equation, str(parameter), output, adj_var)
-    output_py = python_utils.c_deref(output.ptr)
-    references_taken.remove(output_py)
+    output_id = output.ptr
+    references_taken.pop(output_id)
 
     return (Variable(var=adj_var), output_py)
 
@@ -1204,10 +1203,10 @@ class Adjointer(object):
     rhs = clib.adj_vector()
     soa_var = clib.adj_variable()
     clib.adj_get_soa_equation(self.adjointer, equation, str(functional), str(parameter), lhs, rhs, soa_var)
-    lhs_py = python_utils.c_deref(lhs.ptr)
-    references_taken.remove(lhs_py)
-    rhs_py = python_utils.c_deref(rhs.ptr)
-    references_taken.remove(rhs_py)
+    lhs_id = lhs.ptr
+    references_taken.pop(lhs_id)
+    rhs_id = rhs.ptr
+    references_taken.pop(rhs_id)
 
     return (Variable(var=soa_var), lhs_py, rhs_py)
 
@@ -1220,8 +1219,8 @@ class Adjointer(object):
     output = clib.adj_vector()
     adj_var = clib.adj_variable()
     clib.adj_get_soa_solution(self.adjointer, equation, str(functional), str(parameter), output, adj_var)
-    output_py = python_utils.c_deref(output.ptr)
-    references_taken.remove(output_py)
+    output_id = output.ptr
+    references_taken.pop(output_id)
 
     return (Variable(var=adj_var), output_py)
 
@@ -1366,7 +1365,7 @@ class Adjointer(object):
       output_c[0].ptr = 0
       if not isinstance(matrix, Matrix):
         raise exceptions.LibadjointErrorInvalidInputs("matrix object returned from block assembly callback must be a subclass of Matrix")
-      output_c[0].ptr = python_utils.c_ptr(matrix)
+      output_c[0].ptr = id(matrix)
       references_taken.append(matrix)
 
       rhs_c[0].klass = 0
@@ -1374,7 +1373,7 @@ class Adjointer(object):
       rhs_c[0].ptr = 0
       if not isinstance(rhs, Vector):
         raise exceptions.LibadjointErrorInvalidInputs("rhs object returned from block assembly callback must be a subclass of Vector")
-      rhs_c[0].ptr = python_utils.c_ptr(rhs)
+      rhs_c[0].ptr = id(rhs)
       references_taken.append(rhs)
 
     return self.block_assembly_type(cfunc)
@@ -1400,8 +1399,8 @@ class Adjointer(object):
       output_c[0].ptr = 0
       if not isinstance(output, Vector):
         raise exceptions.LibadjointErrorInvalidInputs("object returned from block action callback must be a subclass of Vector")
-      output_c[0].ptr = python_utils.c_ptr(output)
-      references_taken.append(output)
+      output_c[0].ptr = id(output)
+      references_taken[id(output)] = output
 
 
     return self.block_action_type(cfunc)
@@ -1429,8 +1428,8 @@ class Adjointer(object):
       output_c[0].ptr = 0
       if not isinstance(output, Vector):
         raise exceptions.LibadjointErrorInvalidInputs("object returned from nonlinear block derivative action callback must be a subclass of Vector")
-      output_c[0].ptr = python_utils.c_ptr(output)
-      references_taken.append(output)
+      output_c[0].ptr = id(output)
+      references_taken[id(output)] = output
 
     return self.nblock_derivative_action_type(cfunc)
 
@@ -1461,8 +1460,8 @@ class Adjointer(object):
       output_c[0].ptr = 0
       if not isinstance(output, Vector):
         raise exceptions.LibadjointErrorInvalidInputs("object returned from nonlinear block derivative action callback must be a subclass of Vector")
-      output_c[0].ptr = python_utils.c_ptr(output)
-      references_taken.append(output)
+      output_c[0].ptr = id(output)
+      references_taken[id(output)] = output
 
     return self.nblock_second_derivative_action_type(cfunc)
 
@@ -1485,8 +1484,8 @@ class Adjointer(object):
       output_c[0].ptr = 0
       if not isinstance(output, Vector):
         raise exceptions.LibadjointErrorInvalidInputs("object returned from nonlinear block derivative action callback must be a subclass of Vector")
-      output_c[0].ptr = python_utils.c_ptr(output)
-      references_taken.append(output)
+      output_c[0].ptr = id(output)
+      references_taken[id(output)] = output
 
     return self.nblock_action_type(cfunc)
 
@@ -1513,7 +1512,7 @@ class Adjointer(object):
 
     # Increase the reference counter of the new object to protect it from deallocation at the end of the callback
     references_taken.append(new_vec)
-    adj_vec_ptr[0].ptr = python_utils.c_ptr(new_vec)
+    adj_vec_ptr[0].ptr = id(new_vec)
     adj_vec_ptr[0].klass = 0
     adj_vec_ptr[0].flags = 0
 
@@ -1618,7 +1617,7 @@ class Adjointer(object):
 
     # Increase the reference counter of the new object to protect it from deallocation at the end of the callback
     references_taken.append(new_mat)
-    adj_mat_ptr.ptr = python_utils.c_ptr(new_mat)
+    adj_mat_ptr.ptr = id(new_mat)
     adj_mat_ptr.klass = 0
     adj_mat_ptr.flags = 0
 
@@ -1650,7 +1649,7 @@ class Adjointer(object):
     x = A.solve(Variable(var=adj_var), b)
     references_taken.append(x)
 
-    adj_soln_ptr[0].ptr = python_utils.c_ptr(x)
+    adj_soln_ptr[0].ptr = id(x)
     adj_soln_ptr[0].klass = 0
     adj_soln_ptr[0].flags = 0
 
@@ -1843,7 +1842,7 @@ class Vector(LinAlg):
 
     Returns an adj_vector with this Vector as its data payload.'''
 
-    adj_vec = clib.adj_vector(ptr=python_utils.c_ptr(self))
+    adj_vec = clib.adj_vector(ptr=id(self))
     return adj_vec
 
 class Matrix(LinAlg):
@@ -1871,7 +1870,7 @@ class Matrix(LinAlg):
 
     Returns an adj_matrix with this Matrix as its data payload.'''
 
-    adj_mat = clib.adj_matrix(ptr=python_utils.c_ptr(self))
+    adj_mat = clib.adj_matrix(ptr=id(self))
     return adj_mat
 
 def vector(adj_vector):
@@ -1879,14 +1878,14 @@ def vector(adj_vector):
 
   Return the Python Vector object contained in a C adj_vector'''
 
-  return python_utils.c_deref(adj_vector.ptr)
+  return references_taken[adj_vector.ptr]
 
 def matrix(adj_matrix):
   '''matrix(adj_matrix)
 
   Return the Python Matrix object contained in a C adj_matrix'''
 
-  return python_utils.c_deref(adj_matrix.ptr)
+  return references_taken[adj_matrix.ptr]
 
 class GSTHandle(object):
   '''An object that wraps the result of a generalised stability theory computation.
