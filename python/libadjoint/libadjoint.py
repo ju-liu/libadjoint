@@ -1,8 +1,11 @@
-import clibadjoint_constants as constants
+from __future__ import absolute_import
+from __future__ import print_function
+from . import clibadjoint_constants as constants
 import ctypes
-import exceptions
-import clibadjoint as clib
-import python_utils
+from . import exceptions
+from . import python_utils
+from . import clibadjoint as clib
+from six.moves import range
 
 adj_scalar = ctypes.c_double
 references_taken = []
@@ -15,7 +18,7 @@ def handle_error(ierr):
   if ierr != 0:
     exception = exceptions.get_exception(ierr)
     errstr  = clib.adj_error_msg.value
-    raise exception, errstr
+    raise exception(errstr)
 
 def list_to_carray(vars, klass):
   listtype = klass * len(vars)
@@ -179,7 +182,7 @@ class Block(object):
       c_context = ctypes.byref(context)
 
     if nblock is not None and dependencies is not None:
-      raise exceptions.LibadjointErrorInvalidInputs, "Cannot have both nblock and dependencies"
+      raise exceptions.LibadjointErrorInvalidInputs("Cannot have both nblock and dependencies")
 
     if nblock is None:
       if dependencies is not None and len(dependencies) > 0:
@@ -908,7 +911,7 @@ class Adjointer(object):
     if self.adjointer_created:
       clib.adj_destroy_adjointer(self.adjointer)
       if len(references_taken) != 0:
-        print "References outstanding: ", references_taken
+        print("References outstanding: ", references_taken)
 
       assert len(references_taken) == 0
 
@@ -931,8 +934,8 @@ class Adjointer(object):
     if self.adjointer_created:
       clib.adj_destroy_adjointer(self.adjointer)
       if len(references_taken) != 0:
-        print "Warning: references still exist!"
-        print "References: ", references_taken
+        print("Warning: references still exist!")
+        print("References: ", references_taken)
       assert len(references_taken) == 0
 
   def __getattr__(self, name):
@@ -1041,8 +1044,8 @@ class Adjointer(object):
     raised_exception = False
     try:
       clib.adj_record_variable(self.adjointer, var.var, storage.storage_data)
-    except exceptions.LibadjointWarnException, err:
-      print err
+    except exceptions.LibadjointWarnException as err:
+      print(err)
       raised_exception = True
 
     # At this point we should also reregister the read and the delete callbacks.
@@ -1105,10 +1108,10 @@ class Adjointer(object):
     try:
       typecode = {"forward": 1, "adjoint": 2, "tlm": 3}[viztype]
     except IndexError:
-      raise exceptions.LibadjointErrorInvalidInputs, "Argument viztype has to be one of the following: 'forward', 'adjoint', 'tlm'"
+      raise exceptions.LibadjointErrorInvalidInputs("Argument viztype has to be one of the following: 'forward', 'adjoint', 'tlm'")
 
     if viztype == 'tlm':
-      raise exceptions.LibadjointErrorNotImplemented, "HTML output for TLM is not implemented"
+      raise exceptions.LibadjointErrorNotImplemented("HTML output for TLM is not implemented")
 
     clib.adj_adjointer_to_html(self.adjointer, filename, typecode)
 
@@ -1295,11 +1298,11 @@ class Adjointer(object):
       except:
         import sys
         import traceback
-        print
-        print "Python traceback: "
+        print()
+        print("Python traceback: ")
         traceback.print_exc()
 
-        print
+        print()
 
         # Try to print out a C traceback, too
         import ctypes
@@ -1308,7 +1311,7 @@ class Adjointer(object):
           datatype = ctypes.c_void_p * 200
           pointers = datatype()
           size = libc.backtrace(pointers, 200)
-          print "C traceback: "
+          print("C traceback: ")
           libc.backtrace_symbols_fd(pointers, size, 2)
         except (OSError, AttributeError):
           pass
@@ -1522,8 +1525,8 @@ class Adjointer(object):
     try:
       references_taken.remove(vec)
     except:
-      print "vec.__class__: ", vec.__class__
-      print "references_taken: ", references_taken
+      print("vec.__class__: ", vec.__class__)
+      print("references_taken: ", references_taken)
       raise
 
   @staticmethod
@@ -1596,7 +1599,7 @@ class Adjointer(object):
     raise exceptions.LibadjointErrorInvalidInputs(
         'Internal error: called vec_delete callback before recording any variables.')
 
-    print "To be implemented"
+    print("To be implemented")
     assert(False)
     vec = vector(adj_vec_ptr[0])
 
@@ -1604,8 +1607,8 @@ class Adjointer(object):
     try:
       references_taken.remove(vec)
     except:
-      print vec.data
-      print references_taken
+      print(vec.data)
+      print(references_taken)
       raise
 
   @staticmethod
