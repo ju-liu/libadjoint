@@ -1,8 +1,16 @@
 from ctypes import *
 
 _library = CDLL("${CMAKE_INSTALL_PREFIX}/${INSTALL_LIB_DIR}/libadjoint${CMAKE_SHARED_LIBRARY_SUFFIX}")
-STRING = c_char_p
 
+class STRING(object):
+    @classmethod
+    def from_param(cls, value):
+        if value is None or isinstance(value, bytes):
+            return value
+        else:
+            return value.encode('utf8')
+
+STRING_POINTER = POINTER(c_char_p)
 
 class adj_adjointer(Structure):
     pass
@@ -475,7 +483,7 @@ adj_create_variable.restype = c_int
 adj_create_variable.argtypes = [STRING, c_int, c_int, c_int, POINTER(adj_variable)]
 adj_variable_get_name = _library.adj_variable_get_name
 adj_variable_get_name.restype = c_int
-adj_variable_get_name.argtypes = [adj_variable, POINTER(STRING)]
+adj_variable_get_name.argtypes = [adj_variable, STRING_POINTER]
 adj_variable_get_timestep = _library.adj_variable_get_timestep
 adj_variable_get_timestep.restype = c_int
 adj_variable_get_timestep.argtypes = [adj_variable, POINTER(c_int)]
@@ -572,7 +580,7 @@ adj_dict_set.restype = c_int
 adj_dict_set.argtypes = [POINTER(adj_dictionary), STRING, STRING]
 adj_dict_find = _library.adj_dict_find
 adj_dict_find.restype = c_int
-adj_dict_find.argtypes = [POINTER(adj_dictionary), STRING, POINTER(STRING)]
+adj_dict_find.argtypes = [POINTER(adj_dictionary), STRING, STRING_POINTER]
 adj_dict_print = _library.adj_dict_print
 adj_dict_print.restype = None
 adj_dict_print.argtypes = [POINTER(adj_dictionary)]
@@ -584,7 +592,7 @@ class adj_eps_options(Structure):
 adj_eps_options._fields_ = [
     ('input', adj_vector),
     ('output', adj_vector),
-    ('method', STRING),
+    ('method', c_char_p),
     ('type', c_int),
     ('which', c_int),
     ('monitor', c_int),

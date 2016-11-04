@@ -90,7 +90,10 @@ class Variable(object):
   def __str__(self):
     buf = ctypes.create_string_buffer(255)
     clib.adj_variable_str(self.var, buf, 255)
-    return buf.value
+    s = buf.value
+    if not isinstance(s, str):
+      s = s.decode('utf8')
+    return s
 
   def __getattr__(self, name):
     if name == "timestep":
@@ -1497,7 +1500,7 @@ class Adjointer(object):
       clib.adj_register_operator_callback.argtypes = [ctypes.POINTER(clib.adj_adjointer), ctypes.c_int, ctypes.c_char_p, type_to_api[type_name][0]]
       fn=type_to_api[type_name][1](func)
       self.functions_registered.append(fn)
-      clib.adj_register_operator_callback(self.adjointer, int(constants.adj_constants[type_name]), name, fn)
+      clib.adj_register_operator_callback(self.adjointer, int(constants.adj_constants[type_name]), name.encode('utf8'), fn)
       clib.adj_register_operator_callback.argtypes = [ctypes.POINTER(clib.adj_adjointer), ctypes.c_int, ctypes.c_char_p, ctypes.CFUNCTYPE(None)]
     else:
       raise exceptions.LibadjointErrorNotImplemented("Unknown API for data callback " + type_name)
