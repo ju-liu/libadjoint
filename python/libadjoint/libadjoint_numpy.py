@@ -1,4 +1,5 @@
-import libadjoint
+from __future__ import absolute_import
+from . import libadjoint
 import numpy
 
 class Vector(libadjoint.Vector):

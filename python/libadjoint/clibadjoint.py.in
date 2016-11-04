@@ -1,8 +1,17 @@
 from ctypes import *
 
-_library = CDLL("${CMAKE_INSTALL_PREFIX}/${INSTALL_LIB_DIR}/libadjoint${CMAKE_SHARED_LIBRARY_SUFFIX}")
-STRING = c_char_p
+import six
 
+_library = CDLL("${CMAKE_INSTALL_PREFIX}/${INSTALL_LIB_DIR}/libadjoint${CMAKE_SHARED_LIBRARY_SUFFIX}")
+
+class STRING(object):
+    @classmethod
+    def from_param(cls, value):
+        if isinstance(value, six.text_type):
+            value = value.encode('utf8')
+        return value
+
+STRING_POINTER = POINTER(c_char_p)
 
 class adj_adjointer(Structure):
     pass
@@ -101,16 +110,16 @@ adj_register_data_callback.restype = c_int
 adj_register_data_callback.argtypes = [POINTER(adj_adjointer), c_int, CFUNCTYPE(None)]
 adj_register_functional_callback = _library.adj_register_functional_callback
 adj_register_functional_callback.restype = c_int
-adj_register_functional_callback.argtypes = [POINTER(adj_adjointer), STRING, CFUNCTYPE(None, POINTER(adj_adjointer), c_int, c_int, POINTER(adj_variable), POINTER(adj_vector), STRING, POINTER(c_double))]
+adj_register_functional_callback.argtypes = [POINTER(adj_adjointer), STRING, CFUNCTYPE(None, POINTER(adj_adjointer), c_int, c_int, POINTER(adj_variable), POINTER(adj_vector), c_char_p, POINTER(c_double))]
 adj_register_functional_derivative_callback = _library.adj_register_functional_derivative_callback
 adj_register_functional_derivative_callback.restype = c_int
-adj_register_functional_derivative_callback.argtypes = [POINTER(adj_adjointer), STRING, CFUNCTYPE(None, POINTER(adj_adjointer), adj_variable, c_int, POINTER(adj_variable), POINTER(adj_vector), STRING, POINTER(adj_vector))]
+adj_register_functional_derivative_callback.argtypes = [POINTER(adj_adjointer), STRING, CFUNCTYPE(None, POINTER(adj_adjointer), adj_variable, c_int, POINTER(adj_variable), POINTER(adj_vector), c_char_p, POINTER(adj_vector))]
 adj_register_functional_second_derivative_callback = _library.adj_register_functional_second_derivative_callback
 adj_register_functional_second_derivative_callback.restype = c_int
-adj_register_functional_second_derivative_callback.argtypes = [POINTER(adj_adjointer), STRING, CFUNCTYPE(None, POINTER(adj_adjointer), adj_variable, c_int, POINTER(adj_variable), POINTER(adj_vector), adj_vector, STRING, POINTER(adj_vector))]
+adj_register_functional_second_derivative_callback.argtypes = [POINTER(adj_adjointer), STRING, CFUNCTYPE(None, POINTER(adj_adjointer), adj_variable, c_int, POINTER(adj_variable), POINTER(adj_vector), adj_vector, c_char_p, POINTER(adj_vector))]
 adj_register_parameter_source_callback = _library.adj_register_parameter_source_callback
 adj_register_parameter_source_callback.restype = c_int
-adj_register_parameter_source_callback.argtypes = [POINTER(adj_adjointer), STRING, CFUNCTYPE(None, POINTER(adj_adjointer), c_int, adj_variable, c_int, POINTER(adj_variable), POINTER(adj_vector), STRING, POINTER(adj_vector), POINTER(c_int))]
+adj_register_parameter_source_callback.argtypes = [POINTER(adj_adjointer), STRING, CFUNCTYPE(None, POINTER(adj_adjointer), c_int, adj_variable, c_int, POINTER(adj_variable), POINTER(adj_vector), c_char_p, POINTER(adj_vector), POINTER(c_int))]
 adj_forget_adjoint_equation = _library.adj_forget_adjoint_equation
 adj_forget_adjoint_equation.restype = c_int
 adj_forget_adjoint_equation.argtypes = [POINTER(adj_adjointer), c_int]
@@ -301,28 +310,28 @@ class adj_func_callback(Structure):
     pass
 adj_func_callback._fields_ = [
     ('name', c_char * 4080),
-    ('callback', CFUNCTYPE(None, c_void_p, c_int, c_int, POINTER(adj_variable), POINTER(adj_vector), STRING, POINTER(c_double))),
+    ('callback', CFUNCTYPE(None, c_void_p, c_int, c_int, POINTER(adj_variable), POINTER(adj_vector), c_char_p, POINTER(c_double))),
     ('next', POINTER(adj_func_callback)),
 ]
 class adj_func_deriv_callback(Structure):
     pass
 adj_func_deriv_callback._fields_ = [
     ('name', c_char * 4080),
-    ('callback', CFUNCTYPE(None, c_void_p, adj_variable, c_int, POINTER(adj_variable), POINTER(adj_vector), STRING, POINTER(adj_vector))),
+    ('callback', CFUNCTYPE(None, c_void_p, adj_variable, c_int, POINTER(adj_variable), POINTER(adj_vector), c_char_p, POINTER(adj_vector))),
     ('next', POINTER(adj_func_deriv_callback)),
 ]
 class adj_func_second_deriv_callback(Structure):
     pass
 adj_func_second_deriv_callback._fields_ = [
     ('name', c_char * 4080),
-    ('callback', CFUNCTYPE(None, c_void_p, adj_variable, c_int, POINTER(adj_variable), POINTER(adj_vector), adj_vector, STRING, POINTER(adj_vector))),
+    ('callback', CFUNCTYPE(None, c_void_p, adj_variable, c_int, POINTER(adj_variable), POINTER(adj_vector), adj_vector, c_char_p, POINTER(adj_vector))),
     ('next', POINTER(adj_func_second_deriv_callback)),
 ]
 class adj_parameter_source_callback(Structure):
     pass
 adj_parameter_source_callback._fields_ = [
     ('name', c_char * 4080),
-    ('callback', CFUNCTYPE(None, c_void_p, c_int, adj_variable, c_int, POINTER(adj_variable), POINTER(adj_vector), STRING, POINTER(adj_vector), POINTER(c_int))),
+    ('callback', CFUNCTYPE(None, c_void_p, c_int, adj_variable, c_int, POINTER(adj_variable), POINTER(adj_vector), c_char_p, POINTER(adj_vector), POINTER(c_int))),
     ('next', POINTER(adj_parameter_source_callback)),
 ]
 class adj_func_callback_list(Structure):
@@ -475,7 +484,7 @@ adj_create_variable.restype = c_int
 adj_create_variable.argtypes = [STRING, c_int, c_int, c_int, POINTER(adj_variable)]
 adj_variable_get_name = _library.adj_variable_get_name
 adj_variable_get_name.restype = c_int
-adj_variable_get_name.argtypes = [adj_variable, POINTER(STRING)]
+adj_variable_get_name.argtypes = [adj_variable, STRING_POINTER]
 adj_variable_get_timestep = _library.adj_variable_get_timestep
 adj_variable_get_timestep.restype = c_int
 adj_variable_get_timestep.argtypes = [adj_variable, POINTER(c_int)]
@@ -572,7 +581,7 @@ adj_dict_set.restype = c_int
 adj_dict_set.argtypes = [POINTER(adj_dictionary), STRING, STRING]
 adj_dict_find = _library.adj_dict_find
 adj_dict_find.restype = c_int
-adj_dict_find.argtypes = [POINTER(adj_dictionary), STRING, POINTER(STRING)]
+adj_dict_find.argtypes = [POINTER(adj_dictionary), STRING, STRING_POINTER]
 adj_dict_print = _library.adj_dict_print
 adj_dict_print.restype = None
 adj_dict_print.argtypes = [POINTER(adj_dictionary)]
@@ -584,7 +593,7 @@ class adj_eps_options(Structure):
 adj_eps_options._fields_ = [
     ('input', adj_vector),
     ('output', adj_vector),
-    ('method', STRING),
+    ('method', c_char_p),
     ('type', c_int),
     ('which', c_int),
     ('monitor', c_int),
