@@ -121,9 +121,12 @@ class Variable(object):
     else:
       object.__setattr__(self, key, val)
 
+  def __hash__(self):
+    return id(self)
+
   def __eq__(self, other):
 
-    if not isinstance(other, Variable): 
+    if not isinstance(other, Variable):
       return False
     else:
       return (clib.adj_variable_equal(self.var, other.var, 1)==1)
