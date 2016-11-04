@@ -42,6 +42,8 @@ def handle_error(ierr):
   if ierr != 0:
     exception = exceptions.get_exception(ierr)
     errstr  = clib.adj_error_msg.value
+    if not isinstance(errstr, str):
+      errstr = errstr.decode('utf8')
     raise exception(errstr)
 
 def list_to_carray(vars, klass):
