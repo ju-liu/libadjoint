@@ -5,10 +5,8 @@ from collections import defaultdict
 import ctypes
 
 from . import clibadjoint_constants as constants
-import ctypes
 from . import exceptions
 from . import clibadjoint as clib
-
 
 adj_scalar = ctypes.c_double
 
@@ -134,13 +132,13 @@ class Variable(object):
   def to_adjoint(self, functional):
     adj_var = Variable(self.name, self.timestep, self.iteration)
     adj_var.c_object.type = int(constants.adj_constants['ADJ_ADJOINT'])
-    adj_var.c_object.functional = str(functional)
+    adj_var.c_object.functional = str(functional).encode('utf8')
     return adj_var
 
   def to_tlm(self, parameter):
     tlm_var = Variable(self.name, self.timestep, self.iteration)
     tlm_var.c_object.type = int(constants.adj_constants['ADJ_TLM'])
-    tlm_var.c_object.functional = str(parameter)
+    tlm_var.c_object.functional = str(parameter).encode('utf8')
     return tlm_var
 
   def to_forward(self):
@@ -150,7 +148,7 @@ class Variable(object):
   def to_soa(self, functional, parameter):
     soa_var = Variable(self.name, self.timestep, self.iteration)
     soa_var.c_object.type = int(constants.adj_constants['ADJ_SOA'])
-    soa_var.c_object.functional = str(functional) + ":" + str(parameter)
+    soa_var.c_object.functional = '{}:{}'.format(functional, parameter).encode('utf8')
     return soa_var
 
   def equation_nb(self, adjointer):
@@ -535,7 +533,7 @@ class Functional(object):
       if not isinstance(output, Vector):
         raise exceptions.LibadjointErrorInvalidInputs("Output from functional derivative must be a Vector.")
       output_c[0].ptr = _incref(output)
-
+    
     functional_derivative_type = ctypes.CFUNCTYPE(None, ctypes.POINTER(clib.adj_adjointer), clib.adj_variable, ctypes.c_int, ctypes.POINTER(clib.adj_variable), ctypes.POINTER(clib.adj_vector), ctypes.c_char_p, ctypes.POINTER(clib.adj_vector))
     return functional_derivative_type(cfunc)
 
@@ -1500,11 +1498,11 @@ class Adjointer(object):
                    "ADJ_NBLOCK_SECOND_DERIVATIVE_ACTION_CB": (self.nblock_second_derivative_action_type, self.__cfunc_from_nblock_second_derivative_action__),
                    "ADJ_NBLOCK_ACTION_CB": (self.nblock_action_type, self.__cfunc_from_nblock_action__)}
     if type_name in type_to_api:
-      clib.adj_register_operator_callback.argtypes = [ctypes.POINTER(clib.adj_adjointer), ctypes.c_int, ctypes.c_char_p, type_to_api[type_name][0]]
+      clib.adj_register_operator_callback.argtypes = [ctypes.POINTER(clib.adj_adjointer), ctypes.c_int, clib.STRING, type_to_api[type_name][0]]
       fn=type_to_api[type_name][1](func)
       self.functions_registered.append(fn)
-      clib.adj_register_operator_callback(self.adjointer, int(constants.adj_constants[type_name]), name.encode('utf8'), fn)
-      clib.adj_register_operator_callback.argtypes = [ctypes.POINTER(clib.adj_adjointer), ctypes.c_int, ctypes.c_char_p, ctypes.CFUNCTYPE(None)]
+      clib.adj_register_operator_callback(self.adjointer, int(constants.adj_constants[type_name]), name, fn)
+      clib.adj_register_operator_callback.argtypes = [ctypes.POINTER(clib.adj_adjointer), ctypes.c_int, clib.STRING, ctypes.CFUNCTYPE(None)]
     else:
       raise exceptions.LibadjointErrorNotImplemented("Unknown API for data callback " + type_name)
 
