@@ -2,7 +2,27 @@ from ctypes import *
 
 import six
 
-_library = CDLL("${CMAKE_INSTALL_PREFIX}/${INSTALL_LIB_DIR}/libadjoint${CMAKE_SHARED_LIBRARY_SUFFIX}")
+# _library = CDLL("/Users/minrk/conda/envs/fenics-py2/lib/libadjoint.dylib")
+# so = 'dylib' if darwin else 'so'
+from os.path import abspath, dirname, join
+import sys
+
+# prefix/lib/python2.7/site-packages/libadjoint/
+_install_prefix = abspath(join(dirname(__file__), '..', '..', '..', '..'))
+
+so = 'dylib' if sys.platform == 'darwin' else 'so'
+# first, try loading abspath with prefix:
+_libname = 'libadjoint.' + so
+_library = None
+for prefix in (_install_prefix, sys.prefix):
+    try:
+        _library = CDLL(join(prefix, 'lib', _libname))
+    except OSError:
+        pass
+
+# Finally, fallback on default loader path:
+if _library is None:
+    _library = CDLL(_libname)
 
 class STRING(object):
     @classmethod
