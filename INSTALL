@@ -41,24 +41,3 @@ in the build directory to build and install libadjoint.
 Note: to use the generalised stability analysis features of libadjoint,
 you need to compile against PETSc and SLEPc. This can be done in the
 usual way (set PETSC_ARCH, PETSC_DIR, and SLEPC_DIR appropriately).
-
-Using Makefile
-------------
-
-The minimum requirements for compiling libadjoint are a C compiler
-(environment variable CC) and a C++ compiler (environment variable
-CXX). If these are not specified, the defaults are 'mpicc' and 'mpicxx'.
-With these, the library may be built and installed with a simple
-
-make install prefix=/install/path
-
-To compile the Fortran bindings, a modern Fortran compiler is required;
-the Fortran bindings employ the F2003 iso_c_binding construct, for which
-support is still shaky. Versions of gfortran >= 4.5 are known to work.
-The environment variable for the Fortran compiler is FC; the default
-is 'mpif90'. If a working Fortran compiler is available, the Fortran bindings
-will be built and installed automatically.
-
-To compile the Python bindings, gccxml (http://www.gccxml.org; Ubuntu package
-gccxml) is required. If gccxml is available, the Python bindings will be
-built and installed automatically.
