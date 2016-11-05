@@ -10,9 +10,6 @@ if(PYTHONINTERP_FOUND)
     # Generate setup.py
     configure_file(${SETUP_PY_IN} ${SETUP_PY})
 
-    # Generate clibadjoint.py
-    configure_file(${CLIBADJOINT_PY_IN} ${CLIBADJOINT_PY})
-
     # Run `python setup.py -q build`
     add_custom_command(
       OUTPUT ${OUTPUT}/timestamp
