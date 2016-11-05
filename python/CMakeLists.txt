@@ -4,8 +4,6 @@ find_package(PythonInterp 2.7)
 if(PYTHONINTERP_FOUND)
     set(SETUP_PY_IN "${CMAKE_CURRENT_SOURCE_DIR}/setup.py.in")
     set(SETUP_PY "${CMAKE_CURRENT_BINARY_DIR}/setup.py")
-    set(CLIBADJOINT_PY_IN "${CMAKE_CURRENT_SOURCE_DIR}/libadjoint/clibadjoint.py.in")
-    set(CLIBADJOINT_PY "${CMAKE_CURRENT_SOURCE_DIR}/libadjoint/clibadjoint.py")
     set(DEPS   "${CMAKE_CURRENT_SOURCE_DIR}/libadjoint/__init__.py")
     set(OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/build")
 
