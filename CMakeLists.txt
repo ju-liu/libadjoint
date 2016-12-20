@@ -25,5 +25,3 @@ set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 add_subdirectory(src)
 add_subdirectory(python)
-enable_testing ()
-add_subdirectory(tests)
