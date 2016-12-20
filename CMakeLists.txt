@@ -4,7 +4,7 @@ project(libadjoint C CXX)
 
 # Set the version. (Used for so-naming of the library.)
 set(libadjoint_MAJOR_VERSION 2016)
-set(libadjoint_MINOR_VERSION 1)
+set(libadjoint_MINOR_VERSION 2)
 set(libadjoint_PATCH_VERSION 0)
 set(libadjoint_VERSION
     ${libadjoint_MAJOR_VERSION}.${libadjoint_MINOR_VERSION}.${libadjoint_PATCH_VERSION})
@@ -25,3 +25,5 @@ set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 add_subdirectory(src)
 add_subdirectory(python)
+enable_testing ()
+add_subdirectory(tests)

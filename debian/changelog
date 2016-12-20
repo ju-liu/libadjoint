@@ -1,3 +1,9 @@
+libadjoint (2016.2.0.0~trusty) trusty; urgency=low
+
+  * Release version 2016.2.0.
+
+ -- Simon Funke <simon@simula.no>  Tue, 20 Dec 2016 16:53:57 +0100
+
 libadjoint (2016.1.0.2~trusty) trusty; urgency=low
 
   * Release version 2016.1.0.
