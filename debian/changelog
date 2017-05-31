@@ -1,3 +1,9 @@
+libadjoint (2017.1.0~yakkety) yakkety; urgency=low
+
+  * Release version 2017.1.0.
+
+ -- Simon Funke <simon@simula.no>  Tue, 31 May 2017 16:37:05 +0100
+
 libadjoint (2016.2.0.1~wily) wily; urgency=low
 
   * Release version 2016.2.0.
